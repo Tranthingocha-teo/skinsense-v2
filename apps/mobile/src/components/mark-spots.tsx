@@ -15,7 +15,7 @@ import { Link } from 'expo-router';
 import { ChevronLeft, CircleAlert } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, StyleSheet, useColorScheme, View, type GestureResponderEvent, type LayoutChangeEvent } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, useColorScheme, View, type GestureResponderEvent, type LayoutChangeEvent } from 'react-native';
 
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
@@ -109,7 +109,7 @@ export function MarkSpots({ photoId }: { photoId: string }) {
   const { scale, dx, dy } = face && view.width > 0 ? cover(face, view) : { scale: 0, dx: 0, dy: 0 };
 
   return (
-    <View className="flex-1">
+    <ScrollView className="flex-1" contentContainerClassName="flex-grow pb-8" showsVerticalScrollIndicator={false}>
       <View className="flex-row items-center gap-1 pl-2.5 pr-[18px] pt-4">
         <Link href="/" asChild>
           <Pressable className="size-11 items-center justify-center" role="button" accessibilityLabel={t('markSpots.back')}>
@@ -211,7 +211,7 @@ export function MarkSpots({ photoId }: { photoId: string }) {
           </View>
         </>
       )}
-    </View>
+    </ScrollView>
   );
 }
 

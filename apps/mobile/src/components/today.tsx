@@ -21,6 +21,7 @@ import Svg, { Defs, LinearGradient, RadialGradient, Rect, Stop } from 'react-nat
 
 import { LoadState } from '@/components/load-state';
 import { Mark } from '@/components/mark';
+import { RecommendedProductsSection } from '@/components/recommended-products';
 import { RoutineChecklist } from '@/components/routine-checklist';
 import { FLAT_TOLERANCE } from '@/components/trends';
 import { Icon } from '@/components/ui/icon';
@@ -271,6 +272,11 @@ export function Today() {
           })}
         </Animated.View>
       )}
+
+      <RecommendedProductsSection
+        title="Gợi ý sản phẩm cho bạn"
+        subtitle="Mô hình AI đề xuất theo số đo vùng trán, má, mũi, cằm gần nhất"
+      />
     </Frame>
   );
 }

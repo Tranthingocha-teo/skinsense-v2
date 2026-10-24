@@ -16,6 +16,8 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { LoadState } from '@/components/load-state';
+import { RecommendedProductsSection } from '@/components/recommended-products';
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -330,6 +332,13 @@ export function RoutineChecklist({ embedded = false }: { embedded?: boolean }) {
             <Text className="text-[15px] text-muted-foreground">{t('routine.addStep')}</Text>
           </Pressable>
         )}
+
+        <View className="-mx-[18px] mt-2">
+          <RecommendedProductsSection
+            title="Sản phẩm hỗ trợ Routine"
+            subtitle="Mô hình AI gợi ý sản phẩm phù hợp theo từng vùng da để bổ sung vào chu trình"
+          />
+        </View>
       </ScrollView>
     </Animated.View>
   );

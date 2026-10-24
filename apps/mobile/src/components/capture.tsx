@@ -30,6 +30,8 @@ import {
   type Still,
 } from '@/lib/capture-engine';
 import { latestPhotoUrl, savePhoto } from '@/lib/photos';
+import { RecommendedProductsSection } from '@/components/recommended-products';
+
 
 // Canvas AndroidCapture: guide ellipse 95.5/350 x 123.8/467 of the 3:4 viewfinder. Same phases
 // and copy as apps/web/src/components/capture.tsx; the live guide is ML Kit's
@@ -300,6 +302,12 @@ export function Capture() {
             </Pressable>
           </Link>
         </View>
+
+        <RecommendedProductsSection
+          title="Sản phẩm gợi ý cho kết quả đo của bạn"
+          subtitle="Dựa trên phân tích AI cho các vùng da mẩn đỏ & độ không đều màu vừa chụp"
+        />
+
         <Link href="/" className="min-h-11 py-3 text-center text-sm text-foreground">
           {t('capture.done')}
         </Link>
@@ -400,7 +408,7 @@ export function Capture() {
 
       {still && (phase === 'review' || phase === 'saving') ? (
         // Canvas AndroidCaptureReview / AndroidCaptureSaveError.
-        <>
+        <ScrollView className="shrink-0 max-h-[220px]" contentContainerClassName="pb-3" showsVerticalScrollIndicator={false}>
           {still.issues.length > 0 && (
             <View accessible role="alert" className={`mx-5 mt-3.5 gap-2 px-[18px] py-4 ${CARD}`}>
               <View className="flex-row items-center gap-2.5">
@@ -433,7 +441,7 @@ export function Capture() {
               </Pressable>
             )}
           </View>
-        </>
+        </ScrollView>
       ) : (
         <View className="shrink-0 gap-1.5 pb-2 pt-0.5">
           {!denied && (

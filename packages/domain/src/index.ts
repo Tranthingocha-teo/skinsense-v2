@@ -32,3 +32,13 @@ export {
   exportZoneReadingsCsv,
   formatCsv,
 } from "./export";
+export type { Product, SkinConditionClass, ZoneTelemetry } from "./products";
+export {
+  classifyZoneCondition,
+  explainProductRecommendation,
+  getProductById,
+  getProducts,
+  PRODUCTS,
+  recommendProductsForZone,
+} from "./products";
+
