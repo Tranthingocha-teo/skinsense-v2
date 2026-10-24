@@ -1,0 +1,431 @@
+{
+  "Common": {
+    "loading": "Đang tải…",
+    "loadError": "Không tải được dữ liệu. Kiểm tra kết nối rồi thử lại.",
+    "retry": "Thử lại"
+  },
+  "NotFound": {
+    "title": "Không tìm thấy trang",
+    "body": "Đường dẫn này không tồn tại hoặc đã được chuyển đi.",
+    "home": "Về trang chủ"
+  },
+  "SignIn": {
+    "error": "Đăng nhập thất bại. Vui lòng thử lại."
+  },
+  "Locale": {
+    "label": "Ngôn ngữ"
+  },
+  "Nav": {
+    "label": "Điều hướng",
+    "today": "Hôm nay",
+    "capture": "Chụp",
+    "trends": "Xu hướng",
+    "settings": "Cài đặt"
+  },
+  "Settings": {
+    "title": "Cài đặt",
+    "language": "Ngôn ngữ",
+    "languageLabel": "Ngôn ngữ ứng dụng",
+    "account": "Tài khoản Google",
+    "display": "Hiển thị",
+    "support": "Hỗ trợ",
+    "privacy": "Chính sách riêng tư",
+    "data": "Dữ liệu",
+    "history": "Lịch sử ảnh"
+  },
+  "Feedback": {
+    "title": "Góp ý",
+    "back": "Về Cài đặt",
+    "kind": "Loại góp ý",
+    "bug": "Báo lỗi",
+    "idea": "Ý tưởng",
+    "other": "Khác",
+    "message": "Nội dung",
+    "placeholder": "Điều gì chưa ổn, hoặc bạn muốn SkinSense làm thêm gì?",
+    "attach": "Đính kèm trình duyệt và phiên bản ứng dụng",
+    "noData": "Không gửi kèm ảnh hay số liệu da của bạn.",
+    "tooLong": "Nội dung tối đa {max} ký tự.",
+    "send": "Gửi góp ý",
+    "error": "Gửi thất bại. Vui lòng thử lại.",
+    "sent": "Đã gửi góp ý. Cảm ơn bạn!"
+  },
+  "Onboarding": {
+    "title": "Nhật ký da, mỗi đêm một ảnh.",
+    "lightTitle": "Cùng một chỗ, cùng ánh sáng",
+    "lightBody": "Ngồi đối diện cửa sổ hoặc đèn trắng. Giữ khoảng cách và góc như lần trước.",
+    "webcamTitle": "Trình duyệt sẽ hỏi quyền webcam",
+    "webcamBody": "Chỉ khi bạn mở màn Chụp. Ảnh nằm trong kho riêng tư của bạn.",
+    "diagnosisTitle": "Không phải chẩn đoán",
+    "diagnosisBody": "Chỉ số mẩn đỏ so sánh từng vùng với chính làn da của bạn trong cùng bức ảnh.",
+    "start": "Bắt đầu",
+    "skip": "Bỏ qua"
+  },
+  "Demo": {
+    "title": "Bạn đang xem bản demo.",
+    "note": "Mọi thay đổi chỉ lưu trên trình duyệt này.",
+    "persona": "Hồ sơ mẫu: Da dầu, mụn ở má · 90 ngày",
+    "reset": "Đặt lại",
+    "signIn": "Đăng nhập bằng Google"
+  },
+  "Today": {
+    "title": "Hôm nay",
+    "captureTonight": "Chụp ảnh tối nay",
+    "captureAnother": "Chụp ảnh khác",
+    "noTonight": "Chưa có ảnh tối nay",
+    "tonightSaved": "Đã chụp ảnh tối nay",
+    "last": "Lần trước: {when} · {count, plural, other {# nốt đã đánh dấu}}",
+    "noPhoto": "Chưa có ảnh nào. Chụp ảnh đầu tiên để bắt đầu nhật ký.",
+    "photoPlaceholder": "Ảnh · placeholder",
+    "markSpots": "Đánh dấu nốt mụn →",
+    "captureStreak": "Chuỗi chụp ảnh",
+    "routineStreak": "Chuỗi routine",
+    "nights": "{count, plural, other {đêm liên tiếp}}",
+    "redness7": "Chỉ số mẩn đỏ 7 ngày qua",
+    "trends": "Xu hướng →"
+  },
+  "Shell": {
+    "signOut": "Đăng xuất"
+  },
+  "Routine": {
+    "title": "Routine tối nay",
+    "progress": "{done}/{total} hoàn thành",
+    "addStep": "Thêm bước",
+    "newStepPlaceholder": "Bước mới",
+    "more": "Tùy chọn cho {label}",
+    "rename": "Đổi tên",
+    "moveUp": "Chuyển lên",
+    "moveDown": "Chuyển xuống",
+    "delete": "Xóa",
+    "cancel": "Hủy",
+    "defaults": [
+      "Tẩy trang",
+      "Rửa mặt",
+      "Serum trị mụn",
+      "Kem dưỡng ẩm"
+    ],
+    "edit": "Sửa routine",
+    "back": "Quay lại",
+    "duplicate": "Bước này đã có"
+  },
+  "Landing": {
+    "title": "SkinSense",
+    "tagline": "Nhật ký da riêng tư, mỗi đêm một ảnh.",
+    "navHow": "Cách hoạt động",
+    "navAi": "AI trên thiết bị",
+    "navFaq": "Câu hỏi",
+    "navPrivacy": "Riêng tư",
+    "navSignIn": "Đăng nhập",
+    "signInGoogle": "Đăng nhập bằng Google",
+    "headline": "Theo dõi làn da của bạn, mỗi đêm một ảnh.",
+    "subtitle": "Chụp ảnh có hướng dẫn, đánh dấu nốt mụn, tick routine buổi tối — xem xu hướng da theo từng vùng, theo thời gian.",
+    "finePrint": "Miễn phí · Riêng tư · Không phải công cụ chẩn đoán y khoa",
+    "sceneCapture": "Chụp ảnh có hướng dẫn",
+    "sceneMark": "Chạm để đánh dấu nốt mụn",
+    "sceneTrend": "Xem xu hướng theo vùng",
+    "cardForehead": "Trán · mẩn đỏ",
+    "cardDown": "↓ đang giảm",
+    "cardStreak": "Chuỗi routine",
+    "cardNights": "đêm",
+    "cardLastNight": "Tối qua",
+    "cardSpots": "nốt đã đánh dấu",
+    "cardSpark": "7 ngày · Trán",
+    "howEyebrow": "Cách hoạt động",
+    "howTitle": "Bốn bước, mỗi tối.",
+    "steps": [
+      {
+        "title": "Chụp ảnh nhất quán",
+        "body": "Khung hình hướng dẫn, đối chiếu ảnh trước, khóa cân bằng trắng — mỗi ảnh đủ chuẩn để so sánh thật."
+      },
+      {
+        "title": "Đánh dấu điều bạn thấy",
+        "body": "Chạm để đánh dấu từng nốt mụn ngay trên ảnh, không cần AI đoán hộ."
+      },
+      {
+        "title": "Tick routine buổi tối",
+        "body": "Các bước do bạn tự đặt. Mỗi đêm tick những gì đã làm, giữ chuỗi ngày liên tiếp."
+      },
+      {
+        "title": "Xem xu hướng theo vùng",
+        "body": "Trán, hai má, mũi, cằm — chỉ số mẩn đỏ và số nốt mụn theo 7/30 ngày."
+      }
+    ],
+    "aiEyebrow": "AI trên thiết bị",
+    "aiTitle": "Phân tích ngay lúc chụp, trên máy của bạn.",
+    "aiBody": "Khuôn mặt, vùng da và chỉ số mẩn đỏ được tính ngay trong trình duyệt hoặc trên điện thoại. Điểm mốc khuôn mặt và mặt nạ da dùng để tính không được lưu lại.",
+    "aiSteps": [
+      {
+        "title": "Điểm mốc khuôn mặt",
+        "body": "MediaPipe trên web · ML Kit + TFLite trên Android"
+      },
+      {
+        "title": "Mặt nạ da",
+        "body": "Tách vùng da khỏi tóc, mắt, nền"
+      },
+      {
+        "title": "Năm vùng",
+        "body": "Trán, má trái, má phải, mũi, cằm — dựng từ điểm mốc"
+      },
+      {
+        "title": "Chỉ số mẩn đỏ (a*)",
+        "body": "a* của từng vùng so với toàn bộ da trong cùng bức ảnh"
+      }
+    ],
+    "compareTitle": "Web hay Android?",
+    "compareWeb": "Web (máy tính)",
+    "compareAndroid": "Android (APK)",
+    "compareWebShort": "Web",
+    "compareAndroidShort": "Android",
+    "compareYes": "Có",
+    "compareRows": [
+      {
+        "label": "Chụp ảnh có hướng dẫn",
+        "web": "Webcam",
+        "android": "Camera trước"
+      },
+      {
+        "label": "Đánh dấu nốt, routine, xu hướng",
+        "web": "Có",
+        "android": "Có"
+      },
+      {
+        "label": "Không cần cài đặt",
+        "web": "Có",
+        "android": "—"
+      },
+      {
+        "label": "Trình duyệt điện thoại, iPhone",
+        "web": "Chưa hỗ trợ",
+        "android": "—"
+      }
+    ],
+    "qrTitle": "Quét để tải APK",
+    "apkTitle": "Tải bản Android",
+    "qrBody": "Bản arm64, cài trực tiếp, không qua Play Store.",
+    "qrAlt": "Mã QR tải bản Android (APK)",
+    "faqTitle": "Câu hỏi thường gặp",
+    "faq": [
+      {
+        "q": "Chỉ số mẩn đỏ được tính thế nào?",
+        "a": "Mỗi lần chụp, ứng dụng tìm điểm mốc khuôn mặt, tách vùng da và chia thành năm vùng. Màu từng điểm ảnh da được đổi sang không gian CIELAB, nơi trục a* đo mức đỏ. Chỉ số mẩn đỏ của một vùng là trung vị a* của vùng đó trừ trung vị a* của toàn bộ da trong cùng bức ảnh: số dương nghĩa là vùng đó đỏ hơn phần da còn lại của chính bạn. Đây là số đo tương đối để theo dõi theo thời gian, không có ngưỡng bệnh."
+      },
+      {
+        "q": "SkinSense có chẩn đoán bệnh da không?",
+        "a": "Không. Đây là nhật ký cá nhân: không có ngưỡng nghiêm trọng, không có điểm số \"sức khỏe da\", không thay thế bác sĩ da liễu."
+      },
+      {
+        "q": "Ảnh của tôi được lưu ở đâu, ai xem được?",
+        "a": "Ảnh và số liệu nằm trên Supabase (máy chủ tại Sydney, Úc), trong kho riêng tư. Quy tắc bảo mật theo hàng chỉ cho chính tài khoản của bạn đọc hoặc ghi, và ảnh chỉ mở qua liên kết ký tạm thời. Dữ liệu không được chia sẻ, bán hay dùng để huấn luyện mô hình; nút Xóa tài khoản xóa toàn bộ ngay lập tức."
+      },
+      {
+        "q": "SkinSense có mất phí không?",
+        "a": "Không. SkinSense là dự án tốt nghiệp: miễn phí, không quảng cáo, không có gói trả phí."
+      },
+      {
+        "q": "Dùng được trên thiết bị nào?",
+        "a": "Web: Chrome hoặc Edge trên máy tính có webcam. Android: điện thoại Android 7.0 trở lên dùng chip arm64, cài bằng tệp APK. Trình duyệt trên điện thoại và iPhone chưa được hỗ trợ."
+      }
+    ],
+    "trustBadge": "Không phải chẩn đoán y khoa",
+    "trustTitle": "Đây là nhật ký cá nhân, không phải chẩn đoán.",
+    "trustBody": "SkinSense không thay thế bác sĩ da liễu. Đây là công cụ giúp bạn tự quan sát làn da của mình một cách nhất quán — không có ngưỡng nghiêm trọng, không có điểm số \"sức khỏe da\".",
+    "downloadAndroid": "Tải bản Android (APK)",
+    "privacyPolicy": "Chính sách riêng tư",
+    "tryDemo": "Xem thử, không cần đăng nhập",
+    "tryDemoShort": "Xem thử"
+  },
+  "Capture": {
+    "title": "Chụp ảnh tối nay",
+    "back": "Quay lại",
+    "apkBanner": "Trình duyệt điện thoại chưa hỗ trợ chụp ảnh. Hãy dùng ứng dụng Android.",
+    "apkLink": "Tải APK",
+    "goodLight": "Đủ sáng",
+    "issues": {
+      "noFace": "Đưa mặt vào khung hình",
+      "dark": "Thiếu sáng",
+      "bright": "Quá sáng",
+      "far": "Lại gần hơn",
+      "close": "Lùi ra xa",
+      "offCenter": "Đặt mặt vào giữa",
+      "turned": "Nhìn thẳng vào camera",
+      "blurry": "Ảnh bị mờ"
+    },
+    "placeFace": "Đặt mặt vào khung hình",
+    "keepDistance": "Giữ khoảng cách và góc như lần trước",
+    "shutter": "Chụp",
+    "loading": "Đang mở camera…",
+    "analysing": "Đang phân tích…",
+    "cameraError": "Không mở được camera. Hãy cho phép truy cập camera rồi tải lại.",
+    "qualityWarning": "Ảnh này có thể cho số liệu sai lệch:",
+    "retake": "Chụp lại",
+    "save": "Lưu",
+    "saveAnyway": "Vẫn lưu",
+    "saving": "Đang lưu…",
+    "saveError": "Lưu thất bại. Vui lòng thử lại.",
+    "savedTitle": "Đã lưu",
+    "zone": "Vùng",
+    "redness": "Chỉ số mẩn đỏ",
+    "unevenness": "Độ không đều",
+    "zones": {
+      "forehead": "Trán",
+      "leftCheek": "Má trái",
+      "rightCheek": "Má phải",
+      "nose": "Mũi",
+      "chin": "Cằm"
+    },
+    "disclaimer": "Không phải chẩn đoán y khoa. Chỉ số mẩn đỏ so sánh từng vùng với chính làn da của bạn trong cùng bức ảnh.",
+    "again": "Chụp ảnh khác",
+    "markSpots": "Đánh dấu nốt mụn",
+    "done": "Xong",
+    "desktopHint": "Trên máy tính, mở SkinSense bằng Chrome hoặc Edge có webcam để chụp."
+  },
+  "MarkSpots": {
+    "title": "Đánh dấu nốt mụn",
+    "back": "Quay lại",
+    "loading": "Đang tải ảnh…",
+    "tapHint": "Chạm vào ảnh để đánh dấu nốt mụn",
+    "count": "{count, plural, =0 {Chưa có nốt nào — chạm vào ảnh để thêm} other {# nốt đã đánh dấu — chạm vào ảnh để thêm}}",
+    "outside": "Chạm vào da trong các vùng mặt (trán, má, mũi, cằm)",
+    "remove": "Xoá nốt",
+    "noFace": "Không thấy khuôn mặt trong ảnh này nên không gán được nốt vào vùng.",
+    "loadError": "Không tải được ảnh.",
+    "save": "Lưu",
+    "saving": "Đang lưu…",
+    "saved": "Đã lưu",
+    "saveError": "Lưu thất bại. Vui lòng thử lại.",
+    "done": "Xong"
+  },
+  "DemoMetrics": {
+    "title": "Thông số kỹ thuật",
+    "caption": "Đo ngay trong trình duyệt này trên ảnh mẫu, ảnh không gửi lên máy chủ.",
+    "measuring": "Đang chạy mô hình…",
+    "error": "Không chạy được mô hình trên trình duyệt này.",
+    "library": "Thư viện",
+    "faceModel": "Mô hình landmark",
+    "segmenter": "Mô hình phân vùng da",
+    "engine": "Tải mô hình",
+    "landmarks": "Tìm landmark",
+    "segmentation": "Phân vùng da",
+    "zones": "Chỉ số mẩn đỏ theo vùng",
+    "landmarkCount": "Số landmark",
+    "mask": "Độ phân giải mask"
+  },
+  "Trends": {
+    "title": "Xu hướng",
+    "back": "Quay lại",
+    "days7": "7 ngày",
+    "days30": "30 ngày",
+    "redness": "Chỉ số mẩn đỏ — {zone}",
+    "down": "↓ đang giảm",
+    "up": "↑ đang tăng",
+    "flat": "→ ổn định",
+    "latest": "Gần nhất: <v>{value}</v>",
+    "noData": "Chưa có ảnh trong khoảng này",
+    "chartLabel": "Chỉ số mẩn đỏ vùng {zone}, {count} ngày có dữ liệu",
+    "day": "Ngày",
+    "value": "Giá trị",
+    "spots": "Số nốt mụn",
+    "spotsUnit": "/ {zone}",
+    "routine": "Routine hoàn thành",
+    "compare": "So sánh trước / sau",
+    "compareHint": "Cần ít nhất 2 ảnh trong khoảng này",
+    "slider": "Kéo để so sánh",
+    "disclaimer": "Không phải công cụ chẩn đoán y khoa",
+    "choose": "Chọn 2 ngày",
+    "chooseHint": "Ngày có chấm là ngày có ảnh",
+    "before": "Trước",
+    "after": "Sau",
+    "apply": "So sánh",
+    "cancel": "Hủy",
+    "prevMonth": "Tháng trước",
+    "nextMonth": "Tháng sau",
+    "today": "hôm nay"
+  },
+  "Account": {
+    "delete": "Xóa tài khoản",
+    "confirm": "Xóa vĩnh viễn tài khoản, toàn bộ ảnh, nốt mụn, chỉ số và routine của bạn? Không thể khôi phục.",
+    "deleting": "Đang xóa…",
+    "error": "Xóa không thành công. Thử lại sau.",
+    "errorKept": "Tài khoản của bạn chưa bị xóa.",
+    "title": "Xóa tài khoản?",
+    "cancel": "Hủy"
+  },
+  "History": {
+    "title": "Lịch sử ảnh",
+    "back": "Quay lại",
+    "photos": "{count, plural, other {# ảnh}}",
+    "spots": "{count, plural, other {# nốt}}",
+    "spotsMarked": "Nốt đã đánh dấu",
+    "redness": "{zone} · mẩn đỏ",
+    "markSpots": "Đánh dấu nốt mụn",
+    "delete": "Xóa ảnh",
+    "deleteTitle": "Xóa ảnh này?",
+    "deleteBody": "Xóa ảnh, nốt mụn, chỉ số, ghi chú và tag của đêm {date}. Không thể khôi phục.",
+    "deleting": "Đang xóa…",
+    "deleteError": "Xóa không thành công. Ảnh vẫn còn, thử lại sau.",
+    "cancel": "Hủy",
+    "note": "Ghi chú",
+    "notePlaceholder": "Đêm nay có gì khác?",
+    "noteTooLong": "Ghi chú tối đa {max} ký tự.",
+    "noteSaved": "Đã lưu",
+    "noteError": "Không lưu được ghi chú. Thử lại sau.",
+    "tags": "Tag",
+    "addTag": "Thêm tag",
+    "newTag": "Tag mới",
+    "removeTag": "Xóa tag {label}",
+    "tagEmpty": "Nhập tên tag.",
+    "tagTooLong": "Tag tối đa {max} ký tự.",
+    "tagDuplicate": "Ảnh đã có tag này.",
+    "tagError": "Không lưu được tag. Thử lại sau.",
+    "filters": "Lọc ảnh",
+    "all": "Tất cả",
+    "hasNote": "Có ghi chú",
+    "noMatch": "Không có ảnh nào khớp bộ lọc."
+  },
+  "Privacy": {
+    "title": "Chính sách riêng tư",
+    "back": "Trang chủ",
+    "updated": "Cập nhật 13/09/2026 · Dự án tốt nghiệp, không thu phí",
+    "intro": "SkinSense là nhật ký da cá nhân. Dữ liệu bạn tạo ra chỉ hiển thị cho chính bạn, trên chính tài khoản của bạn. Trang này liệt kê đúng những gì ứng dụng lưu và vì sao.",
+    "sections": [
+      {
+        "title": "Dữ liệu được lưu",
+        "body": [
+          "Tài khoản Google: email, tên và ảnh đại diện mà Google trả về khi bạn đăng nhập. Chỉ dùng để nhận ra bạn khi quay lại; không có mật khẩu riêng.",
+          "Ảnh mặt bạn chụp trong ứng dụng, cùng thời điểm chụp, độ sáng và trạng thái khóa cân bằng trắng.",
+          "Nốt mụn bạn tự chạm đánh dấu trên ảnh: vị trí trên khuôn mặt và vùng da tương ứng.",
+          "Chỉ số theo vùng (trán, hai má, mũi, cằm): mẩn đỏ, độ không đều và số điểm ảnh, tính ngay lúc chụp. Điểm mốc khuôn mặt và mặt nạ da dùng để tính không được lưu lại.",
+          "Routine buổi tối: các bước bạn tự đặt và những bước đã tick mỗi đêm.",
+          "Một cookie phiên đăng nhập trên trình duyệt để bạn không phải đăng nhập lại."
+        ]
+      },
+      {
+        "title": "Dữ liệu được dùng thế nào",
+        "body": [
+          "Chỉ để hiển thị nhật ký, chỉ số và xu hướng cho bạn. Không chia sẻ với ai, không bán, không quảng cáo, không phân tích hành vi, không dùng để huấn luyện mô hình.",
+          "Ứng dụng không chẩn đoán. Chỉ số là số đo tương đối trên chính ảnh của bạn, không phải kết luận y khoa."
+        ]
+      },
+      {
+        "title": "Lưu ở đâu",
+        "body": [
+          "Cơ sở dữ liệu và ảnh nằm trên Supabase (máy chủ tại Sydney, Úc). Mỗi bảng có quy tắc bảo mật theo hàng: chỉ tài khoản tạo ra dữ liệu mới đọc hoặc ghi được.",
+          "Ảnh nằm trong một kho riêng tư, không có đường dẫn công khai; ứng dụng chỉ mở ảnh qua liên kết ký tạm thời cho đúng chủ tài khoản.",
+          "Trang web chạy trên Vercel. Ứng dụng Android chỉ gọi thẳng đến Supabase."
+        ]
+      },
+      {
+        "title": "Xóa dữ liệu",
+        "body": [
+          "Nút “Xóa tài khoản” trong ứng dụng xóa ngay toàn bộ ảnh, nốt mụn, chỉ số, routine và tài khoản của bạn. Không có bản sao được giữ lại và không thể khôi phục.",
+          "Bạn cũng có thể thu hồi quyền của SkinSense trong phần bảo mật của tài khoản Google."
+        ]
+      },
+      {
+        "title": "Liên hệ",
+        "body": [
+          "Câu hỏi về dữ liệu: [email liên hệ]"
+        ]
+      }
+    ]
+  }
+}

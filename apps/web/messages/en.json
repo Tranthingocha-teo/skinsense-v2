@@ -1,0 +1,431 @@
+{
+  "Common": {
+    "loading": "Loading…",
+    "loadError": "Couldn't load your data. Check your connection and try again.",
+    "retry": "Try again"
+  },
+  "NotFound": {
+    "title": "Page not found",
+    "body": "This link doesn't exist or has moved.",
+    "home": "Back to home"
+  },
+  "SignIn": {
+    "error": "Sign-in failed. Please try again."
+  },
+  "Locale": {
+    "label": "Language"
+  },
+  "Nav": {
+    "label": "Navigation",
+    "today": "Today",
+    "capture": "Capture",
+    "trends": "Trends",
+    "settings": "Settings"
+  },
+  "Settings": {
+    "title": "Settings",
+    "language": "Language",
+    "languageLabel": "App language",
+    "account": "Google account",
+    "display": "Display",
+    "support": "Support",
+    "privacy": "Privacy policy",
+    "data": "Data",
+    "history": "Photo history"
+  },
+  "Feedback": {
+    "title": "Feedback",
+    "back": "Back to Settings",
+    "kind": "Feedback type",
+    "bug": "Bug report",
+    "idea": "Idea",
+    "other": "Other",
+    "message": "Message",
+    "placeholder": "What isn't working, or what would you like SkinSense to do?",
+    "attach": "Attach browser and app version",
+    "noData": "Your photos and skin data are never attached.",
+    "tooLong": "Keep it to {max} characters.",
+    "send": "Send feedback",
+    "error": "Sending failed. Please try again.",
+    "sent": "Feedback sent. Thank you!"
+  },
+  "Onboarding": {
+    "title": "A skin diary, one photo a night.",
+    "lightTitle": "Same place, same light",
+    "lightBody": "Sit facing a window or a white lamp. Keep the same distance and angle as last time.",
+    "webcamTitle": "Your browser will ask for the webcam",
+    "webcamBody": "Only when you open Capture. Photos stay in your private storage.",
+    "diagnosisTitle": "Not a diagnosis",
+    "diagnosisBody": "The redness index compares each zone with your own skin in the same photo.",
+    "start": "Get started",
+    "skip": "Skip"
+  },
+  "Demo": {
+    "title": "You're viewing the demo.",
+    "note": "Changes are saved only in this browser.",
+    "persona": "Sample profile: oily skin, cheek breakouts · 90 days",
+    "reset": "Reset",
+    "signIn": "Sign in with Google"
+  },
+  "Today": {
+    "title": "Today",
+    "captureTonight": "Take tonight's photo",
+    "captureAnother": "Take another photo",
+    "noTonight": "No photo tonight yet",
+    "tonightSaved": "Tonight's photo is saved",
+    "last": "Last: {when} · {count, plural, one {# spot marked} other {# spots marked}}",
+    "noPhoto": "No photos yet. Take your first one to start the diary.",
+    "photoPlaceholder": "Photo · placeholder",
+    "markSpots": "Mark spots →",
+    "captureStreak": "Capture streak",
+    "routineStreak": "Routine streak",
+    "nights": "{count, plural, one {night in a row} other {nights in a row}}",
+    "redness7": "Redness index, last 7 days",
+    "trends": "Trends →"
+  },
+  "Shell": {
+    "signOut": "Sign out"
+  },
+  "Routine": {
+    "title": "Tonight's routine",
+    "progress": "{done}/{total} done",
+    "addStep": "Add step",
+    "newStepPlaceholder": "New step",
+    "more": "Options for {label}",
+    "rename": "Rename",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "defaults": [
+      "Makeup remover",
+      "Cleanser",
+      "Acne serum",
+      "Moisturizer"
+    ],
+    "edit": "Edit routine",
+    "back": "Back",
+    "duplicate": "This step already exists"
+  },
+  "Landing": {
+    "title": "SkinSense",
+    "tagline": "A private skin diary, one photo a night.",
+    "navHow": "How it works",
+    "navAi": "On-device AI",
+    "navFaq": "FAQ",
+    "navPrivacy": "Privacy",
+    "navSignIn": "Sign in",
+    "signInGoogle": "Sign in with Google",
+    "headline": "Track your skin, one photo a night.",
+    "subtitle": "Guided capture, tap-marked spots, tonight's routine ticked off — see how each zone of your skin trends over time.",
+    "finePrint": "Free · Private · Not a medical diagnosis tool",
+    "sceneCapture": "Guided capture",
+    "sceneMark": "Tap to mark spots",
+    "sceneTrend": "Trends per zone",
+    "cardForehead": "Forehead · redness",
+    "cardDown": "↓ going down",
+    "cardStreak": "Routine streak",
+    "cardNights": "nights",
+    "cardLastNight": "Last night",
+    "cardSpots": "spots marked",
+    "cardSpark": "7 days · Forehead",
+    "howEyebrow": "How it works",
+    "howTitle": "Four steps, every night.",
+    "steps": [
+      {
+        "title": "Consistent photos",
+        "body": "A guide frame, a ghost of the previous photo, locked white balance — every photo good enough to compare for real."
+      },
+      {
+        "title": "Mark what you see",
+        "body": "Tap to mark each spot right on the photo, no AI guessing for you."
+      },
+      {
+        "title": "Tick tonight's routine",
+        "body": "Steps you set yourself. Tick what you did each night and keep your streak going."
+      },
+      {
+        "title": "Trends per zone",
+        "body": "Forehead, both cheeks, nose, chin — redness index and spot counts over 7/30 days."
+      }
+    ],
+    "aiEyebrow": "On-device AI",
+    "aiTitle": "Analysed at capture time, on your device.",
+    "aiBody": "Your face, skin zones and redness index are computed right in the browser or on the phone. The face landmarks and skin mask used to compute them are not stored.",
+    "aiSteps": [
+      {
+        "title": "Face landmarks",
+        "body": "MediaPipe on web · ML Kit + TFLite on Android"
+      },
+      {
+        "title": "Skin mask",
+        "body": "Separates skin from hair, eyes and background"
+      },
+      {
+        "title": "Five zones",
+        "body": "Forehead, left cheek, right cheek, nose, chin — built from the landmarks"
+      },
+      {
+        "title": "Redness index (a*)",
+        "body": "Each zone's a* compared with all the skin in the same photo"
+      }
+    ],
+    "compareTitle": "Web or Android?",
+    "compareWeb": "Web (desktop)",
+    "compareAndroid": "Android (APK)",
+    "compareWebShort": "Web",
+    "compareAndroidShort": "Android",
+    "compareYes": "Yes",
+    "compareRows": [
+      {
+        "label": "Guided capture",
+        "web": "Webcam",
+        "android": "Front camera"
+      },
+      {
+        "label": "Spots, routine, trends",
+        "web": "Yes",
+        "android": "Yes"
+      },
+      {
+        "label": "No install needed",
+        "web": "Yes",
+        "android": "—"
+      },
+      {
+        "label": "Phone browsers, iPhone",
+        "web": "Not supported yet",
+        "android": "—"
+      }
+    ],
+    "qrTitle": "Scan to get the APK",
+    "apkTitle": "Download for Android",
+    "qrBody": "arm64 build, installed directly, not through the Play Store.",
+    "qrAlt": "QR code to download the Android APK",
+    "faqTitle": "Frequently asked questions",
+    "faq": [
+      {
+        "q": "How is the redness index computed?",
+        "a": "At each capture the app finds the face landmarks, separates the skin and splits it into five zones. Each skin pixel's colour is converted to CIELAB, where the a* axis measures redness. A zone's redness index is the median a* of that zone minus the median a* of all the skin in the same photo: a positive number means the zone is redder than the rest of your own skin. It is a relative measure for tracking over time, with no disease threshold."
+      },
+      {
+        "q": "Does SkinSense diagnose skin conditions?",
+        "a": "No. It is a personal diary: no severity thresholds, no \"skin health\" score, and it does not replace a dermatologist."
+      },
+      {
+        "q": "Where are my photos stored, and who can see them?",
+        "a": "Photos and readings live on Supabase (servers in Sydney, Australia) in a private store. Row-level security lets only your own account read or write them, and photos open only through short-lived signed links. Nothing is shared, sold or used to train models; Delete account removes everything immediately."
+      },
+      {
+        "q": "Does SkinSense cost anything?",
+        "a": "No. SkinSense is a graduation project: free, no ads, no paid plan."
+      },
+      {
+        "q": "Which devices does it work on?",
+        "a": "Web: Chrome or Edge on a desktop or laptop with a webcam. Android: phones on Android 7.0 or newer with an arm64 chip, installed from the APK file. Phone browsers and iPhone are not supported yet."
+      }
+    ],
+    "trustBadge": "Not a medical diagnosis",
+    "trustTitle": "This is a personal diary, not a diagnosis.",
+    "trustBody": "SkinSense does not replace a dermatologist. It is a tool for observing your own skin consistently — no severity thresholds, no \"skin health\" score.",
+    "downloadAndroid": "Download for Android (APK)",
+    "privacyPolicy": "Privacy policy",
+    "tryDemo": "Try it, no sign-in needed",
+    "tryDemoShort": "Try the demo"
+  },
+  "Capture": {
+    "title": "Tonight's photo",
+    "back": "Back",
+    "apkBanner": "Capture in a phone browser is not supported. Use the Android app instead.",
+    "apkLink": "Download the APK",
+    "goodLight": "Good light",
+    "issues": {
+      "noFace": "Bring your face into the frame",
+      "dark": "Too dark",
+      "bright": "Too bright",
+      "far": "Move closer",
+      "close": "Move back",
+      "offCenter": "Center your face",
+      "turned": "Face the camera",
+      "blurry": "Blurry"
+    },
+    "placeFace": "Place your face in the frame",
+    "keepDistance": "Keep the same distance and angle as last time",
+    "shutter": "Take photo",
+    "loading": "Opening camera…",
+    "analysing": "Analysing…",
+    "cameraError": "Could not open the camera. Allow camera access and reload.",
+    "qualityWarning": "This photo may give misleading readings:",
+    "retake": "Retake",
+    "save": "Save",
+    "saveAnyway": "Save anyway",
+    "saving": "Saving…",
+    "saveError": "Saving failed. Please try again.",
+    "savedTitle": "Saved",
+    "zone": "Zone",
+    "redness": "Redness index",
+    "unevenness": "Unevenness",
+    "zones": {
+      "forehead": "Forehead",
+      "leftCheek": "Left cheek",
+      "rightCheek": "Right cheek",
+      "nose": "Nose",
+      "chin": "Chin"
+    },
+    "disclaimer": "Not a medical diagnosis. The redness index compares each zone with your own skin in the same photo.",
+    "again": "Take another",
+    "markSpots": "Mark spots",
+    "done": "Done",
+    "desktopHint": "On a computer, open SkinSense in Chrome or Edge with a webcam to take photos."
+  },
+  "MarkSpots": {
+    "title": "Mark spots",
+    "back": "Back",
+    "loading": "Loading photo…",
+    "tapHint": "Tap the photo to mark a spot",
+    "count": "{count, plural, =0 {No spots yet — tap the photo to add} one {# spot marked — tap the photo to add} other {# spots marked — tap the photo to add}}",
+    "outside": "Tap on skin inside the face zones (forehead, cheeks, nose, chin)",
+    "remove": "Remove spot",
+    "noFace": "No face found in this photo, so spots can't be assigned to zones.",
+    "loadError": "Could not load the photo.",
+    "save": "Save",
+    "saving": "Saving…",
+    "saved": "Saved",
+    "saveError": "Saving failed. Please try again.",
+    "done": "Done"
+  },
+  "DemoMetrics": {
+    "title": "Technical metrics",
+    "caption": "Measured live in this browser on the sample photo; nothing is uploaded.",
+    "measuring": "Running the models…",
+    "error": "Could not run the models in this browser.",
+    "library": "Library",
+    "faceModel": "Landmark model",
+    "segmenter": "Skin segmentation model",
+    "engine": "Model load",
+    "landmarks": "Landmark detection",
+    "segmentation": "Skin segmentation",
+    "zones": "Redness index per zone",
+    "landmarkCount": "Landmarks",
+    "mask": "Mask resolution"
+  },
+  "Trends": {
+    "title": "Trends",
+    "back": "Back",
+    "days7": "7 days",
+    "days30": "30 days",
+    "redness": "Redness index — {zone}",
+    "down": "↓ trending down",
+    "up": "↑ trending up",
+    "flat": "→ steady",
+    "latest": "Latest: <v>{value}</v>",
+    "noData": "No photos in this window yet",
+    "chartLabel": "Redness index for {zone}, {count} days with data",
+    "day": "Day",
+    "value": "Value",
+    "spots": "Spots",
+    "spotsUnit": "/ {zone}",
+    "routine": "Routine completed",
+    "compare": "Before / after",
+    "compareHint": "Needs at least 2 photos in this window",
+    "slider": "Drag to compare",
+    "disclaimer": "Not a medical diagnosis",
+    "choose": "Choose 2 dates",
+    "chooseHint": "Days with a dot have photos",
+    "before": "Before",
+    "after": "After",
+    "apply": "Compare",
+    "cancel": "Cancel",
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month",
+    "today": "today"
+  },
+  "Account": {
+    "delete": "Delete account",
+    "confirm": "Permanently delete your account and every photo, spot, reading and routine? This cannot be undone.",
+    "deleting": "Deleting…",
+    "error": "Deletion failed. Try again later.",
+    "errorKept": "Your account has not been deleted.",
+    "title": "Delete account?",
+    "cancel": "Cancel"
+  },
+  "History": {
+    "title": "Photo history",
+    "back": "Back",
+    "photos": "{count, plural, one {# photo} other {# photos}}",
+    "spots": "{count, plural, one {# spot} other {# spots}}",
+    "spotsMarked": "Spots marked",
+    "redness": "{zone} · redness",
+    "markSpots": "Mark spots",
+    "delete": "Delete photo",
+    "deleteTitle": "Delete this photo?",
+    "deleteBody": "Deletes the photo, spots, readings, note and tags from the night of {date}. This cannot be undone.",
+    "deleting": "Deleting…",
+    "deleteError": "Deletion failed. The photo is still here; try again later.",
+    "cancel": "Cancel",
+    "note": "Note",
+    "notePlaceholder": "What was different tonight?",
+    "noteTooLong": "Keep the note to {max} characters.",
+    "noteSaved": "Saved",
+    "noteError": "Couldn't save the note. Try again later.",
+    "tags": "Tags",
+    "addTag": "Add tag",
+    "newTag": "New tag",
+    "removeTag": "Remove tag {label}",
+    "tagEmpty": "Type a tag name.",
+    "tagTooLong": "Keep tags to {max} characters.",
+    "tagDuplicate": "This photo already has that tag.",
+    "tagError": "Couldn't save the tags. Try again later.",
+    "filters": "Filter photos",
+    "all": "All",
+    "hasNote": "Has a note",
+    "noMatch": "No photos match this filter."
+  },
+  "Privacy": {
+    "title": "Privacy policy",
+    "back": "Home",
+    "updated": "Updated 13 Sep 2026 · Graduation project, free of charge",
+    "intro": "SkinSense is a personal skin diary. What you create is shown only to you, on your own account. This page lists exactly what the app stores and why.",
+    "sections": [
+      {
+        "title": "What is stored",
+        "body": [
+          "Your Google account: the email, name and avatar Google returns when you sign in. Used only to recognise you when you come back; there is no separate password.",
+          "The face photos you take in the app, with the time taken, brightness and whether white balance was locked.",
+          "Spots you tap on a photo yourself: their position on the face and the matching skin zone.",
+          "Per-zone readings (forehead, both cheeks, nose, chin): redness, unevenness and pixel count, computed at capture time. The face landmarks and skin mask used to compute them are not kept.",
+          "Your evening routine: the steps you define and which ones you ticked each night.",
+          "A session cookie in the browser so you do not have to sign in every visit."
+        ]
+      },
+      {
+        "title": "How it is used",
+        "body": [
+          "Only to show you your diary, readings and trends. Nothing is shared, sold, used for ads, behavioural analytics or model training.",
+          "The app does not diagnose. Readings are relative measurements on your own photos, not medical conclusions."
+        ]
+      },
+      {
+        "title": "Where it lives",
+        "body": [
+          "The database and photos are on Supabase (servers in Sydney, Australia). Every table has row-level security: only the account that created a row can read or write it.",
+          "Photos sit in a private bucket with no public URL; the app opens them through short-lived signed links for the owner only.",
+          "The website runs on Vercel. The Android app talks directly to Supabase."
+        ]
+      },
+      {
+        "title": "Deleting your data",
+        "body": [
+          "The “Delete account” button in the app immediately removes every photo, spot, reading, routine and the account itself. No copy is kept and it cannot be undone.",
+          "You can also revoke SkinSense's access in your Google account's security settings."
+        ]
+      },
+      {
+        "title": "Contact",
+        "body": [
+          "Questions about your data: [contact email]"
+        ]
+      }
+    ]
+  }
+}

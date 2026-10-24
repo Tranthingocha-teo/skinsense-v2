@@ -1,0 +1,9 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/ping",
+      "schedule": "0 3 * * *"
+    }
+  ],
+  "installCommand": "cd ../.. && curl -fsSL https://bun.sh/install | bash -s bun-v1.4.0 >/dev/null 2>&1 && ~/.bun/bin/bun install --frozen-lockfile"
+}
