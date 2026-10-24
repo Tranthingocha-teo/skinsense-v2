@@ -11,7 +11,9 @@
     "test": "turbo test",
     "doctor": "bun run scripts/doctor.ts",
     "seed": "bun run scripts/seed.ts",
-    "audit:lighthouse": "bun run scripts/lighthouse.ts"
+    "audit:lighthouse": "bun run scripts/lighthouse.ts",
+    "mobile:mirror": "./scripts/mobile-mirror.sh",
+    "mobile:dev": "./scripts/mobile-mirror.sh & bun run --filter mobile start"
   },
   "devDependencies": {
     "shadcn": "^4.21.0",
