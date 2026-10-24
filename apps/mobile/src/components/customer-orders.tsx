@@ -17,6 +17,7 @@ import {
   Package,
   QrCode,
   RefreshCw,
+  ShieldCheck,
   ShoppingBag,
   Store,
   Truck,
@@ -233,7 +234,7 @@ export function CustomerOrders() {
             <Text className="mt-3 text-[15px] font-semibold">Chưa có đơn hàng nào</Text>
             <Text className="mt-1 text-center text-[12.5px] text-muted-foreground">
               {selectedFilter === 'all'
-                ? 'Bạn chưa đặt mua sản phẩm nào trên SkinSense Market.'
+                ? 'Bạn chưa đặt mua sản phẩm nào từ SkinSense Boutique.'
                 : `Không có đơn hàng nào ở trạng thái này.`}
             </Text>
             <Pressable
@@ -258,8 +259,8 @@ export function CustomerOrders() {
                 {/* Order Top Bar: Shop info & status */}
                 <View className="flex-row items-center justify-between border-b border-border/40 pb-2.5">
                   <View className="flex-row items-center gap-1.5">
-                    <Icon as={Store} size={15} className="text-primary" />
-                    <Text className="text-[13.5px] font-semibold">{order.shopName}</Text>
+                    <Icon as={ShieldCheck} size={15} className="text-primary" />
+                    <Text className="text-[13.5px] font-semibold">{order.shopName || 'SkinSense Boutique'}</Text>
                   </View>
                   {renderStatusBadge(order.status)}
                 </View>

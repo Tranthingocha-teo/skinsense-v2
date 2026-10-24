@@ -5,23 +5,23 @@ import {
   type Order,
   type PaymentMethod,
   type Product,
-  type Shop,
-  type ShopListing,
 } from '@skinsense/domain';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import {
+  AlertTriangle,
   BadgeCheck,
   CheckCircle2,
   ChevronLeft,
-  Clock,
   Copy,
   CreditCard,
+  Minus,
+  Plus,
   QrCode,
   ShieldCheck,
   ShoppingBag,
-  Star,
+  Sparkles,
   Truck,
   X,
 } from 'lucide-react-native';
@@ -39,19 +39,24 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
-import { createOrder, loadListings, loadShops } from '@/lib/marketplace';
+import {
+  createOrder,
+  getStoreProductById,
+  SKINSENSE_STORE_INFO,
+  type StoreProduct,
+} from '@/lib/marketplace';
 
 export function MarketProductShops({ productId }: { productId: string }) {
   const router = useRouter();
   const { top, bottom } = useSafeAreaInsets();
-  const product = getProductById(productId);
 
-  const [shops, setShops] = useState<Shop[]>([]);
-  const [listings, setListings] = useState<ShopListing[]>([]);
+  const [product, setProduct] = useState<StoreProduct | Product | undefined>(
+    getProductById(productId),
+  );
   const [loading, setLoading] = useState(true);
 
-  // Checkout modal state
-  const [selectedShop, setSelectedShop] = useState<{ shop: Shop; listing: ShopListing } | null>(null);
+  // Form states
+  const [quantity, setQuantity] = useState(1);
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
@@ -62,19 +67,27 @@ export function MarketProductShops({ productId }: { productId: string }) {
 
   useEffect(() => {
     async function init() {
-      const allShops = await loadShops();
-      const productListings = await loadListings(productId);
-      const approvedShops = allShops.filter((s) => s.status === 'approved');
-      setShops(approvedShops);
-      setListings(productListings);
+      const p = await getStoreProductById(productId);
+      if (p) {
+        setProduct(p);
+      }
       setLoading(false);
     }
     void init();
   }, [productId]);
 
+  if (loading) {
+    return (
+      <View className="flex-1 items-center justify-center bg-background">
+        <ActivityIndicator size="large" color="#4ade80" />
+      </View>
+    );
+  }
+
   if (!product) {
     return (
       <View className="flex-1 items-center justify-center p-6 bg-background">
+        <Icon as={AlertTriangle} size={40} className="text-warning mb-3" />
         <Text className="text-center text-lg font-medium">Không tìm thấy sản phẩm</Text>
         <Pressable
           role="button"
@@ -87,41 +100,38 @@ export function MarketProductShops({ productId }: { productId: string }) {
     );
   }
 
-  // Combine listings with shop details
-  const shopOffers = listings
-    .map((listing) => {
-      const shop = shops.find((s) => s.id === listing.shopId);
-      return shop ? { shop, listing } : null;
-    })
-    .filter(Boolean) as { shop: Shop; listing: ShopListing }[];
+  const unitPrice = product.priceVnd;
+  const totalAmount = unitPrice * quantity;
+  const tempOrderMemo = `SS${productId.slice(0, 6).toUpperCase()}${Date.now().toString().slice(-4)}`;
+  const qrUrl = generateVietQrUrl({
+    amount: totalAmount,
+    memo: tempOrderMemo,
+  });
 
   async function handleConfirmOrder() {
-    if (!selectedShop) return;
+    if (!product) return;
     if (!customerName.trim()) {
-      Alert.alert('Vui lòng nhập tên', 'Bạn hãy nhập họ tên người nhận.');
+      Alert.alert('Thiếu thông tin', 'Vui lòng nhập họ và tên người nhận hàng');
       return;
     }
     if (!customerPhone.trim() || customerPhone.trim().length < 9) {
-      Alert.alert('Số điện thoại không hợp lệ', 'Vui lòng nhập số điện thoại chính xác.');
+      Alert.alert('Số điện thoại không hợp lệ', 'Vui lòng nhập số điện thoại liên hệ chính xác');
       return;
     }
     if (!customerAddress.trim()) {
-      Alert.alert('Thiếu địa chỉ', 'Vui lòng nhập địa chỉ nhận hàng.');
+      Alert.alert('Thiếu địa chỉ', 'Vui lòng nhập địa chỉ nhận hàng chi tiết');
       return;
     }
 
     setSubmitting(true);
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-
     try {
-      const order = await createOrder({
-        shopId: selectedShop.shop.id,
-        shopName: selectedShop.shop.shopName,
-        productId: product!.id,
-        productName: product!.name,
-        productImage: product!.imageUrl,
-        priceVnd: selectedShop.listing.priceVnd,
-        quantity: 1,
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      const newOrder = await createOrder({
+        productId: product.id,
+        productName: product.name,
+        productImage: product.imageUrl,
+        priceVnd: unitPrice,
+        quantity,
         customerName: customerName.trim(),
         customerPhone: customerPhone.trim(),
         customerAddress: customerAddress.trim(),
@@ -129,404 +139,351 @@ export function MarketProductShops({ productId }: { productId: string }) {
         paymentMethod,
       });
 
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-      setPlacedOrder(order);
-    } catch (error) {
-      Alert.alert('Đặt hàng thất bại', 'Có lỗi xảy ra, vui lòng thử lại.');
+      setPlacedOrder(newOrder);
+    } catch {
+      Alert.alert('Lỗi', 'Không thể hoàn tất đơn hàng. Vui lòng thử lại.');
     } finally {
       setSubmitting(false);
     }
   }
 
-  const vietQrUrl =
-    selectedShop &&
-    generateVietQrUrl({
-      amount: selectedShop.listing.priceVnd,
-      memo: `SKIN-${productId.slice(0, 6)}`,
-    });
-
   return (
-    <View className="flex-1 bg-background">
-      {/* Top Header */}
-      <View
-        style={{ paddingTop: Math.max(top, 12) }}
-        className="flex-row items-center justify-between border-b border-border/40 px-3 pb-2.5 bg-background/95"
-      >
+    <View className="flex-1 bg-background" style={{ paddingTop: top, paddingBottom: bottom }}>
+      {/* Header */}
+      <View className="flex-row items-center justify-between border-b border-border px-4 py-3">
         <Pressable
           role="button"
           accessibilityLabel="Quay lại"
           onPress={() => router.back()}
-          className="size-11 items-center justify-center rounded-pill active:bg-surface-2"
+          className="size-9 items-center justify-center rounded-pill active:bg-surface-2"
         >
-          <Icon as={ChevronLeft} size={24} strokeWidth={1.5} className="text-foreground" />
+          <Icon as={ChevronLeft} size={22} className="text-foreground" />
         </Pressable>
-        <Text className="font-display text-[18px] font-medium">Gian hàng chính hãng</Text>
-        <View className="size-11" />
+        <View className="items-center">
+          <Text className="text-[17px] font-semibold text-foreground">
+            Đặt Mua Chính Hãng SkinSense
+          </Text>
+          <Text className="text-[12px] text-muted-foreground">
+            Phòng khám & Dược mỹ phẩm độc quyền
+          </Text>
+        </View>
+        <View className="size-9" />
       </View>
 
       <ScrollView
-        contentContainerClassName="gap-4 px-5 pb-24 pt-3"
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ padding: 16, paddingBottom: 120, gap: 16 }}
       >
-        {/* Product Compact Card */}
-        <View className="flex-row items-center gap-3.5 rounded-card border border-border bg-card p-3.5">
-          <View className="size-20 overflow-hidden rounded-control bg-surface-2">
+        {/* Product Card */}
+        <View className="rounded-card border border-border bg-card p-4 gap-3">
+          <View className="flex-row gap-3">
             <Image
               source={{ uri: product.imageUrl }}
-              style={{ width: '100%', height: '100%' }}
+              className="size-20 rounded-control bg-surface-2 border border-border"
               contentFit="cover"
             />
-          </View>
-          <View className="flex-1 gap-1">
-            <Text className="text-[11px] font-semibold uppercase tracking-wider text-primary">
-              {product.brand}
-            </Text>
-            <Text numberOfLines={2} className="text-[14px] font-medium leading-[19px]">
-              {product.name}
-            </Text>
-            <Text className="text-[15px] font-bold text-primary">{product.priceFormatted}</Text>
-          </View>
-        </View>
-
-        {/* Section Header */}
-        <View className="mt-1 flex-row items-center justify-between">
-          <View>
-            <Text role="heading" aria-level="2" className="text-[17px] font-semibold">
-              Các Shop được kiểm duyệt ({shopOffers.length})
-            </Text>
-            <Text className="text-[12.5px] font-light text-muted-foreground">
-              Cam kết 100% hàng chính hãng, kiểm định bởi SkinSense
-            </Text>
-          </View>
-        </View>
-
-        {/* List of Verified Shops */}
-        {loading ? (
-          <View className="py-10 items-center justify-center">
-            <ActivityIndicator size="small" color="#666" />
-            <Text className="mt-2 text-[13px] text-muted-foreground">Đang tải danh sách gian hàng...</Text>
-          </View>
-        ) : shopOffers.length === 0 ? (
-          <View className="py-10 items-center justify-center rounded-card border border-border bg-card p-6">
-            <Icon as={ShoppingBag} size={32} className="text-muted-foreground" />
-            <Text className="mt-3 text-[14.5px] font-medium">Chưa có gian hàng nào cho sản phẩm này</Text>
-            <Text className="mt-1 text-center text-[12.5px] text-muted-foreground">
-              Các đối tác đang chuẩn bị kho hàng. Vui lòng quay lại sau.
-            </Text>
-          </View>
-        ) : (
-          shopOffers.map(({ shop, listing }) => (
-            <View
-              key={listing.id}
-              className="gap-3 rounded-card border border-border bg-card p-4 shadow-sm"
-            >
-              {/* Shop Header */}
-              <View className="flex-row items-start justify-between">
-                <View className="flex-row items-center gap-3">
-                  <View className="size-11 overflow-hidden rounded-pill bg-surface-2 border border-border">
-                    <Image
-                      source={{ uri: shop.avatarUrl }}
-                      style={{ width: '100%', height: '100%' }}
-                      contentFit="cover"
-                    />
-                  </View>
-                  <View>
-                    <View className="flex-row items-center gap-1.5">
-                      <Text className="text-[15px] font-semibold">{shop.shopName}</Text>
-                      {shop.isOfficial && (
-                        <Icon as={BadgeCheck} size={16} className="text-primary fill-primary/20" />
-                      )}
-                    </View>
-                    <View className="mt-0.5 flex-row items-center gap-2">
-                      <View className="flex-row items-center gap-1">
-                        <Icon as={Star} size={12} className="text-amber-500 fill-amber-500" />
-                        <Text className="text-[12px] font-medium">{shop.rating.toFixed(1)}</Text>
-                      </View>
-                      <Text className="text-[11.5px] text-muted-foreground">· {shop.reviewCount} đánh giá</Text>
-                    </View>
-                  </View>
-                </View>
-                {shop.isOfficial && (
-                  <View className="rounded-pill bg-primary/10 px-2.5 py-0.5">
-                    <Text className="text-[10.5px] font-medium text-primary">Official Partner</Text>
-                  </View>
-                )}
-              </View>
-
-              {/* Delivery & Stock Info */}
-              <View className="flex-row items-center justify-between border-t border-border/60 pt-2.5">
-                <View className="flex-row items-center gap-1.5">
-                  <Icon as={Truck} size={14} className="text-muted-foreground" />
-                  <Text className="text-[12.5px] text-muted-foreground">{listing.deliveryTime}</Text>
-                </View>
-                <Text className="text-[12px] text-muted-foreground">Kho còn: {listing.stock}</Text>
-              </View>
-
-              {/* Price & Action */}
-              <View className="flex-row items-center justify-between border-t border-border/60 pt-3">
-                <View>
-                  <Text className="text-[11px] text-muted-foreground">Giá gian hàng</Text>
-                  <Text className="text-[19px] font-bold text-foreground">
-                    {listing.priceFormatted}
-                  </Text>
-                </View>
-                <Pressable
-                  role="button"
-                  accessibilityLabel={`Chọn mua từ ${shop.shopName}`}
-                  onPress={() => {
-                    setSelectedShop({ shop, listing });
-                  }}
-                  className="h-10 px-5 flex-row items-center justify-center rounded-control bg-primary active:opacity-90"
-                >
-                  <Text className="text-[14px] font-semibold text-primary-foreground">
-                    Chọn mua
-                  </Text>
-                </Pressable>
-              </View>
-            </View>
-          ))
-        )}
-      </ScrollView>
-
-      {/* Fast Checkout Modal */}
-      <Modal
-        visible={selectedShop !== null && placedOrder === null}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setSelectedShop(null)}
-      >
-        <View className="flex-1 justify-end bg-black/60">
-          <View
-            style={{ paddingBottom: Math.max(bottom, 16) }}
-            className="max-h-[88%] rounded-t-[28px] border-t border-border bg-background p-5 shadow-2xl"
-          >
-            {/* Modal Header */}
-            <View className="flex-row items-center justify-between pb-3 border-b border-border">
-              <View>
-                <Text className="text-[17px] font-bold">Đặt mua nhanh</Text>
-                <Text className="text-[12px] text-muted-foreground">
-                  Gian hàng: {selectedShop?.shop.shopName}
+            <View className="flex-1 justify-center gap-1">
+              <View className="flex-row items-center gap-1.5">
+                <Text className="text-[12px] font-semibold text-primary uppercase">
+                  {product.brand}
                 </Text>
+                <Icon as={BadgeCheck} size={14} className="text-primary" />
               </View>
+              <Text className="text-[15px] font-medium text-foreground" numberOfLines={2}>
+                {product.name}
+              </Text>
+              <Text className="text-[16px] font-bold text-primary">
+                {formatVnd(unitPrice)}
+              </Text>
+            </View>
+          </View>
+
+          {/* Guarantee Badges */}
+          <View className="flex-row flex-wrap gap-2 pt-2 border-t border-border">
+            <View className="flex-row items-center gap-1 bg-success/10 px-2.5 py-1 rounded-pill">
+              <Icon as={ShieldCheck} size={13} className="text-success" />
+              <Text className="text-[11.5px] font-medium text-success">100% Chính Hãng</Text>
+            </View>
+            <View className="flex-row items-center gap-1 bg-primary/10 px-2.5 py-1 rounded-pill">
+              <Icon as={Truck} size={13} className="text-primary" />
+              <Text className="text-[11.5px] font-medium text-primary">Giao Nhanh 1-2 Ngày</Text>
+            </View>
+            <View className="flex-row items-center gap-1 bg-surface-2 px-2.5 py-1 rounded-pill">
+              <Icon as={CheckCircle2} size={13} className="text-muted-foreground" />
+              <Text className="text-[11.5px] text-muted-foreground">Dược sĩ đồng hành</Text>
+            </View>
+          </View>
+
+          {/* Quantity Selector */}
+          <View className="flex-row items-center justify-between pt-2 border-t border-border">
+            <Text className="text-[14px] font-medium text-foreground">Số lượng mua</Text>
+            <View className="flex-row items-center gap-3 bg-surface-2 rounded-control px-2 py-1 border border-border">
               <Pressable
                 role="button"
-                onPress={() => setSelectedShop(null)}
-                className="size-9 items-center justify-center rounded-pill bg-surface-2"
+                accessibilityLabel="Giảm số lượng"
+                onPress={() => setQuantity((q) => Math.max(1, q - 1))}
+                className="size-7 items-center justify-center rounded-pill bg-card active:opacity-70"
               >
-                <Icon as={X} size={18} className="text-foreground" />
+                <Icon as={Minus} size={14} className="text-foreground" />
+              </Pressable>
+              <Text className="text-[15px] font-bold text-foreground w-6 text-center">
+                {quantity}
+              </Text>
+              <Pressable
+                role="button"
+                accessibilityLabel="Tăng số lượng"
+                onPress={() => setQuantity((q) => q + 1)}
+                className="size-7 items-center justify-center rounded-pill bg-card active:opacity-70"
+              >
+                <Icon as={Plus} size={14} className="text-foreground" />
               </Pressable>
             </View>
+          </View>
+        </View>
 
-            <ScrollView className="mt-3" showsVerticalScrollIndicator={false}>
-              {/* Shipping Form */}
-              <View className="gap-3">
-                <Text className="text-[13.5px] font-semibold">Thông tin giao hàng</Text>
-                <View className="gap-2.5">
-                  <TextInput
-                    value={customerName}
-                    onChangeText={setCustomerName}
-                    placeholder="Họ và tên người nhận *"
-                    placeholderTextColor="#888"
-                    className="h-12 rounded-control border border-border bg-card px-3.5 text-[14px] text-foreground"
-                  />
-                  <TextInput
-                    value={customerPhone}
-                    onChangeText={setCustomerPhone}
-                    placeholder="Số điện thoại nhận hàng *"
-                    placeholderTextColor="#888"
-                    keyboardType="phone-pad"
-                    className="h-12 rounded-control border border-border bg-card px-3.5 text-[14px] text-foreground"
-                  />
-                  <TextInput
-                    value={customerAddress}
-                    onChangeText={setCustomerAddress}
-                    placeholder="Địa chỉ giao hàng (Số nhà, đường, phường/xã) *"
-                    placeholderTextColor="#888"
-                    className="h-12 rounded-control border border-border bg-card px-3.5 text-[14px] text-foreground"
-                  />
-                  <TextInput
-                    value={note}
-                    onChangeText={setNote}
-                    placeholder="Ghi chú cho gian hàng (tùy chọn)"
-                    placeholderTextColor="#888"
-                    className="h-12 rounded-control border border-border bg-card px-3.5 text-[14px] text-foreground"
-                  />
-                </View>
+        {/* Customer Delivery Info */}
+        <View className="rounded-card border border-border bg-card p-4 gap-3">
+          <Text className="text-[15px] font-semibold text-foreground">
+            Thông tin nhận hàng
+          </Text>
 
-                {/* Payment Selection */}
-                <Text className="mt-2 text-[13.5px] font-semibold">Hình thức thanh toán</Text>
-                <View className="gap-2">
-                  {/* COD */}
-                  <Pressable
-                    role="radio"
-                    aria-checked={paymentMethod === 'cod'}
-                    onPress={() => setPaymentMethod('cod')}
-                    className={`flex-row items-center justify-between rounded-control border p-3.5 ${
-                      paymentMethod === 'cod'
-                        ? 'border-primary bg-primary/5'
-                        : 'border-border bg-card'
-                    }`}
-                  >
-                    <View className="flex-row items-center gap-3">
-                      <Icon as={Truck} size={18} className="text-foreground" />
-                      <View>
-                        <Text className="text-[14px] font-medium">Thanh toán khi nhận hàng (COD)</Text>
-                        <Text className="text-[11.5px] text-muted-foreground">Trả tiền mặt cho shipper khi giao tới</Text>
-                      </View>
-                    </View>
-                    <View className={`size-4 rounded-pill border items-center justify-center ${paymentMethod === 'cod' ? 'border-primary' : 'border-muted-foreground'}`}>
-                      {paymentMethod === 'cod' && <View className="size-2 rounded-pill bg-primary" />}
-                    </View>
-                  </Pressable>
+          <View className="gap-1.5">
+            <Text className="text-[12.5px] font-medium text-muted-foreground">
+              Họ và tên người nhận <Text className="text-destructive">*</Text>
+            </Text>
+            <TextInput
+              value={customerName}
+              onChangeText={setCustomerName}
+              placeholder="Ví dụ: Trần Thị Ngọc Hà"
+              placeholderTextColor="#888"
+              className="h-11 rounded-control border border-border bg-surface-1 px-3 text-[14px] text-foreground"
+            />
+          </View>
 
-                  {/* VietQR */}
-                  <Pressable
-                    role="radio"
-                    aria-checked={paymentMethod === 'vietqr'}
-                    onPress={() => setPaymentMethod('vietqr')}
-                    className={`flex-row items-center justify-between rounded-control border p-3.5 ${
-                      paymentMethod === 'vietqr'
-                        ? 'border-primary bg-primary/5'
-                        : 'border-border bg-card'
-                    }`}
-                  >
-                    <View className="flex-row items-center gap-3">
-                      <Icon as={QrCode} size={18} className="text-foreground" />
-                      <View>
-                        <Text className="text-[14px] font-medium">Chuyển khoản ngân hàng (VietQR)</Text>
-                        <Text className="text-[11.5px] text-muted-foreground">Quét mã QR tự động điền tiền và nội dung</Text>
-                      </View>
-                    </View>
-                    <View className={`size-4 rounded-pill border items-center justify-center ${paymentMethod === 'vietqr' ? 'border-primary' : 'border-muted-foreground'}`}>
-                      {paymentMethod === 'vietqr' && <View className="size-2 rounded-pill bg-primary" />}
-                    </View>
-                  </Pressable>
+          <View className="gap-1.5">
+            <Text className="text-[12.5px] font-medium text-muted-foreground">
+              Số điện thoại liên hệ <Text className="text-destructive">*</Text>
+            </Text>
+            <TextInput
+              value={customerPhone}
+              onChangeText={setCustomerPhone}
+              placeholder="Ví dụ: 0912345678"
+              placeholderTextColor="#888"
+              keyboardType="phone-pad"
+              className="h-11 rounded-control border border-border bg-surface-1 px-3 text-[14px] text-foreground"
+            />
+          </View>
 
-                  {/* VietQR Display Box */}
-                  {paymentMethod === 'vietqr' && vietQrUrl && (
-                    <View className="mt-2 items-center rounded-card border border-border bg-card p-4">
-                      <Text className="text-[12px] font-medium text-muted-foreground">Quét mã QR để thanh toán đơn hàng</Text>
-                      <View className="my-2.5 size-48 overflow-hidden rounded-control bg-white p-1">
-                        <Image
-                          source={{ uri: vietQrUrl }}
-                          style={{ width: '100%', height: '100%' }}
-                          contentFit="contain"
-                        />
-                      </View>
-                      <View className="w-full gap-1 border-t border-border/60 pt-2 text-center">
-                        <Text className="text-center text-[12px] text-muted-foreground">
-                          Ngân hàng: <Text className="font-bold text-foreground">MB Bank (Quân Đội)</Text>
-                        </Text>
-                        <Text className="text-center text-[12px] text-muted-foreground">
-                          Số tài khoản: <Text className="font-bold text-foreground">999988886666</Text>
-                        </Text>
-                        <Text className="text-center text-[12px] text-muted-foreground">
-                          Chủ tài khoản: <Text className="font-bold text-foreground">SKINSENSE VIETNAM</Text>
-                        </Text>
-                      </View>
-                    </View>
-                  )}
-                </View>
+          <View className="gap-1.5">
+            <Text className="text-[12.5px] font-medium text-muted-foreground">
+              Địa chỉ giao hàng chi tiết <Text className="text-destructive">*</Text>
+            </Text>
+            <TextInput
+              value={customerAddress}
+              onChangeText={setCustomerAddress}
+              placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành"
+              placeholderTextColor="#888"
+              multiline
+              numberOfLines={2}
+              className="min-h-[50px] rounded-control border border-border bg-surface-1 px-3 py-2 text-[14px] text-foreground"
+            />
+          </View>
 
-                {/* Price Breakdown */}
-                <View className="mt-3 gap-1.5 rounded-card border border-border bg-card p-3.5">
-                  <View className="flex-row justify-between">
-                    <Text className="text-[13px] text-muted-foreground">Tiền sản phẩm</Text>
-                    <Text className="text-[13px] font-medium">{selectedShop?.listing.priceFormatted}</Text>
-                  </View>
-                  <View className="flex-row justify-between">
-                    <Text className="text-[13px] text-muted-foreground">Phí vận chuyển</Text>
-                    <Text className="text-[13px] font-medium text-success">Miễn phí</Text>
-                  </View>
-                  <View className="mt-1 flex-row justify-between border-t border-border/60 pt-2">
-                    <Text className="text-[14.5px] font-bold">Tổng thanh toán</Text>
-                    <Text className="text-[17px] font-bold text-primary">
-                      {selectedShop?.listing.priceFormatted}
-                    </Text>
-                  </View>
-                </View>
+          <View className="gap-1.5">
+            <Text className="text-[12.5px] font-medium text-muted-foreground">
+              Ghi chú cho chuyên viên (tuỳ chọn)
+            </Text>
+            <TextInput
+              value={note}
+              onChangeText={setNote}
+              placeholder="Thời gian nhận hàng hoặc lưu ý về tình trạng da..."
+              placeholderTextColor="#888"
+              className="h-10 rounded-control border border-border bg-surface-1 px-3 text-[13.5px] text-foreground"
+            />
+          </View>
+        </View>
 
-                {/* Submit Button */}
+        {/* Payment Methods */}
+        <View className="rounded-card border border-border bg-card p-4 gap-3">
+          <Text className="text-[15px] font-semibold text-foreground">
+            Phương thức thanh toán
+          </Text>
+
+          {/* COD */}
+          <Pressable
+            role="radio"
+            accessibilityState={{ selected: paymentMethod === 'cod' }}
+            onPress={() => setPaymentMethod('cod')}
+            className={`flex-row items-center gap-3 rounded-control border p-3 ${
+              paymentMethod === 'cod' ? 'border-primary bg-primary/10' : 'border-border bg-surface-1'
+            }`}
+          >
+            <Icon
+              as={CreditCard}
+              size={20}
+              className={paymentMethod === 'cod' ? 'text-primary' : 'text-muted-foreground'}
+            />
+            <View className="flex-1">
+              <Text className="text-[14px] font-medium text-foreground">
+                Thanh toán khi nhận hàng (COD)
+              </Text>
+              <Text className="text-[12px] text-muted-foreground">
+                Kiểm tra hàng chính hãng trước khi thanh toán cho shipper
+              </Text>
+            </View>
+            <View
+              className={`size-5 rounded-pill border items-center justify-center ${
+                paymentMethod === 'cod' ? 'border-primary bg-primary' : 'border-muted-foreground'
+              }`}
+            >
+              {paymentMethod === 'cod' && <View className="size-2 rounded-pill bg-white" />}
+            </View>
+          </Pressable>
+
+          {/* VietQR */}
+          <Pressable
+            role="radio"
+            accessibilityState={{ selected: paymentMethod === 'vietqr' }}
+            onPress={() => setPaymentMethod('vietqr')}
+            className={`flex-row items-center gap-3 rounded-control border p-3 ${
+              paymentMethod === 'vietqr' ? 'border-primary bg-primary/10' : 'border-border bg-surface-1'
+            }`}
+          >
+            <Icon
+              as={QrCode}
+              size={20}
+              className={paymentMethod === 'vietqr' ? 'text-primary' : 'text-muted-foreground'}
+            />
+            <View className="flex-1">
+              <Text className="text-[14px] font-medium text-foreground">
+                Chuyển khoản VietQR 24/7 (Khuyên dùng)
+              </Text>
+              <Text className="text-[12px] text-muted-foreground">
+                Quét mã QR thanh toán nhanh qua app ngân hàng MB / VCB
+              </Text>
+            </View>
+            <View
+              className={`size-5 rounded-pill border items-center justify-center ${
+                paymentMethod === 'vietqr' ? 'border-primary bg-primary' : 'border-muted-foreground'
+              }`}
+            >
+              {paymentMethod === 'vietqr' && <View className="size-2 rounded-pill bg-white" />}
+            </View>
+          </Pressable>
+
+          {/* VietQR Preview */}
+          {paymentMethod === 'vietqr' && (
+            <View className="items-center rounded-control border border-border bg-surface-1 p-3.5 gap-2 mt-1">
+              <Text className="text-[12px] font-medium text-muted-foreground">
+                Quét mã QR bằng App Ngân Hàng để chuyển khoản:
+              </Text>
+              <Image
+                source={{ uri: qrUrl }}
+                className="size-48 rounded-control bg-white"
+                contentFit="contain"
+              />
+              <View className="items-center gap-0.5">
+                <Text className="text-[13px] font-bold text-foreground">
+                  STK: 999988886666 (MB Bank)
+                </Text>
+                <Text className="text-[12px] text-muted-foreground">
+                  Chủ TK: SKINSENSE VIETNAM
+                </Text>
+                <Text className="text-[12px] font-medium text-primary">
+                  Số tiền: {formatVnd(totalAmount)}
+                </Text>
+              </View>
+            </View>
+          )}
+        </View>
+      </ScrollView>
+
+      {/* Bottom Sticky Action Bar */}
+      <View
+        style={{ paddingBottom: Math.max(bottom, 24) }}
+        className="absolute bottom-0 left-0 right-0 border-t border-border bg-card/95 px-4 py-3 flex-row items-center justify-between gap-3"
+      >
+        <View>
+          <Text className="text-[12px] text-muted-foreground">Tổng thanh toán</Text>
+          <Text className="text-[18px] font-bold text-primary">{formatVnd(totalAmount)}</Text>
+        </View>
+
+        <Pressable
+          role="button"
+          accessibilityLabel="Xác nhận đặt hàng"
+          disabled={submitting}
+          onPress={handleConfirmOrder}
+          className="flex-1 h-12 flex-row items-center justify-center gap-2 rounded-control bg-primary active:opacity-90"
+        >
+          {submitting ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <>
+              <Icon as={ShoppingBag} size={18} className="text-primary-foreground" />
+              <Text className="text-[15px] font-semibold text-primary-foreground">
+                Xác nhận đặt hàng
+              </Text>
+            </>
+          )}
+        </Pressable>
+      </View>
+
+      {/* Order Success Dialog */}
+      {placedOrder && (
+        <Modal visible={true} transparent animationType="fade">
+          <View className="flex-1 items-center justify-center bg-black/60 p-5">
+            <View className="w-full max-w-sm rounded-sheet border border-border bg-card p-6 items-center gap-3">
+              <View className="size-16 rounded-pill bg-success/15 items-center justify-center">
+                <Icon as={CheckCircle2} size={36} className="text-success" />
+              </View>
+
+              <Text className="text-[18px] font-bold text-foreground text-center">
+                Đặt hàng thành công!
+              </Text>
+              <Text className="text-[13px] text-muted-foreground text-center">
+                Đơn hàng đã được chuyển tới Ban Quản Trị SkinSense để đóng gói và vận chuyển sớm nhất.
+              </Text>
+
+              <View className="w-full rounded-control border border-border bg-surface-1 p-3 gap-1">
+                <Text className="text-[12px] text-muted-foreground">Mã đơn hàng:</Text>
+                <Text className="text-[14px] font-bold text-foreground">{placedOrder.id}</Text>
+                <Text className="text-[12px] text-muted-foreground">Tổng thanh toán:</Text>
+                <Text className="text-[15px] font-bold text-primary">
+                  {placedOrder.totalFormatted} ({placedOrder.paymentMethod.toUpperCase()})
+                </Text>
+              </View>
+
+              <View className="w-full gap-2 pt-2">
                 <Pressable
                   role="button"
-                  disabled={submitting}
-                  onPress={handleConfirmOrder}
-                  className="mt-3 h-12 flex-row items-center justify-center rounded-control bg-primary active:opacity-90 disabled:opacity-50"
+                  onPress={() => {
+                    setPlacedOrder(null);
+                    router.replace('/orders' as any);
+                  }}
+                  className="w-full h-11 items-center justify-center rounded-control bg-primary active:opacity-90"
                 >
-                  {submitting ? (
-                    <ActivityIndicator size="small" color="#fff" />
-                  ) : (
-                    <Text className="text-[15px] font-bold text-primary-foreground">
-                      Xác nhận đặt hàng
-                    </Text>
-                  )}
+                  <Text className="text-[14px] font-semibold text-primary-foreground">
+                    Xem đơn hàng của tôi
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  role="button"
+                  onPress={() => {
+                    setPlacedOrder(null);
+                    router.back();
+                  }}
+                  className="w-full h-11 items-center justify-center rounded-control border border-border"
+                >
+                  <Text className="text-[14px] font-medium text-foreground">
+                    Tiếp tục xem sản phẩm
+                  </Text>
                 </Pressable>
               </View>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Order Placed Success Modal */}
-      <Modal
-        visible={placedOrder !== null}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={() => {
-          setPlacedOrder(null);
-          setSelectedShop(null);
-          router.replace('/');
-        }}
-      >
-        <View className="flex-1 items-center justify-center bg-black/70 px-5">
-          <View className="w-full rounded-[24px] border border-border bg-card p-6 shadow-2xl items-center">
-            <View className="size-16 items-center justify-center rounded-pill bg-success/10 mb-3">
-              <Icon as={CheckCircle2} size={36} className="text-success" />
             </View>
-            <Text className="text-[20px] font-bold text-foreground">Đặt hàng thành công!</Text>
-            <Text className="mt-1 text-center text-[13px] text-muted-foreground">
-              Đơn hàng của bạn đã được chuyển tới gian hàng {placedOrder?.shopName}.
-            </Text>
-
-            <View className="my-4 w-full gap-2 rounded-control bg-surface-2 p-3.5">
-              <View className="flex-row justify-between">
-                <Text className="text-[12.5px] text-muted-foreground">Mã đơn hàng</Text>
-                <Text className="text-[12.5px] font-bold text-foreground">{placedOrder?.id}</Text>
-              </View>
-              <View className="flex-row justify-between">
-                <Text className="text-[12.5px] text-muted-foreground">Sản phẩm</Text>
-                <Text numberOfLines={1} className="w-40 text-right text-[12.5px] font-medium text-foreground">
-                  {placedOrder?.productName}
-                </Text>
-              </View>
-              <View className="flex-row justify-between">
-                <Text className="text-[12.5px] text-muted-foreground">Tổng tiền</Text>
-                <Text className="text-[13px] font-bold text-primary">{placedOrder?.totalFormatted}</Text>
-              </View>
-              <View className="flex-row justify-between">
-                <Text className="text-[12.5px] text-muted-foreground">Thanh toán</Text>
-                <Text className="text-[12.5px] font-medium text-foreground">
-                  {placedOrder?.paymentMethod === 'cod' ? 'Thanh toán COD' : 'Chuyển khoản VietQR'}
-                </Text>
-              </View>
-            </View>
-
-            <Pressable
-              role="button"
-              onPress={() => {
-                setPlacedOrder(null);
-                setSelectedShop(null);
-                router.replace('/');
-              }}
-              className="h-12 w-full items-center justify-center rounded-control bg-primary active:opacity-90"
-            >
-              <Text className="text-[15px] font-medium text-primary-foreground">
-                Hoàn tất & Về trang chủ
-              </Text>
-            </Pressable>
           </View>
-        </View>
-      </Modal>
+        </Modal>
+      )}
     </View>
   );
 }

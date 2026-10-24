@@ -1,11 +1,15 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   createOrder,
+  deleteCustomProduct,
   getCurrentRole,
+  loadAllStoreProducts,
+  loadCustomProducts,
   loadListings,
   loadOrders,
   loadShops,
   registerShop,
+  saveCustomProduct,
   saveListing,
   setCurrentRole,
   updateOrderStatus,
@@ -102,5 +106,45 @@ describe('Marketplace Storage & Management Service', () => {
 
     const listings = await loadListings('skin1004-centella-ampoule');
     expect(listings.some((l) => l.shopId === 'shop-test-1')).toBe(true);
+  });
+
+  it('allows admin to add, list and delete custom products for selling', async () => {
+    const custom = await saveCustomProduct({
+      name: 'Serum B5 SkinSense Tái Tạo',
+      brand: 'SkinSense Clinic',
+      category: 'Serum phục hồi',
+      priceVnd: 420000,
+      summary: 'Phục hồi cấp ẩm chuyên sâu',
+      description: 'Công thức độc quyền từ phòng khám SkinSense',
+    });
+
+    expect(custom.id).toMatch(/^custom-/);
+    expect(custom.name).toBe('Serum B5 SkinSense Tái Tạo');
+    expect(custom.priceVnd).toBe(420000);
+    expect(custom.isCustom).toBe(true);
+
+    const storeProducts = await loadAllStoreProducts();
+    expect(storeProducts.some((p) => p.id === custom.id)).toBe(true);
+
+    await deleteCustomProduct(custom.id);
+    const updatedStore = await loadAllStoreProducts();
+    expect(updatedStore.some((p) => p.id === custom.id)).toBe(false);
+  });
+
+  it('creates order with default SkinSense boutique info when shopId is omitted', async () => {
+    const order = await createOrder({
+      productId: 'skin1004-centella-ampoule',
+      productName: 'Rau má Centella',
+      productImage: 'https://example.com/centella.jpg',
+      priceVnd: 345000,
+      customerName: 'Hoang My',
+      customerPhone: '0977112233',
+      customerAddress: 'Ba Dinh, Ha Noi',
+      paymentMethod: 'cod',
+    });
+
+    expect(order.shopName).toContain('SkinSense');
+    expect(order.totalVnd).toBe(345000);
+    expect(order.status).toBe('pending');
   });
 });

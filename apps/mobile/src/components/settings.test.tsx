@@ -126,18 +126,10 @@ describe('Settings', () => {
     expect(mocked.auth.signOut).not.toHaveBeenCalled();
   });
 
-  it('renders SkinSense Market section with role switcher and navigation rows', async () => {
+  it('renders SkinSense boutique and store admin management section', async () => {
     await renderSettings();
-    expect(screen.getByText('SkinSense Market & Phân quyền')).toBeTruthy();
-    expect(screen.getByText('Khách hàng')).toBeTruthy();
-    expect(screen.getByText('Kênh người bán')).toBeTruthy();
-    expect(screen.getByText('Super Admin')).toBeTruthy();
+    expect(screen.getByText('Cửa Hàng & Quản Trị SkinSense')).toBeTruthy();
     expect(screen.getByText('Đơn mua của tôi')).toBeTruthy();
-    expect(screen.getByText('Kênh Người Bán (Vendor)')).toBeTruthy();
-    expect(screen.getByText('Quản Trị Viên Tối Cao (Admin)')).toBeTruthy();
-
-    // Toggle role to shop
-    await fireEvent.press(screen.getByText('Kênh người bán'));
-    expect(screen.getByText('Kênh người bán')).toBeTruthy();
+    expect(screen.getByText('Quản Trị Cửa Hàng (Admin)')).toBeTruthy();
   });
 });

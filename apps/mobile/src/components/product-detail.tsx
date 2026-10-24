@@ -198,7 +198,7 @@ export function ProductDetail({
         <View className="flex-row items-center justify-center gap-2 py-2">
           <Icon as={ShieldCheck} size={16} className="text-success" />
           <Text className="text-[12.5px] font-light text-muted-foreground">
-            Cam kết 100% phân phối chính hãng qua SkinSense Market & Shop uỷ quyền
+            Cam kết 100% phân phối chính hãng trực tiếp từ SkinSense Boutique
           </Text>
         </View>
       </ScrollView>
@@ -210,7 +210,7 @@ export function ProductDetail({
       >
         <View className="flex-row items-center gap-3">
           <View className="flex-1">
-            <Text className="text-[11.5px] text-muted-foreground">Giá tham khảo</Text>
+            <Text className="text-[11.5px] text-muted-foreground">Giá niêm yết</Text>
             <Text className="text-[20px] font-bold text-foreground">{product.priceFormatted}</Text>
           </View>
           <Pressable
