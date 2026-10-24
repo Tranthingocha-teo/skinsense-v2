@@ -1,0 +1,22 @@
+# Guided capture → review → save → readings table (ticket 08).
+# Preconditions: a signed-in session on the device (mobile Google sign-in is ticket 01b),
+# a dev build, device locale en (strings below are en.json), and a face in front of the
+# camera. The emulator works with `-camera-front webcam0`: vision-camera's capturePhoto
+# returns real webcam frames there (unlike expo-camera in ticket 18). The capture →
+# review → retake half ran green on the emulator on 2026-09-13 behind a temporary
+# sign-in bypass; sign-in and save wait for 01b.
+appId: com.dinh144.skinsense
+---
+- launchApp
+- tapOn: "Tonight's photo"
+- assertVisible: "Place your face in the frame"
+- tapOn: "Take photo"
+- extendedWaitUntil:
+    visible:
+      text: "Save.*"
+    timeout: 15000
+- tapOn:
+    text: "Save.*"
+- assertVisible: "Saved"
+- assertVisible: "Forehead"
+- assertVisible: ".*Not a medical diagnosis.*"

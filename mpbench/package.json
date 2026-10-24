@@ -1,0 +1,19 @@
+{
+  "name": "mpbench",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "generate": "bun run.ts",
+    "rate": "bun run.ts --rate",
+    "live": "bun run.ts --live"
+  },
+  "dependencies": {
+    "@skinsense/domain": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "playwright": "^1",
+    "typescript": "^5"
+  }
+}

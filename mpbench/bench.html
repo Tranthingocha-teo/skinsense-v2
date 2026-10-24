@@ -1,0 +1,157 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8" /><title>mpbench</title></head>
+<body>
+<canvas id="canvas" style="display:none"></canvas>
+<script type="module">
+  import {
+    FilesetResolver,
+    FaceLandmarker,
+    ImageSegmenter,
+  } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.21/vision_bundle.mjs";
+
+  const FACE_SKIN_CLASS = 3; // selfie_multiclass_256x256 CATEGORY_MASK: 0 bg, 1 hair, 2 body-skin, 3 face-skin, 4 clothes, 5 other
+  const LANDMARK_COUNT = 468; // ADR 0001 / ticket 05: drop FaceLandmarker's 10 extra iris points
+
+  const vision = await FilesetResolver.forVisionTasks(
+    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.21/wasm",
+  );
+
+  const faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
+    baseOptions: {
+      modelAssetPath:
+        "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+      delegate: "GPU",
+    },
+    runningMode: "IMAGE",
+    numFaces: 1,
+  });
+
+  const imageSegmenter = await ImageSegmenter.createFromOptions(vision, {
+    baseOptions: {
+      modelAssetPath:
+        "https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_multiclass_256x256/float32/latest/selfie_multiclass_256x256.tflite",
+      delegate: "GPU",
+    },
+    outputCategoryMask: true,
+    outputConfidenceMasks: false,
+    runningMode: "IMAGE",
+  });
+
+  function loadImage(dataUrl) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = dataUrl;
+    });
+  }
+
+  // Draws any image source (a decoded photo or the live <video>) onto the
+  // canvas at ≤maxSide (domain's ANALYSIS_MAX_SIDE: the app analyses a copy that
+  // size, so fixtures, quality signals and live numbers all come from the same
+  // pixels the app sees) and runs the MediaPipe pipeline on it. Returns raw
+  // landmarks/mask/pixels only — zone classification is @skinsense/domain's job.
+  const canvas = document.getElementById("canvas");
+  function analyse(source, sourceWidth, sourceHeight, maxSide) {
+    const scale = Math.min(1, maxSide / Math.max(sourceWidth, sourceHeight));
+    const width = Math.round(sourceWidth * scale);
+    const height = Math.round(sourceHeight * scale);
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    ctx.drawImage(source, 0, 0, width, height);
+    const rgba = ctx.getImageData(0, 0, width, height).data;
+
+    const landmarkResult = faceLandmarker.detect(canvas);
+    if (!landmarkResult.faceLandmarks[0]) return null;
+    const landmarks = landmarkResult.faceLandmarks[0]
+      .slice(0, LANDMARK_COUNT)
+      .map((p) => ({ x: p.x, y: p.y, z: p.z }));
+
+    const segResult = imageSegmenter.segment(canvas);
+    const categoryMask = segResult.categoryMask;
+    if (categoryMask.width !== width || categoryMask.height !== height) {
+      throw new Error(
+        `mpbench: mask resolution ${categoryMask.width}x${categoryMask.height} does not match image ${width}x${height} (ticket 07 assumed they always match)`,
+      );
+    }
+    const maskClasses = categoryMask.getAsUint8Array();
+    const skinMask = Uint8Array.from(maskClasses, (c) => (c === FACE_SKIN_CLASS ? 1 : 0));
+
+    return { width, height, landmarks, skinMask, rgba };
+  }
+
+  // Exposed to Playwright via page.evaluate. Returns plain JSON-serialisable
+  // data; run.ts (Node) classifies zones with @skinsense/domain.
+  window.runBench = async function runBench(dataUrl, maxSide) {
+    const image = await loadImage(dataUrl);
+    const result = analyse(image, image.naturalWidth, image.naturalHeight, maxSide);
+    if (!result) throw new Error("mpbench: no face found in the input photo");
+    return { ...result, skinMask: Array.from(result.skinMask), rgba: Array.from(result.rgba) };
+  };
+
+  // Ticket 17: `bun run --cwd mpbench live` bundles @skinsense/domain to
+  // ./dist/domain.js and opens this page with ?live (the still path never
+  // needs the bundle, hence the dynamic import). Each frame goes through the
+  // same analyse() as a still, then domain's real zone partition + readings,
+  // drawn at each zone's centroid. ?side=<px> overrides
+  // the analysis size when the frame rate matters more than matching the app.
+  // Not mirrored: the canvas is the analysed frame as-is, so the reading sits on
+  // the zone it was measured from (leftCheek = the subject's left).
+  async function runLive() {
+    const { ANALYSIS_MAX_SIDE, partitionSkinPixels, readZones, zonePolygon, ZONES } = await import("./dist/domain.js");
+    const params = new URLSearchParams(location.search);
+    const maxSide = Number(params.get("side")) || ANALYSIS_MAX_SIDE;
+    const video = document.createElement("video");
+    video.srcObject = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 960 } },
+    });
+    await video.play();
+    canvas.style.display = "block";
+    const ctx = canvas.getContext("2d");
+    ctx.font = "16px monospace";
+    ctx.textAlign = "center";
+
+    let last = performance.now();
+    while (true) {
+      await new Promise(requestAnimationFrame);
+      const now = performance.now();
+      const ms = Math.round(now - last);
+      last = now;
+      try {
+        const result = analyse(video, video.videoWidth, video.videoHeight, maxSide);
+        if (!result) {
+          drawLabel(ctx, `no face  ${ms}ms`, canvas.width / 2, 24);
+          continue;
+        }
+        const readings = readZones(partitionSkinPixels(result, result.rgba));
+        for (const zone of ZONES) {
+          const polygon = zonePolygon(zone, result.landmarks);
+          const cx = (polygon.reduce((s, p) => s + p.x, 0) / polygon.length) * result.width;
+          const cy = (polygon.reduce((s, p) => s + p.y, 0) / polygon.length) * result.height;
+          const { redness, unevenness, pixelCount } = readings[zone];
+          drawLabel(ctx, `${zone} ${redness.toFixed(2)} ±${unevenness.toFixed(2)} (${pixelCount}px)`, cx, cy);
+        }
+        drawLabel(ctx, `${ms}ms  ${result.width}x${result.height}`, canvas.width / 2, 24);
+      } catch (err) {
+        // One bad frame must not end a dialling session; show it and keep going.
+        drawLabel(ctx, String(err), canvas.width / 2, 24);
+      }
+    }
+  }
+
+  function drawLabel(ctx, text, x, y) {
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = "black";
+    ctx.strokeText(text, x, y);
+    ctx.fillStyle = "white";
+    ctx.fillText(text, x, y);
+  }
+
+  if (new URLSearchParams(location.search).has("live")) runLive();
+
+  window.mpbenchReady = true;
+</script>
+</body>
+</html>
