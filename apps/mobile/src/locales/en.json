@@ -48,7 +48,13 @@
     "reminderEvery": "{{time}} every night",
     "reminderDays": "{{time}} · {{days}}",
     "reminderOff": "Off",
+    "biometric": "Biometric lock",
+    "biometricPrompt": "Lock app when reopened",
+    "biometricUnavailable": "No fingerprint/biometric enrolled",
     "history": "Photo history",
+    "export": "Export data (.zip)",
+    "exporting": "Exporting data…",
+    "exportSuccess": "Data exported successfully",
     "about": "About & licenses"
   },
   "about": {
@@ -268,6 +274,9 @@
     "apply": "Compare",
     "prevMonth": "Previous month",
     "nextMonth": "Next month",
-    "today": "today"
+    "today": "today",
+    "share": "Share",
+    "shareTitle": "Share comparison",
+    "shareMessage": "SkinSense progress: Before ({{before}}) vs After ({{after}})"
   }
 }

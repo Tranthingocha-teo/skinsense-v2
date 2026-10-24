@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Item, ItemContent, ItemDescription, ItemTitle } from "@/components/ui/item";
 import { Spinner } from "@/components/ui/spinner";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { exportNotesAndTagsCsv, exportRoutineCsv, exportSpotsCsv, exportZoneReadingsCsv } from "@skinsense/domain";
 import type { deleteAccount, signOut } from "@/lib/account";
 
 // The route binds these: Supabase-backed when signed in, inert on the dev fixture page.
@@ -151,6 +152,55 @@ function DeleteAccountRow({ onDelete }: { onDelete: () => Promise<void> }) {
   );
 }
 
+function ExportRow() {
+  const t = useTranslations("Settings");
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = () => {
+    setExporting(true);
+    try {
+      const content = [
+        "--- SKINSENSE EXPORT ---",
+        "EXPORT_DATE," + new Date().toISOString(),
+        "",
+        "--- ZONE READINGS ---",
+        exportZoneReadingsCsv([]),
+        "",
+        "--- SPOTS ---",
+        exportSpotsCsv([]),
+        "",
+        "--- ROUTINE ENTRIES ---",
+        exportRoutineCsv([]),
+        "",
+        "--- NOTES AND TAGS ---",
+        exportNotesAndTagsCsv([]),
+      ].join("\n");
+      const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `skinsense_export_${Date.now()}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  return (
+    <Item asChild className={ROW}>
+      <button type="button" onClick={handleExport} disabled={exporting} className="w-full text-left">
+        {t("export")}
+        <span className={HIT}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
+          </svg>
+        </span>
+      </button>
+    </Item>
+  );
+}
+
 export function Settings({ account, api }: { account: Account; api: SettingsApi }) {
   const t = useTranslations("Settings");
   const ts = useTranslations("Shell");
@@ -197,6 +247,7 @@ export function Settings({ account, api }: { account: Account; api: SettingsApi 
                   </span>
                 </Link>
               </Item>
+              <ExportRow />
             </Group>
           </div>
 

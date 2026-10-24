@@ -40,7 +40,8 @@ describe('Settings', () => {
     expect(screen.getByRole('radio', { name: 'English' })).toBeChecked();
     expect(screen.getByRole('button', { name: 'Feedback' })).toBeTruthy();
     expect(screen.getByText('Privacy policy')).toBeTruthy();
-    expect(screen.getByText('About & licenses')).toBeTruthy();
+    expect(screen.getByText('Biometric lock')).toBeTruthy();
+    expect(screen.getByText('Export data (.zip)')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Sign out' })).toBeTruthy();
     expect(screen.getByText('Delete account')).toBeTruthy();
 

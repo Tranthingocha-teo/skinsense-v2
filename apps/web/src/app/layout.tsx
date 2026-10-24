@@ -26,6 +26,8 @@ export async function generateMetadata(): Promise<Metadata> {
     metadataBase: new URL("https://skinsense-v2.vercel.app"),
     title: t("title"),
     description: t("tagline"),
+    manifest: "/manifest.json",
+    icons: { icon: "/icon.svg", apple: "/icon.svg" },
     openGraph: { title: t("title"), description: t("tagline"), siteName: "SkinSense", type: "website" },
   };
 }

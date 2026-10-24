@@ -4,11 +4,13 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { router } from 'expo-router';
 import { ExternalLink } from '@/components/external-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { signInWithGoogleIdToken } from '@/lib/auth';
+import { setDemoActive } from '@/lib/demo';
 import { googleWebClientId } from '@/lib/env';
 
 // The web app's public privacy page (ticket 11); update once apps/web has its Vercel domain.
@@ -35,6 +37,11 @@ export default function SignInScreen() {
     }
   }
 
+  async function tryDemo() {
+    await setDemoActive(true);
+    router.replace('/(app)');
+  }
+
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.content}>
@@ -42,6 +49,9 @@ export default function SignInScreen() {
         <ThemedText style={styles.center}>{t('signIn.subtitle')}</ThemedText>
         <Pressable onPress={signIn} role="button" style={styles.button}>
           <ThemedText type="smallBold">{t('signIn.button')}</ThemedText>
+        </Pressable>
+        <Pressable onPress={tryDemo} role="button" style={[styles.button, styles.demoButton]}>
+          <ThemedText type="smallBold">Xem thử (dữ liệu mẫu)</ThemedText>
         </Pressable>
         {error && (
           <ThemedText type="small" style={styles.center}>
@@ -61,4 +71,5 @@ const styles = StyleSheet.create({
   content: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.three, padding: Spacing.four },
   center: { textAlign: 'center' },
   button: { minHeight: 44, justifyContent: 'center', borderWidth: 1, borderRadius: 999, paddingHorizontal: Spacing.four, paddingVertical: Spacing.two },
+  demoButton: { borderColor: '#38BDF8', backgroundColor: 'rgba(56, 189, 248, 0.1)' },
 });

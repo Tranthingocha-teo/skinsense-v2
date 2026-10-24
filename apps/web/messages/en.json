@@ -31,7 +31,8 @@
     "support": "Support",
     "privacy": "Privacy policy",
     "data": "Data",
-    "history": "Photo history"
+    "history": "Photo history",
+    "export": "Export data (.csv)"
   },
   "Feedback": {
     "title": "Feedback",
@@ -338,7 +339,8 @@
     "cancel": "Cancel",
     "prevMonth": "Previous month",
     "nextMonth": "Next month",
-    "today": "today"
+    "today": "today",
+    "share": "Share"
   },
   "Account": {
     "delete": "Delete account",

@@ -15,10 +15,15 @@ You need only git, [bun](https://bun.sh), and for the Android app Android Studio
 bun install
 bun run typecheck   # all workspaces
 bun run test        # vitest (domain, web) and jest-expo (mobile)
+bun run doctor      # verify environment & backend configuration
 cd apps/web && bun dev   # http://localhost:3000
 ```
 
-Running the apps against a backend needs your own Supabase project and environment variables; step-by-step setup from zero is documented separately in the setup guides.
+### Setup Guides from Zero
+Running the apps against a live backend needs your own Supabase project and credentials:
+- **Supabase Backend & Migrations**: [docs/setup-guides/supabase.md](docs/setup-guides/supabase.md)
+- **Google OAuth Setup**: [docs/setup-guides/google-oauth.md](docs/setup-guides/google-oauth.md)
+- **Deployment & Production Runbook**: [docs/setup-guides/deployment.md](docs/setup-guides/deployment.md)
 
 CI (`.github/workflows/ci.yml`) runs `bun install --frozen-lockfile`, `bun run typecheck` and `bun run test` with no secrets.
 

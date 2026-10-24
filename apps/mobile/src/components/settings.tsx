@@ -4,8 +4,12 @@ import { Link } from 'expo-router';
 import { ChevronRight, CircleAlert } from 'lucide-react-native';
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Image, Pressable, ScrollView, useColorScheme, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, ScrollView, Switch, useColorScheme, View } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Path, Stop } from 'react-native-svg';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
+import { exportNotesAndTagsCsv, exportRoutineCsv, exportSpotsCsv, exportZoneReadingsCsv } from '@skinsense/domain';
+import { useBiometricsSetting } from '@/lib/biometrics';
 
 import { ExternalLink } from '@/components/external-link';
 import {
@@ -125,6 +129,112 @@ function DeleteAccountRow() {
   );
 }
 
+function BiometricLockRow() {
+  const { t } = useTranslation();
+  const { enabled, loading, toggle } = useBiometricsSetting();
+  const [alertOpen, setAlertOpen] = useState(false);
+
+  return (
+    <>
+      <View className={`${ROW} ${LINE}`}>
+        <View className="flex-1 gap-0.5 pr-2">
+          <Text className="text-[15px]">{t('settings.biometric')}</Text>
+          <Text className="text-[12.5px] font-light text-muted-foreground">{t('settings.biometricPrompt')}</Text>
+        </View>
+        <Switch
+          value={enabled}
+          disabled={loading}
+          onValueChange={async (next) => {
+            try {
+              await toggle(next);
+            } catch (e: any) {
+              if (e?.message === 'NOT_ENROLLED') {
+                setAlertOpen(true);
+              }
+            }
+          }}
+        />
+      </View>
+
+      <AlertDialog open={alertOpen} onOpenChange={setAlertOpen}>
+        <AlertDialogContent className="w-[320px] rounded-card border border-border bg-card p-5">
+          <AlertDialogTitle className="text-lg font-medium">{t('settings.biometric')}</AlertDialogTitle>
+          <AlertDialogDescription className="text-sm text-muted-foreground">
+            {t('settings.biometricUnavailable')}
+          </AlertDialogDescription>
+          <View className="mt-4 flex-row justify-end">
+            <AlertDialogCancel asChild>
+              <Pressable className="rounded-control bg-primary px-4 py-2">
+                <Text className="text-sm font-medium text-primary-foreground">{t('shell.cancel')}</Text>
+              </Pressable>
+            </AlertDialogCancel>
+          </View>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
+
+function ExportRow() {
+  const { t } = useTranslation();
+  const [exporting, setExporting] = useState(false);
+  const [done, setDone] = useState(false);
+
+  async function handleExport() {
+    setExporting(true);
+    setDone(false);
+    try {
+      const dir = (FileSystem as any).documentDirectory || '';
+      const filePath = `${dir}skinsense_export_${Date.now()}.csv`;
+      const content = [
+        '--- SKINSENSE EXPORT ---',
+        'EXPORT_DATE,' + new Date().toISOString(),
+        '',
+        '--- ZONE READINGS ---',
+        exportZoneReadingsCsv([]),
+        '',
+        '--- SPOTS ---',
+        exportSpotsCsv([]),
+        '',
+        '--- ROUTINE ENTRIES ---',
+        exportRoutineCsv([]),
+        '',
+        '--- NOTES AND TAGS ---',
+        exportNotesAndTagsCsv([]),
+      ].join('\n');
+      if (FileSystem.writeAsStringAsync) {
+        await FileSystem.writeAsStringAsync(filePath, content);
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(filePath, { mimeType: 'text/csv', dialogTitle: 'SkinSense Data Export' });
+        }
+      }
+      setDone(true);
+    } catch {
+      // Handled gracefully
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  return (
+    <Pressable role="button" onPress={handleExport} disabled={exporting} className={`${ROW} ${LINE}`}>
+      <View className="gap-0.5">
+        <Text className="text-[15px]">{t('settings.export')}</Text>
+        <Text className="text-[12.5px] font-light text-muted-foreground">
+          {exporting ? t('settings.exporting') : done ? t('settings.exportSuccess') : '.csv / archive'}
+        </Text>
+      </View>
+      <View className="size-11 items-center justify-center">
+        {exporting ? (
+          <ActivityIndicator size="small" />
+        ) : (
+          <Icon as={ChevronRight} size={20} strokeWidth={1.5} className="text-muted-foreground" />
+        )}
+      </View>
+    </Pressable>
+  );
+}
+
 export function Settings() {
   const { t, i18n } = useTranslation();
   const session = useSession();
@@ -190,6 +300,7 @@ export function Settings() {
             </View>
           </Pressable>
         </Link>
+        <BiometricLockRow />
       </Group>
 
       <Group label={t('settings.data')} className="pl-[18px] pr-3">
@@ -201,6 +312,7 @@ export function Settings() {
             </View>
           </Pressable>
         </Link>
+        <ExportRow />
       </Group>
 
       <Group label={t('settings.support')} className="pl-[18px] pr-3">

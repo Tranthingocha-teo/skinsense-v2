@@ -22,3 +22,13 @@ export type { HistoryFilter } from "./notes";
 export { filterHistory, historyTags, NOTE_MAX, noteError, TAG_MAX, tagError } from "./notes";
 export type { DemoData, DemoPersona } from "./demo";
 export { DEMO_PERSONA, generateDemo } from "./demo";
+export type { ExportPhotoMeta, ExportReading, ExportRoutine, ExportSpot } from "./export";
+export {
+  escapeCsv,
+  estimateExportSizeBytes,
+  exportNotesAndTagsCsv,
+  exportRoutineCsv,
+  exportSpotsCsv,
+  exportZoneReadingsCsv,
+  formatCsv,
+} from "./export";

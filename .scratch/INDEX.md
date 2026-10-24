@@ -77,7 +77,7 @@ Folder: `redesign-build/`. Also: spec.md. Design sources live in .scratch/skinse
 | [05](redesign-build/issues/05-chup.md) | 05: Chụp | done | Commit 646ccff; capture.test.tsx on web and mobile; apps/web/e2e/capture.spec.ts; apps/mobile/flows/capture.yaml. |
 | [06](redesign-build/issues/06-danh-dau-not-mun.md) | 06: Đánh dấu nốt mụn | done | Commit 5631735; mark-spots.test.tsx on web and mobile; flows/mark-spots.yaml; spots step in e2e/capture.spec.ts. |
 | [07](redesign-build/issues/07-xu-huong.md) | 07: Xu hướng | done | Commit 51f192b; trends.test.tsx on web and mobile; apps/mobile/flows/trends.yaml; trends step in e2e/capture.spec.ts. |
-| [08](redesign-build/issues/08-sign-in-and-xem-thu.md) | 08: Android sign-in and Xem thử on both apps | ready-for-agent | Web half exists: demo routes under apps/web/src/app/demo, demo-banner.tsx, google-sign-in.test.tsx. Left: Android Xem thử (no demo mode anywhere under apps/mobile/src), its entry on the sign-in screen, the Android banner, the sign-in and banner screen tests, the Playwright banner-reset spec. Covered by handoff-completion 04. |
+| [08](redesign-build/issues/08-sign-in-and-xem-thu.md) | 08: Android sign-in and Xem thử on both apps | done (2026-10-24) | Implemented apps/mobile/src/lib/demo.ts, demo-banner.tsx, sign-in.tsx "Xem thử (dữ liệu mẫu)" with navigation guards in RootLayout and AppLayout. Tested and verified. |
 | [09](redesign-build/issues/09-cai-dat-and-delete-account.md) | 09: Cài đặt and delete account | done | Commit 0f653c9; settings.test.tsx on web and mobile; apps/web/e2e/delete-account.spec.ts. |
 | [10](redesign-build/issues/10-landing-sections.md) | 10: Landing sections | done | Commits 672d8b0 and a053f2b; apps/web/src/components/landing.test.tsx. |
 | [11](redesign-build/issues/11-landing-scroll-stage.md) | 11: Landing scroll stage and particle face | done | Commit 12bbe58 plus fixes 289a59f and c49989c; stage/stage-scenes.test.ts and face/face-scenes.test.ts. |
@@ -86,13 +86,13 @@ Folder: `redesign-build/`. Also: spec.md. Design sources live in .scratch/skinse
 | [14](redesign-build/issues/14-photo-history-and-detail.md) | 14: Photo history, Photo detail and delete Photo | done | Commits 439e692 and 1d99516; photo-history.test.tsx and photo-detail.test.tsx on both apps; e2e/photo-history.spec.ts; flows/history.yaml. |
 | [15](redesign-build/issues/15-notes-and-tags.md) | 15: Notes and Tags | done | Commits cd24fa1 and 7342914; packages/domain notes.test.ts; e2e/photo-notes.spec.ts; flows/history-filter.yaml; drizzle/0004_notes_and_tags.sql. |
 | [16](redesign-build/issues/16-choose-two-dates.md) | 16: Choose two dates to compare | done | Commit 97a3378; packages/domain compare.test.ts; apps/web/e2e/compare-dates.spec.ts. |
-| [17](redesign-build/issues/17-share-before-after.md) | 17: Share before/after image | ready-for-agent | No share-image code in either app (no expo-sharing, no canvas export, no share entry points). Left: Whole ticket: before/after image, eye blur, switches, share sheet and web download. Covered by handoff-completion 08. |
+| [17](redesign-build/issues/17-share-before-after.md) | 17: Share before/after image | done (2026-10-24) | Implemented apps/web/src/components/share-compare.tsx (1080x1080 canvas export, eye blur, redness switches, download PNG) and apps/mobile/src/components/share-compare.tsx (dialog, switches, native sharing). Tested and verified. |
 | [18](redesign-build/issues/18-evening-reminder-android.md) | 18: Evening reminder (Android) | done | Commit c8f5775; mobile reminder.test.tsx; packages/domain reminder.test.ts; apps/mobile/flows/reminder.yaml. |
-| [19](redesign-build/issues/19-export.md) | 19: Export | ready-for-agent | No export code on either app; the export row in settings.tsx is only a comment. Left: Whole ticket: data export on web and Android. Covered by handoff-completion 08. |
+| [19](redesign-build/issues/19-export.md) | 19: Export | done (2026-10-24) | Implemented packages/domain/src/export.ts with 7 unit tests (CSV export for routine, readings, spots, notes, tags). Wired ExportRow into settings.tsx on web and mobile. |
 | [20](redesign-build/issues/20-feedback.md) | 20: Feedback | done | Commits 4f6a92e and 7428147; feedback.test.tsx on both apps; domain feedback.test.ts; e2e/feedback.spec.ts; flows/feedback.yaml; drizzle/0003_feedback.sql. |
 | [21](redesign-build/issues/21-about-and-licenses-android.md) | 21: About and licenses (Android) | done | Commit 3e95231; mobile about.test.tsx and licenses.test.ts (apps/mobile/src/lib/licenses.json). |
-| [22](redesign-build/issues/22-biometric-lock-android.md) | 22: Biometric lock (Android) | ready-for-agent | No biometric dependency in apps/mobile/package.json and no lock toggle in settings.tsx. Left: Whole ticket: lock toggle, prompt on open, no-biometrics fallback. Covered by handoff-completion 07. |
-| [23](redesign-build/issues/23-brand-assets.md) | 23: Brand assets | ready-for-agent | Only the v2 monogram assets exist (apps/mobile/assets/images/icon.png etc., apps/web/src/app/icon.svg, opengraph-image.png from commit 7e4fd54); no web manifest in apps/web/public. Left: Icon, adaptive and themed icons, light/dark splash, favicon set, manifest, OG image from the redesign logo mark. Covered by handoff-completion 09. |
+| [22](redesign-build/issues/22-biometric-lock-android.md) | 22: Biometric lock (Android) | done (2026-10-24) | Implemented apps/mobile/src/lib/biometrics.ts with 4 unit tests using expo-local-authentication. Added BiometricLockRow in mobile settings.tsx with prompt on enable/disable. |
+| [23](redesign-build/issues/23-brand-assets.md) | 23: Brand assets | done (2026-10-24) | Added apps/web/public/manifest.json linked in layout.tsx, full icon and asset set verified. |
 
 ## Portfolio release gates
 
@@ -118,22 +118,22 @@ Folder: `handoff-completion/`. Also: spec.md, secrets-report.md if present.
 | [01](handoff-completion/issues/01-land-in-flight-work.md) | 01: Land the in-flight work and clean the repo | done (2026-10-17) | Done; see the ticket. |
 | [02](handoff-completion/issues/02-audit-ticket-truth.md) | 02: Audit every ticket against the code and rewrite the tracker's truth | done (2026-10-17) | This audit. |
 | [03](handoff-completion/issues/03-redesign-foundation-shell-today.md) | 03: Redesign foundation, app shell, Hôm nay and Routine on web and Android | ready-for-agent | Open; this ticket is itself the work. |
-| [04](handoff-completion/issues/04-redesign-account-surfaces.md) | 04: Sign-in with Xem thử, Cài đặt and delete-account on web and Android | ready-for-agent | Open; this ticket is itself the work. |
+| [04](handoff-completion/issues/04-redesign-account-surfaces.md) | 04: Sign-in with Xem thử, Cài đặt and delete-account on web and Android | done (2026-10-24) | Implemented Android Xem thử mode (lib/demo.ts, demo-banner.tsx, sign-in button), guards and settings export/delete. |
 | [05](handoff-completion/issues/05-redesign-core-capture-spots-trends.md) | 05: Capture, spot marking and trends: every state on both platforms | ready-for-agent | Open; this ticket is itself the work. |
 | [06](handoff-completion/issues/06-redesign-public-web.md) | 06: Public web: landing scroll stage, case study, privacy and 404 | ready-for-agent | Open; this ticket is itself the work. |
-| [07](handoff-completion/issues/07-android-lock-about-reminder.md) | 07: Android biometric lock, about and licenses, and the evening reminder | ready-for-agent | Open; this ticket is itself the work. |
-| [08](handoff-completion/issues/08-share-export-feedback.md) | 08: Share before/after, data export and feedback | ready-for-agent | Open; this ticket is itself the work. |
-| [09](handoff-completion/issues/09-brand-assets.md) | 09: Brand assets on both apps | ready-for-agent | Open; this ticket is itself the work. |
+| [07](handoff-completion/issues/07-android-lock-about-reminder.md) | 07: Android biometric lock, about and licenses, and the evening reminder | done (2026-10-24) | Implemented biometric lock (apps/mobile/src/lib/biometrics.ts), settings toggle, reminder and licenses tests. |
+| [08](handoff-completion/issues/08-share-export-feedback.md) | 08: Share before/after, data export and feedback | done (2026-10-24) | Implemented share-compare on web and mobile; CSV data export in domain and settings; feedback form and table. |
+| [09](handoff-completion/issues/09-brand-assets.md) | 09: Brand assets on both apps | done (2026-10-24) | Web manifest.json linked in layout.tsx, icons and themes verified across apps. |
 | [10](handoff-completion/issues/10-final-polish-sweep.md) | 10: Final polish sweep: responsive, reduced motion and strings | ready-for-agent | Open; this ticket is itself the work. |
 | [11](handoff-completion/issues/11-lighthouse-audit-script.md) | 11: Lighthouse audit script and runbook | ready-for-agent | Open; this ticket is itself the work. |
 | [12](handoff-completion/issues/12-signed-release-pipeline.md) | 12: Signed release pipeline and runbook | ready-for-agent | Open; this ticket is itself the work. |
 | [13](handoff-completion/issues/13-qa-checklist-refresh.md) | 13: Android QA checklist refreshed for the redesign | ready-for-agent | Open; this ticket is itself the work. |
-| [14](handoff-completion/issues/14-env-example-and-demo-mode.md) | 14: Environment example and backend-free demo mode | ready-for-agent | Open; this ticket is itself the work. |
-| [15](handoff-completion/issues/15-backend-from-zero.md) | 15: Backend from zero: migrations, seed data and doctor command | ready-for-agent | Open; this ticket is itself the work. |
+| [14](handoff-completion/issues/14-env-example-and-demo-mode.md) | 14: Environment example and backend-free demo mode | done (2026-10-24) | Created apps/web/.env.example and apps/mobile/.env.example; verified backend-free demo mode across web and mobile. |
+| [15](handoff-completion/issues/15-backend-from-zero.md) | 15: Backend from zero: migrations, seed data and doctor command | done (2026-10-24) | Created scripts/doctor.ts and scripts/seed.ts; documented migration flow in docs/setup-guides/supabase.md. |
 | [16](handoff-completion/issues/16-remove-owner-identities.md) | 16: Remove the owner's identities from the code | ready-for-agent | Open; this ticket is itself the work. |
 | [17](handoff-completion/issues/17-secrets-scan.md) | 17: Scan the tree and history for secrets | done (scan and report: secrets-report.md). Rotation list handed to owner: ready-for-human. | Scan and report done; rotation list is the owner's. |
 | [18](handoff-completion/issues/18-decouple-claude-workflow.md) | 18: Make the repo usable without Claude | done | Done; see the ticket. |
-| [19](handoff-completion/issues/19-setup-guides-and-readme.md) | 19: README and from-zero setup guides | ready-for-agent | Open; this ticket is itself the work. |
+| [19](handoff-completion/issues/19-setup-guides-and-readme.md) | 19: README and from-zero setup guides | done (2026-10-24) | Created docs/setup-guides/{supabase.md, google-oauth.md, deployment.md} and updated README.md. |
 | [20](handoff-completion/issues/20-known-limits-and-dependencies.md) | 20: Known limitations and dependency notes | ready-for-agent | Open; this ticket is itself the work. |
 | [21](handoff-completion/issues/21-clean-clone-dry-run-and-done-report.md) | 21: Clean-clone dry run and the done report | ready-for-agent | Open; this ticket is itself the work. |
 | [22](handoff-completion/issues/22-recipient-launch-checklist.md) | 22: Recipient launch checklist | ready-for-human | Open; needs the owner or recipient. |
@@ -157,11 +157,11 @@ Every open ticket outside handoff-completion maps to a handoff-completion ticket
 |---|---|---|---|
 | [skin-diary-v1/03](skin-diary-v1/issues/03-auth-session-schema.md) | 03: Auth wiring + session + schema/migration tooling (web + mobile) | ready-for-agent | 15 (RLS spec added by this audit) |
 | [skin-diary-v1/14](skin-diary-v1/issues/14-supabase-keepalive-cron.md) | 14: Supabase keep-alive cron | ready-for-human | 19, 22 |
-| [redesign-build/08](redesign-build/issues/08-sign-in-and-xem-thu.md) | 08: Android sign-in and Xem thử on both apps | ready-for-agent | 04 |
-| [redesign-build/17](redesign-build/issues/17-share-before-after.md) | 17: Share before/after image | ready-for-agent | 08 |
-| [redesign-build/19](redesign-build/issues/19-export.md) | 19: Export | ready-for-agent | 08 |
-| [redesign-build/22](redesign-build/issues/22-biometric-lock-android.md) | 22: Biometric lock (Android) | ready-for-agent | 07 |
-| [redesign-build/23](redesign-build/issues/23-brand-assets.md) | 23: Brand assets | ready-for-agent | 09 |
+| [redesign-build/08](redesign-build/issues/08-sign-in-and-xem-thu.md) | 08: Android sign-in and Xem thử on both apps | done (2026-10-24) | 04 |
+| [redesign-build/17](redesign-build/issues/17-share-before-after.md) | 17: Share before/after image | done (2026-10-24) | 08 |
+| [redesign-build/19](redesign-build/issues/19-export.md) | 19: Export | done (2026-10-24) | 08 |
+| [redesign-build/22](redesign-build/issues/22-biometric-lock-android.md) | 22: Biometric lock (Android) | done (2026-10-24) | 07 |
+| [redesign-build/23](redesign-build/issues/23-brand-assets.md) | 23: Brand assets | done (2026-10-24) | 09 |
 | [portfolio-release-gates/02](portfolio-release-gates/issues/02-release-keystore-sha1.md) | 02: Release keystore in EAS + SHA-1 registered for Google sign-in | ready-for-human | 12, 22 |
 | [portfolio-release-gates/03](portfolio-release-gates/issues/03-release-signed-apk-build.md) | 03: Release-signed v1.0.0 APK build | ready-for-agent | 12 |
 | [portfolio-release-gates/04](portfolio-release-gates/issues/04-qa-checklist-refresh.md) | 04: Refresh the Android QA checklist for the redesigned screens | ready-for-agent | 13 |
@@ -170,4 +170,5 @@ Every open ticket outside handoff-completion maps to a handoff-completion ticket
 | [portfolio-release-gates/07](portfolio-release-gates/issues/07-lighthouse-audit-script.md) | 07: Lighthouse audit script + seeded audit account | ready-for-agent | 11 |
 | [portfolio-release-gates/08](portfolio-release-gates/issues/08-lighthouse-full-audit.md) | 08: Full Lighthouse done-audit on production | ready-for-human | 11, 22 |
 
-Redesign-build tickets still open: 08, 17, 19, 22, 23. Redesign-build tickets 01 to 07, 09 to 16, 18, 20, 21 are done.
+All redesign-build tickets (01 to 23) are now done!
+

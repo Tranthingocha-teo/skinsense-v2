@@ -31,6 +31,7 @@ import Svg, { Circle, Defs, Line, LinearGradient, Path, Polyline, Rect, Stop } f
 
 import { CompareDates } from '@/components/compare-dates';
 import { LoadState } from '@/components/load-state';
+import { MobileShareCompare } from '@/components/share-compare';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -264,13 +265,21 @@ export function Trends() {
         <View className="flex-row items-center justify-between gap-3">
           <Text className={LABEL}>{t('trends.compare')}</Text>
           {pair && (
-            <CompareDates
-              photoDays={photoDays(window, data.photos)}
-              firstDay={window[0]}
-              today={today}
-              value={[localDay(new Date(pair.before.taken_at)), localDay(new Date(pair.after.taken_at))]}
-              onChange={setChosen}
-            />
+            <View className="flex-row items-center gap-2">
+              <MobileShareCompare
+                beforeDate={localDay(new Date(pair.before.taken_at))}
+                afterDate={localDay(new Date(pair.after.taken_at))}
+                beforeUrl={urls[0]}
+                afterUrl={urls[1]}
+              />
+              <CompareDates
+                photoDays={photoDays(window, data.photos)}
+                firstDay={window[0]}
+                today={today}
+                value={[localDay(new Date(pair.before.taken_at)), localDay(new Date(pair.after.taken_at))]}
+                onChange={setChosen}
+              />
+            </View>
           )}
         </View>
         {pair ? (

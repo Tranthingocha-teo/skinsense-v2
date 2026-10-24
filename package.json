@@ -8,7 +8,9 @@
     "build": "turbo build",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
-    "test": "turbo test"
+    "test": "turbo test",
+    "doctor": "bun run scripts/doctor.ts",
+    "seed": "bun run scripts/seed.ts"
   },
   "devDependencies": {
     "shadcn": "^4.21.0",

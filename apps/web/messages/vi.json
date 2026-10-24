@@ -31,7 +31,8 @@
     "support": "Hỗ trợ",
     "privacy": "Chính sách riêng tư",
     "data": "Dữ liệu",
-    "history": "Lịch sử ảnh"
+    "history": "Lịch sử ảnh",
+    "export": "Xuất dữ liệu (.csv)"
   },
   "Feedback": {
     "title": "Góp ý",
@@ -338,7 +339,8 @@
     "cancel": "Hủy",
     "prevMonth": "Tháng trước",
     "nextMonth": "Tháng sau",
-    "today": "hôm nay"
+    "today": "hôm nay",
+    "share": "Chia sẻ"
   },
   "Account": {
     "delete": "Xóa tài khoản",

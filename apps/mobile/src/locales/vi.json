@@ -46,7 +46,13 @@
     "reminderEvery": "{{time}} mỗi tối",
     "reminderDays": "{{time}} · {{days}}",
     "reminderOff": "Đang tắt",
+    "biometric": "Khóa sinh trắc học",
+    "biometricPrompt": "Khóa ứng dụng khi mở lại",
+    "biometricUnavailable": "Máy chưa cài đặt bảo mật vân tay",
     "history": "Lịch sử ảnh",
+    "export": "Xuất dữ liệu (.zip)",
+    "exporting": "Đang xuất dữ liệu…",
+    "exportSuccess": "Đã xuất dữ liệu thành công",
     "about": "Giới thiệu & giấy phép"
   },
   "about": {
@@ -263,6 +269,9 @@
     "apply": "So sánh",
     "prevMonth": "Tháng trước",
     "nextMonth": "Tháng sau",
-    "today": "hôm nay"
+    "today": "hôm nay",
+    "share": "Chia sẻ",
+    "shareTitle": "Chia sẻ so sánh",
+    "shareMessage": "Tiến trình SkinSense: Trước ({{before}}) vs Sau ({{after}})"
   }
 }

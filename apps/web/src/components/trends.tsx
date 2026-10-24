@@ -18,6 +18,7 @@ import { useEffect, useReducer, useState } from "react";
 import { Line, LineChart, ReferenceLine, XAxis, YAxis } from "recharts";
 import { useAppHref } from "@/components/app-nav";
 import { CompareDates } from "@/components/compare-dates";
+import { ShareCompare } from "@/components/share-compare";
 import { LoadState } from "@/components/load-state";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Empty, EmptyDescription } from "@/components/ui/empty";
@@ -313,13 +314,24 @@ export function Trends({ api }: { api: TrendsApi }) {
               <div className="flex items-center justify-between gap-3">
                 <h2 className={LABEL}>{t("compare")}</h2>
                 {pair && (
-                  <CompareDates
-                    photoDays={photoDays(window, data.photos)}
-                    firstDay={window[0]}
-                    today={today}
-                    value={[localDay(new Date(pair.before.taken_at)), localDay(new Date(pair.after.taken_at))]}
-                    onChange={setChosen}
-                  />
+                  <div className="flex items-center gap-1.5">
+                    <CompareDates
+                      photoDays={photoDays(window, data.photos)}
+                      firstDay={window[0]}
+                      today={today}
+                      value={[localDay(new Date(pair.before.taken_at)), localDay(new Date(pair.after.taken_at))]}
+                      onChange={setChosen}
+                    />
+                    {urls.length === 2 && (
+                      <ShareCompare
+                        beforeUrl={urls[0]}
+                        afterUrl={urls[1]}
+                        beforeDate={pair.before.taken_at}
+                        afterDate={pair.after.taken_at}
+                        rednessValue={redness[lastIndex]?.value ?? undefined}
+                      />
+                    )}
+                  </div>
                 )}
               </div>
               {pair ? (
