@@ -19,10 +19,25 @@ export async function loadTrends(firstDay: string): Promise<TrendData> {
   const isDemo = (await AsyncStorage.getItem('skinsense_demo_active')) === 'true';
   if (isDemo) {
     const demo = getMobileDemoData();
+    const storedPhotosStr = await AsyncStorage.getItem('skinsense_demo_photos');
+    const storedPhotos = storedPhotosStr ? JSON.parse(storedPhotosStr) : [];
+    const storedReadingsStr = await AsyncStorage.getItem('skinsense_demo_readings');
+    const storedReadings = storedReadingsStr ? JSON.parse(storedReadingsStr) : [];
+    const storedSpotsStr = await AsyncStorage.getItem('skinsense_demo_spots');
+    const storedSpots = storedSpotsStr ? JSON.parse(storedSpotsStr) : {};
+
+    const allPhotos = [...demo.photos, ...storedPhotos];
+    const allReadings = [...demo.readings, ...storedReadings];
+    const spotRows = [
+      ...demo.spots,
+      ...Object.entries(storedSpots).flatMap(([photo_id, rows]: [string, any]) =>
+        rows.map((r: any) => ({ photo_id, ...r })),
+      ),
+    ];
     return {
-      photos: demo.photos.filter((p) => p.taken_at >= firstDay) as TrendPhoto[],
-      readings: demo.readings as TrendData['readings'],
-      spots: demo.spots as TrendData['spots'],
+      photos: allPhotos.filter((p) => p.taken_at >= firstDay) as TrendPhoto[],
+      readings: allReadings as TrendData['readings'],
+      spots: spotRows as TrendData['spots'],
       entries: demo.entries.filter((e) => e.night >= firstDay) as RoutineEntry[],
     };
   }

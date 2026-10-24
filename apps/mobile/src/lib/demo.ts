@@ -47,7 +47,12 @@ export async function setDemoActive(active: boolean): Promise<void> {
 }
 
 export async function resetDemoData(): Promise<void> {
-  await AsyncStorage.removeItem(DEMO_STORED_KEY);
+  await AsyncStorage.multiRemove([
+    DEMO_STORED_KEY,
+    'skinsense_demo_photos',
+    'skinsense_demo_readings',
+    'skinsense_demo_spots',
+  ]);
 }
 
 export function getMobileDemoData() {

@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
 import { File, Paths } from 'expo-file-system';
 
@@ -10,7 +11,17 @@ import { supabase } from './supabase';
 const BUCKET = 'photos';
 const GHOST_URL_TTL_SECONDS = 600;
 
+async function isDemo(): Promise<boolean> {
+  return (await AsyncStorage.getItem('skinsense_demo_active')) === 'true';
+}
+
 async function latestPhoto() {
+  if (await isDemo()) {
+    const demoPhotosStr = await AsyncStorage.getItem('skinsense_demo_photos');
+    const demoPhotos = demoPhotosStr ? JSON.parse(demoPhotosStr) : [];
+    if (demoPhotos.length > 0) return demoPhotos[0];
+    return null;
+  }
   const latest = await supabase
     .from('photos')
     .select('id,storage_path')
@@ -29,6 +40,9 @@ export async function latestPhotoId(): Promise<string | null> {
 export async function latestPhotoUrl(): Promise<string | null> {
   const latest = await latestPhoto();
   if (!latest) return null;
+  if (await isDemo()) {
+    return latest.storage_path;
+  }
   const signed = await supabase.storage.from(BUCKET).createSignedUrl(latest.storage_path, GHOST_URL_TTL_SECONDS);
   fail(signed.error);
   return signed.data!.signedUrl;
@@ -45,7 +59,37 @@ export async function savePhoto(input: {
 }): Promise<string> {
   const { data } = await supabase.auth.getSession();
   const userId = data.session?.user.id;
-  if (!userId) throw new Error('not signed in');
+  if (!userId) {
+    if (await isDemo()) {
+      const id = Crypto.randomUUID();
+      const file = new File(Paths.cache, `${id}.jpg`);
+      if (!file.exists) {
+        file.create({ overwrite: true });
+      }
+      file.write(new Uint8Array(input.image));
+
+      const now = new Date().toISOString();
+      const demoPhotosStr = await AsyncStorage.getItem('skinsense_demo_photos');
+      const demoPhotos = demoPhotosStr ? JSON.parse(demoPhotosStr) : [];
+      demoPhotos.unshift({ id, taken_at: now, storage_path: file.uri });
+      await AsyncStorage.setItem('skinsense_demo_photos', JSON.stringify(demoPhotos));
+
+      const demoReadingsStr = await AsyncStorage.getItem('skinsense_demo_readings');
+      const demoReadings = demoReadingsStr ? JSON.parse(demoReadingsStr) : [];
+      ZONES.forEach((zone) => {
+        demoReadings.push({
+          photo_id: id,
+          zone,
+          redness: input.readings[zone].redness,
+          unevenness: input.readings[zone].unevenness,
+          pixel_count: input.readings[zone].pixelCount,
+        });
+      });
+      await AsyncStorage.setItem('skinsense_demo_readings', JSON.stringify(demoReadings));
+      return id;
+    }
+    throw new Error('not signed in');
+  }
   const id = Crypto.randomUUID();
   const storagePath = `${userId}/${id}.jpg`;
 
@@ -82,6 +126,10 @@ export type SpotRow = { x: number; y: number; zone: Zone };
 // The stored JPEG downloaded to the cache dir, as a file:// URI — nitro-image
 // loads from a path, not a URL, and the landmarker has to re-run on the pixels.
 export async function loadPhoto(id: string): Promise<string> {
+  if (await isDemo()) {
+    const file = new File(Paths.cache, `${id}.jpg`);
+    if (file.exists) return file.uri;
+  }
   const photo = await supabase.from('photos').select('storage_path').eq('id', id).single();
   fail(photo.error);
   const signed = await supabase.storage.from(BUCKET).createSignedUrl(photo.data!.storage_path, GHOST_URL_TTL_SECONDS);
@@ -91,6 +139,11 @@ export async function loadPhoto(id: string): Promise<string> {
 }
 
 export async function loadSpots(photoId: string): Promise<SpotRow[]> {
+  if (await isDemo()) {
+    const demoSpotsStr = await AsyncStorage.getItem('skinsense_demo_spots');
+    const demoSpots = demoSpotsStr ? JSON.parse(demoSpotsStr) : {};
+    return demoSpots[photoId] ?? [];
+  }
   const { data, error } = await supabase.from('spots').select('x,y,zone').eq('photo_id', photoId);
   fail(error);
   return data as SpotRow[];
@@ -102,6 +155,13 @@ export async function loadSpots(photoId: string): Promise<SpotRow[]> {
 // between the two keeps the old set instead of losing it; a failed delete leaves
 // duplicates that the next Save clears. An RPC would make it atomic.
 export async function saveSpots(photoId: string, spots: SpotRow[]): Promise<void> {
+  if (await isDemo()) {
+    const demoSpotsStr = await AsyncStorage.getItem('skinsense_demo_spots');
+    const demoSpots = demoSpotsStr ? JSON.parse(demoSpotsStr) : {};
+    demoSpots[photoId] = spots;
+    await AsyncStorage.setItem('skinsense_demo_spots', JSON.stringify(demoSpots));
+    return;
+  }
   let keep = supabase.from('spots').delete().eq('photo_id', photoId);
   if (spots.length > 0) {
     const inserted = await supabase
