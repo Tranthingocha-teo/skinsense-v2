@@ -7,13 +7,13 @@ import {
 } from '@skinsense/domain';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
-import { Link, useRouter } from 'expo-router';
+import { router, useRouter } from 'expo-router';
 import {
   AlertTriangle,
   CheckCircle2,
   ChevronLeft,
-  ExternalLink,
   ShieldCheck,
+  ShoppingBag,
   Sparkles,
   Star,
 } from 'lucide-react-native';
@@ -198,7 +198,7 @@ export function ProductDetail({
         <View className="flex-row items-center justify-center gap-2 py-2">
           <Icon as={ShieldCheck} size={16} className="text-success" />
           <Text className="text-[12.5px] font-light text-muted-foreground">
-            Cam kết 100% phân phối chính hãng qua Shopee Mall / Web thương hiệu
+            Cam kết 100% phân phối chính hãng qua SkinSense Market & Shop uỷ quyền
           </Text>
         </View>
       </ScrollView>
@@ -216,10 +216,13 @@ export function ProductDetail({
           <Pressable
             role="button"
             accessibilityLabel="Bấm vào mua hàng"
-            onPress={openPurchaseLink}
+            onPress={() => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push(`/market/${product.id}` as any);
+            }}
             className="flex-[1.5] h-12 flex-row items-center justify-center gap-2 rounded-control bg-primary active:opacity-90"
           >
-            <Icon as={ExternalLink} size={17} className="text-primary-foreground" />
+            <Icon as={ShoppingBag} size={17} className="text-primary-foreground" />
             <Text className="text-[15px] font-medium text-primary-foreground">
               Mua hàng chính hãng
             </Text>

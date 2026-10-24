@@ -6,8 +6,11 @@ import { ProductDetail } from './product-detail';
 
 jest.mock('react-native-safe-area-context', () => require('react-native-safe-area-context/jest/mock').default);
 
+const mockPush = jest.fn();
+const mockBack = jest.fn();
+
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ back: jest.fn() }),
+  useRouter: () => ({ back: mockBack, push: mockPush }),
   Link: ({ children }: any) => children,
 }));
 
@@ -28,18 +31,15 @@ describe('ProductDetail Component', () => {
     expect(screen.getByText('Mua hàng chính hãng')).toBeTruthy();
   });
 
-  it('triggers Linking.openURL when clicking Mua hàng chính hãng', async () => {
-    const openSpy = jest.spyOn(Linking, 'openURL').mockResolvedValue(true as any);
-    const canOpenSpy = jest.spyOn(Linking, 'canOpenURL').mockResolvedValue(true);
-
+  it('renders Mua hàng chính hãng action button linking to internal market', async () => {
     await render(
       <ProductDetail productId="lrp-effaclar-duo-m" zone="chin" />,
     );
 
     const buyBtn = screen.getByText('Mua hàng chính hãng');
-    await fireEvent.press(buyBtn);
-
-    expect(canOpenSpy).toHaveBeenCalled();
+    expect(buyBtn).toBeTruthy();
+    fireEvent.press(buyBtn);
+    expect(mockPush).toHaveBeenCalledWith('/market/lrp-effaclar-duo-m');
   });
 
   it('renders fallback when product is not found', async () => {

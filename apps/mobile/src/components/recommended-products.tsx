@@ -6,7 +6,7 @@ import {
   type ZoneTelemetry,
 } from '@skinsense/domain';
 import { Image } from 'expo-image';
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router';
 import { ExternalLink, Sparkles, Star } from 'lucide-react-native';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -33,48 +33,47 @@ export function ProductCard({
 }) {
   const query = zone ? `?zone=${zone}` : '';
   return (
-    <Link href={`/products/${product.id}${query}` as any} asChild>
-      <Pressable
-        role="button"
-        accessibilityLabel={product.name}
-        className="w-[220px] rounded-card border border-border bg-card p-3 active:scale-[0.98]"
-      >
-        <View className="relative aspect-square w-full overflow-hidden rounded-control bg-surface-2">
-          <Image
-            source={{ uri: product.imageUrl }}
-            style={{ width: '100%', height: '100%' }}
-            contentFit="cover"
-            transition={200}
-          />
-          <View className="absolute right-2 top-2 rounded-pill bg-background/80 px-2 py-0.5 backdrop-blur-sm">
-            <View className="flex-row items-center gap-1">
-              <Icon as={Star} size={12} className="text-amber-500 fill-amber-500" />
-              <Text className="text-[11px] font-medium">{product.rating.toFixed(1)}</Text>
-            </View>
+    <Pressable
+      role="button"
+      accessibilityLabel={product.name}
+      onPress={() => router.push({ pathname: '/products/[id]', params: { id: product.id, ...(zone ? { zone } : {}) } } as any)}
+      className="w-[220px] rounded-card border border-border bg-card p-3 active:scale-[0.98]"
+    >
+      <View className="relative aspect-square w-full overflow-hidden rounded-control bg-surface-2">
+        <Image
+          source={{ uri: product.imageUrl }}
+          style={{ width: '100%', height: '100%' }}
+          contentFit="cover"
+          transition={200}
+        />
+        <View className="absolute right-2 top-2 rounded-pill bg-background/80 px-2 py-0.5 backdrop-blur-sm">
+          <View className="flex-row items-center gap-1">
+            <Icon as={Star} size={12} className="text-amber-500 fill-amber-500" />
+            <Text className="text-[11px] font-medium">{product.rating.toFixed(1)}</Text>
           </View>
         </View>
+      </View>
 
-        <View className="mt-2.5 gap-1">
-          <Text className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-            {product.brand}
-          </Text>
-          <Text numberOfLines={2} className="text-[13.5px] font-medium leading-[18px]">
-            {product.name}
-          </Text>
-          <View className="mt-1 flex-row items-center justify-between">
-            <Text className="text-[14px] font-bold text-primary">{product.priceFormatted}</Text>
-            <Text className="text-[11px] text-muted-foreground">{product.category}</Text>
-          </View>
-          {product.keyActives[0] && (
-            <View className="mt-1.5 self-start rounded-pill bg-surface-2 px-2 py-0.5">
-              <Text numberOfLines={1} className="text-[10.5px] text-foreground">
-                {product.keyActives[0]}
-              </Text>
-            </View>
-          )}
+      <View className="mt-2.5 gap-1">
+        <Text className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          {product.brand}
+        </Text>
+        <Text numberOfLines={2} className="text-[13.5px] font-medium leading-[18px]">
+          {product.name}
+        </Text>
+        <View className="mt-1 flex-row items-center justify-between">
+          <Text className="text-[14px] font-bold text-primary">{product.priceFormatted}</Text>
+          <Text className="text-[11px] text-muted-foreground">{product.category}</Text>
         </View>
-      </Pressable>
-    </Link>
+        {product.keyActives[0] && (
+          <View className="mt-1.5 self-start rounded-pill bg-surface-2 px-2 py-0.5">
+            <Text numberOfLines={1} className="text-[10.5px] text-foreground">
+              {product.keyActives[0]}
+            </Text>
+          </View>
+        )}
+      </View>
+    </Pressable>
   );
 }
 

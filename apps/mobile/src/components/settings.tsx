@@ -1,15 +1,36 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { color } from '@skinsense/tokens/tokens.json';
-import { Link } from 'expo-router';
-import { ChevronRight, CircleAlert } from 'lucide-react-native';
-import { useState, type ReactNode } from 'react';
+import * as Haptics from 'expo-haptics';
+import { Link, router } from 'expo-router';
+import {
+  ChevronRight,
+  CircleAlert,
+  Lock,
+  Package,
+  ShieldCheck,
+  ShoppingBag,
+  Store,
+  X,
+} from 'lucide-react-native';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Image, Pressable, ScrollView, Switch, useColorScheme, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Image,
+  Modal,
+  Pressable,
+  ScrollView,
+  Switch,
+  TextInput,
+  useColorScheme,
+  View,
+} from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { exportNotesAndTagsCsv, exportRoutineCsv, exportSpotsCsv, exportZoneReadingsCsv } from '@skinsense/domain';
 import { useBiometricsSetting } from '@/lib/biometrics';
+import { getCurrentRole, setCurrentRole, type UserRole } from '@/lib/marketplace';
 
 import { ExternalLink } from '@/components/external-link';
 import {
@@ -236,6 +257,232 @@ function ExportRow() {
   );
 }
 
+function MarketplaceSection() {
+  const [currentRole, setRoleState] = useState<UserRole>('customer');
+  const [adminPinModal, setAdminPinModal] = useState(false);
+  const [pinInput, setPinInput] = useState('');
+  const [pinError, setPinError] = useState(false);
+
+  useEffect(() => {
+    void getCurrentRole().then(setRoleState);
+  }, []);
+
+  async function handleSelectRole(newRole: UserRole) {
+    if (newRole === 'admin') {
+      setPinInput('');
+      setPinError(false);
+      setAdminPinModal(true);
+      return;
+    }
+    void Haptics.selectionAsync().catch(() => {});
+    setRoleState(newRole);
+    await setCurrentRole(newRole);
+  }
+
+  async function handleConfirmAdminPin() {
+    if (pinInput.trim() === '8888') {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      setRoleState('admin');
+      await setCurrentRole('admin');
+      setAdminPinModal(false);
+      router.push('/admin');
+    } else {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
+      setPinError(true);
+    }
+  }
+
+  return (
+    <Group label="SkinSense Market & Phân quyền" className="p-3">
+      {/* 3-Tier Role Selector */}
+      <View className="mb-2">
+        <Text className="mb-2 text-[12px] font-medium text-muted-foreground">
+          Chế độ người dùng
+        </Text>
+        <View className="flex-row rounded-control border border-border bg-surface-1 p-1">
+          <Pressable
+            role="button"
+            onPress={() => void handleSelectRole('customer')}
+            className={`flex-1 py-1.5 items-center justify-center rounded-control ${
+              currentRole === 'customer' ? 'bg-primary' : 'bg-transparent'
+            }`}
+          >
+            <Text
+              className={`text-[12px] ${
+                currentRole === 'customer'
+                  ? 'font-semibold text-primary-foreground'
+                  : 'font-normal text-muted-foreground'
+              }`}
+            >
+              Khách hàng
+            </Text>
+          </Pressable>
+
+          <Pressable
+            role="button"
+            onPress={() => void handleSelectRole('shop')}
+            className={`flex-1 py-1.5 items-center justify-center rounded-control ${
+              currentRole === 'shop' ? 'bg-primary' : 'bg-transparent'
+            }`}
+          >
+            <Text
+              className={`text-[12px] ${
+                currentRole === 'shop'
+                  ? 'font-semibold text-primary-foreground'
+                  : 'font-normal text-muted-foreground'
+              }`}
+            >
+              Kênh người bán
+            </Text>
+          </Pressable>
+
+          <Pressable
+            role="button"
+            onPress={() => void handleSelectRole('admin')}
+            className={`flex-1 py-1.5 items-center justify-center rounded-control ${
+              currentRole === 'admin' ? 'bg-primary' : 'bg-transparent'
+            }`}
+          >
+            <Text
+              className={`text-[12px] ${
+                currentRole === 'admin'
+                  ? 'font-semibold text-primary-foreground'
+                  : 'font-normal text-muted-foreground'
+              }`}
+            >
+              Super Admin
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+
+      {/* Navigation Rows */}
+      <Link href="/orders" asChild>
+        <Pressable role="button" className={`${ROW} ${LINE}`}>
+          <View className="flex-row items-center gap-3">
+            <View className="size-8 items-center justify-center rounded-pill bg-primary/10">
+              <Icon as={ShoppingBag} size={16} className="text-primary" />
+            </View>
+            <View className="gap-0.5">
+              <Text className="text-[14.5px] font-medium">Đơn mua của tôi</Text>
+              <Text className="text-[12px] font-light text-muted-foreground">
+                Theo dõi giao nhận & mã VietQR
+              </Text>
+            </View>
+          </View>
+          <Icon as={ChevronRight} size={18} strokeWidth={1.5} className="text-muted-foreground" />
+        </Pressable>
+      </Link>
+
+      <Link href="/shop" asChild>
+        <Pressable role="button" className={`${ROW} ${LINE}`}>
+          <View className="flex-row items-center gap-3">
+            <View className="size-8 items-center justify-center rounded-pill bg-blue-500/10">
+              <Icon as={Store} size={16} className="text-blue-500" />
+            </View>
+            <View className="gap-0.5">
+              <Text className="text-[14.5px] font-medium">Kênh Người Bán (Vendor)</Text>
+              <Text className="text-[12px] font-light text-muted-foreground">
+                Quản lý kho hàng & xác nhận đơn
+              </Text>
+            </View>
+          </View>
+          <Icon as={ChevronRight} size={18} strokeWidth={1.5} className="text-muted-foreground" />
+        </Pressable>
+      </Link>
+
+      <Link href="/admin" asChild>
+        <Pressable role="button" className={`${ROW} ${LINE}`}>
+          <View className="flex-row items-center gap-3">
+            <View className="size-8 items-center justify-center rounded-pill bg-purple-500/10">
+              <Icon as={ShieldCheck} size={16} className="text-purple-500" />
+            </View>
+            <View className="gap-0.5">
+              <Text className="text-[14.5px] font-medium">Quản Trị Viên Tối Cao (Admin)</Text>
+              <Text className="text-[12px] font-light text-muted-foreground">
+                Duyệt shop, quản lý GMV toàn hệ thống
+              </Text>
+            </View>
+          </View>
+          <Icon as={ChevronRight} size={18} strokeWidth={1.5} className="text-muted-foreground" />
+        </Pressable>
+      </Link>
+
+      {/* Admin PIN Dialog Modal */}
+      {adminPinModal && (
+        <Modal
+          visible={true}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setAdminPinModal(false)}
+        >
+          <View className="flex-1 items-center justify-center bg-black/60 p-5">
+            <View className="w-full max-w-xs rounded-sheet border border-border bg-card p-5">
+              <View className="flex-row items-center justify-between pb-3 border-b border-border">
+                <View className="flex-row items-center gap-2">
+                  <Icon as={Lock} size={16} className="text-primary" />
+                  <Text className="text-[15px] font-semibold">Xác thực Super Admin</Text>
+                </View>
+                <Pressable
+                  role="button"
+                  onPress={() => setAdminPinModal(false)}
+                  className="size-7 items-center justify-center rounded-pill active:bg-surface-2"
+                >
+                  <Icon as={X} size={16} className="text-muted-foreground" />
+                </Pressable>
+              </View>
+
+              <View className="gap-3 py-4">
+                <Text className="text-[12.5px] text-muted-foreground">
+                  Nhập mã PIN quản trị viên (Mặc định: <Text className="font-bold text-foreground">8888</Text>):
+                </Text>
+                <TextInput
+                  value={pinInput}
+                  onChangeText={(text) => {
+                    setPinInput(text);
+                    setPinError(false);
+                  }}
+                  keyboardType="numeric"
+                  maxLength={6}
+                  secureTextEntry
+                  autoFocus
+                  placeholder="••••"
+                  placeholderTextColor="#888"
+                  className={`h-11 rounded-control border px-3 text-center text-[18px] tracking-[6px] text-foreground ${
+                    pinError ? 'border-destructive bg-destructive/10' : 'border-border bg-surface-1'
+                  }`}
+                />
+                {pinError && (
+                  <Text className="text-center text-[11.5px] text-destructive">
+                    Mã PIN không chính xác. Vui lòng thử lại.
+                  </Text>
+                )}
+              </View>
+
+              <View className="flex-row gap-2 pt-2 border-t border-border">
+                <Pressable
+                  role="button"
+                  onPress={() => setAdminPinModal(false)}
+                  className="flex-1 h-10 items-center justify-center rounded-control border border-border"
+                >
+                  <Text className="text-[13px] font-medium text-foreground">Huỷ</Text>
+                </Pressable>
+                <Pressable
+                  role="button"
+                  onPress={handleConfirmAdminPin}
+                  className="flex-1 h-10 items-center justify-center rounded-control bg-primary active:opacity-90"
+                >
+                  <Text className="text-[13px] font-semibold text-primary-foreground">Xác nhận</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
+    </Group>
+  );
+}
+
 export function Settings() {
   const { t, i18n } = useTranslation();
   const session = useSession();
@@ -266,6 +513,8 @@ export function Settings() {
           {email && <Text className="text-[13px] font-light text-muted-foreground">{email}</Text>}
         </View>
       </View>
+
+      <MarketplaceSection />
 
       <Group label={t('settings.display')} className="py-1.5 pl-[18px] pr-1.5">
         <View className={ROW}>
