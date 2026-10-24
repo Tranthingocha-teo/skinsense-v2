@@ -20,4 +20,5 @@ graphify-out/
 *.keystore
 *.p12
 *.pem
+*.apk
 supabase/.temp/
