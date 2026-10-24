@@ -1,0 +1,35 @@
+# Trends: 7/30-day toggle and the before/after slider (ticket 13). Same
+# preconditions as capture.yaml (signed-in session, dev build, device locale en)
+# plus at least 2 photos in the last 30 days so the slider renders.
+appId: com.dinh144.skinsense
+---
+- launchApp
+- tapOn: "Trends"
+- extendedWaitUntil:
+    visible: "Redness index.*"
+    timeout: 15000
+# The dev client's floating gear button sits over the toggle's right half.
+- tapOn:
+    id: "days-30"
+    point: "20%,50%"
+- assertVisible: "Redness index.*"
+- tapOn: "Nose"
+- assertVisible: "Redness index — Nose"
+- assertVisible: "Before / after"
+- tapOn:
+    id: "compare-slider"
+    point: "75%,50%"
+- assertVisible: "Before / after"
+# Choosing two dates (ticket 16): the sheet enables only days with photos
+# (needs 2 photo days in the current month); Compare closes it.
+- tapOn: "Choose 2 dates"
+- assertVisible: "Days with a dot have photos"
+- tapOn:
+    id: "photo-day"
+    index: 0
+- tapOn:
+    id: "photo-day"
+    index: 1
+- tapOn: "Compare"
+- assertNotVisible: "Days with a dot have photos"
+- assertVisible: "Before / after"

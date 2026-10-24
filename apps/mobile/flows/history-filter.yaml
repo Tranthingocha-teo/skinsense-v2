@@ -1,0 +1,29 @@
+# Cài đặt → Photo history → filter chips (ticket 15). Same preconditions as
+# history.yaml (signed-in session, dev build, device locale en) plus at least one
+# saved photo with a Note and one with the Tag "Short sleep" (add them on Photo
+# detail first). Read-only: only taps filter chips.
+appId: com.dinh144.skinsense
+---
+- launchApp
+- tapOn: "Settings"
+- tapOn: "Photo history"
+- extendedWaitUntil:
+    visible: "\\d+ photos?"
+    timeout: 15000
+- assertVisible: "All"
+- tapOn: "Short sleep"
+- assertVisible:
+    text: ".*, \\d+ spots?"
+    index: 0
+- tapOn: "Has a note"
+- assertVisible:
+    text: ".*, \\d+ spots?"
+    index: 0
+- tapOn: "All"
+- tapOn:
+    text: ".*, \\d+ spots?"
+    index: 0
+- extendedWaitUntil:
+    visible: "Note"
+    timeout: 15000
+- assertVisible: "Add tag"

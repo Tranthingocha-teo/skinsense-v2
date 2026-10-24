@@ -1,0 +1,25 @@
+# Cài đặt → Photo history → Photo detail (ticket 14). Same preconditions as
+# capture.yaml (signed-in session, dev build, device locale en) plus at least one
+# saved photo. Read-only: the delete dialog is opened and cancelled, never confirmed.
+appId: com.dinh144.skinsense
+---
+- launchApp
+- tapOn: "Settings"
+- tapOn: "Photo history"
+- extendedWaitUntil:
+    visible: "\\d+ photos?"
+    timeout: 15000
+- tapOn:
+    text: ".*, \\d+ spots?"
+    index: 0
+- extendedWaitUntil:
+    visible: ".* · redness"
+    timeout: 15000
+- assertVisible: "\\d+ spots?"
+- assertVisible: "Mark spots"
+- tapOn: "Delete photo"
+- assertVisible: "Delete this photo?"
+- tapOn: "Cancel"
+- assertNotVisible: "Delete this photo?"
+- tapOn: "Back"
+- assertVisible: "Photo history"
