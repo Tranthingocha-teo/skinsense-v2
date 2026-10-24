@@ -1,0 +1,106 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+Display:wght@300;400&family=Manrope:wght@300;400;500;600&display=swap">
+  <style>
+    :root { --bg: #0A0C0B; --surface: #1A1F1C; --surface-2: #242A26; --fg: #F2EFE8; --muted: #BDB8AD; --line: #3A403B; --accent: #ECE7DB; --on-accent: #121412; --good: #AFCFA9; --danger: #E8998D; --photo-a: #2F4A3A; --photo-b: #16241C; --photo-c: #C9B98A; --display: 'Noto Serif Display', Georgia, 'Times New Roman', serif; --font: 'Manrope', 'Segoe UI', system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font); }
+    a { color: var(--fg); text-decoration: underline; text-underline-offset: 4px; }
+    a:hover { color: var(--muted); }
+    h1, h2, h3, p { margin: 0; }
+    .d { font-family: var(--display); font-weight: 300; }
+    .lbl { font-size: 11px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+    .muted { color: var(--muted); }
+    .card { border-radius: 18px; background: var(--surface); border: 1px solid color-mix(in oklab, var(--fg) 10%, transparent); }
+    .glass { border-radius: 18px; background: color-mix(in oklab, var(--surface) 72%, transparent); border: 1px solid color-mix(in oklab, var(--fg) 14%, transparent); backdrop-filter: blur(18px); }
+    .btn { display: flex; align-items: center; justify-content: center; gap: 10px; height: 52px; padding: 0 24px; border-radius: 4px; background: var(--accent); color: var(--on-accent); font-size: 15px; font-weight: 500; }
+    .btn-o { display: flex; align-items: center; justify-content: center; gap: 10px; height: 52px; padding: 0 24px; border-radius: 4px; border: 1px solid color-mix(in oklab, var(--fg) 55%, transparent); font-size: 15px; font-weight: 400; }
+    .chip { display: flex; align-items: center; gap: 6px; height: 44px; padding: 0 16px; border-radius: 4px; border: 1px solid color-mix(in oklab, var(--fg) 14%, transparent); font-size: 14px; color: var(--muted); }
+    .chip-on { display: flex; align-items: center; gap: 6px; height: 44px; padding: 0 16px; border-radius: 4px; background: var(--accent); color: var(--on-accent); font-size: 14px; font-weight: 500; }
+    .ph { padding: 4px 10px; border: 1px dashed color-mix(in oklab, var(--fg) 45%, transparent); border-radius: 999px; font-size: 11px; }
+    .photo { background: radial-gradient(40% 34% at 50% 46%, color-mix(in oklab, var(--photo-c) 38%, transparent), transparent 72%), radial-gradient(90% 70% at 20% 85%, var(--photo-a), transparent 75%), linear-gradient(180deg, var(--photo-b), var(--photo-a)); }
+    .night { background: radial-gradient(60% 60% at 75% 10%, color-mix(in oklab, var(--photo-c) 32%, transparent), transparent 70%), linear-gradient(180deg, var(--photo-b), var(--bg)); }
+    .row { display: flex; align-items: center; }
+    .hit { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 44px; height: 44px; }
+    .line { border-top: 1px solid var(--line); }
+    .cal { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; height: 44px; font-size: 14px; }
+    .cal-on { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; width: 44px; height: 44px; margin: 0 auto; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14px; font-weight: 500; }
+    .dot { width: 4px; height: 4px; border-radius: 999px; background: currentColor; }
+    .tile { position: relative; aspect-ratio: 3 / 4; border-radius: 6px; overflow: hidden; }
+    @keyframes fade-in-down { from { opacity: 0; transform: translateY(-12px); } }
+    @keyframes fade { from { opacity: 0; } }
+    @keyframes grow-x { from { transform: scaleX(0); } }
+    @keyframes draw { from { stroke-dashoffset: 113.1; } }
+    .in { animation: fade-in-down 460ms ease-out both; }
+    .grow { transform-origin: left; animation: grow-x 360ms ease-out both; }
+    .draw { stroke-dasharray: 113.1; animation: draw 1.4s cubic-bezier(0.65, 0, 0.35, 1) both; }
+    .draw-dot { animation: fade 0.4s ease-out 1.2s both; }
+    @media (prefers-reduced-motion: reduce) { .in { animation-name: fade; } .grow, .draw { animation: none; } }
+    .tile-meta { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: space-between; padding: 16px 7px 6px; background: linear-gradient(180deg, transparent, color-mix(in oklab, var(--bg) 82%, transparent)); font-size: 11px; font-weight: 500; }
+  </style>
+</helmet>
+<div style="position:relative; display:flex; flex-direction:column; gap:32px; width:1440px; height:900px; overflow:hidden; padding:56px 80px; background:var(--bg); color:var(--fg);">
+  <div style="display:flex; flex-direction:column; gap:10px;">
+    <span class="lbl">Trạng thái tương tác · web</span>
+    <h1 class="d" style="font-size:44px; line-height:1.2;">Hover, focus, nhấn, tắt</h1>
+  </div>
+
+  <div style="display:grid; grid-template-columns:150px repeat(5, minmax(0, 1fr)); gap:22px 28px; align-items:center;">
+    <span></span><span class="lbl">Mặc định</span><span class="lbl">Hover</span><span class="lbl">Focus bàn phím</span><span class="lbl">Nhấn / đang chọn</span><span class="lbl">Tắt</span>
+
+    <span class="muted" style="font-size:14px;">Nút chính</span>
+    <span class="btn" style="height:48px;">Lưu</span>
+    <span class="btn" style="height:48px; background:color-mix(in oklab, var(--accent) 84%, var(--bg));">Lưu</span>
+    <span class="btn" style="height:48px; outline:2px solid var(--fg); outline-offset:3px;">Lưu</span>
+    <span class="btn" style="height:48px; transform:scale(0.98); background:color-mix(in oklab, var(--accent) 74%, var(--bg));">Lưu</span>
+    <span class="btn" style="height:48px; opacity:0.4;">Lưu</span>
+
+    <span class="muted" style="font-size:14px;">Nút viền</span>
+    <span class="btn-o" style="height:48px;">Chụp lại</span>
+    <span class="btn-o" style="height:48px; background:color-mix(in oklab, var(--fg) 6%, transparent);">Chụp lại</span>
+    <span class="btn-o" style="height:48px; outline:2px solid var(--fg); outline-offset:3px;">Chụp lại</span>
+    <span class="btn-o" style="height:48px; transform:scale(0.98); background:color-mix(in oklab, var(--fg) 11%, transparent);">Chụp lại</span>
+    <span class="btn-o" style="height:48px; opacity:0.4;">Chụp lại</span>
+
+    <span class="muted" style="font-size:14px;">Chip</span>
+    <span class="chip" style="justify-self:start;">Má trái</span>
+    <span class="chip" style="justify-self:start; color:var(--fg); border-color:color-mix(in oklab, var(--fg) 35%, transparent);">Má trái</span>
+    <span class="chip" style="justify-self:start; outline:2px solid var(--fg); outline-offset:3px;">Má trái</span>
+    <span class="chip-on" style="justify-self:start;">Má trái</span>
+    <span class="chip" style="justify-self:start; opacity:0.4;">Má trái</span>
+
+    <span class="muted" style="font-size:14px;">Hàng danh sách</span>
+    <span class="card row" style="justify-content:space-between; min-height:52px; padding:0 8px 0 16px; font-size:14.5px;">Xuất dữ liệu <span class="muted"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg></span></span>
+    <span class="card row" style="justify-content:space-between; min-height:52px; padding:0 8px 0 16px; font-size:14.5px; background:color-mix(in oklab, var(--surface) 90%, var(--fg));">Xuất dữ liệu <span class="muted"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg></span></span>
+    <span class="card row" style="justify-content:space-between; min-height:52px; padding:0 8px 0 16px; font-size:14.5px; outline:2px solid var(--fg); outline-offset:-2px;">Xuất dữ liệu <span class="muted"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg></span></span>
+    <span class="card row" style="justify-content:space-between; min-height:52px; padding:0 8px 0 16px; font-size:14.5px; background:color-mix(in oklab, var(--surface) 82%, var(--fg));">Xuất dữ liệu <span class="muted"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg></span></span>
+    <span class="card row" style="justify-content:space-between; min-height:52px; padding:0 8px 0 16px; font-size:14.5px; opacity:0.4;">Xuất dữ liệu <span class="muted"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg></span></span>
+
+    <span class="muted" style="font-size:14px;">Liên kết</span>
+    <a href="#" class="row" style="min-height:44px; font-size:14px;">Xu hướng →</a>
+    <a href="#" class="row" style="min-height:44px; font-size:14px; color:var(--muted);">Xu hướng →</a>
+    <a href="#" class="row" style="justify-self:start; min-height:44px; padding:0 4px; font-size:14px; outline:2px solid var(--fg); outline-offset:2px; border-radius:2px;">Xu hướng →</a>
+    <a href="#" class="row" style="min-height:44px; font-size:14px; color:var(--muted);">Xu hướng →</a>
+    <span class="muted" style="font-size:13px;">—</span>
+
+    <span class="muted" style="font-size:14px;">Ô nhập</span>
+    <span class="row muted" style="height:48px; padding:0 14px; border-radius:4px; border:1px solid color-mix(in oklab, var(--fg) 30%, transparent); font-size:14px; font-weight:300;">Bước mới</span>
+    <span class="row muted" style="height:48px; padding:0 14px; border-radius:4px; border:1px solid color-mix(in oklab, var(--fg) 55%, transparent); font-size:14px; font-weight:300;">Bước mới</span>
+    <span class="row" style="gap:2px; height:48px; padding:0 14px; border-radius:4px; border:1px solid var(--fg); outline:2px solid color-mix(in oklab, var(--fg) 25%, transparent); outline-offset:1px; font-size:14px;"><span style="width:1px; height:18px; background:var(--fg);"></span></span>
+    <span style="display:flex; flex-direction:column; gap:4px;"><span class="row" style="height:48px; padding:0 14px; border-radius:4px; border:1px solid var(--danger); font-size:14px;">Tẩy trang</span><span style="color:var(--danger); font-size:12px;">Bước này đã có</span></span>
+    <span class="row muted" style="height:48px; padding:0 14px; border-radius:4px; border:1px solid var(--line); font-size:14px; font-weight:300; opacity:0.5;">Bước mới</span>
+  </div>
+
+  <p class="muted" style="font-size:13.5px; font-weight:300; line-height:1.6;">Chuyển động (đề xuất): hover và focus đổi màu trong 150ms ease-out; nhấn thu về scale 0.98 trong 90ms rồi trả lại; giảm chuyển động thì giữ đổi màu, bỏ scale. Focus chỉ hiện khi dùng bàn phím (:focus-visible). Cột "Ô nhập · Nhấn" là trạng thái lỗi.</p>
+</div>
+
+</x-dc>
+</body>
+</html>

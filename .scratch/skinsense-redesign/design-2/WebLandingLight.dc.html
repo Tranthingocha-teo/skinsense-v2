@@ -1,0 +1,240 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+Display:wght@300;400&family=Manrope:wght@300;400;500;600&display=swap">
+  <style>
+    :root { --bg: #E8E5DE; --surface: #F6F4EF; --surface-2: #DEDAD1; --fg: #191B19; --muted: #52564E; --line: #C9C5BB; --accent: #1C1F1C; --on-accent: #F2EFE8; --good: #3A6537; --danger: #A33B2E; --photo-a: #B9C7B8; --photo-b: #DCE1D6; --photo-c: #F3E6C4; --display: 'Noto Serif Display', Georgia, 'Times New Roman', serif; --font: 'Manrope', 'Segoe UI', system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font); }
+    a { color: var(--fg); text-decoration: underline; text-underline-offset: 4px; }
+    a:hover { color: var(--muted); }
+    h1, h2, h3, p { margin: 0; }
+    .d { font-family: var(--display); font-weight: 300; }
+    .lbl { font-size: 11px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+    .muted { color: var(--muted); }
+    .card { border-radius: 18px; background: var(--surface); border: 1px solid color-mix(in oklab, var(--fg) 10%, transparent); }
+    .glass { border-radius: 18px; background: color-mix(in oklab, var(--surface) 72%, transparent); border: 1px solid color-mix(in oklab, var(--fg) 14%, transparent); backdrop-filter: blur(18px); }
+    .btn { display: flex; align-items: center; justify-content: center; gap: 10px; height: 52px; padding: 0 24px; border-radius: 4px; background: var(--accent); color: var(--on-accent); font-size: 15px; font-weight: 500; }
+    .btn-o { display: flex; align-items: center; justify-content: center; gap: 10px; height: 52px; padding: 0 24px; border-radius: 4px; border: 1px solid color-mix(in oklab, var(--fg) 55%, transparent); font-size: 15px; font-weight: 400; }
+    .chip { display: flex; align-items: center; gap: 6px; height: 44px; padding: 0 16px; border-radius: 4px; border: 1px solid color-mix(in oklab, var(--fg) 14%, transparent); font-size: 14px; color: var(--muted); }
+    .chip-on { display: flex; align-items: center; gap: 6px; height: 44px; padding: 0 16px; border-radius: 4px; background: var(--accent); color: var(--on-accent); font-size: 14px; font-weight: 500; }
+    .ph { padding: 4px 10px; border: 1px dashed color-mix(in oklab, var(--fg) 45%, transparent); border-radius: 999px; font-size: 11px; }
+    .photo { background: radial-gradient(40% 34% at 50% 46%, color-mix(in oklab, var(--photo-c) 38%, transparent), transparent 72%), radial-gradient(90% 70% at 20% 85%, var(--photo-a), transparent 75%), linear-gradient(180deg, var(--photo-b), var(--photo-a)); }
+    .night { background: radial-gradient(60% 60% at 75% 10%, color-mix(in oklab, var(--photo-c) 32%, transparent), transparent 70%), linear-gradient(180deg, var(--photo-b), var(--bg)); }
+    .row { display: flex; align-items: center; }
+    .hit { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 44px; height: 44px; }
+    .line { border-top: 1px solid var(--line); }
+    .cal { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; height: 44px; font-size: 14px; }
+    .cal-on { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; width: 44px; height: 44px; margin: 0 auto; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14px; font-weight: 500; }
+    .dot { width: 4px; height: 4px; border-radius: 999px; background: currentColor; }
+    .tile { position: relative; aspect-ratio: 3 / 4; border-radius: 6px; overflow: hidden; }
+    @keyframes fade-in-down { from { opacity: 0; transform: translateY(-12px); } }
+    @keyframes fade { from { opacity: 0; } }
+    @keyframes grow-x { from { transform: scaleX(0); } }
+    @keyframes draw { from { stroke-dashoffset: 113.1; } }
+    .in { animation: fade-in-down 460ms ease-out both; }
+    .grow { transform-origin: left; animation: grow-x 360ms ease-out both; }
+    .draw { stroke-dasharray: 113.1; animation: draw 1.4s cubic-bezier(0.65, 0, 0.35, 1) both; }
+    .draw-dot { animation: fade 0.4s ease-out 1.2s both; }
+    @media (prefers-reduced-motion: reduce) { .in { animation-name: fade; } .grow, .draw { animation: none; } }
+    .tile-meta { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: space-between; padding: 16px 7px 6px; background: linear-gradient(180deg, transparent, color-mix(in oklab, var(--bg) 82%, transparent)); font-size: 11px; font-weight: 500; }
+  </style>
+</helmet>
+<div style="position:relative; display:flex; flex-direction:column; width:1440px; height:5328px; overflow:hidden; background:var(--bg); color:var(--fg);">
+
+  <!-- 1 · Hero: full-bleed night photo (placeholder) -->
+  <section style="position:relative; flex-shrink:0; height:900px;">
+    <div class="photo" style="position:absolute; left:0; right:0; top:0; bottom:0; background:radial-gradient(38% 46% at 60% 22%, color-mix(in oklab, var(--photo-c) 55%, transparent), transparent 70%), radial-gradient(70% 65% at 25% 85%, var(--photo-a), transparent 75%), linear-gradient(180deg, var(--photo-b), var(--bg));"></div>
+    <div style="position:absolute; left:0; right:0; top:0; bottom:0; background:linear-gradient(180deg, color-mix(in oklab, var(--bg) 40%, transparent), color-mix(in oklab, var(--bg) 12%, transparent) 45%, var(--bg));"></div>
+
+    <header style="position:relative; display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); align-items:center; height:96px; padding:0 56px;">
+      <div class="row" style="gap:12px;">
+        <svg width="30" height="30" viewBox="0 0 64 64" fill="none"><circle class="draw" cx="28" cy="32" r="18" style="stroke:var(--fg); stroke-width:1.6;"></circle><circle class="draw" cx="36" cy="32" r="18" style="stroke:var(--fg); stroke-opacity:0.45; stroke-width:1.6; animation-delay:0.25s;"></circle><circle class="draw-dot" cx="32" cy="14.45" r="2.2" style="fill:var(--fg);"></circle></svg>
+        <span style="font-family:var(--display); font-size:20px; font-weight:400; letter-spacing:0.2em;">SKINSENSE</span>
+      </div>
+      <nav class="row" style="justify-content:center; gap:28px; font-size:14px; font-weight:300;">
+        <span>Cách hoạt động</span><span>AI trên thiết bị</span><span>Câu hỏi</span><span>Riêng tư</span>
+      </nav>
+      <div class="row" style="justify-content:flex-end; gap:20px;">
+        <span style="font-size:13px; font-weight:500; letter-spacing:0.1em;">VI</span>
+        <span class="btn" style="height:44px; padding:0 22px; font-size:14px;">Đăng nhập</span>
+      </div>
+    </header>
+
+    <div style="position:relative; display:flex; flex-direction:column; align-items:center; gap:30px; padding-top:150px; text-align:center;">
+      <h1 class="d" style="max-width:1080px; font-size:74px; line-height:1.14; letter-spacing:0.01em; text-transform:uppercase; text-wrap:balance;">Theo dõi làn da của bạn, mỗi đêm một ảnh.</h1>
+      <p style="max-width:560px; font-size:18px; font-weight:300; line-height:1.6; text-wrap:pretty;">Chụp ảnh có hướng dẫn, đánh dấu nốt mụn, tick routine buổi tối — xem xu hướng da theo từng vùng, theo thời gian.</p>
+      <div class="row" style="gap:14px;">
+        <span class="btn" style="padding:0 28px;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.34-5.66"></path><path d="M20 12h-7"></path></svg>Đăng nhập bằng Google</span>
+        <span class="btn-o" style="padding:0 28px;">Xem thử, không cần đăng nhập</span>
+      </div>
+      <div class="row" style="gap:24px; font-size:12px; letter-spacing:0.08em; text-transform:uppercase;">
+        <span>Miễn phí · Riêng tư · Không phải công cụ chẩn đoán y khoa</span>
+        <a href="#" class="row" style="min-height:44px;">Tải bản Android (APK) →</a>
+      </div>
+    </div>
+    <span class="ph" style="position:absolute; right:56px; bottom:40px; font-size:12px;">Ảnh full-bleed · placeholder</span>
+  </section>
+
+  <!-- 2 · Scroll stage (scene 2 of 3 shown still): real Today UI + floating data cards -->
+  <section style="position:relative; flex-shrink:0; height:960px; overflow:hidden; border-top:1px solid var(--line);">
+    <div class="night" style="position:absolute; left:0; right:0; top:0; bottom:0; opacity:0.7;"></div>
+
+    <div style="position:absolute; left:56px; right:56px; top:48px; display:flex; align-items:flex-start; justify-content:space-between;">
+      <div style="display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:32px; width:720px; font-size:13px; font-weight:300;">
+        <div style="padding-top:12px; border-top:1px solid color-mix(in oklab, var(--fg) 35%, transparent);"><span class="muted">01</span> Chụp ảnh có hướng dẫn</div>
+        <div style="padding-top:12px; border-top:1px solid var(--fg);"><span class="muted">02</span> Chạm để đánh dấu nốt mụn</div>
+        <div style="padding-top:12px; border-top:1px solid color-mix(in oklab, var(--fg) 35%, transparent);"><span class="muted">03</span> Xem xu hướng theo vùng</div>
+      </div>
+      <span class="ph">Cảnh 2/3 của đoạn cuộn · ảnh tĩnh</span>
+    </div>
+
+    <!-- Phone -->
+    <div style="position:absolute; left:550px; top:170px; width:340px; height:700px; overflow:hidden; border-radius:44px; background:var(--bg); border:1px solid color-mix(in oklab, var(--fg) 20%, transparent); box-shadow:0 40px 100px rgba(0, 0, 0, 0.35);">
+      <div class="photo" style="position:absolute; left:0; right:0; top:0; height:320px;"></div>
+      <div style="position:absolute; left:0; right:0; top:0; height:320px; background:linear-gradient(180deg, color-mix(in oklab, var(--bg) 25%, transparent), var(--bg));"></div>
+      <div style="position:relative; display:flex; flex-direction:column; gap:10px; padding:56px 16px 0;">
+        <span style="font-size:11px; font-weight:500; letter-spacing:0.14em; text-transform:uppercase;">Thứ Hai, 14 tháng 9</span>
+        <span class="d" style="padding-bottom:10px; font-size:44px; line-height:1.15;">Hôm nay</span>
+        <div class="glass" style="display:flex; flex-direction:column; gap:12px; padding:16px;">
+          <span style="font-family:var(--display); font-size:22px; font-weight:400;">Chưa có ảnh tối nay</span>
+          <span class="btn" style="height:44px; font-size:13.5px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2.5"></rect><path d="M8 7l1.6-2.5h4.8L16 7"></path><circle cx="12" cy="13.2" r="3.4"></circle></svg>Chụp ảnh tối nay</span>
+        </div>
+        <div class="card" style="display:flex; flex-direction:column; padding:4px 16px 8px;">
+          <div class="row" style="justify-content:space-between; height:38px; font-size:13.5px; font-weight:300;"><span>Trán</span><span class="row" style="gap:12px;"><span class="d" style="font-size:19px;">3.1</span><span style="width:78px; text-align:right; font-size:11px; font-weight:500; color:var(--good);">↓ đang giảm</span></span></div>
+          <div class="row line" style="justify-content:space-between; height:38px; font-size:13.5px; font-weight:300;"><span>Má trái</span><span class="row" style="gap:12px;"><span class="d" style="font-size:19px;">4.6</span><span class="muted" style="width:78px; text-align:right; font-size:11px; font-weight:500;">→ ổn định</span></span></div>
+          <div class="row line" style="justify-content:space-between; height:38px; font-size:13.5px; font-weight:300;"><span>Má phải</span><span class="row" style="gap:12px;"><span class="d" style="font-size:19px;">5.2</span><span style="width:78px; text-align:right; font-size:11px; font-weight:500; color:var(--good);">↓ đang giảm</span></span></div>
+          <div class="row line" style="justify-content:space-between; height:38px; font-size:13.5px; font-weight:300;"><span>Mũi</span><span class="row" style="gap:12px;"><span class="d" style="font-size:19px;">2.8</span><span class="muted" style="width:78px; text-align:right; font-size:11px; font-weight:500;">→ ổn định</span></span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Floating data cards -->
+    <div class="glass" style="position:absolute; left:250px; top:260px; display:flex; flex-direction:column; gap:2px; width:240px; padding:18px 22px;">
+      <span class="lbl">Trán · mẩn đỏ</span>
+      <span class="d" style="font-size:52px; line-height:1.15;">3.1</span>
+      <span style="font-size:12.5px; font-weight:500; color:var(--good);">↓ đang giảm</span>
+    </div>
+    <div class="glass" style="position:absolute; left:290px; top:620px; display:flex; flex-direction:column; gap:2px; width:220px; padding:18px 22px;">
+      <span class="lbl">Chuỗi routine</span>
+      <span class="d" style="font-size:52px; line-height:1.15; color:var(--good);">8<span class="muted" style="font-family:var(--font); font-size:13px;"> đêm</span></span>
+    </div>
+    <div class="glass" style="position:absolute; left:950px; top:300px; display:flex; flex-direction:column; gap:2px; width:230px; padding:18px 22px;">
+      <span class="lbl">Tối qua</span>
+      <span class="d" style="font-size:52px; line-height:1.15;">3<span class="muted" style="font-family:var(--font); font-size:13px;"> nốt đã đánh dấu</span></span>
+    </div>
+    <div class="glass" style="position:absolute; left:930px; top:640px; display:flex; flex-direction:column; gap:10px; width:260px; padding:18px 22px;">
+      <span class="lbl">7 ngày · Trán</span>
+      <svg viewBox="0 0 216 56" style="display:block; width:100%; height:auto;">
+        <path d="M4 8 L38 14 M106 20 L140 18 L174 34" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="stroke:var(--fg);"></path>
+        <circle cx="174" cy="34" r="3.5" style="fill:var(--fg);"></circle>
+        <line x1="4" x2="212" y1="52" y2="52" stroke-dasharray="2 3" style="stroke:var(--muted);"></line>
+      </svg>
+    </div>
+  </section>
+
+  <!-- 3 · How it works: particle face (placeholder) + four steps -->
+  <section style="display:grid; grid-template-columns:repeat(12, minmax(0, 1fr)); gap:32px; align-items:center; flex-shrink:0; height:820px; padding:0 96px; border-top:1px solid var(--line);">
+    <div style="grid-column:span 6; position:relative; height:600px; border-radius:18px; background:radial-gradient(40% 45% at 50% 48%, color-mix(in oklab, var(--photo-c) 20%, transparent), transparent 72%);">
+      <svg viewBox="0 0 600 600" style="position:absolute; left:0; top:0; width:100%; height:100%;" fill="none" stroke-linecap="round">
+        <ellipse cx="300" cy="300" rx="170" ry="225" stroke-width="3" stroke-dasharray="0.1 9" style="stroke:var(--fg);"></ellipse>
+        <path d="M175 200 Q300 130 425 200" stroke-width="3" stroke-dasharray="0.1 9" style="stroke:var(--fg);"></path>
+        <ellipse cx="215" cy="320" rx="52" ry="62" stroke-width="3" stroke-dasharray="0.1 9" style="stroke:var(--fg); stroke-opacity:0.7;"></ellipse>
+        <ellipse cx="385" cy="320" rx="52" ry="62" stroke-width="3" stroke-dasharray="0.1 9" style="stroke:var(--fg); stroke-opacity:0.7;"></ellipse>
+        <path d="M300 250 L278 350 L322 350 Z" stroke-width="3" stroke-dasharray="0.1 9" style="stroke:var(--fg); stroke-opacity:0.7;"></path>
+        <ellipse cx="300" cy="455" rx="62" ry="34" stroke-width="3" stroke-dasharray="0.1 9" style="stroke:var(--fg); stroke-opacity:0.7;"></ellipse>
+      </svg>
+      <span class="ph" style="position:absolute; left:18px; bottom:18px;">Khuôn mặt hạt R3F, tách 5 vùng khi cuộn · placeholder</span>
+    </div>
+    <div style="grid-column:span 6; display:flex; flex-direction:column; gap:36px;">
+      <div style="display:flex; flex-direction:column; gap:14px;">
+        <span class="lbl">Cách hoạt động</span>
+        <h2 class="d" style="font-size:48px; line-height:1.15;">Bốn bước, mỗi tối.</h2>
+      </div>
+      <ol style="display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:32px 28px; margin:0; padding:0; list-style:none;">
+        <li class="line" style="display:flex; flex-direction:column; gap:8px; padding-top:16px;"><span class="d muted" style="font-size:17px;">01</span><h3 style="font-family:var(--display); font-size:22px; font-weight:400;">Chụp ảnh nhất quán</h3><p class="muted" style="font-size:15px; font-weight:300; line-height:1.6;">Khung hình hướng dẫn, đối chiếu ảnh trước, khóa cân bằng trắng — mỗi ảnh đủ chuẩn để so sánh thật.</p></li>
+        <li class="line" style="display:flex; flex-direction:column; gap:8px; padding-top:16px;"><span class="d muted" style="font-size:17px;">02</span><h3 style="font-family:var(--display); font-size:22px; font-weight:400;">Đánh dấu điều bạn thấy</h3><p class="muted" style="font-size:15px; font-weight:300; line-height:1.6;">Chạm để đánh dấu từng nốt mụn ngay trên ảnh, không cần AI đoán hộ.</p></li>
+        <li class="line" style="display:flex; flex-direction:column; gap:8px; padding-top:16px;"><span class="d muted" style="font-size:17px;">03</span><h3 style="font-family:var(--display); font-size:22px; font-weight:400;">Tick routine buổi tối</h3><p class="muted" style="font-size:15px; font-weight:300; line-height:1.6;">Các bước do bạn tự đặt. Mỗi đêm tick những gì đã làm, giữ chuỗi ngày liên tiếp.</p></li>
+        <li class="line" style="display:flex; flex-direction:column; gap:8px; padding-top:16px;"><span class="d muted" style="font-size:17px;">04</span><h3 style="font-family:var(--display); font-size:22px; font-weight:400;">Xem xu hướng theo vùng</h3><p class="muted" style="font-size:15px; font-weight:300; line-height:1.6;">Trán, hai má, mũi, cằm — chỉ số mẩn đỏ và số nốt mụn theo 7/30 ngày.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 4 · On-device AI -->
+  <section style="display:grid; grid-template-columns:repeat(12, minmax(0, 1fr)); gap:32px; align-items:center; flex-shrink:0; height:700px; padding:0 96px; border-top:1px solid var(--line);">
+    <div style="grid-column:span 5; display:flex; flex-direction:column; gap:18px;">
+      <span class="lbl">AI trên thiết bị</span>
+      <h2 class="d" style="font-size:48px; line-height:1.15; text-wrap:balance;">Phân tích ngay lúc chụp, trên máy của bạn.</h2>
+      <p class="muted" style="font-size:16px; font-weight:300; line-height:1.7; text-wrap:pretty;">Khuôn mặt, vùng da và chỉ số mẩn đỏ được tính ngay trong trình duyệt hoặc trên điện thoại. Điểm mốc khuôn mặt và mặt nạ da dùng để tính không được lưu lại.</p>
+    </div>
+    <ol style="grid-column:8 / span 5; display:flex; flex-direction:column; margin:0; padding:0; list-style:none;">
+      <li class="line" style="display:grid; grid-template-columns:56px minmax(0, 1fr); align-items:baseline; padding:20px 0;"><span class="d muted" style="font-size:26px;">1</span><span style="display:flex; flex-direction:column; gap:4px;"><span style="font-size:16px; font-weight:500;">Điểm mốc khuôn mặt</span><span class="muted" style="font-size:14px; font-weight:300;">MediaPipe trên web · ML Kit + TFLite trên Android</span></span></li>
+      <li class="line" style="display:grid; grid-template-columns:56px minmax(0, 1fr); align-items:baseline; padding:20px 0;"><span class="d muted" style="font-size:26px;">2</span><span style="display:flex; flex-direction:column; gap:4px;"><span style="font-size:16px; font-weight:500;">Mặt nạ da</span><span class="muted" style="font-size:14px; font-weight:300;">Tách vùng da khỏi tóc, mắt, nền</span></span></li>
+      <li class="line" style="display:grid; grid-template-columns:56px minmax(0, 1fr); align-items:baseline; padding:20px 0;"><span class="d muted" style="font-size:26px;">3</span><span style="display:flex; flex-direction:column; gap:4px;"><span style="font-size:16px; font-weight:500;">Năm vùng</span><span class="muted" style="font-size:14px; font-weight:300;">Trán, má trái, má phải, mũi, cằm — dựng từ điểm mốc</span></span></li>
+      <li class="line" style="display:grid; grid-template-columns:56px minmax(0, 1fr); align-items:baseline; padding:20px 0; border-bottom:1px solid var(--line);"><span class="d" style="font-size:26px;">4</span><span style="display:flex; flex-direction:column; gap:4px;"><span style="font-size:16px; font-weight:500;">Chỉ số mẩn đỏ (a*)</span><span class="muted" style="font-size:14px; font-weight:300;">a* của từng vùng so với toàn bộ da trong cùng bức ảnh</span></span></li>
+    </ol>
+  </section>
+
+  <!-- 5 · Web or Android -->
+  <section style="display:grid; grid-template-columns:repeat(12, minmax(0, 1fr)); gap:32px; align-items:center; flex-shrink:0; height:640px; padding:0 96px; border-top:1px solid var(--line);">
+    <div style="grid-column:span 8; display:flex; flex-direction:column; gap:28px;">
+      <h2 class="d" style="font-size:48px; line-height:1.15;">Web hay Android?</h2>
+      <div class="card" style="padding:0 24px;">
+        <div style="display:grid; grid-template-columns:minmax(0, 1.4fr) repeat(2, minmax(0, 1fr)); align-items:center; height:52px;"><span></span><span class="lbl">Web (máy tính)</span><span class="lbl">Android (APK)</span></div>
+        <div class="line" style="display:grid; grid-template-columns:minmax(0, 1.4fr) repeat(2, minmax(0, 1fr)); align-items:center; height:56px; font-size:15px; font-weight:300;"><span>Chụp ảnh có hướng dẫn</span><span>Webcam</span><span>Camera trước</span></div>
+        <div class="line" style="display:grid; grid-template-columns:minmax(0, 1.4fr) repeat(2, minmax(0, 1fr)); align-items:center; height:56px; font-size:15px; font-weight:300;"><span>Đánh dấu nốt, routine, xu hướng</span><span style="color:var(--good); font-weight:500;">Có</span><span style="color:var(--good); font-weight:500;">Có</span></div>
+        <div class="line" style="display:grid; grid-template-columns:minmax(0, 1.4fr) repeat(2, minmax(0, 1fr)); align-items:center; height:56px; font-size:15px; font-weight:300;"><span>Không cần cài đặt</span><span style="color:var(--good); font-weight:500;">Có</span><span class="muted">—</span></div>
+        <div class="line" style="display:grid; grid-template-columns:minmax(0, 1.4fr) repeat(2, minmax(0, 1fr)); align-items:center; height:56px; font-size:15px; font-weight:300;"><span>Trình duyệt điện thoại, iPhone</span><span class="muted">Chưa hỗ trợ</span><span class="muted">—</span></div>
+      </div>
+    </div>
+    <div class="card" style="grid-column:span 4; display:flex; flex-direction:column; align-items:center; gap:14px; margin-top:80px; padding:28px; text-align:center;">
+      <span class="row ph" style="justify-content:center; width:168px; height:168px; border-radius:10px;">QR · placeholder</span>
+      <span style="font-family:var(--display); font-size:24px; font-weight:400;">Quét để tải APK</span>
+      <span class="muted" style="font-size:14px; font-weight:300; line-height:1.55;">Bản arm64, cài trực tiếp, không qua Play Store.</span>
+      <span class="btn-o" style="height:48px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"></path><path d="M7 10l5 5 5-5"></path><path d="M5 20h14"></path></svg>Tải bản Android (APK)</span>
+    </div>
+  </section>
+
+  <!-- 6 · FAQ -->
+  <section style="display:flex; justify-content:center; flex-shrink:0; height:780px; padding-top:96px; border-top:1px solid var(--line);">
+    <div style="display:flex; flex-direction:column; gap:32px; width:800px;">
+      <h2 class="d" style="font-size:48px; line-height:1.15;">Câu hỏi thường gặp</h2>
+      <div style="display:flex; flex-direction:column; border-bottom:1px solid var(--line);">
+        <div class="line" style="display:flex; flex-direction:column; gap:10px; padding:20px 0 24px;">
+          <div class="row" style="justify-content:space-between; min-height:44px; font-size:18px; font-weight:500;">Chỉ số mẩn đỏ được tính thế nào? <span class="muted"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></span></div>
+          <p class="muted" style="max-width:700px; font-size:15px; font-weight:300; line-height:1.7;">Mỗi lần chụp, ứng dụng tìm điểm mốc khuôn mặt, tách vùng da và chia thành năm vùng. Màu từng điểm ảnh da được đổi sang không gian CIELAB, nơi trục a* đo mức đỏ. Chỉ số mẩn đỏ của một vùng là trung vị a* của vùng đó trừ trung vị a* của toàn bộ da trong cùng bức ảnh: số dương nghĩa là vùng đó đỏ hơn phần da còn lại của chính bạn. Đây là số đo tương đối để theo dõi theo thời gian, không có ngưỡng bệnh.</p>
+        </div>
+        <div class="row line" style="justify-content:space-between; min-height:72px; font-size:18px; font-weight:500;">SkinSense có chẩn đoán bệnh da không? <span class="muted"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"></path></svg></span></div>
+        <div class="row line" style="justify-content:space-between; min-height:72px; font-size:18px; font-weight:500;">Ảnh của tôi được lưu ở đâu, ai xem được? <span class="muted"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"></path></svg></span></div>
+        <div class="row line" style="justify-content:space-between; min-height:72px; font-size:18px; font-weight:500;">SkinSense có mất phí không? <span class="muted"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"></path></svg></span></div>
+        <div class="row line" style="justify-content:space-between; min-height:72px; font-size:18px; font-weight:500;">Dùng được trên thiết bị nào? <span class="muted"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"></path></svg></span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 · Trust + repeated primary action -->
+  <section class="night" style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; flex-shrink:0; height:440px; padding:0 96px; border-top:1px solid var(--line); text-align:center;">
+    <span style="padding:6px 14px; border:1px solid color-mix(in oklab, var(--fg) 30%, transparent); border-radius:999px; font-size:12.5px; font-weight:500;">Không phải chẩn đoán y khoa</span>
+    <h2 class="d" style="max-width:760px; font-size:44px; line-height:1.2; text-wrap:balance;">Đây là nhật ký cá nhân, không phải chẩn đoán.</h2>
+    <p style="max-width:640px; font-size:16px; font-weight:300; line-height:1.7; text-wrap:pretty;">SkinSense không thay thế bác sĩ da liễu. Đây là công cụ giúp bạn tự quan sát làn da của mình một cách nhất quán — không có ngưỡng nghiêm trọng, không có điểm số "sức khỏe da".</p>
+    <div class="row" style="gap:14px; padding-top:10px;">
+      <span class="btn"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.34-5.66"></path><path d="M20 12h-7"></path></svg>Đăng nhập bằng Google</span>
+      <span class="btn-o">Xem thử</span>
+    </div>
+  </section>
+
+  <footer class="row" style="justify-content:space-between; flex-shrink:0; height:88px; padding:0 56px; border-top:1px solid var(--line); font-size:13px; font-weight:300;">
+    <span class="muted">© SkinSense</span>
+    <span class="row" style="gap:24px;"><a href="#" class="row" style="min-height:44px;">Tải bản Android (APK)</a><a href="#" class="row" style="min-height:44px;">Chính sách riêng tư</a></span>
+  </footer>
+</div>
+
+</x-dc>
+</body>
+</html>

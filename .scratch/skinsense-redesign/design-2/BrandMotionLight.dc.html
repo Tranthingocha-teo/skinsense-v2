@@ -1,0 +1,95 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+Display:wght@300;400&family=Manrope:wght@300;400;500;600&display=swap">
+  <style>
+    :root { --bg: #E8E5DE; --surface: #F6F4EF; --surface-2: #DEDAD1; --fg: #191B19; --muted: #52564E; --line: #C9C5BB; --accent: #1C1F1C; --on-accent: #F2EFE8; --good: #3A6537; --danger: #A33B2E; --photo-a: #B9C7B8; --photo-b: #DCE1D6; --photo-c: #F3E6C4; --display: 'Noto Serif Display', Georgia, 'Times New Roman', serif; --font: 'Manrope', 'Segoe UI', system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font); }
+    a { color: var(--fg); text-decoration: underline; text-underline-offset: 4px; }
+    a:hover { color: var(--muted); }
+    h1, h2, h3, p { margin: 0; }
+    .d { font-family: var(--display); font-weight: 300; }
+    .lbl { font-size: 11px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+    .muted { color: var(--muted); }
+    .card { border-radius: 18px; background: var(--surface); border: 1px solid color-mix(in oklab, var(--fg) 10%, transparent); }
+    .glass { border-radius: 18px; background: color-mix(in oklab, var(--surface) 72%, transparent); border: 1px solid color-mix(in oklab, var(--fg) 14%, transparent); backdrop-filter: blur(18px); }
+    .btn { display: flex; align-items: center; justify-content: center; gap: 10px; height: 52px; padding: 0 24px; border-radius: 4px; background: var(--accent); color: var(--on-accent); font-size: 15px; font-weight: 500; }
+    .btn-o { display: flex; align-items: center; justify-content: center; gap: 10px; height: 52px; padding: 0 24px; border-radius: 4px; border: 1px solid color-mix(in oklab, var(--fg) 55%, transparent); font-size: 15px; font-weight: 400; }
+    .chip { display: flex; align-items: center; gap: 6px; height: 44px; padding: 0 16px; border-radius: 4px; border: 1px solid color-mix(in oklab, var(--fg) 14%, transparent); font-size: 14px; color: var(--muted); }
+    .chip-on { display: flex; align-items: center; gap: 6px; height: 44px; padding: 0 16px; border-radius: 4px; background: var(--accent); color: var(--on-accent); font-size: 14px; font-weight: 500; }
+    .ph { padding: 4px 10px; border: 1px dashed color-mix(in oklab, var(--fg) 45%, transparent); border-radius: 999px; font-size: 11px; }
+    .photo { background: radial-gradient(40% 34% at 50% 46%, color-mix(in oklab, var(--photo-c) 38%, transparent), transparent 72%), radial-gradient(90% 70% at 20% 85%, var(--photo-a), transparent 75%), linear-gradient(180deg, var(--photo-b), var(--photo-a)); }
+    .night { background: radial-gradient(60% 60% at 75% 10%, color-mix(in oklab, var(--photo-c) 32%, transparent), transparent 70%), linear-gradient(180deg, var(--photo-b), var(--bg)); }
+    .row { display: flex; align-items: center; }
+    .hit { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 44px; height: 44px; }
+    .line { border-top: 1px solid var(--line); }
+    .cal { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; height: 44px; font-size: 14px; }
+    .cal-on { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; width: 44px; height: 44px; margin: 0 auto; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14px; font-weight: 500; }
+    .dot { width: 4px; height: 4px; border-radius: 999px; background: currentColor; }
+    .tile { position: relative; aspect-ratio: 3 / 4; border-radius: 6px; overflow: hidden; }
+    @keyframes fade-in-down { from { opacity: 0; transform: translateY(-12px); } }
+    @keyframes fade { from { opacity: 0; } }
+    @keyframes grow-x { from { transform: scaleX(0); } }
+    @keyframes draw { from { stroke-dashoffset: 113.1; } }
+    .in { animation: fade-in-down 460ms ease-out both; }
+    .grow { transform-origin: left; animation: grow-x 360ms ease-out both; }
+    .draw { stroke-dasharray: 113.1; animation: draw 1.4s cubic-bezier(0.65, 0, 0.35, 1) both; }
+    .draw-dot { animation: fade 0.4s ease-out 1.2s both; }
+    @media (prefers-reduced-motion: reduce) { .in { animation-name: fade; } .grow, .draw { animation: none; } }
+    .tile-meta { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: space-between; padding: 16px 7px 6px; background: linear-gradient(180deg, transparent, color-mix(in oklab, var(--bg) 82%, transparent)); font-size: 11px; font-weight: 500; }
+  </style>
+</helmet>
+<div style="position:relative; display:flex; flex-direction:column; gap:28px; width:1440px; height:1180px; overflow:hidden; padding:56px 80px; background:var(--bg); color:var(--fg);">
+  <div style="display:flex; flex-direction:column; gap:10px;">
+    <span class="lbl">Motion · giá trị lấy từ DESIGN.md</span>
+    <h1 class="d" style="font-size:44px; line-height:1.2;">Chuyển động giải thích vòng lặp, không trang trí</h1>
+  </div>
+
+  <!-- Android: opening Today. Track = 0–1800 ms at 0.444 px/ms -->
+  <div class="card" style="display:flex; flex-direction:column; gap:10px; padding:22px 28px;">
+    <div class="row" style="justify-content:space-between;"><h2 style="font-family:var(--display); font-size:24px; font-weight:400;">Android · mở Hôm nay</h2><span class="muted" style="font-size:13px;">Reanimated 4 + Skia</span></div>
+    <div style="display:grid; grid-template-columns:180px 800px minmax(0, 1fr); align-items:center; column-gap:20px; row-gap:8px; font-size:13.5px; font-weight:300;">
+      <span></span><div class="row muted" style="justify-content:space-between; font-size:11px;"><span>0</span><span>450</span><span>900</span><span>1350</span><span>1800 ms</span></div><span></span>
+      <span>Mark · vòng 1</span><div style="position:relative; height:14px; background:var(--surface-2);"><span style="position:absolute; left:0; width:622px; top:0; bottom:0; background:var(--fg);"></span></div><span class="muted">1.4s cubic-bezier(0.65, 0, 0.35, 1)</span>
+      <span>Mark · vòng 2</span><div style="position:relative; height:14px; background:var(--surface-2);"><span style="position:absolute; left:111px; width:622px; transform-origin:left; animation:grow-x 1400ms cubic-bezier(0.65, 0, 0.35, 1) 250ms both; top:0; bottom:0; background:var(--fg);"></span></div><span class="muted">trễ 0.25s</span>
+      <span>Mark · chấm hiện dần</span><div style="position:relative; height:14px; background:var(--surface-2);"><span style="position:absolute; left:533px; width:178px; transform-origin:left; animation:grow-x 400ms ease-out 1199ms both; top:0; bottom:0; background:var(--fg);"></span></div><span class="muted">0.4s tại 1.2s</span>
+      <span>4 card · FadeInDown</span><div style="position:relative; height:14px; background:var(--surface-2);"><span style="position:absolute; left:0; width:204px; top:0; height:3px; background:var(--fg);"></span><span style="position:absolute; left:36px; width:204px; transform-origin:left; animation:grow-x 459ms ease-out 81ms both; top:4px; height:3px; background:var(--fg);"></span><span style="position:absolute; left:71px; width:204px; transform-origin:left; animation:grow-x 459ms ease-out 160ms both; top:8px; height:3px; background:var(--fg);"></span><span style="position:absolute; left:107px; width:204px; transform-origin:left; animation:grow-x 459ms ease-out 241ms both; top:11px; height:3px; background:var(--fg);"></span></div><span class="muted">460ms, lệch 80ms</span>
+      <span>5 thanh vùng · lấp đầy</span><div style="position:relative; height:14px; background:var(--surface-2);"><span style="position:absolute; left:187px; width:311px; transform-origin:left; animation:grow-x 700ms ease-out 421ms both; top:0; height:2px; background:var(--good);"></span><span style="position:absolute; left:222px; width:311px; transform-origin:left; animation:grow-x 700ms ease-out 500ms both; top:3px; height:2px; background:var(--good);"></span><span style="position:absolute; left:258px; width:311px; transform-origin:left; animation:grow-x 700ms ease-out 580ms both; top:6px; height:2px; background:var(--good);"></span><span style="position:absolute; left:293px; width:311px; transform-origin:left; animation:grow-x 700ms ease-out 659ms both; top:9px; height:2px; background:var(--good);"></span><span style="position:absolute; left:329px; width:311px; transform-origin:left; animation:grow-x 700ms ease-out 740ms both; top:12px; height:2px; background:var(--good);"></span></div><span class="muted">700ms ease-out cubic, trễ 420 + 80/hàng</span>
+    </div>
+  </div>
+
+  <!-- Android: routine tick. Track = 0–600 ms at 1.333 px/ms -->
+  <div class="card" style="display:flex; flex-direction:column; gap:10px; padding:22px 28px;">
+    <div class="row" style="justify-content:space-between;"><h2 style="font-family:var(--display); font-size:24px; font-weight:400;">Android · tick một bước routine</h2><span class="muted" style="font-size:13px;">cả hàng 48px là vùng chạm</span></div>
+    <div style="display:grid; grid-template-columns:180px 800px minmax(0, 1fr); align-items:center; column-gap:20px; row-gap:8px; font-size:13.5px; font-weight:300;">
+      <span></span><div class="row muted" style="justify-content:space-between; font-size:11px;"><span>0</span><span>150</span><span>300</span><span>450</span><span>600 ms</span></div><span></span>
+      <span>Rung</span><div style="position:relative; height:14px; background:var(--surface-2);"><span style="position:absolute; left:0; width:4px; top:-3px; bottom:-3px; background:var(--fg);"></span></div><span class="muted">medium khi tick, light khi bỏ</span>
+      <span>Vòng tròn · thu nhỏ 0.78</span><div style="position:relative; height:14px; background:var(--surface-2);"><span style="position:absolute; left:0; width:120px; top:0; bottom:0; background:var(--fg);"></span></div><span class="muted">90ms</span>
+      <span>Vòng tròn · bật lại</span><div style="position:relative; height:14px; background:var(--surface-2);"><span style="position:absolute; left:120px; right:0; top:0; bottom:0; background:repeating-linear-gradient(90deg, var(--fg) 0 8px, transparent 8px 14px);"></span></div><span class="muted">lò xo damping 11, stiffness 320 (thời lượng do lò xo)</span>
+      <span>Đường tiến độ</span><div style="position:relative; height:14px; background:var(--surface-2);"><span style="position:absolute; left:0; width:480px; top:6px; height:2px; background:var(--fg);"></span></div><span class="muted">360ms</span>
+    </div>
+  </div>
+
+  <!-- Web landing: scroll-driven, measured in scene lengths, not time -->
+  <div class="card" style="display:flex; flex-direction:column; gap:12px; padding:22px 28px;">
+    <div class="row" style="justify-content:space-between;"><h2 style="font-family:var(--display); font-size:24px; font-weight:400;">Web · landing, cuộn 400svh, 3 cảnh</h2><span class="muted" style="font-size:13px;">GSAP 3.15 + ScrollTrigger + Lenis, scrub 1, CSS sticky (không pin)</span></div>
+    <div style="display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:16px; font-size:13.5px; font-weight:300; line-height:1.6;">
+      <div class="line" style="display:flex; flex-direction:column; gap:4px; padding-top:12px;"><span style="font-weight:500;">Cảnh 1</span><span>Tiêu đề hiện lên trong 0.35 cảnh</span><span>Điện thoại lên từ 115%, power2.out, 1 cảnh</span><span>4 card vào: 0.5, lệch 0.12, power3.out</span></div>
+      <div class="line" style="display:flex; flex-direction:column; gap:4px; padding-top:12px;"><span style="font-weight:500;">Cảnh 2</span><span>Số đếm lên: 0.7, power1.out</span><span>Card trôi lên 45% × độ sâu (0.8–1.8)</span><span>Điện thoại dừng ở scale 0.94</span></div>
+      <div class="line" style="display:flex; flex-direction:column; gap:4px; padding-top:12px;"><span style="font-weight:500;">Cảnh 3</span><span>Sparkline 7 ngày tự vẽ: 0.8</span><span>Mark ở hero tự vẽ một lần mỗi lần tải (như Android)</span></div>
+    </div>
+  </div>
+
+  <p class="muted" style="font-size:13.5px; font-weight:300; line-height:1.6;">Giảm chuyển động (hệ thống): tắt hết chuyển động lớn, chỉ giữ fade. Web: layout chuyển động áp từ lần vẽ đầu bằng @media (scripting: enabled) and (prefers-reduced-motion: no-preference); code motion tải sau hydration. Số đếm luôn có giá trị cuối trong markup.</p>
+</div>
+
+</x-dc>
+</body>
+</html>

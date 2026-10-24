@@ -1,0 +1,25 @@
+<div style="display:flex; width:1440px; height:900px; overflow:hidden; background:var(--bg); color:var(--fg);">
+  <!--NAV:capture-->
+  <div style="display:flex; flex-direction:column; gap:32px; flex-grow:1; min-width:0; padding:64px 64px 56px;">
+    <h1 class="d" style="font-size:54px; line-height:60px;">Chụp ảnh tối nay</h1>
+
+    <div style="display:flex; align-items:center; gap:56px;">
+      <!-- The captured still, mirrored; darker than the live placeholder to read as low light -->
+      <div class="photo" style="position:relative; flex-shrink:0; width:720px; height:540px; border-radius:18px; overflow:hidden; filter:brightness(0.72);">
+        <span class="ph" style="position:absolute; top:18px; right:18px;">Ảnh · placeholder</span>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:20px; width:320px;">
+        <div role="alert" class="card" style="display:flex; flex-direction:column; gap:10px; padding:18px 20px;">
+          <div class="row" style="gap:10px; font-size:14.5px; font-weight:500;"><!--I:alert:18-->Ảnh này có thể cho số liệu sai lệch:</div>
+          <div class="row" style="gap:10px; padding-left:28px; font-size:14.5px; font-weight:300;"><span style="width:4px; height:4px; border-radius:999px; background:var(--fg);"></span>Thiếu sáng</div>
+          <div class="row" style="gap:10px; padding-left:28px; font-size:14.5px; font-weight:300;"><span style="width:4px; height:4px; border-radius:999px; background:var(--fg);"></span>Nhìn thẳng vào camera</div>
+        </div>
+        <div class="row" style="gap:12px;">
+          <div class="btn-o" style="flex-grow:1; height:48px;">Chụp lại</div>
+          <div class="btn" style="flex-grow:1; height:48px;">Vẫn lưu</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

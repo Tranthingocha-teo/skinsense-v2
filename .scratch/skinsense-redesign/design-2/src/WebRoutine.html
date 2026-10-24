@@ -1,0 +1,59 @@
+<div style="display:flex; width:1440px; height:900px; overflow:hidden; background:var(--bg); color:var(--fg);">
+  <!--NAV:today-->
+  <div style="position:relative; flex-grow:1; min-width:0;">
+    <!-- Night tint carried over from Xu hướng -->
+    <div style="position:absolute; left:0; right:0; top:0; height:300px; background:radial-gradient(40% 60% at 80% 10%, color-mix(in oklab, var(--photo-c) 30%, transparent), transparent 70%), linear-gradient(180deg, var(--photo-b), var(--bg));"></div>
+
+    <div style="position:relative; display:flex; flex-direction:column; gap:16px; width:704px; padding:56px 64px;">
+      <div style="display:flex; align-items:center; gap:4px; margin-left:-12px;">
+        <span style="display:flex; align-items:center; justify-content:center; width:44px; height:44px;"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></span>
+        <h1 style="font-family:var(--display); font-size:44px; font-weight:300; line-height:1.2;">Routine tối nay</h1>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:14px; padding:4px 0 8px;">
+        <span style="font-size:11.5px; font-weight:500; letter-spacing:0.14em; text-transform:uppercase;">Thứ Hai, 14 tháng 9</span>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="flex-grow:1; height:1px; background:var(--line);"><div style="width:50%; height:1px; background:var(--fg);"></div></div>
+          <span style="font-size:12.5px; font-weight:300; color:var(--muted);">2/4 hoàn thành</span>
+        </div>
+      </div>
+
+      <div style="position:relative; display:flex; flex-direction:column; padding:4px 8px 4px 24px; border-radius:18px; background:var(--surface); border:1px solid color-mix(in oklab, var(--fg) 10%, transparent);">
+        <div style="display:grid; grid-template-columns:22px minmax(0, 1fr) 44px; align-items:center; gap:14px; height:56px;">
+          <span style="display:flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:999px; background:var(--accent); color:var(--on-accent);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"></path></svg></span>
+          <span style="font-size:15.5px; font-weight:300; color:var(--muted);">Tẩy trang</span>
+          <span style="display:flex; align-items:center; justify-content:center; width:44px; height:44px; color:var(--muted);"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5.5" r="1.4"></circle><circle cx="12" cy="12" r="1.4"></circle><circle cx="12" cy="18.5" r="1.4"></circle></svg></span>
+        </div>
+        <div style="display:grid; grid-template-columns:22px minmax(0, 1fr) 44px; align-items:center; gap:14px; height:56px; border-top:1px solid var(--line);">
+          <span style="display:flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:999px; background:var(--accent); color:var(--on-accent);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"></path></svg></span>
+          <span style="font-size:15.5px; font-weight:300; color:var(--muted);">Rửa mặt</span>
+          <span style="display:flex; align-items:center; justify-content:center; width:44px; height:44px; color:var(--muted);"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5.5" r="1.4"></circle><circle cx="12" cy="12" r="1.4"></circle><circle cx="12" cy="18.5" r="1.4"></circle></svg></span>
+        </div>
+        <div style="display:grid; grid-template-columns:22px minmax(0, 1fr) 44px; align-items:center; gap:14px; height:56px; border-top:1px solid var(--line);">
+          <span style="width:22px; height:22px; border-radius:999px; border:1px solid var(--fg);"></span>
+          <span style="font-size:15.5px; font-weight:400;">Serum trị mụn</span>
+          <span style="display:flex; align-items:center; justify-content:center; width:44px; height:44px; border-radius:999px; background:color-mix(in oklab, var(--fg) 10%, transparent); color:var(--fg);"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5.5" r="1.4"></circle><circle cx="12" cy="12" r="1.4"></circle><circle cx="12" cy="18.5" r="1.4"></circle></svg></span>
+        </div>
+        <div style="display:grid; grid-template-columns:22px minmax(0, 1fr) 44px; align-items:center; gap:14px; height:56px; border-top:1px solid var(--line);">
+          <span style="width:22px; height:22px; border-radius:999px; border:1px solid var(--fg);"></span>
+          <span style="font-size:15.5px; font-weight:400;">Kem dưỡng ẩm</span>
+          <span style="display:flex; align-items:center; justify-content:center; width:44px; height:44px; color:var(--muted);"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5.5" r="1.4"></circle><circle cx="12" cy="12" r="1.4"></circle><circle cx="12" cy="18.5" r="1.4"></circle></svg></span>
+        </div>
+
+        <!-- Open menu for "Serum trị mụn" -->
+        <div style="position:absolute; right:8px; top:172px; display:flex; flex-direction:column; width:216px; padding:6px 0; border-radius:4px; background:var(--surface-2); border:1px solid color-mix(in oklab, var(--fg) 14%, transparent); box-shadow:0 18px 40px rgba(0, 0, 0, 0.28);">
+          <span style="padding:8px 16px 6px; font-size:12.5px; font-weight:500; color:var(--muted);">Serum trị mụn</span>
+          <span style="display:flex; align-items:center; height:44px; padding:0 16px; font-size:15px; font-weight:400;">Đổi tên</span>
+          <span style="display:flex; align-items:center; height:44px; padding:0 16px; font-size:15px; font-weight:400;">Chuyển lên</span>
+          <span style="display:flex; align-items:center; height:44px; padding:0 16px; font-size:15px; font-weight:400;">Chuyển xuống</span>
+          <span style="display:flex; align-items:center; height:44px; padding:0 16px; border-top:1px solid var(--line); font-size:15px; font-weight:400; color:var(--danger);">Xóa</span>
+        </div>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:10px; height:54px; padding:0 20px; border-radius:4px; border:1px dashed color-mix(in oklab, var(--fg) 30%, transparent); color:var(--muted); font-size:15px; font-weight:400;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+        Thêm bước
+      </div>
+    </div>
+  </div>
+</div>

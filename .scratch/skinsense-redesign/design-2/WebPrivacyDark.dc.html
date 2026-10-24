@@ -1,0 +1,105 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+Display:wght@300;400&family=Manrope:wght@300;400;500;600&display=swap">
+  <style>
+    :root { --bg: #0A0C0B; --surface: #1A1F1C; --surface-2: #242A26; --fg: #F2EFE8; --muted: #BDB8AD; --line: #3A403B; --accent: #ECE7DB; --on-accent: #121412; --good: #AFCFA9; --danger: #E8998D; --photo-a: #2F4A3A; --photo-b: #16241C; --photo-c: #C9B98A; --display: 'Noto Serif Display', Georgia, 'Times New Roman', serif; --font: 'Manrope', 'Segoe UI', system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font); }
+    a { color: var(--fg); text-decoration: underline; text-underline-offset: 4px; }
+    a:hover { color: var(--muted); }
+    h1, h2, h3, p { margin: 0; }
+    .d { font-family: var(--display); font-weight: 300; }
+    .lbl { font-size: 11px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+    .muted { color: var(--muted); }
+    .card { border-radius: 18px; background: var(--surface); border: 1px solid color-mix(in oklab, var(--fg) 10%, transparent); }
+    .glass { border-radius: 18px; background: color-mix(in oklab, var(--surface) 72%, transparent); border: 1px solid color-mix(in oklab, var(--fg) 14%, transparent); backdrop-filter: blur(18px); }
+    .btn { display: flex; align-items: center; justify-content: center; gap: 10px; height: 52px; padding: 0 24px; border-radius: 4px; background: var(--accent); color: var(--on-accent); font-size: 15px; font-weight: 500; }
+    .btn-o { display: flex; align-items: center; justify-content: center; gap: 10px; height: 52px; padding: 0 24px; border-radius: 4px; border: 1px solid color-mix(in oklab, var(--fg) 55%, transparent); font-size: 15px; font-weight: 400; }
+    .chip { display: flex; align-items: center; gap: 6px; height: 44px; padding: 0 16px; border-radius: 4px; border: 1px solid color-mix(in oklab, var(--fg) 14%, transparent); font-size: 14px; color: var(--muted); }
+    .chip-on { display: flex; align-items: center; gap: 6px; height: 44px; padding: 0 16px; border-radius: 4px; background: var(--accent); color: var(--on-accent); font-size: 14px; font-weight: 500; }
+    .ph { padding: 4px 10px; border: 1px dashed color-mix(in oklab, var(--fg) 45%, transparent); border-radius: 999px; font-size: 11px; }
+    .photo { background: radial-gradient(40% 34% at 50% 46%, color-mix(in oklab, var(--photo-c) 38%, transparent), transparent 72%), radial-gradient(90% 70% at 20% 85%, var(--photo-a), transparent 75%), linear-gradient(180deg, var(--photo-b), var(--photo-a)); }
+    .night { background: radial-gradient(60% 60% at 75% 10%, color-mix(in oklab, var(--photo-c) 32%, transparent), transparent 70%), linear-gradient(180deg, var(--photo-b), var(--bg)); }
+    .row { display: flex; align-items: center; }
+    .hit { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 44px; height: 44px; }
+    .line { border-top: 1px solid var(--line); }
+    .cal { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; height: 44px; font-size: 14px; }
+    .cal-on { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; width: 44px; height: 44px; margin: 0 auto; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14px; font-weight: 500; }
+    .dot { width: 4px; height: 4px; border-radius: 999px; background: currentColor; }
+    .tile { position: relative; aspect-ratio: 3 / 4; border-radius: 6px; overflow: hidden; }
+    @keyframes fade-in-down { from { opacity: 0; transform: translateY(-12px); } }
+    @keyframes fade { from { opacity: 0; } }
+    @keyframes grow-x { from { transform: scaleX(0); } }
+    @keyframes draw { from { stroke-dashoffset: 113.1; } }
+    .in { animation: fade-in-down 460ms ease-out both; }
+    .grow { transform-origin: left; animation: grow-x 360ms ease-out both; }
+    .draw { stroke-dasharray: 113.1; animation: draw 1.4s cubic-bezier(0.65, 0, 0.35, 1) both; }
+    .draw-dot { animation: fade 0.4s ease-out 1.2s both; }
+    @media (prefers-reduced-motion: reduce) { .in { animation-name: fade; } .grow, .draw { animation: none; } }
+    .tile-meta { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: space-between; padding: 16px 7px 6px; background: linear-gradient(180deg, transparent, color-mix(in oklab, var(--bg) 82%, transparent)); font-size: 11px; font-weight: 500; }
+  </style>
+</helmet>
+<div style="position:relative; display:flex; flex-direction:column; width:1440px; height:1760px; overflow:hidden; background:var(--bg); color:var(--fg);">
+  <div class="night" style="position:absolute; left:0; right:0; top:0; height:420px;"></div>
+
+  <header class="row" style="position:relative; justify-content:space-between; height:96px; padding:0 56px;">
+    <div class="row" style="gap:12px;">
+      <svg width="30" height="30" viewBox="0 0 64 64" fill="none"><circle cx="28" cy="32" r="18" style="stroke:var(--fg); stroke-width:1.6;"></circle><circle cx="36" cy="32" r="18" style="stroke:var(--fg); stroke-opacity:0.45; stroke-width:1.6;"></circle><circle cx="32" cy="14.45" r="2.2" style="fill:var(--fg);"></circle></svg>
+      <span style="font-family:var(--display); font-size:20px; font-weight:400; letter-spacing:0.2em;">SKINSENSE</span>
+    </div>
+    <a href="#" class="row" style="gap:8px; min-height:44px; font-size:14px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg>Trang chủ</a>
+  </header>
+
+  <main style="position:relative; display:flex; flex-direction:column; gap:40px; width:720px; margin:0 auto; padding:64px 0 96px;">
+    <div style="display:flex; flex-direction:column; gap:14px;">
+      <h1 class="d" style="font-size:54px; line-height:60px;">Chính sách riêng tư</h1>
+      <span class="lbl">Cập nhật 13/09/2026 · Dự án tốt nghiệp, không thu phí</span>
+      <p style="padding-top:10px; font-size:18px; font-weight:300; line-height:1.65; text-wrap:pretty;">SkinSense là nhật ký da cá nhân. Dữ liệu bạn tạo ra chỉ hiển thị cho chính bạn, trên chính tài khoản của bạn. Trang này liệt kê đúng những gì ứng dụng lưu và vì sao.</p>
+    </div>
+
+    <section class="line" style="display:flex; flex-direction:column; gap:12px; padding-top:28px;">
+      <h2 style="font-family:var(--display); font-size:26px; font-weight:400;">Dữ liệu được lưu</h2>
+      <p class="muted" style="font-size:15px; font-weight:300; line-height:1.7;">Tài khoản Google: email, tên và ảnh đại diện mà Google trả về khi bạn đăng nhập. Chỉ dùng để nhận ra bạn khi quay lại; không có mật khẩu riêng.</p>
+      <p class="muted" style="font-size:15px; font-weight:300; line-height:1.7;">Ảnh mặt bạn chụp trong ứng dụng, cùng thời điểm chụp, độ sáng và trạng thái khóa cân bằng trắng.</p>
+      <p class="muted" style="font-size:15px; font-weight:300; line-height:1.7;">Nốt mụn bạn tự chạm đánh dấu trên ảnh: vị trí trên khuôn mặt và vùng da tương ứng.</p>
+      <p class="muted" style="font-size:15px; font-weight:300; line-height:1.7;">Chỉ số theo vùng (trán, hai má, mũi, cằm): mẩn đỏ, độ không đều và số điểm ảnh, tính ngay lúc chụp. Điểm mốc khuôn mặt và mặt nạ da dùng để tính không được lưu lại.</p>
+      <p class="muted" style="font-size:15px; font-weight:300; line-height:1.7;">Routine buổi tối: các bước bạn tự đặt và những bước đã tick mỗi đêm.</p>
+      <p class="muted" style="font-size:15px; font-weight:300; line-height:1.7;">Một cookie phiên đăng nhập trên trình duyệt để bạn không phải đăng nhập lại.</p>
+    </section>
+
+    <section class="line" style="display:flex; flex-direction:column; gap:12px; padding-top:28px;">
+      <h2 style="font-family:var(--display); font-size:26px; font-weight:400;">Dữ liệu được dùng thế nào</h2>
+      <p class="muted" style="font-size:15px; font-weight:300; line-height:1.7;">Chỉ để hiển thị nhật ký, chỉ số và xu hướng cho bạn. Không chia sẻ với ai, không bán, không quảng cáo, không phân tích hành vi, không dùng để huấn luyện mô hình.</p>
+      <p class="muted" style="font-size:15px; font-weight:300; line-height:1.7;">Ứng dụng không chẩn đoán. Chỉ số là số đo tương đối trên chính ảnh của bạn, không phải kết luận y khoa.</p>
+    </section>
+
+    <section class="line" style="display:flex; flex-direction:column; gap:12px; padding-top:28px;">
+      <h2 style="font-family:var(--display); font-size:26px; font-weight:400;">Lưu ở đâu</h2>
+      <p class="muted" style="font-size:15px; font-weight:300; line-height:1.7;">Cơ sở dữ liệu và ảnh nằm trên Supabase (máy chủ tại Sydney, Úc). Mỗi bảng có quy tắc bảo mật theo hàng: chỉ tài khoản tạo ra dữ liệu mới đọc hoặc ghi được.</p>
+      <p class="muted" style="font-size:15px; font-weight:300; line-height:1.7;">Ảnh nằm trong một kho riêng tư, không có đường dẫn công khai; ứng dụng chỉ mở ảnh qua liên kết ký tạm thời cho đúng chủ tài khoản.</p>
+      <p class="muted" style="font-size:15px; font-weight:300; line-height:1.7;">Trang web chạy trên Vercel. Ứng dụng Android chỉ gọi thẳng đến Supabase.</p>
+    </section>
+
+    <section class="line" style="display:flex; flex-direction:column; gap:12px; padding-top:28px;">
+      <h2 style="font-family:var(--display); font-size:26px; font-weight:400;">Xóa dữ liệu</h2>
+      <p class="muted" style="font-size:15px; font-weight:300; line-height:1.7;">Nút “Xóa tài khoản” trong ứng dụng xóa ngay toàn bộ ảnh, nốt mụn, chỉ số, routine và tài khoản của bạn. Không có bản sao được giữ lại và không thể khôi phục.</p>
+      <p class="muted" style="font-size:15px; font-weight:300; line-height:1.7;">Bạn cũng có thể thu hồi quyền của SkinSense trong phần bảo mật của tài khoản Google.</p>
+    </section>
+
+    <section class="line" style="display:flex; flex-direction:column; gap:12px; padding-top:28px;">
+      <h2 style="font-family:var(--display); font-size:26px; font-weight:400;">Liên hệ</h2>
+      <p class="muted" style="font-size:15px; font-weight:300; line-height:1.7;">Câu hỏi về dữ liệu: [email liên hệ]</p>
+    </section>
+  </main>
+</div>
+
+</x-dc>
+</body>
+</html>

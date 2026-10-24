@@ -1,0 +1,140 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600&family=Public+Sans:wght@400;500;600;700&display=swap">
+  <style>
+    :root {
+      --bg: oklch(98% 0.006 85);
+      --card: oklch(100% 0 0);
+      --fg: oklch(22% 0.012 85);
+      --fg-muted: oklch(46% 0.012 85);
+      --fg-subtle: oklch(64% 0.01 85);
+      --sage: oklch(46% 0.07 145);
+      --sage-soft: oklch(93% 0.02 145);
+      --clay: oklch(58% 0.09 45);
+      --clay-soft: oklch(93% 0.03 45);
+      --border: oklch(90% 0.008 85);
+      --font-display: 'Newsreader', Georgia, serif;
+      --font-body: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font-body); }
+    a { color: var(--clay); text-decoration: none; }
+    a:hover { color: oklch(50% 0.09 45); }
+    h1, h2, p { margin: 0; }
+  </style>
+</helmet>
+
+<div style="position:relative; height:844px; overflow:hidden; background:var(--bg);">
+
+  <div style="display:flex; flex-direction:column; gap:14px; padding:24px 20px 96px;">
+
+    <div style="display:flex; flex-direction:column; gap:2px;">
+      <span style="font-size:13.5px; color:var(--fg-muted);">Thứ Hai, 14 tháng 9</span>
+      <h1 style="font-family:var(--font-display); font-size:28px; font-weight:600;">Hôm nay</h1>
+    </div>
+
+    <!-- Tonight's capture -->
+    <div style="display:flex; flex-direction:column; gap:14px; padding:18px; border-radius:16px; background:var(--card); border:1px solid var(--border);">
+      <div style="display:flex; flex-direction:column; gap:4px;">
+        <h2 style="font-family:var(--font-display); font-size:20px; font-weight:600;">Chưa có ảnh tối nay</h2>
+        <p style="font-size:13.5px; color:var(--fg-muted);">Lần trước: hôm qua, 22:14 · 3 nốt đã đánh dấu</p>
+      </div>
+      <div style="display:flex; align-items:center; justify-content:center; gap:10px; height:52px; border-radius:12px; background:var(--clay); color:white; font-weight:600; font-size:16px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2.5"></rect><path d="M8 7l1.6-2.5h4.8L16 7"></path><circle cx="12" cy="13.2" r="3.4"></circle></svg>
+        Chụp ảnh tối nay
+      </div>
+    </div>
+
+    <!-- Streaks -->
+    <div style="display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:12px;">
+      <div style="display:flex; flex-direction:column; gap:4px; padding:14px 16px; border-radius:16px; background:var(--card); border:1px solid var(--border);">
+        <span style="font-size:12.5px; font-weight:600; color:var(--fg-muted);">Chuỗi chụp ảnh</span>
+        <span style="font-family:var(--font-display); font-size:26px; font-weight:600;">12<span style="font-family:var(--font-body); font-size:13px; font-weight:500; color:var(--fg-muted);"> đêm</span></span>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:4px; padding:14px 16px; border-radius:16px; background:var(--card); border:1px solid var(--border);">
+        <span style="font-size:12.5px; font-weight:600; color:var(--fg-muted);">Chuỗi routine</span>
+        <span style="font-family:var(--font-display); font-size:26px; font-weight:600; color:var(--sage);">8<span style="font-family:var(--font-body); font-size:13px; font-weight:500; color:var(--fg-muted);"> đêm</span></span>
+      </div>
+    </div>
+
+    <!-- Routine -->
+    <div style="display:flex; flex-direction:column; gap:10px; padding:16px 16px 6px; border-radius:16px; background:var(--card); border:1px solid var(--border);">
+      <div style="display:flex; align-items:baseline; justify-content:space-between;">
+        <h2 style="font-family:var(--font-display); font-size:20px; font-weight:600;">Routine tối nay</h2>
+        <span style="font-size:13px; font-weight:600; color:var(--sage);">2/4 hoàn thành</span>
+      </div>
+      <div style="height:6px; border-radius:999px; background:var(--border); overflow:hidden;"><div style="width:50%; height:100%; background:var(--sage);"></div></div>
+      <div style="display:flex; flex-direction:column;">
+        <div style="display:flex; align-items:center; gap:12px; height:48px;">
+          <span style="width:22px; height:22px; border-radius:7px; background:var(--sage); display:flex; align-items:center; justify-content:center;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"></path></svg></span>
+          <span style="font-size:15.5px; opacity:0.55;">Tẩy trang</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px; height:48px;">
+          <span style="width:22px; height:22px; border-radius:7px; background:var(--sage); display:flex; align-items:center; justify-content:center;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"></path></svg></span>
+          <span style="font-size:15.5px; opacity:0.55;">Rửa mặt</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px; height:48px;">
+          <span style="width:22px; height:22px; border-radius:7px; border:1.6px solid var(--border);"></span>
+          <span style="font-size:15.5px;">Serum trị mụn</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px; height:48px;">
+          <span style="width:22px; height:22px; border-radius:7px; border:1.6px solid var(--border);"></span>
+          <span style="font-size:15.5px;">Kem dưỡng ẩm</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 7 days by zone (scrolls under the tab bar) -->
+    <div style="display:flex; flex-direction:column; gap:4px; padding:16px; border-radius:16px; background:var(--card); border:1px solid var(--border);">
+      <div style="display:flex; align-items:center; justify-content:space-between;">
+        <h2 style="font-size:13px; font-weight:600; color:var(--fg-muted);">Chỉ số mẩn đỏ 7 ngày qua</h2>
+        <span style="display:flex; align-items:center; min-height:44px; font-size:13px; font-weight:600; color:var(--clay);">Xu hướng →</span>
+      </div>
+      <div style="display:grid; grid-template-columns:minmax(0, 1fr) 64px 96px; align-items:center; height:40px; font-size:14.5px;">
+        <span>Trán</span>
+        <svg viewBox="0 0 64 20" style="width:64px; height:20px;"><polyline points="2,6 12,8 22,4 32,11 42,13 52,15 62,17" fill="none" stroke="var(--clay)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></polyline></svg>
+        <span style="text-align:right; font-size:12.5px; font-weight:600; color:var(--sage);">↓ đang giảm</span>
+      </div>
+      <div style="display:grid; grid-template-columns:minmax(0, 1fr) 64px 96px; align-items:center; height:40px; font-size:14.5px;">
+        <span>Má trái</span>
+        <svg viewBox="0 0 64 20" style="width:64px; height:20px;"><polyline points="2,10 12,9 22,11 32,10 42,9 52,11 62,10" fill="none" stroke="var(--clay)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></polyline></svg>
+        <span style="text-align:right; font-size:12.5px; font-weight:600; color:var(--fg-muted);">→ ổn định</span>
+      </div>
+      <div style="display:grid; grid-template-columns:minmax(0, 1fr) 64px 96px; align-items:center; height:40px; font-size:14.5px;">
+        <span>Má phải</span>
+        <svg viewBox="0 0 64 20" style="width:64px; height:20px;"><polyline points="2,5 12,7 22,8 32,9 42,12 52,13 62,14" fill="none" stroke="var(--clay)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></polyline></svg>
+        <span style="text-align:right; font-size:12.5px; font-weight:600; color:var(--sage);">↓ đang giảm</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom tabs -->
+  <div style="position:absolute; left:0; right:0; bottom:0; display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); height:72px; padding-bottom:6px; background:var(--card); border-top:1px solid var(--border);">
+    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; color:var(--clay); font-size:11.5px; font-weight:600;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1z"></path></svg>
+      Hôm nay
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; color:var(--fg-muted); font-size:11.5px; font-weight:500;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2.5"></rect><path d="M8 7l1.6-2.5h4.8L16 7"></path><circle cx="12" cy="13.2" r="3.4"></circle></svg>
+      Chụp
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; color:var(--fg-muted); font-size:11.5px; font-weight:500;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16l5-5 4 3 7-7"></path><path d="M15 7h5v5"></path></svg>
+      Xu hướng
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; color:var(--fg-muted); font-size:11.5px; font-weight:500;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"></path><circle cx="16" cy="7" r="2"></circle><circle cx="8" cy="17" r="2"></circle></svg>
+      Cài đặt
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

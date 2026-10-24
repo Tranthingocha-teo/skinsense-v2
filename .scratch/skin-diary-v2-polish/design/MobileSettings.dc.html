@@ -1,0 +1,146 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600&family=Public+Sans:wght@400;500;600;700&display=swap">
+  <style>
+    :root {
+      --bg: oklch(98% 0.006 85);
+      --card: oklch(100% 0 0);
+      --fg: oklch(22% 0.012 85);
+      --fg-muted: oklch(46% 0.012 85);
+      --fg-subtle: oklch(64% 0.01 85);
+      --sage: oklch(46% 0.07 145);
+      --clay: oklch(58% 0.09 45);
+      --clay-soft: oklch(93% 0.03 45);
+      --border: oklch(90% 0.008 85);
+      --grid: oklch(92% 0.006 85);
+      --font-display: 'Newsreader', Georgia, serif;
+      --font-body: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font-body); }
+    a { color: var(--clay); text-decoration: none; }
+    a:hover { color: oklch(50% 0.09 45); }
+    h1, h2, p { margin: 0; }
+  </style>
+</helmet>
+
+<div style="position:relative; height:844px; overflow:hidden; background:var(--bg);">
+
+  <div style="display:flex; flex-direction:column; gap:12px; padding:24px 20px 96px;">
+
+    <h1 style="font-family:var(--font-display); font-size:28px; font-weight:600;">Cài đặt</h1>
+
+    <!-- Account -->
+    <div style="display:flex; align-items:center; gap:14px; padding:14px 16px; border-radius:16px; background:var(--card); border:1px solid var(--border);">
+      <span style="width:44px; height:44px; border-radius:999px; background:var(--clay-soft); color:var(--clay); display:flex; align-items:center; justify-content:center;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="9" r="3.5"></circle><path d="M5 20c1.2-3.5 4-5 7-5s5.8 1.5 7 5"></path></svg>
+      </span>
+      <div style="display:flex; flex-direction:column; gap:2px; min-width:0;">
+        <span style="font-weight:600; font-size:15.5px;">[Tên Google]</span>
+        <span style="font-size:13px; color:var(--fg-muted);">[email Google]</span>
+      </div>
+    </div>
+
+    <!-- Diary -->
+    <div style="display:flex; flex-direction:column; gap:6px;">
+      <h2 style="padding:0 4px; font-size:12.5px; font-weight:600; color:var(--fg-muted);">Nhật ký</h2>
+      <div style="display:flex; flex-direction:column; border-radius:16px; background:var(--card); border:1px solid var(--border); overflow:hidden;">
+        <div style="display:flex; align-items:center; gap:12px; min-height:56px; padding:8px 16px; border-bottom:1px solid var(--grid);">
+          <div style="flex:1; display:flex; flex-direction:column; gap:2px;">
+            <span style="font-size:15.5px;">Nhắc chụp ảnh hằng tối</span>
+            <span style="font-size:13px; color:var(--fg-muted);">21:30</span>
+          </div>
+          <span style="width:46px; height:28px; border-radius:999px; background:var(--clay); position:relative;"><span style="position:absolute; right:3px; top:3px; width:22px; height:22px; border-radius:999px; background:white;"></span></span>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px; min-height:56px; padding:8px 16px;">
+          <div style="flex:1; display:flex; flex-direction:column; gap:2px;">
+            <span style="font-size:15.5px;">Khóa bằng vân tay</span>
+            <span style="font-size:13px; color:var(--fg-muted);">Hỏi khi mở ứng dụng</span>
+          </div>
+          <span style="width:46px; height:28px; border-radius:999px; background:var(--border); position:relative;"><span style="position:absolute; left:3px; top:3px; width:22px; height:22px; border-radius:999px; background:white;"></span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Display -->
+    <div style="display:flex; flex-direction:column; gap:6px;">
+      <h2 style="padding:0 4px; font-size:12.5px; font-weight:600; color:var(--fg-muted);">Hiển thị</h2>
+      <div style="display:flex; flex-direction:column; border-radius:16px; background:var(--card); border:1px solid var(--border); overflow:hidden;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:56px; padding:8px 16px; border-bottom:1px solid var(--grid);">
+          <span style="font-size:15.5px;">Ngôn ngữ</span>
+          <div style="display:flex; border-radius:10px; background:var(--border); padding:2px; font-size:12.5px; font-weight:600;">
+            <span style="display:flex; align-items:center; height:44px; padding:0 12px; border-radius:8px; background:var(--card);">Tiếng Việt</span>
+            <span style="display:flex; align-items:center; height:44px; padding:0 12px; color:var(--fg-muted);">English</span>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:56px; padding:8px 16px;">
+          <span style="font-size:15.5px;">Giao diện</span>
+          <div style="display:flex; border-radius:10px; background:var(--border); padding:2px; font-size:12.5px; font-weight:600;">
+            <span style="display:flex; align-items:center; height:44px; padding:0 12px; border-radius:8px; background:var(--card);">Hệ thống</span>
+            <span style="display:flex; align-items:center; height:44px; padding:0 12px; color:var(--fg-muted);">Sáng</span>
+            <span style="display:flex; align-items:center; height:44px; padding:0 12px; color:var(--fg-muted);">Tối</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Data & about -->
+    <div style="display:flex; flex-direction:column; gap:6px;">
+      <h2 style="padding:0 4px; font-size:12.5px; font-weight:600; color:var(--fg-muted);">Dữ liệu và thông tin</h2>
+      <div style="display:flex; flex-direction:column; border-radius:16px; background:var(--card); border:1px solid var(--border); overflow:hidden; font-size:15.5px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; min-height:44px; padding:0 16px; border-bottom:1px solid var(--grid);">
+          <span>Xuất ảnh và dữ liệu</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fg-subtle)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg>
+        </div>
+        <div style="display:flex; align-items:center; justify-content:space-between; min-height:44px; padding:0 16px; border-bottom:1px solid var(--grid);">
+          <span>Gửi góp ý</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fg-subtle)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg>
+        </div>
+        <div style="display:flex; align-items:center; justify-content:space-between; min-height:44px; padding:0 16px; border-bottom:1px solid var(--grid);">
+          <span>Về dự án SkinSense</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fg-subtle)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg>
+        </div>
+        <div style="display:flex; align-items:center; justify-content:space-between; min-height:44px; padding:0 16px;">
+          <span>Chính sách riêng tư</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fg-subtle)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Account actions -->
+    <div style="display:flex; flex-direction:column; border-radius:16px; background:var(--card); border:1px solid var(--border); overflow:hidden; font-size:15.5px; font-weight:600;">
+      <div style="display:flex; align-items:center; min-height:44px; padding:0 16px; border-bottom:1px solid var(--grid);">Đăng xuất</div>
+      <div style="display:flex; align-items:center; min-height:44px; padding:0 16px; color:var(--clay);">Xóa tài khoản</div>
+    </div>
+  </div>
+
+  <!-- Bottom tabs -->
+  <div style="position:absolute; left:0; right:0; bottom:0; display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); height:72px; padding-bottom:6px; background:var(--card); border-top:1px solid var(--border);">
+    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; color:var(--fg-muted); font-size:11.5px; font-weight:500;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1z"></path></svg>
+      Hôm nay
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; color:var(--fg-muted); font-size:11.5px; font-weight:500;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2.5"></rect><path d="M8 7l1.6-2.5h4.8L16 7"></path><circle cx="12" cy="13.2" r="3.4"></circle></svg>
+      Chụp
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; color:var(--fg-muted); font-size:11.5px; font-weight:500;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16l5-5 4 3 7-7"></path><path d="M15 7h5v5"></path></svg>
+      Xu hướng
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; color:var(--clay); font-size:11.5px; font-weight:600;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"></path><circle cx="16" cy="7" r="2"></circle><circle cx="8" cy="17" r="2"></circle></svg>
+      Cài đặt
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

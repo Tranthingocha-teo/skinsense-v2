@@ -1,0 +1,157 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600&family=Public+Sans:wght@400;500;600;700&display=swap">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    :root {
+      --bg: oklch(98% 0.006 85);
+      --card: oklch(100% 0 0);
+      --fg: oklch(22% 0.012 85);
+      --fg-muted: oklch(46% 0.012 85);
+      --fg-subtle: oklch(64% 0.01 85);
+      --sage: oklch(46% 0.07 145);
+      --clay: oklch(58% 0.09 45);
+      --clay-soft: oklch(93% 0.03 45);
+      --border: oklch(90% 0.008 85);
+      --grid: oklch(92% 0.006 85);
+      --skin1: oklch(84% 0.045 55);
+      --skin2: oklch(76% 0.06 45);
+      --font-display: 'Newsreader', Georgia, serif;
+      --font-body: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font-body); }
+    a { color: var(--clay); text-decoration: none; }
+  </style>
+</helmet>
+
+<div style="display:flex; flex-direction:column; height:100%; background:var(--bg); padding-bottom:28px;">
+
+  <div style="padding:22px 22px 4px; display:flex; align-items:center; justify-content:space-between; gap:12px;">
+    <div style="flex:1; font-family:var(--font-display); font-size:22px; font-weight:600;">Xu hướng</div>
+    <div style="display:flex; border-radius:10px; background:var(--border); padding:3px;">
+      <div style="padding:13px 16px; border-radius:8px; background:var(--card); font-size:12.5px; font-weight:600; display:flex; align-items:center;">7 ngày</div>
+      <div style="padding:13px 16px; border-radius:8px; font-size:12.5px; color:var(--fg-muted); display:flex; align-items:center;">30 ngày</div>
+    </div>
+  </div>
+
+  <!-- zone chips -->
+  <div style="display:flex; gap:8px; padding:16px 22px 4px; overflow-x:auto;">
+    <sc-for list="{{zones}}" as="z" hint-placeholder-count="5">
+      <div style="padding:13px 16px; border-radius:999px; font-size:13px; font-weight:600; white-space:nowrap; background:{{z.bg}}; color:{{z.fg}}; display:flex; align-items:center;">{{z.label}}</div>
+    </sc-for>
+  </div>
+
+  <!-- redness chart card -->
+  <div style="margin:14px 22px 0; padding:18px 16px 8px; border-radius:16px; background:var(--card); border:1px solid var(--border);">
+    <div style="display:flex; align-items:baseline; justify-content:space-between; padding:0 4px;">
+      <div style="font-size:13px; color:var(--fg-muted); font-weight:600;">Chỉ số mẩn đỏ — Trán</div>
+      <div style="font-size:12px; color:var(--sage); font-weight:600;">↓ đang giảm</div>
+    </div>
+
+    <svg viewBox="0 0 328 160" style="width:100%; height:auto; margin-top:6px;">
+      <!-- zero baseline -->
+      <line x1="8" y1="{{chart.zeroY}}" x2="320" y2="{{chart.zeroY}}" stroke="var(--grid)" stroke-width="1"></line>
+      <!-- grid rows -->
+      <line x1="8" y1="18" x2="320" y2="18" stroke="var(--grid)" stroke-width="1"></line>
+      <line x1="8" y1="140" x2="320" y2="140" stroke="var(--grid)" stroke-width="1"></line>
+
+      <path d="{{chart.path}}" fill="none" stroke="var(--clay)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+
+      <sc-for list="{{chart.points}}" as="p" hint-placeholder-count="6">
+        <circle cx="{{p.x}}" cy="{{p.y}}" r="4" fill="var(--card)" stroke="var(--clay)" stroke-width="2"></circle>
+      </sc-for>
+
+      <circle cx="{{chart.lastX}}" cy="{{chart.lastY}}" r="4" fill="var(--clay)"></circle>
+    </svg>
+
+    <div style="display:flex; justify-content:flex-end; padding:0 4px 6px;">
+      <div style="padding:4px 10px; border-radius:8px; background:var(--clay-soft); font-size:12px; font-weight:600; color:var(--fg);">Hôm nay: 0.9</div>
+    </div>
+
+    <div style="display:flex; justify-content:space-between; padding:2px 2px 6px; font-size:11px; color:var(--fg-subtle);">
+      <span>T2</span><span>T3</span><span>T4</span><span>T5</span><span>T6</span><span>T7</span><span>CN</span>
+    </div>
+  </div>
+
+  <!-- secondary stats -->
+  <div style="display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:12px; margin:14px 22px 0;">
+    <div style="padding:16px; border-radius:16px; background:var(--card); border:1px solid var(--border); display:flex; flex-direction:column; gap:6px;">
+      <div style="font-size:12.5px; color:var(--fg-muted); font-weight:600;">Số nốt mụn</div>
+      <div style="font-family:var(--font-display); font-size:26px; font-weight:600;">3<span style="font-size:14px; font-weight:500; color:var(--fg-muted);"> / vùng</span></div>
+      <svg viewBox="0 0 80 24" style="width:64px; height:20px;"><polyline points="2,18 15,14 28,16 41,10 54,11 67,5 78,7" fill="none" stroke="var(--fg-subtle)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></polyline></svg>
+    </div>
+    <div style="padding:16px; border-radius:16px; background:var(--card); border:1px solid var(--border); display:flex; flex-direction:column; gap:6px;">
+      <div style="font-size:12.5px; color:var(--fg-muted); font-weight:600;">Routine hoàn thành</div>
+      <div style="font-family:var(--font-display); font-size:26px; font-weight:600; color:var(--sage);">78%</div>
+      <div style="height:6px; border-radius:999px; background:var(--border); overflow:hidden;"><div style="width:78%; height:100%; background:var(--sage);"></div></div>
+    </div>
+  </div>
+
+  <!-- before/after -->
+  <div style="margin:18px 22px 0; padding:16px; border-radius:16px; background:var(--card); border:1px solid var(--border);">
+    <div style="font-size:13px; color:var(--fg-muted); font-weight:600; margin-bottom:12px;">So sánh trước / sau</div>
+    <div style="position:relative; border-radius:12px; overflow:hidden; aspect-ratio:16/10; background:linear-gradient(90deg, var(--skin1) 0%, var(--skin1) 48%, var(--skin2) 52%, var(--skin2) 100%);">
+      <div style="position:absolute; top:10px; left:10px; padding:4px 10px; border-radius:999px; background:rgba(255,255,255,0.85); font-size:11px; font-weight:600;">2 Th8</div>
+      <div style="position:absolute; top:10px; right:10px; padding:4px 10px; border-radius:999px; background:rgba(255,255,255,0.85); font-size:11px; font-weight:600;">11 Th9</div>
+      <div style="position:absolute; top:0; bottom:0; left:50%; width:3px; margin-left:-1.5px; background:white;"></div>
+      <div style="position:absolute; top:50%; left:50%; width:44px; height:44px; margin:-22px 0 0 -22px; border-radius:50%; background:white; display:flex; align-items:center; justify-content:center; box-shadow:0 1px 4px rgba(0,0,0,0.18);">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fg-muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5l-5 7 5 7M16 5l5 7-5 7"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align:center; font-size:11.5px; color:var(--fg-subtle); padding:14px 32px 0;">Không phải công cụ chẩn đoán y khoa</div>
+
+</div>
+</x-dc>
+<script data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const zoneDefs = [
+      { label: 'Trán', active: true },
+      { label: 'Má trái', active: false },
+      { label: 'Má phải', active: false },
+      { label: 'Mũi', active: false },
+      { label: 'Cằm', active: false },
+    ];
+    const zones = zoneDefs.map((z) => ({
+      label: z.label,
+      bg: z.active ? 'var(--clay)' : 'var(--border)',
+      fg: z.active ? 'white' : 'var(--fg-muted)',
+    }));
+
+    const values = [2.4, 2.1, 2.6, 1.8, 1.5, 1.2, 0.9];
+    const min = 0, max = 3;
+    const x0 = 8, x1 = 320, y0 = 18, y1 = 140;
+    const n = values.length;
+    const points = values.map((v, i) => {
+      const x = x0 + (i / (n - 1)) * (x1 - x0);
+      const y = y1 - ((v - min) / (max - min)) * (y1 - y0);
+      return { x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10 };
+    });
+    const path = points.map((p, i) => (i === 0 ? 'M' : 'L') + p.x + ' ' + p.y).join(' ');
+    const zeroY = y1 - ((0 - min) / (max - min)) * (y1 - y0);
+    const last = points[points.length - 1];
+
+    return {
+      zones,
+      chart: {
+        points: points.slice(0, -1),
+        path,
+        zeroY: Math.round(zeroY * 10) / 10,
+        lastX: last.x,
+        lastY: last.y,
+      },
+    };
+  }
+}
+</script>
+</body>
+</html>

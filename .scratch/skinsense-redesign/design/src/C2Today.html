@@ -1,0 +1,119 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+  <style>
+    :root { /*TOKENS*/ --font: 'Geist', 'Segoe UI', system-ui, sans-serif; --mono: 'Geist Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font); }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { color: var(--fg); }
+    h1, h2, p { margin: 0; }
+  </style>
+</helmet>
+
+<div style="position:relative; width:390px; height:844px; overflow:hidden; background:var(--bg); color:var(--fg);">
+  <div style="display:flex; flex-direction:column; gap:12px; padding:24px 16px 96px;">
+
+    <div style="display:flex; flex-direction:column; gap:6px; padding:0 4px;">
+      <span style="font-family:var(--mono); font-size:12.5px; color:var(--muted);">Thứ Hai, 14 tháng 9</span>
+      <h1 style="font-size:30px; font-weight:600; letter-spacing:-0.035em;">Hôm nay</h1>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:14px; padding:18px; border-radius:20px; background:var(--surface); border:1px solid var(--line);">
+      <div style="display:flex; align-items:center; gap:14px;">
+        <span style="display:flex; align-items:center; justify-content:center; flex-shrink:0; width:44px; height:44px; border-radius:12px; background:var(--surface-2); color:var(--accent);">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2.5"></rect><path d="M8 7l1.6-2.5h4.8L16 7"></path><circle cx="12" cy="13.2" r="3.4"></circle></svg>
+        </span>
+        <div style="display:flex; flex-direction:column; gap:3px;">
+          <h2 style="font-size:18px; font-weight:600; letter-spacing:-0.02em;">Chưa có ảnh tối nay</h2>
+          <p style="font-family:var(--mono); font-size:12px; color:var(--muted);">Lần trước: 13 thg 9, 22:14 · 3 nốt đã đánh dấu</p>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; justify-content:center; height:52px; border-radius:14px; background:var(--accent); color:var(--on-accent); font-size:16px; font-weight:500;">Chụp ảnh tối nay</div>
+      <a href="#" style="display:flex; align-items:center; justify-content:center; min-height:44px; margin-top:-6px; font-size:14px; font-weight:500;">Đánh dấu nốt mụn →</a>
+    </div>
+
+    <div style="display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:12px;">
+      <div style="display:flex; flex-direction:column; gap:8px; padding:14px 16px; border-radius:20px; background:var(--surface); border:1px solid var(--line);">
+        <span style="font-size:13px; color:var(--muted);">Chuỗi chụp ảnh</span>
+        <span style="font-family:var(--mono); font-size:32px; letter-spacing:-0.04em;">12<span style="font-family:var(--font); font-size:13px; letter-spacing:0; color:var(--muted);"> đêm</span></span>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:8px; padding:14px 16px; border-radius:20px; background:var(--surface); border:1px solid var(--line);">
+        <span style="font-size:13px; color:var(--muted);">Chuỗi routine</span>
+        <span style="font-family:var(--mono); font-size:32px; letter-spacing:-0.04em; color:var(--good);">8<span style="font-family:var(--font); font-size:13px; letter-spacing:0; color:var(--muted);"> đêm</span></span>
+      </div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:12px; padding:16px 18px 6px; border-radius:20px; background:var(--surface); border:1px solid var(--line);">
+      <div style="display:flex; align-items:baseline; justify-content:space-between;">
+        <h2 style="font-size:17px; font-weight:600; letter-spacing:-0.02em;">Routine tối nay</h2>
+        <span style="font-family:var(--mono); font-size:12.5px; color:var(--muted);">2/4 hoàn thành</span>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:4px;">
+        <div style="height:4px; border-radius:2px; background:var(--accent);"></div>
+        <div style="height:4px; border-radius:2px; background:var(--accent);"></div>
+        <div style="height:4px; border-radius:2px; background:var(--surface-2);"></div>
+        <div style="height:4px; border-radius:2px; background:var(--surface-2);"></div>
+      </div>
+      <div style="display:flex; flex-direction:column;">
+        <div style="display:flex; align-items:center; gap:12px; height:48px; border-bottom:1px solid var(--line);">
+          <span style="display:flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:6px; background:var(--accent); color:var(--on-accent);"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"></path></svg></span>
+          <span style="font-size:15.5px; color:var(--muted); text-decoration:line-through;">Tẩy trang</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px; height:48px; border-bottom:1px solid var(--line);">
+          <span style="display:flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:6px; background:var(--accent); color:var(--on-accent);"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"></path></svg></span>
+          <span style="font-size:15.5px; color:var(--muted); text-decoration:line-through;">Rửa mặt</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px; height:48px; border-bottom:1px solid var(--line);">
+          <span style="width:22px; height:22px; border-radius:6px; border:1.5px solid var(--muted);"></span>
+          <span style="font-size:15.5px;">Serum trị mụn</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px; height:48px;">
+          <span style="width:22px; height:22px; border-radius:6px; border:1.5px solid var(--muted);"></span>
+          <span style="font-size:15.5px;">Kem dưỡng ẩm</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; padding:6px 18px 12px; border-radius:20px; background:var(--surface); border:1px solid var(--line);">
+      <div style="display:flex; align-items:center; justify-content:space-between;">
+        <h2 style="font-size:13px; font-weight:500; color:var(--muted);">Chỉ số mẩn đỏ 7 ngày qua</h2>
+        <a href="#" style="display:flex; align-items:center; min-height:44px; font-size:13px; font-weight:500;">Xu hướng →</a>
+      </div>
+      <div style="display:grid; grid-template-columns:72px minmax(0, 1fr) 40px 96px; gap:10px; align-items:center; height:40px; font-size:14.5px;"><span>Trán</span><div style="height:6px; border-radius:3px; background:var(--surface-2);"><div style="width:39%; height:100%; border-radius:3px; background:var(--accent);"></div></div><span style="text-align:right; font-family:var(--mono); font-size:14px;">3.1</span><span style="text-align:right; font-family:var(--mono); font-size:11.5px; color:var(--good);">↓ đang giảm</span></div>
+      <div style="display:grid; grid-template-columns:72px minmax(0, 1fr) 40px 96px; gap:10px; align-items:center; height:40px; font-size:14.5px;"><span>Má trái</span><div style="height:6px; border-radius:3px; background:var(--surface-2);"><div style="width:58%; height:100%; border-radius:3px; background:var(--accent);"></div></div><span style="text-align:right; font-family:var(--mono); font-size:14px;">4.6</span><span style="text-align:right; font-family:var(--mono); font-size:11.5px; color:var(--muted);">→ ổn định</span></div>
+      <div style="display:grid; grid-template-columns:72px minmax(0, 1fr) 40px 96px; gap:10px; align-items:center; height:40px; font-size:14.5px;"><span>Má phải</span><div style="height:6px; border-radius:3px; background:var(--surface-2);"><div style="width:65%; height:100%; border-radius:3px; background:var(--accent);"></div></div><span style="text-align:right; font-family:var(--mono); font-size:14px;">5.2</span><span style="text-align:right; font-family:var(--mono); font-size:11.5px; color:var(--good);">↓ đang giảm</span></div>
+      <div style="display:grid; grid-template-columns:72px minmax(0, 1fr) 40px 96px; gap:10px; align-items:center; height:40px; font-size:14.5px;"><span>Mũi</span><div style="height:6px; border-radius:3px; background:var(--surface-2);"><div style="width:35%; height:100%; border-radius:3px; background:var(--accent);"></div></div><span style="text-align:right; font-family:var(--mono); font-size:14px;">2.8</span><span style="text-align:right; font-family:var(--mono); font-size:11.5px; color:var(--muted);">→ ổn định</span></div>
+      <div style="display:grid; grid-template-columns:72px minmax(0, 1fr) 40px 96px; gap:10px; align-items:center; height:40px; font-size:14.5px;"><span>Cằm</span><div style="height:6px; border-radius:3px; background:var(--surface-2);"><div style="width:49%; height:100%; border-radius:3px; background:var(--accent);"></div></div><span style="text-align:right; font-family:var(--mono); font-size:14px;">3.9</span><span style="text-align:right; font-family:var(--mono); font-size:11.5px; color:var(--muted);">↑ đang tăng</span></div>
+    </div>
+  </div>
+
+  <div style="position:absolute; left:0; right:0; bottom:0; display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); height:72px; padding-bottom:6px; background:var(--surface); border-top:1px solid var(--line);">
+    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; color:var(--fg); font-size:11.5px; font-weight:600;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1z"></path></svg>
+      Hôm nay
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; color:var(--muted); font-size:11.5px; font-weight:500;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2.5"></rect><path d="M8 7l1.6-2.5h4.8L16 7"></path><circle cx="12" cy="13.2" r="3.4"></circle></svg>
+      Chụp
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; color:var(--muted); font-size:11.5px; font-weight:500;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16l5-5 4 3 7-7"></path><path d="M15 7h5v5"></path></svg>
+      Xu hướng
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; color:var(--muted); font-size:11.5px; font-weight:500;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"></path><circle cx="16" cy="7" r="2"></circle><circle cx="8" cy="17" r="2"></circle></svg>
+      Cài đặt
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

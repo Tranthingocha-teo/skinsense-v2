@@ -1,0 +1,15 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html", "title": "Web — Landing", "x": 0, "y": 0, "w": 1440, "h": 3900 },
+    { "file": "WebToday.dc.html", "title": "Web — Hôm nay (demo)", "x": 1560, "y": 0, "w": 1440, "h": 900 },
+    { "file": "MobileSignIn.dc.html", "title": "Android — Đăng nhập", "x": 1560, "y": 1060, "w": 390, "h": 844 },
+    { "file": "MobileToday.dc.html", "title": "Android — Hôm nay", "x": 2050, "y": 1060, "w": 390, "h": 844 },
+    { "file": "MobileSettings.dc.html", "title": "Android — Cài đặt", "x": 2540, "y": 1060, "w": 390, "h": 844 }
+  ],
+  "annotations": [
+    { "id": "landing-note", "x": 0, "y": -150, "w": 420, "text": "Landing: khung hero là placeholder cho cảnh R3F tự lặp 3 cảnh (mặt → nốt → biểu đồ). QR và tên/email là chỗ trống cần điền." },
+    { "id": "web-note", "x": 1560, "y": -150, "w": 420, "text": "Web app ở chế độ demo (dữ liệu mẫu). Sidebar trùng 4 tab mobile. Số liệu trên canvas là mẫu." },
+    { "id": "mobile-note", "x": 1560, "y": 950, "w": 420, "text": "Android: 4 tab Hôm nay / Chụp / Xu hướng / Cài đặt. Đăng xuất + Xóa tài khoản chuyển vào Cài đặt." }
+  ],
+  "launch": { "view": "canvas" }
+}

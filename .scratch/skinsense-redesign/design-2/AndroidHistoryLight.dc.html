@@ -1,0 +1,86 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+Display:wght@300;400&family=Manrope:wght@300;400;500;600&display=swap">
+  <style>
+    :root { --bg: #E8E5DE; --surface: #F6F4EF; --surface-2: #DEDAD1; --fg: #191B19; --muted: #52564E; --line: #C9C5BB; --accent: #1C1F1C; --on-accent: #F2EFE8; --good: #3A6537; --danger: #A33B2E; --photo-a: #B9C7B8; --photo-b: #DCE1D6; --photo-c: #F3E6C4; --display: 'Noto Serif Display', Georgia, 'Times New Roman', serif; --font: 'Manrope', 'Segoe UI', system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font); }
+    a { color: var(--fg); text-decoration: underline; text-underline-offset: 4px; }
+    a:hover { color: var(--muted); }
+    h1, h2, h3, p { margin: 0; }
+    .d { font-family: var(--display); font-weight: 300; }
+    .lbl { font-size: 11px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+    .muted { color: var(--muted); }
+    .card { border-radius: 18px; background: var(--surface); border: 1px solid color-mix(in oklab, var(--fg) 10%, transparent); }
+    .glass { border-radius: 18px; background: color-mix(in oklab, var(--surface) 72%, transparent); border: 1px solid color-mix(in oklab, var(--fg) 14%, transparent); backdrop-filter: blur(18px); }
+    .btn { display: flex; align-items: center; justify-content: center; gap: 10px; height: 52px; padding: 0 24px; border-radius: 4px; background: var(--accent); color: var(--on-accent); font-size: 15px; font-weight: 500; }
+    .btn-o { display: flex; align-items: center; justify-content: center; gap: 10px; height: 52px; padding: 0 24px; border-radius: 4px; border: 1px solid color-mix(in oklab, var(--fg) 55%, transparent); font-size: 15px; font-weight: 400; }
+    .chip { display: flex; align-items: center; gap: 6px; height: 44px; padding: 0 16px; border-radius: 4px; border: 1px solid color-mix(in oklab, var(--fg) 14%, transparent); font-size: 14px; color: var(--muted); }
+    .chip-on { display: flex; align-items: center; gap: 6px; height: 44px; padding: 0 16px; border-radius: 4px; background: var(--accent); color: var(--on-accent); font-size: 14px; font-weight: 500; }
+    .ph { padding: 4px 10px; border: 1px dashed color-mix(in oklab, var(--fg) 45%, transparent); border-radius: 999px; font-size: 11px; }
+    .photo { background: radial-gradient(40% 34% at 50% 46%, color-mix(in oklab, var(--photo-c) 38%, transparent), transparent 72%), radial-gradient(90% 70% at 20% 85%, var(--photo-a), transparent 75%), linear-gradient(180deg, var(--photo-b), var(--photo-a)); }
+    .night { background: radial-gradient(60% 60% at 75% 10%, color-mix(in oklab, var(--photo-c) 32%, transparent), transparent 70%), linear-gradient(180deg, var(--photo-b), var(--bg)); }
+    .row { display: flex; align-items: center; }
+    .hit { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 44px; height: 44px; }
+    .line { border-top: 1px solid var(--line); }
+    .cal { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; height: 44px; font-size: 14px; }
+    .cal-on { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; width: 44px; height: 44px; margin: 0 auto; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14px; font-weight: 500; }
+    .dot { width: 4px; height: 4px; border-radius: 999px; background: currentColor; }
+    .tile { position: relative; aspect-ratio: 3 / 4; border-radius: 6px; overflow: hidden; }
+    @keyframes fade-in-down { from { opacity: 0; transform: translateY(-12px); } }
+    @keyframes fade { from { opacity: 0; } }
+    @keyframes grow-x { from { transform: scaleX(0); } }
+    @keyframes draw { from { stroke-dashoffset: 113.1; } }
+    .in { animation: fade-in-down 460ms ease-out both; }
+    .grow { transform-origin: left; animation: grow-x 360ms ease-out both; }
+    .draw { stroke-dasharray: 113.1; animation: draw 1.4s cubic-bezier(0.65, 0, 0.35, 1) both; }
+    .draw-dot { animation: fade 0.4s ease-out 1.2s both; }
+    @media (prefers-reduced-motion: reduce) { .in { animation-name: fade; } .grow, .draw { animation: none; } }
+    .tile-meta { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: space-between; padding: 16px 7px 6px; background: linear-gradient(180deg, transparent, color-mix(in oklab, var(--bg) 82%, transparent)); font-size: 11px; font-weight: 500; }
+  </style>
+</helmet>
+<div style="position:relative; display:flex; flex-direction:column; width:390px; height:844px; overflow:hidden; background:var(--bg); color:var(--fg);">
+  <div class="row" style="gap:4px; padding:16px 18px 0 10px;">
+    <span class="hit"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></span>
+    <h1 class="d" style="font-size:34px; line-height:1.15;">Lịch sử ảnh</h1>
+  </div>
+
+  <div class="row" style="gap:8px; margin-right:-40px; padding:12px 18px 0;">
+    <span class="chip-on" style="flex-shrink:0;">Tất cả</span>
+    <span class="chip" style="flex-shrink:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12.5v-8a1 1 0 0 1 1-1h8l8 8-9 9z"></path><circle cx="8" cy="8" r="1.3"></circle></svg>Thiếu ngủ</span>
+    <span class="chip" style="flex-shrink:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12.5v-8a1 1 0 0 1 1-1h8l8 8-9 9z"></path><circle cx="8" cy="8" r="1.3"></circle></svg>Serum mới</span>
+    <span class="chip" style="flex-shrink:0;">Có ghi chú</span>
+  </div>
+
+  <div class="row" style="justify-content:space-between; padding:20px 20px 10px;">
+    <span class="lbl">Tháng 9</span>
+    <span class="muted" style="font-size:12.5px; font-weight:300;">12 ảnh</span>
+  </div>
+
+  <div style="display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:6px; padding:0 18px;">
+    <div class="tile photo"><div class="tile-meta"><span>13 thg 9</span><span>3 nốt</span></div></div>
+    <div class="tile photo" style="filter:brightness(0.92);"><div class="tile-meta"><span>12 thg 9</span><span>2 nốt</span></div></div>
+    <div class="tile photo" style="filter:brightness(1.05);"><span style="position:absolute; top:6px; right:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12.5v-8a1 1 0 0 1 1-1h8l8 8-9 9z"></path><circle cx="8" cy="8" r="1.3"></circle></svg></span><div class="tile-meta"><span>11 thg 9</span><span>4 nốt</span></div></div>
+    <div class="tile photo" style="filter:brightness(0.95);"><div class="tile-meta"><span>10 thg 9</span><span>4 nốt</span></div></div>
+    <div class="tile photo"><span style="position:absolute; top:6px; right:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12.5v-8a1 1 0 0 1 1-1h8l8 8-9 9z"></path><circle cx="8" cy="8" r="1.3"></circle></svg></span><div class="tile-meta"><span>9 thg 9</span><span>5 nốt</span></div></div>
+    <div class="tile photo" style="filter:brightness(0.9);"><div class="tile-meta"><span>8 thg 9</span><span>5 nốt</span></div></div>
+    <div class="tile photo" style="filter:brightness(1.04);"><div class="tile-meta"><span>7 thg 9</span><span>6 nốt</span></div></div>
+    <div class="tile photo"><div class="tile-meta"><span>5 thg 9</span><span>5 nốt</span></div></div>
+    <div class="tile photo" style="filter:brightness(0.93);"><div class="tile-meta"><span>4 thg 9</span><span>6 nốt</span></div></div>
+    <div class="tile photo" style="filter:brightness(1.03);"><div class="tile-meta"><span>3 thg 9</span><span>7 nốt</span></div></div>
+    <div class="tile photo"><div class="tile-meta"><span>2 thg 9</span><span>6 nốt</span></div></div>
+    <div class="tile photo" style="filter:brightness(0.94);"><div class="tile-meta"><span>1 thg 9</span><span>7 nốt</span></div></div>
+  </div>
+  <span class="ph" style="align-self:flex-start; margin:12px 18px 0;">Ảnh · placeholder</span>
+</div>
+
+</x-dc>
+</body>
+</html>

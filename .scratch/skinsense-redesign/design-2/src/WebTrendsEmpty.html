@@ -1,0 +1,58 @@
+<div style="display:flex; width:1440px; height:900px; overflow:hidden; background:var(--bg); color:var(--fg);">
+  <!--NAV:trends-->
+  <div style="position:relative; flex-grow:1; min-width:0;">
+    <!-- Night tint carried over from Hôm nay, shallower: the photo lives in the compare card here -->
+    <div style="position:absolute; left:0; right:0; top:0; height:320px; background:radial-gradient(40% 60% at 80% 10%, color-mix(in oklab, var(--photo-c) 35%, transparent), transparent 70%), linear-gradient(180deg, var(--photo-b), var(--bg));"></div>
+
+    <div style="position:relative; display:flex; flex-direction:column; gap:16px; padding:64px 64px 56px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; padding-bottom:8px;">
+        <h1 style="font-family:var(--display); font-size:54px; font-weight:300; line-height:60px;">Xu hướng</h1>
+        <div style="display:flex; border:1px solid color-mix(in oklab, var(--fg) 14%, transparent); border-radius:4px;">
+          <span style="display:flex; align-items:center; height:44px; padding:0 16px; background:var(--accent); color:var(--on-accent); font-size:13px; font-weight:500;">7 ngày</span>
+          <span style="display:flex; align-items:center; height:44px; padding:0 16px; font-size:13px; font-weight:400; color:var(--muted);">30 ngày</span>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:8px;">
+        <span style="display:flex; align-items:center; height:44px; padding:0 18px; border-radius:4px; background:var(--accent); color:var(--on-accent); font-size:14px; font-weight:500;">Trán</span>
+        <span style="display:flex; align-items:center; height:44px; padding:0 18px; border-radius:4px; border:1px solid color-mix(in oklab, var(--fg) 14%, transparent); color:var(--muted); font-size:14px; font-weight:400;">Má trái</span>
+        <span style="display:flex; align-items:center; height:44px; padding:0 18px; border-radius:4px; border:1px solid color-mix(in oklab, var(--fg) 14%, transparent); color:var(--muted); font-size:14px; font-weight:400;">Má phải</span>
+        <span style="display:flex; align-items:center; height:44px; padding:0 18px; border-radius:4px; border:1px solid color-mix(in oklab, var(--fg) 14%, transparent); color:var(--muted); font-size:14px; font-weight:400;">Mũi</span>
+        <span style="display:flex; align-items:center; height:44px; padding:0 18px; border-radius:4px; border:1px solid color-mix(in oklab, var(--fg) 14%, transparent); color:var(--muted); font-size:14px; font-weight:400;">Cằm</span>
+      </div>
+
+      <div style="display:grid; grid-template-columns:repeat(12, minmax(0, 1fr)); gap:16px; align-items:start; padding-top:8px;">
+        <div style="grid-column:span 7; display:flex; flex-direction:column; gap:16px;">
+          <div style="display:flex; flex-direction:column; gap:10px; padding:20px 24px 16px; border-radius:18px; background:color-mix(in oklab, var(--surface) 72%, transparent); border:1px solid color-mix(in oklab, var(--fg) 14%, transparent); backdrop-filter:blur(18px);">
+            <div style="display:flex; align-items:baseline; justify-content:space-between;">
+              <h2 style="font-size:11px; font-weight:500; letter-spacing:0.12em; text-transform:uppercase; color:var(--muted);">Chỉ số mẩn đỏ — Trán</h2>
+              
+            </div>
+            <div class="row muted" style="justify-content:center; height:240px; font-size:14px; font-weight:300;">Chưa có ảnh trong khoảng này</div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:16px;">
+            <div style="display:flex; flex-direction:column; padding:16px 22px; border-radius:18px; background:var(--surface); border:1px solid color-mix(in oklab, var(--fg) 10%, transparent);">
+              <span style="font-size:11px; font-weight:500; letter-spacing:0.12em; text-transform:uppercase; color:var(--muted);">Số nốt mụn</span>
+              <span style="font-family:var(--display); font-size:44px; font-weight:300; line-height:1.15;">—</span>
+              
+            </div>
+            <div style="display:flex; flex-direction:column; padding:16px 22px; border-radius:18px; background:var(--surface); border:1px solid color-mix(in oklab, var(--fg) 10%, transparent);">
+              <span style="font-size:11px; font-weight:500; letter-spacing:0.12em; text-transform:uppercase; color:var(--muted);">Routine hoàn thành</span>
+              <span style="font-family:var(--display); font-size:44px; font-weight:300; line-height:1.15; color:var(--good);">86%</span>
+              <div style="height:1px; margin-top:12px; background:var(--line);"><div style="width:86%; height:1px; background:var(--good);"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="grid-column:span 5; display:flex; flex-direction:column; gap:16px;">
+          <div style="display:flex; flex-direction:column; gap:14px; padding:20px 24px 24px; border-radius:18px; background:var(--surface); border:1px solid color-mix(in oklab, var(--fg) 10%, transparent);">
+            <h2 style="font-size:11px; font-weight:500; letter-spacing:0.12em; text-transform:uppercase; color:var(--muted);">So sánh trước / sau</h2>
+            <div class="row muted" style="justify-content:center; aspect-ratio:3 / 4; max-height:460px; border-radius:10px; border:1px dashed var(--line); font-size:14px; font-weight:300;">Cần ít nhất 2 ảnh trong khoảng này</div>
+          </div>
+          <p style="text-align:center; font-size:11.5px; font-weight:300; color:var(--muted);">Không phải công cụ chẩn đoán y khoa</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

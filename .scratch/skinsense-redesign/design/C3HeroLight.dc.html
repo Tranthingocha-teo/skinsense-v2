@@ -1,0 +1,84 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=Manrope:wght@300;400;500;600&display=swap">
+  <style>
+    :root { --bg: #E8E5DE; --surface: #F6F4EF; --surface-2: #DEDAD1; --fg: #191B19; --muted: #52564E; --line: #C9C5BB; --accent: #1C1F1C; --on-accent: #F2EFE8; --good: #3A6537; --glow: #FFFFFF; --photo-a: #B9C7B8; --photo-b: #DCE1D6; --photo-c: #F3E6C4; --display: 'Cormorant Garamond', Garamond, 'Times New Roman', serif; --font: 'Manrope', 'Segoe UI', system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font); }
+    a { color: var(--fg); text-decoration: underline; text-underline-offset: 4px; }
+    a:hover { color: var(--muted); }
+    h1, p { margin: 0; }
+  </style>
+</helmet>
+
+<div style="position:relative; width:1440px; height:900px; overflow:hidden; background:var(--bg); color:var(--fg);">
+  <!-- Full-bleed photo placeholder: gradients + grain stand in for a real night photo -->
+  <div style="position:absolute; inset:0; background:radial-gradient(38% 46% at 60% 22%, color-mix(in oklab, var(--photo-c) 55%, transparent), transparent 70%), radial-gradient(70% 65% at 25% 85%, var(--photo-a), transparent 75%), linear-gradient(180deg, var(--photo-b), var(--bg));"></div>
+  <svg width="1440" height="900" style="position:absolute; inset:0; opacity:0.22; mix-blend-mode:overlay;">
+    <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch"></feTurbulence></filter>
+    <rect width="1440" height="900" filter="url(#grain)"></rect>
+  </svg>
+  <div style="position:absolute; inset:0; background:linear-gradient(180deg, color-mix(in oklab, var(--bg) 40%, transparent), color-mix(in oklab, var(--bg) 12%, transparent) 45%, color-mix(in oklab, var(--bg) 75%, transparent));"></div>
+  <svg width="1440" height="900" viewBox="0 0 1440 900" fill="none" style="position:absolute; inset:0;">
+    <ellipse cx="80" cy="470" rx="130" ry="440" style="stroke:var(--fg); stroke-opacity:0.35; stroke-width:1;"></ellipse>
+    <ellipse cx="40" cy="470" rx="150" ry="460" style="stroke:var(--fg); stroke-opacity:0.18; stroke-width:1;"></ellipse>
+    <ellipse cx="1360" cy="470" rx="130" ry="440" style="stroke:var(--fg); stroke-opacity:0.35; stroke-width:1;"></ellipse>
+    <ellipse cx="1400" cy="470" rx="150" ry="460" style="stroke:var(--fg); stroke-opacity:0.18; stroke-width:1;"></ellipse>
+  </svg>
+
+  <header style="position:relative; display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); align-items:center; height:96px; padding:0 56px;">
+    <div style="display:flex; align-items:center; gap:12px;">
+      <svg width="30" height="30" viewBox="0 0 64 64" fill="none">
+        <circle cx="28" cy="32" r="18" style="stroke:var(--fg); stroke-width:1.6;"></circle>
+        <circle cx="36" cy="32" r="18" style="stroke:var(--fg); stroke-opacity:0.45; stroke-width:1.6;"></circle>
+        <circle cx="32" cy="14.45" r="2.2" style="fill:var(--fg);"></circle>
+      </svg>
+      <span style="font-family:var(--display); font-size:20px; font-weight:500; letter-spacing:0.2em;">SKINSENSE</span>
+    </div>
+    <nav style="display:flex; justify-content:center; gap:28px; font-size:14px; font-weight:300;">
+      <span>Cách hoạt động</span>
+      <span>AI trên thiết bị</span>
+      <span>Câu hỏi</span>
+      <span>Riêng tư</span>
+    </nav>
+    <div style="display:flex; justify-content:flex-end; align-items:center; gap:20px;">
+      <span style="font-size:13px; font-weight:500; letter-spacing:0.1em;">VI</span>
+      <span style="display:flex; align-items:center; height:44px; padding:0 22px; border-radius:4px; background:var(--accent); color:var(--on-accent); font-size:14px; font-weight:500;">Đăng nhập</span>
+    </div>
+  </header>
+
+  <main style="position:relative; display:flex; flex-direction:column; align-items:center; gap:30px; padding-top:150px; text-align:center;">
+    <h1 style="max-width:1080px; font-family:var(--display); font-size:74px; font-weight:300; line-height:1.14; letter-spacing:0.01em; text-transform:uppercase; text-wrap:balance;">Theo dõi làn da của bạn, mỗi đêm một ảnh.</h1>
+    <p style="max-width:560px; font-size:18px; font-weight:300; line-height:1.6; text-wrap:pretty;">Chụp ảnh có hướng dẫn, đánh dấu nốt mụn, tick routine buổi tối — xem xu hướng da theo từng vùng, theo thời gian.</p>
+    <div style="display:flex; align-items:center; gap:14px;">
+      <span style="display:flex; align-items:center; gap:10px; height:52px; padding:0 28px; border-radius:4px; background:var(--accent); color:var(--on-accent); font-size:15px; font-weight:500;">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 12a8 8 0 1 1-2.34-5.66"></path><path d="M20 12h-7"></path></svg>
+        Đăng nhập bằng Google
+      </span>
+      <span style="display:flex; align-items:center; height:52px; padding:0 28px; border-radius:4px; border:1px solid color-mix(in oklab, var(--fg) 55%, transparent); font-size:15px; font-weight:400;">Xem thử, không cần đăng nhập</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:24px; font-size:12px; letter-spacing:0.08em; text-transform:uppercase;">
+      <span>Miễn phí · Riêng tư · Không phải công cụ chẩn đoán y khoa</span>
+      <a href="#" style="display:flex; align-items:center; min-height:44px;">Tải bản Android (APK) →</a>
+    </div>
+  </main>
+
+  <div style="position:absolute; left:56px; right:56px; bottom:40px; display:flex; align-items:flex-end; justify-content:space-between;">
+    <div style="display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:32px; width:720px; font-size:13px; font-weight:300;">
+      <div style="padding-top:12px; border-top:1px solid var(--fg);">Chụp ảnh có hướng dẫn</div>
+      <div style="padding-top:12px; border-top:1px solid color-mix(in oklab, var(--fg) 35%, transparent);">Chạm để đánh dấu nốt mụn</div>
+      <div style="padding-top:12px; border-top:1px solid color-mix(in oklab, var(--fg) 35%, transparent);">Xem xu hướng theo vùng</div>
+    </div>
+    <span style="padding:6px 12px; border:1px dashed color-mix(in oklab, var(--fg) 45%, transparent); border-radius:999px; font-size:12px;">Ảnh full-bleed + cảnh R3F · placeholder</span>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

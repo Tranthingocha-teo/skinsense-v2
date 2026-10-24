@@ -1,0 +1,94 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600&family=Public+Sans:wght@400;500;600;700&display=swap">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    :root {
+      --bg: oklch(98% 0.006 85);
+      --card: oklch(100% 0 0);
+      --fg: oklch(22% 0.012 85);
+      --fg-muted: oklch(46% 0.012 85);
+      --sage: oklch(46% 0.07 145);
+      --sage-soft: oklch(93% 0.02 145);
+      --clay: oklch(58% 0.09 45);
+      --border: oklch(90% 0.008 85);
+      --font-display: 'Newsreader', Georgia, serif;
+      --font-body: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font-body); }
+    a { color: var(--clay); text-decoration: none; }
+  </style>
+</helmet>
+
+<div style="display:flex; flex-direction:column; height:100%; background:var(--bg);">
+
+  <div style="padding:22px 22px 6px;">
+    <div style="font-family:var(--font-display); font-size:22px; font-weight:600;">Routine tối nay</div>
+    <div style="font-size:13px; color:var(--fg-muted); margin-top:4px;">Thứ Sáu, 11 tháng 9</div>
+  </div>
+
+  <div style="display:flex; align-items:center; gap:12px; padding:18px 22px 8px;">
+    <div style="flex:1; height:6px; border-radius:999px; background:var(--border); overflow:hidden;">
+      <div style="width:50%; height:100%; background:var(--sage);"></div>
+    </div>
+    <div style="font-size:13px; font-weight:600; color:var(--sage); white-space:nowrap;">2/4 hoàn thành</div>
+  </div>
+
+  <div style="display:flex; flex-direction:column; gap:10px; padding:14px 22px;">
+    <sc-for list="{{items}}" as="it" hint-placeholder-count="4">
+      <div style="display:flex; align-items:center; gap:4px; padding:8px 8px 8px 16px; border-radius:14px; background:var(--card); border:1px solid var(--border);">
+        <sc-if value="{{it.done}}" hint-placeholder-val="{{true}}">
+          <div style="width:44px; height:44px; min-width:44px; display:flex; align-items:center; justify-content:center;">
+            <div style="width:22px; height:22px; border-radius:7px; background:var(--sage); display:flex; align-items:center; justify-content:center;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{it.notDone}}" hint-placeholder-val="{{false}}">
+          <div style="width:44px; height:44px; min-width:44px; display:flex; align-items:center; justify-content:center;">
+            <div style="width:22px; height:22px; border-radius:7px; border:1.6px solid var(--border);"></div>
+          </div>
+        </sc-if>
+        <div style="flex:1; font-size:15.5px; opacity:{{it.opacity}};">{{it.label}}</div>
+        <div style="width:44px; height:44px; min-width:44px; display:flex; align-items:center; justify-content:center;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--fg-muted)" stroke-width="1.6" stroke-linecap="round"><circle cx="9" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="18" r="1"/></svg>
+        </div>
+      </div>
+    </sc-for>
+
+    <div style="display:flex; align-items:center; gap:10px; padding:14px 16px; border-radius:14px; border:1.4px dashed var(--border); color:var(--fg-muted); font-size:14.5px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--fg-muted)" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      Thêm bước
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const raw = [
+      { label: 'Tẩy trang', done: true },
+      { label: 'Rửa mặt', done: true },
+      { label: 'Serum trị mụn', done: false },
+      { label: 'Kem dưỡng ẩm', done: false },
+    ];
+    const items = raw.map((it) => ({
+      label: it.label,
+      done: it.done,
+      notDone: !it.done,
+      opacity: it.done ? 0.55 : 1,
+    }));
+    return { items };
+  }
+}
+</script>
+</body>
+</html>

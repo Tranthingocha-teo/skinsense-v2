@@ -1,0 +1,68 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600&family=Public+Sans:wght@400;500;600;700&display=swap">
+  <style>
+    :root {
+      --bg: oklch(98% 0.006 85);
+      --bg-alt: oklch(95.5% 0.01 85);
+      --card: oklch(100% 0 0);
+      --fg: oklch(22% 0.012 85);
+      --fg-muted: oklch(46% 0.012 85);
+      --fg-subtle: oklch(64% 0.01 85);
+      --clay: oklch(58% 0.09 45);
+      --clay-soft: oklch(93% 0.03 45);
+      --border: oklch(90% 0.008 85);
+      --font-display: 'Newsreader', Georgia, serif;
+      --font-body: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font-body); }
+    a { color: var(--clay); text-decoration: none; }
+    a:hover { color: oklch(50% 0.09 45); }
+    h1, p { margin: 0; }
+  </style>
+</helmet>
+
+<div style="display:flex; flex-direction:column; height:844px; padding:56px 24px 32px; background:var(--bg);">
+
+  <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:28px; text-align:center;">
+    <!-- Illustration placeholder: face outline with the five zones -->
+    <div style="width:220px; height:240px; border-radius:28px; background:var(--bg-alt); display:flex; align-items:center; justify-content:center;">
+      <svg viewBox="0 0 400 460" style="width:150px; height:auto;">
+        <ellipse cx="200" cy="230" rx="140" ry="185" fill="none" stroke="var(--fg-subtle)" stroke-width="3" stroke-dasharray="6 9"></ellipse>
+        <path d="M130 120 Q200 90 270 120 L262 165 Q200 150 138 165 Z" fill="var(--clay-soft)" stroke="var(--clay)" stroke-width="2.5"></path>
+        <path d="M92 215 L150 205 L158 285 L108 300 Z" fill="var(--clay-soft)" stroke="var(--clay)" stroke-width="2.5"></path>
+        <path d="M308 215 L250 205 L242 285 L292 300 Z" fill="var(--clay-soft)" stroke="var(--clay)" stroke-width="2.5"></path>
+        <path d="M184 190 L216 190 L224 275 L176 275 Z" fill="var(--clay-soft)" stroke="var(--clay)" stroke-width="2.5"></path>
+        <path d="M162 352 Q200 342 238 352 L230 392 Q200 402 170 392 Z" fill="var(--clay-soft)" stroke="var(--clay)" stroke-width="2.5"></path>
+      </svg>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:10px; max-width:300px;">
+      <h1 style="font-family:var(--font-display); font-size:36px; font-weight:600; letter-spacing:-0.01em;">SkinSense</h1>
+      <p style="font-size:16px; line-height:1.55; color:var(--fg-muted);">Nhật ký da riêng tư. Đăng nhập bằng Google để bắt đầu.</p>
+    </div>
+  </div>
+
+  <div style="display:flex; flex-direction:column; gap:12px;">
+    <div style="display:flex; align-items:center; justify-content:center; gap:10px; height:54px; border-radius:12px; background:var(--clay); color:white; font-weight:600; font-size:16px;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M22 12.2c0-.7-.06-1.4-.18-2.05H12v3.9h5.6a4.8 4.8 0 0 1-2.08 3.15v2.6h3.36C20.9 18 22 15.4 22 12.2Z"></path><path d="M12 22c2.7 0 4.96-.9 6.62-2.4l-3.36-2.6c-.93.62-2.12 1-3.26 1-2.5 0-4.62-1.7-5.38-3.98H3.16v2.65A10 10 0 0 0 12 22Z" opacity="0.85"></path><path d="M6.62 14.02A5.99 5.99 0 0 1 6.3 12c0-.7.12-1.38.32-2.02V7.33H3.16A10 10 0 0 0 2 12c0 1.6.38 3.12 1.16 4.67l3.46-2.65Z" opacity="0.7"></path><path d="M12 5.98c1.47 0 2.79.5 3.83 1.5l2.87-2.87C16.95 2.9 14.7 2 12 2A10 10 0 0 0 3.16 7.33l3.46 2.65C7.38 7.7 9.5 5.98 12 5.98Z" opacity="0.55"></path></svg>
+      Đăng nhập bằng Google
+    </div>
+    <div style="display:flex; align-items:center; justify-content:center; height:54px; border-radius:12px; border:1px solid var(--border); background:var(--card); font-weight:600; font-size:16px;">Xem thử với dữ liệu mẫu</div>
+    <div style="display:flex; align-items:center; justify-content:center; gap:6px; font-size:13px; color:var(--fg-muted);">
+      <span>Không phải công cụ chẩn đoán y khoa</span>
+      <span>·</span>
+      <span style="display:flex; align-items:center; min-height:44px; color:var(--clay); font-weight:600;">Chính sách riêng tư</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,24 @@
+<div style="position:relative; display:flex; flex-direction:column; width:390px; height:844px; overflow:hidden; background:var(--bg); color:var(--fg);">
+  <div class="row" style="gap:4px; padding:16px 18px 0 10px;">
+    <span class="hit"><!--I:back:23--></span>
+    <h1 class="d" style="font-size:34px; line-height:1.15;">Chụp ảnh tối nay</h1>
+  </div>
+
+  <!-- The captured still, mirrored; darker than the live placeholder to read as low light -->
+  <div class="photo" style="position:relative; margin:12px 20px 0; aspect-ratio:3 / 4; border-radius:18px; overflow:hidden; filter:brightness(0.72);">
+    <span class="ph" style="position:absolute; top:14px; right:14px;">Ảnh · placeholder</span>
+  </div>
+
+  <div role="alert" class="card" style="display:flex; flex-direction:column; gap:8px; margin:14px 20px 0; padding:16px 18px;">
+    <div class="row" style="gap:10px; font-size:14px; font-weight:500;"><!--I:alert:18-->Ảnh này có thể cho số liệu sai lệch:</div>
+    <div class="row" style="gap:10px; padding-left:28px; font-size:14px; font-weight:300;"><span style="width:4px; height:4px; border-radius:999px; background:var(--fg);"></span>Thiếu sáng</div>
+    <div class="row" style="gap:10px; padding-left:28px; font-size:14px; font-weight:300;"><span style="width:4px; height:4px; border-radius:999px; background:var(--fg);"></span>Nhìn thẳng vào camera</div>
+  </div>
+
+  <div class="row" style="gap:12px; margin:14px 20px 0;">
+    <div class="btn-o" style="flex-grow:1;">Chụp lại</div>
+    <div class="btn" style="flex-grow:1;">Vẫn lưu</div>
+  </div>
+
+  <!--TABS:capture-->
+</div>

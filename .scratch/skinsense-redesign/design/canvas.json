@@ -1,0 +1,33 @@
+{
+  "artboards": [
+    { "file": "C1Mark.dc.html", "title": "C1 · Logo mark", "x": 0, "y": 0, "w": 360, "h": 440 },
+    { "file": "C1TodayLight.dc.html", "title": "C1 · Hôm nay · light", "x": 440, "y": 0, "w": 390, "h": 844 },
+    { "file": "Main.dc.html", "title": "C1 · Hôm nay · dark", "x": 910, "y": 0, "w": 390, "h": 844 },
+    { "file": "C1HeroLight.dc.html", "title": "C1 · Landing hero · light", "x": 1380, "y": 0, "w": 1440, "h": 900 },
+    { "file": "C1HeroDark.dc.html", "title": "C1 · Landing hero · dark", "x": 2900, "y": 0, "w": 1440, "h": 900 },
+    { "file": "C1TrendsLight.dc.html", "title": "C1 · Xu hướng · light", "x": 4420, "y": 0, "w": 390, "h": 920 },
+    { "file": "C1TrendsDark.dc.html", "title": "C1 · Xu hướng · dark", "x": 4890, "y": 0, "w": 390, "h": 920 },
+
+    { "file": "C2Mark.dc.html", "title": "C2 · Logo mark", "x": 0, "y": 1040, "w": 360, "h": 440 },
+    { "file": "C2TodayLight.dc.html", "title": "C2 · Hôm nay · light", "x": 440, "y": 1040, "w": 390, "h": 844 },
+    { "file": "C2TodayDark.dc.html", "title": "C2 · Hôm nay · dark", "x": 910, "y": 1040, "w": 390, "h": 844 },
+    { "file": "C2HeroLight.dc.html", "title": "C2 · Landing hero · light", "x": 1380, "y": 1040, "w": 1440, "h": 900 },
+    { "file": "C2HeroDark.dc.html", "title": "C2 · Landing hero · dark", "x": 2900, "y": 1040, "w": 1440, "h": 900 },
+    { "file": "C2TrendsLight.dc.html", "title": "C2 · Xu hướng · light", "x": 4420, "y": 1040, "w": 390, "h": 920 },
+    { "file": "C2TrendsDark.dc.html", "title": "C2 · Xu hướng · dark", "x": 4890, "y": 1040, "w": 390, "h": 920 },
+
+    { "file": "C3Mark.dc.html", "title": "C3 · Logo mark", "x": 0, "y": 2080, "w": 360, "h": 440 },
+    { "file": "C3TodayLight.dc.html", "title": "C3 · Hôm nay · light", "x": 440, "y": 2080, "w": 390, "h": 844 },
+    { "file": "C3TodayDark.dc.html", "title": "C3 · Hôm nay · dark", "x": 910, "y": 2080, "w": 390, "h": 844 },
+    { "file": "C3HeroLight.dc.html", "title": "C3 · Landing hero · light", "x": 1380, "y": 2080, "w": 1440, "h": 900 },
+    { "file": "C3HeroDark.dc.html", "title": "C3 · Landing hero · dark", "x": 2900, "y": 2080, "w": 1440, "h": 900 },
+    { "file": "C3TrendsLight.dc.html", "title": "C3 · Xu hướng · light", "x": 4420, "y": 2080, "w": 390, "h": 920 },
+    { "file": "C3TrendsDark.dc.html", "title": "C3 · Xu hướng · dark", "x": 4890, "y": 2080, "w": 390, "h": 920 }
+  ],
+  "annotations": [
+    { "id": "c1-note", "x": -400, "y": 0, "w": 320, "text": "C1 · Warm dark (Oura, quantumbody)\nNền #1D1711 + amber, Hanken Grotesk mảnh, card không viền.\n\nĐược: ấm, thân mật, hợp nhật ký ban đêm; số lớn dễ đọc.\nĐổi lại: bản light dễ trôi về cream + nâu (gần vẻ AI phổ biến); amber phải đậm lại trên nền sáng để đủ AA." },
+    { "id": "c2-note", "x": -400, "y": 1040, "w": 320, "text": "C2 · Cool light (Bevel, atomic)\nNền #EEF2F5 + xanh xám, Geist + Geist Mono, thanh giá trị theo vùng.\n\nĐược: số liệu rõ nhất, sạch, bản dark cũng tự nhiên.\nĐổi lại: lạnh, dễ lẫn với dashboard sức khoẻ chung chung; ít cá tính thương hiệu." },
+    { "id": "c3-note", "x": -400, "y": 2080, "w": 320, "text": "C3 · Night photo (frequencybreathwork, future)\nẢnh full-bleed, Cormorant Garamond mảnh + Manrope, card kính.\n\nĐược: cảm xúc mạnh nhất, nổi nhất trong case study.\nĐổi lại: sống nhờ ảnh thật (hiện là placeholder gradient); chữ mảnh trên ảnh khó giữ AA; blur kính tốn GPU trên Android." }
+  ],
+  "launch": { "view": "canvas" }
+}

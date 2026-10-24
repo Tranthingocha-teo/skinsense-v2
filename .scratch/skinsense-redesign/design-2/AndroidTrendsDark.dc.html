@@ -1,0 +1,127 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+Display:wght@300;400&family=Manrope:wght@300;400;500;600&display=swap">
+  <style>
+    :root { --bg: #0A0C0B; --surface: #1A1F1C; --surface-2: #242A26; --fg: #F2EFE8; --muted: #BDB8AD; --line: #3A403B; --accent: #ECE7DB; --on-accent: #121412; --good: #AFCFA9; --danger: #E8998D; --photo-a: #2F4A3A; --photo-b: #16241C; --photo-c: #C9B98A; --display: 'Noto Serif Display', Georgia, 'Times New Roman', serif; --font: 'Manrope', 'Segoe UI', system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font); }
+    a { color: var(--fg); text-decoration: underline; text-underline-offset: 4px; }
+    a:hover { color: var(--muted); }
+    h1, h2, h3, p { margin: 0; }
+    .d { font-family: var(--display); font-weight: 300; }
+    .lbl { font-size: 11px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+    .muted { color: var(--muted); }
+    .card { border-radius: 18px; background: var(--surface); border: 1px solid color-mix(in oklab, var(--fg) 10%, transparent); }
+    .glass { border-radius: 18px; background: color-mix(in oklab, var(--surface) 72%, transparent); border: 1px solid color-mix(in oklab, var(--fg) 14%, transparent); backdrop-filter: blur(18px); }
+    .btn { display: flex; align-items: center; justify-content: center; gap: 10px; height: 52px; padding: 0 24px; border-radius: 4px; background: var(--accent); color: var(--on-accent); font-size: 15px; font-weight: 500; }
+    .btn-o { display: flex; align-items: center; justify-content: center; gap: 10px; height: 52px; padding: 0 24px; border-radius: 4px; border: 1px solid color-mix(in oklab, var(--fg) 55%, transparent); font-size: 15px; font-weight: 400; }
+    .chip { display: flex; align-items: center; gap: 6px; height: 44px; padding: 0 16px; border-radius: 4px; border: 1px solid color-mix(in oklab, var(--fg) 14%, transparent); font-size: 14px; color: var(--muted); }
+    .chip-on { display: flex; align-items: center; gap: 6px; height: 44px; padding: 0 16px; border-radius: 4px; background: var(--accent); color: var(--on-accent); font-size: 14px; font-weight: 500; }
+    .ph { padding: 4px 10px; border: 1px dashed color-mix(in oklab, var(--fg) 45%, transparent); border-radius: 999px; font-size: 11px; }
+    .photo { background: radial-gradient(40% 34% at 50% 46%, color-mix(in oklab, var(--photo-c) 38%, transparent), transparent 72%), radial-gradient(90% 70% at 20% 85%, var(--photo-a), transparent 75%), linear-gradient(180deg, var(--photo-b), var(--photo-a)); }
+    .night { background: radial-gradient(60% 60% at 75% 10%, color-mix(in oklab, var(--photo-c) 32%, transparent), transparent 70%), linear-gradient(180deg, var(--photo-b), var(--bg)); }
+    .row { display: flex; align-items: center; }
+    .hit { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 44px; height: 44px; }
+    .line { border-top: 1px solid var(--line); }
+    .cal { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; height: 44px; font-size: 14px; }
+    .cal-on { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; width: 44px; height: 44px; margin: 0 auto; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14px; font-weight: 500; }
+    .dot { width: 4px; height: 4px; border-radius: 999px; background: currentColor; }
+    .tile { position: relative; aspect-ratio: 3 / 4; border-radius: 6px; overflow: hidden; }
+    @keyframes fade-in-down { from { opacity: 0; transform: translateY(-12px); } }
+    @keyframes fade { from { opacity: 0; } }
+    @keyframes grow-x { from { transform: scaleX(0); } }
+    @keyframes draw { from { stroke-dashoffset: 113.1; } }
+    .in { animation: fade-in-down 460ms ease-out both; }
+    .grow { transform-origin: left; animation: grow-x 360ms ease-out both; }
+    .draw { stroke-dasharray: 113.1; animation: draw 1.4s cubic-bezier(0.65, 0, 0.35, 1) both; }
+    .draw-dot { animation: fade 0.4s ease-out 1.2s both; }
+    @media (prefers-reduced-motion: reduce) { .in { animation-name: fade; } .grow, .draw { animation: none; } }
+    .tile-meta { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: space-between; padding: 16px 7px 6px; background: linear-gradient(180deg, transparent, color-mix(in oklab, var(--bg) 82%, transparent)); font-size: 11px; font-weight: 500; }
+  </style>
+</helmet>
+<div style="position:relative; width:390px; height:920px; overflow:hidden; background:var(--bg); color:var(--fg);">
+  <!-- Night tint carried over from Hôm nay, shallower: the photo lives in the compare card here -->
+  <div style="position:absolute; left:0; right:0; top:0; height:260px; background:radial-gradient(60% 60% at 75% 10%, color-mix(in oklab, var(--photo-c) 35%, transparent), transparent 70%), linear-gradient(180deg, var(--photo-b), var(--bg));"></div>
+
+  <div style="position:relative; display:flex; flex-direction:column; gap:12px; padding:16px 18px 96px;">
+
+    <div style="display:flex; align-items:center; gap:4px; margin-left:-8px;">
+      <span style="display:flex; align-items:center; justify-content:center; width:44px; height:44px;"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></span>
+      <h1 style="flex-grow:1; font-family:var(--display); font-size:38px; font-weight:300; line-height:1.15;">Xu hướng</h1>
+      <div style="display:flex; border:1px solid color-mix(in oklab, var(--fg) 14%, transparent); border-radius:4px;">
+        <span style="display:flex; align-items:center; height:44px; padding:0 12px; background:var(--accent); color:var(--on-accent); font-size:12.5px; font-weight:500;">7 ngày</span>
+        <span style="display:flex; align-items:center; height:44px; padding:0 12px; font-size:12.5px; font-weight:400; color:var(--muted);">30 ngày</span>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:8px; margin-right:-18px; overflow:hidden;">
+      <span style="display:flex; align-items:center; flex-shrink:0; height:44px; padding:0 16px; border-radius:4px; background:var(--accent); color:var(--on-accent); font-size:14px; font-weight:500;">Trán</span>
+      <span style="display:flex; align-items:center; flex-shrink:0; height:44px; padding:0 16px; border-radius:4px; border:1px solid color-mix(in oklab, var(--fg) 14%, transparent); color:var(--muted); font-size:14px; font-weight:400;">Má trái</span>
+      <span style="display:flex; align-items:center; flex-shrink:0; height:44px; padding:0 16px; border-radius:4px; border:1px solid color-mix(in oklab, var(--fg) 14%, transparent); color:var(--muted); font-size:14px; font-weight:400;">Má phải</span>
+      <span style="display:flex; align-items:center; flex-shrink:0; height:44px; padding:0 16px; border-radius:4px; border:1px solid color-mix(in oklab, var(--fg) 14%, transparent); color:var(--muted); font-size:14px; font-weight:400;">Mũi</span>
+      <span style="display:flex; align-items:center; flex-shrink:0; height:44px; padding:0 16px; border-radius:4px; border:1px solid color-mix(in oklab, var(--fg) 14%, transparent); color:var(--muted); font-size:14px; font-weight:400;">Cằm</span>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:8px; padding:18px 20px 12px; border-radius:18px; background:color-mix(in oklab, var(--surface) 72%, transparent); border:1px solid color-mix(in oklab, var(--fg) 14%, transparent); backdrop-filter:blur(18px);">
+      <div style="display:flex; align-items:baseline; justify-content:space-between;">
+        <h2 style="font-size:11px; font-weight:500; letter-spacing:0.12em; text-transform:uppercase; color:var(--muted);">Chỉ số mẩn đỏ — Trán</h2>
+        <span style="font-size:12px; font-weight:500; color:var(--good);">↓ đang giảm</span>
+      </div>
+      <svg viewBox="0 0 328 160" style="display:block; width:100%; height:auto;">
+        <line x1="8" x2="320" y1="18" y2="18" style="stroke:var(--line);"></line>
+        <line x1="8" x2="320" y1="140" y2="140" stroke-dasharray="2 3" style="stroke:var(--muted);"></line>
+        <path d="M8 18 L60 26.3 M164 34.6 L216 31.9 L268 54" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="stroke:var(--accent);"></path>
+        <circle cx="8" cy="18" r="4" stroke-width="2" style="fill:var(--surface); stroke:var(--accent);"></circle>
+        <circle cx="60" cy="26.3" r="4" stroke-width="2" style="fill:var(--surface); stroke:var(--accent);"></circle>
+        <circle cx="164" cy="34.6" r="4" stroke-width="2" style="fill:var(--surface); stroke:var(--accent);"></circle>
+        <circle cx="216" cy="31.9" r="4" stroke-width="2" style="fill:var(--surface); stroke:var(--accent);"></circle>
+        <circle cx="268" cy="54" r="4" stroke-width="2" style="fill:var(--accent); stroke:var(--accent);"></circle>
+      </svg>
+      <div style="display:flex; justify-content:flex-end;">
+        <span style="padding:3px 10px; border:1px solid color-mix(in oklab, var(--fg) 14%, transparent); border-radius:999px; font-size:11.5px;">Gần nhất: <span style="font-family:var(--display); font-size:17px;">3.1</span></span>
+      </div>
+      <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:300; color:var(--muted);">
+        <span>Th 3</span><span>Th 4</span><span>Th 5</span><span>Th 6</span><span>Th 7</span><span>CN</span><span>Th 2</span>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:12px;">
+      <div style="display:flex; flex-direction:column; padding:14px 18px; border-radius:18px; background:var(--surface); border:1px solid color-mix(in oklab, var(--fg) 10%, transparent);">
+        <span style="font-size:11px; font-weight:500; letter-spacing:0.12em; text-transform:uppercase; color:var(--muted);">Số nốt mụn</span>
+        <span style="font-family:var(--display); font-size:44px; font-weight:300; line-height:1.1;">1<span style="font-family:var(--font); font-size:13px; font-weight:300; color:var(--muted);"> / Trán</span></span>
+        <svg width="64" height="20" viewBox="0 0 80 24"><polyline points="2,4 14.7,9.3 40,9.3 52.7,9.3 65.3,14.7" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="stroke:var(--muted);"></polyline></svg>
+      </div>
+      <div style="display:flex; flex-direction:column; padding:14px 18px; border-radius:18px; background:var(--surface); border:1px solid color-mix(in oklab, var(--fg) 10%, transparent);">
+        <span style="font-size:11px; font-weight:500; letter-spacing:0.12em; text-transform:uppercase; color:var(--muted);">Routine hoàn thành</span>
+        <span style="font-family:var(--display); font-size:44px; font-weight:300; line-height:1.1; color:var(--good);">86%</span>
+        <div style="height:1px; margin-top:12px; background:var(--line);"><div style="width:86%; height:1px; background:var(--good);"></div></div>
+      </div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:12px; padding:18px 20px 20px; border-radius:18px; background:var(--surface); border:1px solid color-mix(in oklab, var(--fg) 10%, transparent);">
+      <h2 style="font-size:11px; font-weight:500; letter-spacing:0.12em; text-transform:uppercase; color:var(--muted);">So sánh trước / sau</h2>
+      <div style="position:relative; aspect-ratio:16 / 9; border-radius:10px; overflow:hidden; background:radial-gradient(70% 80% at 30% 60%, var(--photo-a), transparent 75%), linear-gradient(160deg, var(--photo-b), var(--photo-a));">
+        <div style="position:absolute; top:0; bottom:0; left:50%; right:0; background:radial-gradient(70% 60% at 70% 30%, color-mix(in oklab, var(--photo-c) 45%, transparent), transparent 70%), linear-gradient(200deg, var(--photo-a), var(--photo-b));"></div>
+        <div style="position:absolute; top:0; bottom:0; left:50%; width:1px; background:var(--fg);"></div>
+        <span style="position:absolute; top:50%; left:50%; display:flex; align-items:center; justify-content:center; width:44px; height:44px; margin:-22px 0 0 -22px; border-radius:999px; background:color-mix(in oklab, var(--bg) 60%, transparent); border:1px solid color-mix(in oklab, var(--fg) 30%, transparent); color:var(--fg); backdrop-filter:blur(12px);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 7l-5 5 5 5M15 7l5 5-5 5"></path></svg></span>
+        <span style="position:absolute; top:10px; left:10px; padding:3px 10px; border-radius:999px; background:color-mix(in oklab, var(--bg) 60%, transparent); font-size:11px; font-weight:500; letter-spacing:0.06em;">7 thg 9</span>
+        <span style="position:absolute; top:10px; right:10px; padding:3px 10px; border-radius:999px; background:color-mix(in oklab, var(--bg) 60%, transparent); font-size:11px; font-weight:500; letter-spacing:0.06em;">13 thg 9</span>
+        <span style="position:absolute; bottom:10px; left:10px; padding:3px 9px; border:1px dashed color-mix(in oklab, var(--fg) 45%, transparent); border-radius:999px; font-size:11px;">Ảnh · placeholder</span>
+      </div>
+    </div>
+
+    <p style="text-align:center; font-size:11.5px; font-weight:300; color:var(--muted);">Không phải công cụ chẩn đoán y khoa</p>
+  </div>
+  <div style="position:absolute; left:0; right:0; bottom:0; display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); height:72px; padding-bottom:6px; background:color-mix(in oklab, var(--bg) 82%, transparent); border-top:1px solid var(--line); backdrop-filter:blur(18px);"><div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; color:var(--muted); font-size:11px; font-weight:400; letter-spacing:0.04em;"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1z"></path></svg>Hôm nay</div><div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; color:var(--muted); font-size:11px; font-weight:400; letter-spacing:0.04em;"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2.5"></rect><path d="M8 7l1.6-2.5h4.8L16 7"></path><circle cx="12" cy="13.2" r="3.4"></circle></svg>Chụp</div><div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; color:var(--fg); font-size:11px; font-weight:600; letter-spacing:0.04em;"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16l5-5 4 3 7-7"></path><path d="M15 7h5v5"></path></svg>Xu hướng</div><div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; color:var(--muted); font-size:11px; font-weight:400; letter-spacing:0.04em;"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"></path><circle cx="16" cy="7" r="2"></circle><circle cx="8" cy="17" r="2"></circle></svg>Cài đặt</div></div>
+</div>
+
+</x-dc>
+</body>
+</html>

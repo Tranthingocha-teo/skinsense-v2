@@ -1,0 +1,40 @@
+<div style="position:relative; width:390px; height:844px; overflow:hidden; background:var(--bg); color:var(--fg);">
+  <!-- Trends behind the sheet -->
+  <div class="night" style="position:absolute; left:0; right:0; top:0; height:260px;"></div>
+  <div style="position:relative; display:flex; flex-direction:column; gap:12px; padding:16px 18px 0;">
+    <div class="row" style="gap:4px; margin-left:-8px;"><span class="hit"><!--I:back:23--></span><h1 class="d" style="font-size:38px; line-height:1.15;">Xu hướng</h1></div>
+    <div class="card" style="display:flex; flex-direction:column; gap:12px; padding:18px 20px 20px;">
+      <span class="lbl">So sánh trước / sau</span>
+      <div class="photo" style="height:170px; border-radius:10px;"></div>
+    </div>
+  </div>
+
+  <div style="position:absolute; left:0; right:0; top:0; bottom:0; background:color-mix(in oklab, var(--bg) 60%, transparent);"></div>
+
+  <!-- Bottom sheet -->
+  <div role="dialog" style="position:absolute; left:0; right:0; bottom:0; display:flex; flex-direction:column; gap:14px; padding:10px 20px 28px; border-radius:18px 18px 0 0; background:var(--surface); border-top:1px solid color-mix(in oklab, var(--fg) 14%, transparent);">
+    <span style="align-self:center; width:40px; height:4px; border-radius:999px; background:var(--line);"></span>
+    <div style="display:flex; flex-direction:column; gap:4px;">
+      <h2 style="font-family:var(--display); font-size:26px; font-weight:400;">Chọn 2 ngày</h2>
+      <span class="muted" style="font-size:13px; font-weight:300;">Ngày có chấm là ngày có ảnh</span>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:8px;">
+      <div style="display:flex; flex-direction:column; justify-content:center; height:56px; padding:0 14px; border-radius:4px; border:1px solid var(--fg);"><span class="lbl">Trước</span><span style="font-size:15px; font-weight:500;">7 thg 9</span></div>
+      <div style="display:flex; flex-direction:column; justify-content:center; height:56px; padding:0 14px; border-radius:4px; border:1px solid color-mix(in oklab, var(--fg) 14%, transparent);"><span class="lbl">Sau</span><span style="font-size:15px; font-weight:500;">13 thg 9</span></div>
+    </div>
+    <div class="row" style="justify-content:space-between;">
+      <span class="hit"><!--I:back:20--></span>
+      <span style="font-size:15px; font-weight:500;">Tháng 9, 2026</span>
+      <span class="hit muted"><!--I:chevron:20--></span>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(7, minmax(0, 1fr)); row-gap:2px; text-align:center;">
+      <span class="lbl" style="padding-bottom:6px;">T2</span><span class="lbl">T3</span><span class="lbl">T4</span><span class="lbl">T5</span><span class="lbl">T6</span><span class="lbl">T7</span><span class="lbl">CN</span>
+      <span></span><span class="cal">1<span class="dot"></span></span><span class="cal">2<span class="dot"></span></span><span class="cal">3<span class="dot"></span></span><span class="cal">4<span class="dot"></span></span><span class="cal">5<span class="dot"></span></span><span class="cal">6</span>
+      <span class="cal-on">7<span class="dot"></span></span><span class="cal">8<span class="dot"></span></span><span class="cal">9<span class="dot"></span></span><span class="cal">10<span class="dot"></span></span><span class="cal">11<span class="dot"></span></span><span class="cal">12<span class="dot"></span></span><span class="cal-on">13<span class="dot"></span></span>
+      <span class="cal" style="font-weight:600;">14</span><span class="cal muted">15</span><span class="cal muted">16</span><span class="cal muted">17</span><span class="cal muted">18</span><span class="cal muted">19</span><span class="cal muted">20</span>
+      <span class="cal muted">21</span><span class="cal muted">22</span><span class="cal muted">23</span><span class="cal muted">24</span><span class="cal muted">25</span><span class="cal muted">26</span><span class="cal muted">27</span>
+      <span class="cal muted">28</span><span class="cal muted">29</span><span class="cal muted">30</span><span></span><span></span><span></span><span></span>
+    </div>
+    <div class="btn">So sánh</div>
+  </div>
+</div>

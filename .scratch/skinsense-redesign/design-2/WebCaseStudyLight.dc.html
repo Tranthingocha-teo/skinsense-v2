@@ -1,0 +1,203 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+Display:wght@300;400&family=Manrope:wght@300;400;500;600&display=swap">
+  <style>
+    :root { --bg: #E8E5DE; --surface: #F6F4EF; --surface-2: #DEDAD1; --fg: #191B19; --muted: #52564E; --line: #C9C5BB; --accent: #1C1F1C; --on-accent: #F2EFE8; --good: #3A6537; --danger: #A33B2E; --photo-a: #B9C7B8; --photo-b: #DCE1D6; --photo-c: #F3E6C4; --display: 'Noto Serif Display', Georgia, 'Times New Roman', serif; --font: 'Manrope', 'Segoe UI', system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font); }
+    a { color: var(--fg); text-decoration: underline; text-underline-offset: 4px; }
+    a:hover { color: var(--muted); }
+    h1, h2, h3, p { margin: 0; }
+    .d { font-family: var(--display); font-weight: 300; }
+    .lbl { font-size: 11px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+    .muted { color: var(--muted); }
+    .card { border-radius: 18px; background: var(--surface); border: 1px solid color-mix(in oklab, var(--fg) 10%, transparent); }
+    .glass { border-radius: 18px; background: color-mix(in oklab, var(--surface) 72%, transparent); border: 1px solid color-mix(in oklab, var(--fg) 14%, transparent); backdrop-filter: blur(18px); }
+    .btn { display: flex; align-items: center; justify-content: center; gap: 10px; height: 52px; padding: 0 24px; border-radius: 4px; background: var(--accent); color: var(--on-accent); font-size: 15px; font-weight: 500; }
+    .btn-o { display: flex; align-items: center; justify-content: center; gap: 10px; height: 52px; padding: 0 24px; border-radius: 4px; border: 1px solid color-mix(in oklab, var(--fg) 55%, transparent); font-size: 15px; font-weight: 400; }
+    .chip { display: flex; align-items: center; gap: 6px; height: 44px; padding: 0 16px; border-radius: 4px; border: 1px solid color-mix(in oklab, var(--fg) 14%, transparent); font-size: 14px; color: var(--muted); }
+    .chip-on { display: flex; align-items: center; gap: 6px; height: 44px; padding: 0 16px; border-radius: 4px; background: var(--accent); color: var(--on-accent); font-size: 14px; font-weight: 500; }
+    .ph { padding: 4px 10px; border: 1px dashed color-mix(in oklab, var(--fg) 45%, transparent); border-radius: 999px; font-size: 11px; }
+    .photo { background: radial-gradient(40% 34% at 50% 46%, color-mix(in oklab, var(--photo-c) 38%, transparent), transparent 72%), radial-gradient(90% 70% at 20% 85%, var(--photo-a), transparent 75%), linear-gradient(180deg, var(--photo-b), var(--photo-a)); }
+    .night { background: radial-gradient(60% 60% at 75% 10%, color-mix(in oklab, var(--photo-c) 32%, transparent), transparent 70%), linear-gradient(180deg, var(--photo-b), var(--bg)); }
+    .row { display: flex; align-items: center; }
+    .hit { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 44px; height: 44px; }
+    .line { border-top: 1px solid var(--line); }
+    .cal { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; height: 44px; font-size: 14px; }
+    .cal-on { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; width: 44px; height: 44px; margin: 0 auto; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14px; font-weight: 500; }
+    .dot { width: 4px; height: 4px; border-radius: 999px; background: currentColor; }
+    .tile { position: relative; aspect-ratio: 3 / 4; border-radius: 6px; overflow: hidden; }
+    @keyframes fade-in-down { from { opacity: 0; transform: translateY(-12px); } }
+    @keyframes fade { from { opacity: 0; } }
+    @keyframes grow-x { from { transform: scaleX(0); } }
+    @keyframes draw { from { stroke-dashoffset: 113.1; } }
+    .in { animation: fade-in-down 460ms ease-out both; }
+    .grow { transform-origin: left; animation: grow-x 360ms ease-out both; }
+    .draw { stroke-dasharray: 113.1; animation: draw 1.4s cubic-bezier(0.65, 0, 0.35, 1) both; }
+    .draw-dot { animation: fade 0.4s ease-out 1.2s both; }
+    @media (prefers-reduced-motion: reduce) { .in { animation-name: fade; } .grow, .draw { animation: none; } }
+    .tile-meta { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: space-between; padding: 16px 7px 6px; background: linear-gradient(180deg, transparent, color-mix(in oklab, var(--bg) 82%, transparent)); font-size: 11px; font-weight: 500; }
+  </style>
+</helmet>
+<div style="position:relative; display:flex; flex-direction:column; width:1440px; height:5728px; overflow:hidden; background:var(--bg); color:var(--fg);">
+
+  <!-- Hero -->
+  <section style="position:relative; display:flex; flex-direction:column; flex-shrink:0; height:760px;">
+    <div class="photo" style="position:absolute; left:0; right:0; top:0; bottom:0;"></div>
+    <div style="position:absolute; left:0; right:0; top:0; bottom:0; background:linear-gradient(180deg, color-mix(in oklab, var(--bg) 35%, transparent), color-mix(in oklab, var(--bg) 40%, transparent) 40%, var(--bg));"></div>
+    <header class="row" style="position:relative; justify-content:space-between; height:96px; padding:0 56px;">
+      <div class="row" style="gap:12px;"><svg width="30" height="30" viewBox="0 0 64 64" fill="none"><circle cx="28" cy="32" r="18" style="stroke:var(--fg); stroke-width:1.6;"></circle><circle cx="36" cy="32" r="18" style="stroke:var(--fg); stroke-opacity:0.45; stroke-width:1.6;"></circle><circle cx="32" cy="14.45" r="2.2" style="fill:var(--fg);"></circle></svg><span style="font-family:var(--display); font-size:20px; font-weight:400; letter-spacing:0.2em;">SKINSENSE</span></div>
+      <nav class="row" style="gap:28px; font-size:14px; font-weight:300;">
+        <a href="#" class="row" style="gap:6px; min-height:44px;">Live site <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6"></path><path d="M20 4l-9 9"></path><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"></path></svg></a>
+        <a href="#" class="row" style="gap:6px; min-height:44px;">GitHub <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6"></path><path d="M20 4l-9 9"></path><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"></path></svg></a>
+      </nav>
+    </header>
+    <div style="position:relative; display:flex; flex-direction:column; gap:24px; margin-top:auto; padding:0 96px 72px;">
+      <span class="lbl" style="color:var(--fg);">Case study · 2026</span>
+      <h1 class="d" style="max-width:1080px; font-size:88px; line-height:1.08; text-wrap:balance;">A skin diary that measures redness on the device.</h1>
+      <p style="max-width:720px; font-size:20px; font-weight:300; line-height:1.6; text-wrap:pretty;">SkinSense lets people photograph their skin every night under a guide, mark spots by hand and follow per-zone redness over time, on the web and on Android.</p>
+    </div>
+    <span class="ph" style="position:absolute; right:56px; bottom:40px;">Night photo · placeholder</span>
+  </section>
+
+  <!-- Meta -->
+  <section style="display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:32px; flex-shrink:0; height:200px; padding:48px 96px 0; border-top:1px solid var(--line);">
+    <div style="display:flex; flex-direction:column; gap:10px;"><span class="lbl">Role</span><span style="font-size:16px; font-weight:300; line-height:1.5;">[Your role]</span></div>
+    <div style="display:flex; flex-direction:column; gap:10px;"><span class="lbl">Timeline</span><span style="font-size:16px; font-weight:300; line-height:1.5;">[Start – end]</span></div>
+    <div style="display:flex; flex-direction:column; gap:10px;"><span class="lbl">Platforms</span><span style="font-size:16px; font-weight:300; line-height:1.5;">Web (Next.js) · Android (Expo)</span></div>
+    <div style="display:flex; flex-direction:column; gap:10px;"><span class="lbl">Stack</span><span style="font-size:16px; font-weight:300; line-height:1.5;">Supabase · MediaPipe · ML Kit · TFLite</span></div>
+  </section>
+
+  <!-- 01 Problem -->
+  <section style="display:grid; grid-template-columns:repeat(12, minmax(0, 1fr)); gap:32px; flex-shrink:0; height:500px; padding:96px 96px 0; border-top:1px solid var(--line);">
+    <div style="grid-column:span 5; display:flex; flex-direction:column; gap:16px;">
+      <span class="lbl">01 · Problem</span>
+      <h2 class="d" style="font-size:44px; line-height:1.18; text-wrap:balance;">Skin changes slowly, and memory is a bad instrument.</h2>
+    </div>
+    <div style="grid-column:7 / span 6; display:flex; flex-direction:column; gap:20px; padding-top:34px; font-size:17px; font-weight:300; line-height:1.7;">
+      <p>Photos taken at a different distance, angle or light cannot be compared night to night. An earlier version of this project showed acne counts that turned out to be hardcoded sample data.</p>
+      <p class="muted">The rebuild set two rules: every number comes from a measurement the user can inspect, and the app never diagnoses.</p>
+    </div>
+  </section>
+
+  <!-- 02 Product -->
+  <section style="display:flex; flex-direction:column; gap:48px; flex-shrink:0; height:900px; padding:96px 96px 0; border-top:1px solid var(--line);">
+    <div style="display:flex; flex-direction:column; gap:16px;">
+      <span class="lbl">02 · The product</span>
+      <h2 class="d" style="font-size:44px; line-height:1.18;">Four steps, every night.</h2>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:32px;">
+      <figure style="display:flex; flex-direction:column; gap:16px; margin:0;"><div class="photo" style="position:relative; height:520px; border-radius:32px; border:1px solid color-mix(in oklab, var(--fg) 14%, transparent);"><span class="ph" style="position:absolute; left:14px; bottom:14px;">Screenshot · placeholder</span></div><figcaption style="display:flex; flex-direction:column; gap:4px;"><span style="font-family:var(--display); font-size:22px; font-weight:400;">Capture with a guide</span><span class="muted" style="font-size:14px; font-weight:300; line-height:1.55;">Guide ellipse, a ghost of the last photo and a live light check.</span></figcaption></figure>
+      <figure style="display:flex; flex-direction:column; gap:16px; margin:0;"><div class="photo" style="position:relative; height:520px; border-radius:32px; border:1px solid color-mix(in oklab, var(--fg) 14%, transparent);"><span class="ph" style="position:absolute; left:14px; bottom:14px;">Screenshot · placeholder</span></div><figcaption style="display:flex; flex-direction:column; gap:4px;"><span style="font-family:var(--display); font-size:22px; font-weight:400;">Mark what you see</span><span class="muted" style="font-size:14px; font-weight:300; line-height:1.55;">Tap a spot; it is assigned to a face zone from the landmarks.</span></figcaption></figure>
+      <figure style="display:flex; flex-direction:column; gap:16px; margin:0;"><div class="photo" style="position:relative; height:520px; border-radius:32px; border:1px solid color-mix(in oklab, var(--fg) 14%, transparent);"><span class="ph" style="position:absolute; left:14px; bottom:14px;">Screenshot · placeholder</span></div><figcaption style="display:flex; flex-direction:column; gap:4px;"><span style="font-family:var(--display); font-size:22px; font-weight:400;">Tick tonight’s routine</span><span class="muted" style="font-size:14px; font-weight:300; line-height:1.55;">Steps the user sets, with a streak of nights kept.</span></figcaption></figure>
+      <figure style="display:flex; flex-direction:column; gap:16px; margin:0;"><div class="photo" style="position:relative; height:520px; border-radius:32px; border:1px solid color-mix(in oklab, var(--fg) 14%, transparent);"><span class="ph" style="position:absolute; left:14px; bottom:14px;">Screenshot · placeholder</span></div><figcaption style="display:flex; flex-direction:column; gap:4px;"><span style="font-family:var(--display); font-size:22px; font-weight:400;">Follow each zone</span><span class="muted" style="font-size:14px; font-weight:300; line-height:1.55;">Redness and spot count per zone over 7 or 30 days, with before/after.</span></figcaption></figure>
+    </div>
+  </section>
+
+  <!-- 03 Measuring -->
+  <section style="display:flex; flex-direction:column; gap:48px; flex-shrink:0; height:800px; padding:96px 96px 0; border-top:1px solid var(--line);">
+    <div style="display:flex; flex-direction:column; gap:16px;">
+      <span class="lbl">03 · Measuring redness</span>
+      <h2 class="d" style="font-size:44px; line-height:1.18;">Relative to your own skin, in the same photo.</h2>
+    </div>
+    <div class="row" style="align-items:stretch; gap:16px;">
+      <div class="card" style="flex:1; display:flex; flex-direction:column; gap:8px; padding:22px;"><span class="d muted" style="font-size:22px;">1</span><span style="font-size:16px; font-weight:500;">Face landmarks</span><span class="muted" style="font-size:14px; font-weight:300; line-height:1.55;">468 points, the same mesh on web and Android.</span></div>
+      <span class="row muted"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg></span>
+      <div class="card" style="flex:1; display:flex; flex-direction:column; gap:8px; padding:22px;"><span class="d muted" style="font-size:22px;">2</span><span style="font-size:16px; font-weight:500;">Skin mask</span><span class="muted" style="font-size:14px; font-weight:300; line-height:1.55;">Skin separated from hair, eyes and background.</span></div>
+      <span class="row muted"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg></span>
+      <div class="card" style="flex:1; display:flex; flex-direction:column; gap:8px; padding:22px;"><span class="d muted" style="font-size:22px;">3</span><span style="font-size:16px; font-weight:500;">Five zones</span><span class="muted" style="font-size:14px; font-weight:300; line-height:1.55;">Forehead, both cheeks, nose and chin, built from landmarks.</span></div>
+      <span class="row muted"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg></span>
+      <div class="card" style="flex:1; display:flex; flex-direction:column; gap:8px; padding:22px; border-color:color-mix(in oklab, var(--fg) 40%, transparent);"><span class="d" style="font-size:22px;">4</span><span style="font-size:16px; font-weight:500;">a* index</span><span class="muted" style="font-size:14px; font-weight:300; line-height:1.55;">Median a* of the zone minus median a* of all skin (CIELAB).</span></div>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:32px;">
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <h3 style="font-family:var(--display); font-size:24px; font-weight:400;">Why relative</h3>
+        <p class="muted" style="font-size:16px; font-weight:300; line-height:1.7;">Comparing each zone with the rest of the same face cancels most of the camera and room, so there is no global white-balance step. White balance is locked at capture instead.</p>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <h3 style="font-family:var(--display); font-size:24px; font-weight:400;">Where it fails</h3>
+        <p class="muted" style="font-size:16px; font-weight:300; line-height:1.7;">A whole face that is inflamed, mixed lighting, darker skin compressing a*, and shadows on the nose and chin. The app says so instead of hiding it.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 Design -->
+  <section style="display:flex; flex-direction:column; gap:48px; flex-shrink:0; height:900px; padding:96px 96px 0; border-top:1px solid var(--line);">
+    <div style="display:flex; flex-direction:column; gap:16px;">
+      <span class="lbl">04 · Design</span>
+      <h2 class="d" style="font-size:44px; line-height:1.18;">Three directions, one night photo.</h2>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:32px;">
+      <figure style="display:flex; flex-direction:column; gap:12px; margin:0;"><div style="position:relative; height:300px; border-radius:18px; background:#1D1711;"><span class="ph" style="position:absolute; left:14px; bottom:14px; color:#F2EFE8; border-color:#F2EFE880;">Canvas still · placeholder</span></div><figcaption class="muted" style="font-size:14px;">C1 · Warm dark</figcaption></figure>
+      <figure style="display:flex; flex-direction:column; gap:12px; margin:0;"><div style="position:relative; height:300px; border-radius:18px; background:#EEF2F5;"><span class="ph" style="position:absolute; left:14px; bottom:14px; color:#191B19; border-color:#191B1980;">Canvas still · placeholder</span></div><figcaption class="muted" style="font-size:14px;">C2 · Cool light</figcaption></figure>
+      <figure style="display:flex; flex-direction:column; gap:12px; margin:0;"><div class="photo" style="position:relative; height:300px; border-radius:18px; outline:1px solid var(--fg); outline-offset:6px;"><span class="ph" style="position:absolute; left:14px; bottom:14px;">Canvas still · placeholder</span></div><figcaption class="row" style="gap:8px; font-size:14px; font-weight:500;"><span style="color:var(--good);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"></path></svg></span>C3 · Night photo, picked</figcaption></figure>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:32px;">
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <h3 style="font-family:var(--display); font-size:24px; font-weight:400;">A font that broke Vietnamese</h3>
+        <p class="muted" style="font-size:16px; font-weight:300; line-height:1.7;">Cormorant Garamond placed the circumflex on ô visibly off the letter at every weight, in Chrome and on Android. The display face became Noto Serif Display 300.</p>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <h3 style="font-family:var(--display); font-size:24px; font-weight:400;">One token file</h3>
+        <p class="muted" style="font-size:16px; font-weight:300; line-height:1.7;">tokens.json feeds CSS variables on the web and NativeWind on Android. The build fails if any of 24 text pairs drops below WCAG AA in either theme.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 05 Engineering -->
+  <section style="display:flex; flex-direction:column; gap:48px; flex-shrink:0; height:700px; padding:96px 96px 0; border-top:1px solid var(--line);">
+    <div style="display:flex; flex-direction:column; gap:16px;">
+      <span class="lbl">05 · Engineering</span>
+      <h2 class="d" style="font-size:44px; line-height:1.18;">Decisions that held up under measurement.</h2>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:32px 48px;">
+      <div class="line" style="display:flex; flex-direction:column; gap:8px; padding-top:20px;"><span style="font-size:17px; font-weight:500;">468 landmarks on both platforms</span><span class="muted" style="font-size:15px; font-weight:300; line-height:1.65;">Web and Android share the mesh size, so zones are computed once in a pure TypeScript domain package.</span></div>
+      <div class="line" style="display:flex; flex-direction:column; gap:8px; padding-top:20px;"><span style="font-size:17px; font-weight:500;">Google sign-in without redirects</span><span class="muted" style="font-size:15px; font-weight:300; line-height:1.65;">Both apps hand Supabase a Google ID token; a redirect flow does not return cleanly into an installed app.</span></div>
+      <div class="line" style="display:flex; flex-direction:column; gap:8px; padding-top:20px;"><span style="font-size:17px; font-weight:500;">Sticky, not pinned</span><span class="muted" style="font-size:15px; font-weight:300; line-height:1.65;">A GSAP pin re-parented the hero and re-emitted the headline as a late LCP. CSS sticky with a scrubbed timeline avoids it.</span></div>
+      <div class="line" style="display:flex; flex-direction:column; gap:8px; padding-top:20px;"><span style="font-size:17px; font-weight:500;">Motion layout from the first paint</span><span class="muted" style="font-size:15px; font-weight:300; line-height:1.65;">Switching layout classes after hydration measured CLS 0.74. A scripting and reduced-motion media query brought it to 0.</span></div>
+    </div>
+  </section>
+
+  <!-- 06 Results -->
+  <section style="display:flex; flex-direction:column; gap:48px; flex-shrink:0; height:520px; padding:96px 96px 0; border-top:1px solid var(--line);">
+    <div style="display:flex; flex-direction:column; gap:16px;">
+      <span class="lbl">06 · Results</span>
+      <h2 class="d" style="font-size:44px; line-height:1.18;">Measured, not claimed.</h2>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:32px;">
+      <div class="line" style="display:flex; flex-direction:column; gap:6px; padding-top:18px;"><span class="d" style="font-size:64px; line-height:1.1;">100</span><span class="muted" style="font-size:14px; font-weight:300;">Accessibility, prototype, Lighthouse mobile</span></div>
+      <div class="line" style="display:flex; flex-direction:column; gap:6px; padding-top:18px;"><span class="d" style="font-size:64px; line-height:1.1;">0</span><span class="muted" style="font-size:14px; font-weight:300;">Layout shift, prototype</span></div>
+      <div class="line" style="display:flex; flex-direction:column; gap:6px; padding-top:18px;"><span class="d" style="font-size:64px; line-height:1.1;">[—]</span><span class="muted" style="font-size:14px; font-weight:300;">Performance, release, every page [to measure]</span></div>
+      <div class="line" style="display:flex; flex-direction:column; gap:6px; padding-top:18px;"><span class="d" style="font-size:64px; line-height:1.1;">[—]</span><span class="muted" style="font-size:14px; font-weight:300;">QA checklist on a real Android phone [to run]</span></div>
+    </div>
+  </section>
+
+  <!-- 07 Next -->
+  <section style="display:grid; grid-template-columns:repeat(12, minmax(0, 1fr)); gap:32px; flex-shrink:0; height:360px; padding:96px 96px 0; border-top:1px solid var(--line);">
+    <div style="grid-column:span 5; display:flex; flex-direction:column; gap:16px;">
+      <span class="lbl">07 · Next</span>
+      <h2 class="d" style="font-size:44px; line-height:1.18;">Still open.</h2>
+    </div>
+    <ul style="grid-column:7 / span 6; display:flex; flex-direction:column; margin:0; padding:0; list-style:none; font-size:16px; font-weight:300;">
+      <li class="line" style="padding:14px 0;">Real night photography in place of the placeholders</li>
+      <li class="line" style="padding:14px 0;">Jank measured on a release build on a real phone</li>
+      <li class="line" style="padding:14px 0; border-bottom:1px solid var(--line);">Largest paint: fonts and hydration before first paint</li>
+    </ul>
+  </section>
+
+  <footer class="row" style="justify-content:space-between; flex-shrink:0; height:88px; margin-top:auto; padding:0 56px; border-top:1px solid var(--line); font-size:13px; font-weight:300;">
+    <span class="muted">SkinSense case study</span>
+    <span class="row" style="gap:24px;"><a href="#" class="row" style="min-height:44px;">Live site</a><a href="#" class="row" style="min-height:44px;">GitHub</a><a href="#" class="row" style="min-height:44px;">Android APK</a></span>
+  </footer>
+</div>
+
+</x-dc>
+</body>
+</html>

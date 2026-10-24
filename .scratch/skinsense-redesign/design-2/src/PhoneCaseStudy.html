@@ -1,0 +1,110 @@
+<div style="position:relative; display:flex; flex-direction:column; width:390px; height:6710px; overflow:hidden; background:var(--bg); color:var(--fg);">
+
+  <section style="position:relative; display:flex; flex-direction:column; flex-shrink:0; height:780px;">
+    <div class="photo" style="position:absolute; left:0; right:0; top:0; bottom:0;"></div>
+    <div style="position:absolute; left:0; right:0; top:0; bottom:0; background:linear-gradient(180deg, color-mix(in oklab, var(--bg) 35%, transparent), color-mix(in oklab, var(--bg) 40%, transparent) 35%, var(--bg) 80%);"></div>
+    <header class="row" style="position:relative; justify-content:space-between; height:72px; padding:0 12px 0 20px;">
+      <div class="row" style="gap:10px;"><!--MARK:26--><span style="font-family:var(--display); font-size:15px; font-weight:400; letter-spacing:0.2em;">SKINSENSE</span></div>
+      <a href="#" class="row" style="gap:6px; min-height:44px; padding:0 8px; font-size:14px;">GitHub <!--I:external:14--></a>
+    </header>
+    <div style="position:relative; display:flex; flex-direction:column; gap:18px; margin-top:auto; padding:0 24px 40px;">
+      <span class="lbl" style="color:var(--fg);">Case study · 2026</span>
+      <h1 class="d" style="font-size:44px; line-height:1.1; text-wrap:balance;">A skin diary that measures redness on the device.</h1>
+      <p style="font-size:16.5px; font-weight:300; line-height:1.6; text-wrap:pretty;">SkinSense lets people photograph their skin every night under a guide, mark spots by hand and follow per-zone redness over time, on the web and on Android.</p>
+    </div>
+  </section>
+
+  <section style="display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:28px 20px; flex-shrink:0; height:360px; padding:40px 24px 0; border-top:1px solid var(--line);">
+    <div style="display:flex; flex-direction:column; gap:8px;"><span class="lbl">Role</span><span style="font-size:15px; font-weight:300; line-height:1.5;">[Your role]</span></div>
+    <div style="display:flex; flex-direction:column; gap:8px;"><span class="lbl">Timeline</span><span style="font-size:15px; font-weight:300; line-height:1.5;">[Start – end]</span></div>
+    <div style="display:flex; flex-direction:column; gap:8px;"><span class="lbl">Platforms</span><span style="font-size:15px; font-weight:300; line-height:1.5;">Web (Next.js) · Android (Expo)</span></div>
+    <div style="display:flex; flex-direction:column; gap:8px;"><span class="lbl">Stack</span><span style="font-size:15px; font-weight:300; line-height:1.5;">Supabase · MediaPipe · ML Kit · TFLite</span></div>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:16px; flex-shrink:0; height:620px; padding:64px 24px 0; border-top:1px solid var(--line);">
+    <span class="lbl">01 · Problem</span>
+    <h2 class="d" style="font-size:34px; line-height:1.2; text-wrap:balance;">Skin changes slowly, and memory is a bad instrument.</h2>
+    <p style="padding-top:8px; font-size:16px; font-weight:300; line-height:1.7;">Photos taken at a different distance, angle or light cannot be compared night to night. An earlier version of this project showed acne counts that turned out to be hardcoded sample data.</p>
+    <p class="muted" style="font-size:16px; font-weight:300; line-height:1.7;">The rebuild set two rules: every number comes from a measurement the user can inspect, and the app never diagnoses.</p>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:28px; flex-shrink:0; height:1000px; padding:64px 24px 0; border-top:1px solid var(--line);">
+    <div style="display:flex; flex-direction:column; gap:14px;"><span class="lbl">02 · The product</span><h2 class="d" style="font-size:34px; line-height:1.2;">Four steps, every night.</h2></div>
+    <div style="display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:28px 14px;">
+      <figure style="display:flex; flex-direction:column; gap:10px; margin:0;"><div class="photo" style="height:300px; border-radius:22px; border:1px solid color-mix(in oklab, var(--fg) 14%, transparent);"></div><figcaption style="display:flex; flex-direction:column; gap:2px;"><span style="font-family:var(--display); font-size:18px; font-weight:400;">Capture with a guide</span><span class="muted" style="font-size:13px; font-weight:300; line-height:1.5;">Guide ellipse, last photo as a ghost, light check.</span></figcaption></figure>
+      <figure style="display:flex; flex-direction:column; gap:10px; margin:0;"><div class="photo" style="height:300px; border-radius:22px; border:1px solid color-mix(in oklab, var(--fg) 14%, transparent);"></div><figcaption style="display:flex; flex-direction:column; gap:2px;"><span style="font-family:var(--display); font-size:18px; font-weight:400;">Mark what you see</span><span class="muted" style="font-size:13px; font-weight:300; line-height:1.5;">Tap a spot; it lands in a face zone.</span></figcaption></figure>
+      <figure style="display:flex; flex-direction:column; gap:10px; margin:0;"><div class="photo" style="height:300px; border-radius:22px; border:1px solid color-mix(in oklab, var(--fg) 14%, transparent);"></div><figcaption style="display:flex; flex-direction:column; gap:2px;"><span style="font-family:var(--display); font-size:18px; font-weight:400;">Tick tonight’s routine</span><span class="muted" style="font-size:13px; font-weight:300; line-height:1.5;">User-set steps and a streak of nights.</span></figcaption></figure>
+      <figure style="display:flex; flex-direction:column; gap:10px; margin:0;"><div class="photo" style="height:300px; border-radius:22px; border:1px solid color-mix(in oklab, var(--fg) 14%, transparent);"></div><figcaption style="display:flex; flex-direction:column; gap:2px;"><span style="font-family:var(--display); font-size:18px; font-weight:400;">Follow each zone</span><span class="muted" style="font-size:13px; font-weight:300; line-height:1.5;">Redness and spots over 7 or 30 days.</span></figcaption></figure>
+    </div>
+    <span class="ph" style="align-self:flex-start;">Screenshots · placeholder</span>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:24px; flex-shrink:0; height:1150px; padding:64px 24px 0; border-top:1px solid var(--line);">
+    <div style="display:flex; flex-direction:column; gap:14px;"><span class="lbl">03 · Measuring redness</span><h2 class="d" style="font-size:34px; line-height:1.2; text-wrap:balance;">Relative to your own skin, in the same photo.</h2></div>
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <div class="card" style="display:grid; grid-template-columns:32px minmax(0, 1fr); gap:4px 12px; padding:16px 18px;"><span class="d muted" style="font-size:20px;">1</span><span style="font-size:15px; font-weight:500;">Face landmarks</span><span></span><span class="muted" style="font-size:13.5px; font-weight:300; line-height:1.5;">468 points, the same mesh on web and Android.</span></div>
+      <div class="card" style="display:grid; grid-template-columns:32px minmax(0, 1fr); gap:4px 12px; padding:16px 18px;"><span class="d muted" style="font-size:20px;">2</span><span style="font-size:15px; font-weight:500;">Skin mask</span><span></span><span class="muted" style="font-size:13.5px; font-weight:300; line-height:1.5;">Skin separated from hair, eyes and background.</span></div>
+      <div class="card" style="display:grid; grid-template-columns:32px minmax(0, 1fr); gap:4px 12px; padding:16px 18px;"><span class="d muted" style="font-size:20px;">3</span><span style="font-size:15px; font-weight:500;">Five zones</span><span></span><span class="muted" style="font-size:13.5px; font-weight:300; line-height:1.5;">Forehead, both cheeks, nose and chin, built from landmarks.</span></div>
+      <div class="card" style="display:grid; grid-template-columns:32px minmax(0, 1fr); gap:4px 12px; padding:16px 18px; border-color:color-mix(in oklab, var(--fg) 40%, transparent);"><span class="d" style="font-size:20px;">4</span><span style="font-size:15px; font-weight:500;">a* index</span><span></span><span class="muted" style="font-size:13.5px; font-weight:300; line-height:1.5;">Median a* of the zone minus median a* of all skin (CIELAB).</span></div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:10px; padding-top:8px;">
+      <h3 style="font-family:var(--display); font-size:22px; font-weight:400;">Why relative</h3>
+      <p class="muted" style="font-size:15px; font-weight:300; line-height:1.7;">Comparing each zone with the rest of the same face cancels most of the camera and room, so there is no global white-balance step. White balance is locked at capture instead.</p>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <h3 style="font-family:var(--display); font-size:22px; font-weight:400;">Where it fails</h3>
+      <p class="muted" style="font-size:15px; font-weight:300; line-height:1.7;">A whole face that is inflamed, mixed lighting, darker skin compressing a*, and shadows on the nose and chin. The app says so instead of hiding it.</p>
+    </div>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:24px; flex-shrink:0; height:900px; padding:64px 24px 0; border-top:1px solid var(--line);">
+    <div style="display:flex; flex-direction:column; gap:14px;"><span class="lbl">04 · Design</span><h2 class="d" style="font-size:34px; line-height:1.2;">Three directions, one night photo.</h2></div>
+    <div style="display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:10px;">
+      <figure style="display:flex; flex-direction:column; gap:8px; margin:0;"><div style="height:180px; border-radius:12px; background:#1D1711;"></div><figcaption class="muted" style="font-size:12.5px;">C1 · Warm dark</figcaption></figure>
+      <figure style="display:flex; flex-direction:column; gap:8px; margin:0;"><div style="height:180px; border-radius:12px; background:#EEF2F5;"></div><figcaption class="muted" style="font-size:12.5px;">C2 · Cool light</figcaption></figure>
+      <figure style="display:flex; flex-direction:column; gap:8px; margin:0;"><div class="photo" style="height:180px; border-radius:12px; outline:1px solid var(--fg); outline-offset:4px;"></div><figcaption style="font-size:12.5px; font-weight:500;">C3 · Night photo, picked</figcaption></figure>
+    </div>
+    <span class="ph" style="align-self:flex-start;">Canvas stills · placeholder</span>
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <h3 style="font-family:var(--display); font-size:22px; font-weight:400;">A font that broke Vietnamese</h3>
+      <p class="muted" style="font-size:15px; font-weight:300; line-height:1.7;">Cormorant Garamond placed the circumflex on ô visibly off the letter at every weight, in Chrome and on Android. The display face became Noto Serif Display 300.</p>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <h3 style="font-family:var(--display); font-size:22px; font-weight:400;">One token file</h3>
+      <p class="muted" style="font-size:15px; font-weight:300; line-height:1.7;">tokens.json feeds CSS variables on the web and NativeWind on Android. The build fails if any of 24 text pairs drops below WCAG AA in either theme.</p>
+    </div>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:20px; flex-shrink:0; height:800px; padding:64px 24px 0; border-top:1px solid var(--line);">
+    <div style="display:flex; flex-direction:column; gap:14px;"><span class="lbl">05 · Engineering</span><h2 class="d" style="font-size:34px; line-height:1.2; text-wrap:balance;">Decisions that held up under measurement.</h2></div>
+    <div class="line" style="display:flex; flex-direction:column; gap:6px; padding-top:16px;"><span style="font-size:16px; font-weight:500;">468 landmarks on both platforms</span><span class="muted" style="font-size:14.5px; font-weight:300; line-height:1.6;">Zones are computed once in a pure TypeScript domain package.</span></div>
+    <div class="line" style="display:flex; flex-direction:column; gap:6px; padding-top:16px;"><span style="font-size:16px; font-weight:500;">Google sign-in without redirects</span><span class="muted" style="font-size:14.5px; font-weight:300; line-height:1.6;">Both apps hand Supabase a Google ID token instead of a redirect flow.</span></div>
+    <div class="line" style="display:flex; flex-direction:column; gap:6px; padding-top:16px;"><span style="font-size:16px; font-weight:500;">Sticky, not pinned</span><span class="muted" style="font-size:14.5px; font-weight:300; line-height:1.6;">A GSAP pin re-emitted the headline as a late LCP; CSS sticky with a scrubbed timeline avoids it.</span></div>
+    <div class="line" style="display:flex; flex-direction:column; gap:6px; padding-top:16px;"><span style="font-size:16px; font-weight:500;">Motion layout from the first paint</span><span class="muted" style="font-size:14.5px; font-weight:300; line-height:1.6;">Layout classes flipped after hydration measured CLS 0.74; a media query brought it to 0.</span></div>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:24px; flex-shrink:0; height:560px; padding:64px 24px 0; border-top:1px solid var(--line);">
+    <div style="display:flex; flex-direction:column; gap:14px;"><span class="lbl">06 · Results</span><h2 class="d" style="font-size:34px; line-height:1.2;">Measured, not claimed.</h2></div>
+    <div style="display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:24px 16px;">
+      <div class="line" style="display:flex; flex-direction:column; gap:4px; padding-top:14px;"><span class="d" style="font-size:48px; line-height:1.1;">100</span><span class="muted" style="font-size:13px; font-weight:300;">Accessibility, prototype</span></div>
+      <div class="line" style="display:flex; flex-direction:column; gap:4px; padding-top:14px;"><span class="d" style="font-size:48px; line-height:1.1;">0</span><span class="muted" style="font-size:13px; font-weight:300;">Layout shift, prototype</span></div>
+      <div class="line" style="display:flex; flex-direction:column; gap:4px; padding-top:14px;"><span class="d" style="font-size:48px; line-height:1.1;">[—]</span><span class="muted" style="font-size:13px; font-weight:300;">Performance, release [to measure]</span></div>
+      <div class="line" style="display:flex; flex-direction:column; gap:4px; padding-top:14px;"><span class="d" style="font-size:48px; line-height:1.1;">[—]</span><span class="muted" style="font-size:13px; font-weight:300;">Real-phone QA [to run]</span></div>
+    </div>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:16px; flex-shrink:0; height:380px; padding:64px 24px 0; border-top:1px solid var(--line);">
+    <span class="lbl">07 · Next</span>
+    <ul style="display:flex; flex-direction:column; margin:0; padding:0; list-style:none; font-size:15px; font-weight:300; line-height:1.5; border-bottom:1px solid var(--line);">
+      <li class="line" style="padding:14px 0;">Real night photography in place of the placeholders</li>
+      <li class="line" style="padding:14px 0;">Jank measured on a release build on a real phone</li>
+      <li class="line" style="padding:14px 0;">Largest paint: fonts and hydration before first paint</li>
+    </ul>
+  </section>
+
+  <footer style="display:flex; flex-direction:column; flex-shrink:0; height:160px; padding:20px 24px 0; border-top:1px solid var(--line); font-size:13px; font-weight:300;">
+    <span class="muted" style="padding-bottom:4px;">SkinSense case study</span>
+    <a href="#" class="row" style="min-height:44px;">Live site</a>
+    <a href="#" class="row" style="min-height:44px;">GitHub</a>
+  </footer>
+</div>

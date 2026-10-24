@@ -1,0 +1,1836 @@
+{
+  "pages": [
+    {
+      "id": "page-1",
+      "name": "App core"
+    },
+    {
+      "id": "page-2",
+      "name": "Tài khoản & trạng thái"
+    },
+    {
+      "id": "page-3",
+      "name": "Trang web"
+    },
+    {
+      "id": "page-4",
+      "name": "Tính năng mới"
+    },
+    {
+      "id": "page-5",
+      "name": "Hoàn thiện"
+    }
+  ],
+  "artboards": [
+    {
+      "file": "AndroidTodayLight.dc.html",
+      "title": "Android · Hôm nay · light",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-1"
+    },
+    {
+      "file": "Main.dc.html",
+      "title": "Android · Hôm nay · dark",
+      "x": 470,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-1"
+    },
+    {
+      "file": "AndroidCaptureLight.dc.html",
+      "title": "Android · Chụp · light",
+      "x": 1020,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-1"
+    },
+    {
+      "file": "AndroidCaptureDark.dc.html",
+      "title": "Android · Chụp · dark",
+      "x": 1490,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-1"
+    },
+    {
+      "file": "AndroidSpotsLight.dc.html",
+      "title": "Android · Đánh dấu nốt · light",
+      "x": 2040,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-1"
+    },
+    {
+      "file": "AndroidSpotsDark.dc.html",
+      "title": "Android · Đánh dấu nốt · dark",
+      "x": 2510,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-1"
+    },
+    {
+      "file": "AndroidTrendsLight.dc.html",
+      "title": "Android · Xu hướng · light",
+      "x": 3060,
+      "y": 0,
+      "w": 390,
+      "h": 920,
+      "page": "page-1"
+    },
+    {
+      "file": "AndroidTrendsDark.dc.html",
+      "title": "Android · Xu hướng · dark",
+      "x": 3530,
+      "y": 0,
+      "w": 390,
+      "h": 920,
+      "page": "page-1"
+    },
+    {
+      "file": "AndroidRoutineLight.dc.html",
+      "title": "Android · Routine · light",
+      "x": 4080,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-1"
+    },
+    {
+      "file": "AndroidRoutineDark.dc.html",
+      "title": "Android · Routine · dark",
+      "x": 4550,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-1"
+    },
+    {
+      "file": "WebTodayLight.dc.html",
+      "title": "Web · Hôm nay · light",
+      "x": 0,
+      "y": 1100,
+      "w": 1440,
+      "h": 900,
+      "page": "page-1"
+    },
+    {
+      "file": "WebTodayDark.dc.html",
+      "title": "Web · Hôm nay · dark",
+      "x": 1520,
+      "y": 1100,
+      "w": 1440,
+      "h": 900,
+      "page": "page-1"
+    },
+    {
+      "file": "WebCaptureLight.dc.html",
+      "title": "Web · Chụp · light",
+      "x": 3120,
+      "y": 1100,
+      "w": 1440,
+      "h": 900,
+      "page": "page-1"
+    },
+    {
+      "file": "WebCaptureDark.dc.html",
+      "title": "Web · Chụp · dark",
+      "x": 4640,
+      "y": 1100,
+      "w": 1440,
+      "h": 900,
+      "page": "page-1"
+    },
+    {
+      "file": "WebSpotsLight.dc.html",
+      "title": "Web · Đánh dấu nốt · light",
+      "x": 6240,
+      "y": 1100,
+      "w": 1440,
+      "h": 900,
+      "page": "page-1"
+    },
+    {
+      "file": "WebSpotsDark.dc.html",
+      "title": "Web · Đánh dấu nốt · dark",
+      "x": 7760,
+      "y": 1100,
+      "w": 1440,
+      "h": 900,
+      "page": "page-1"
+    },
+    {
+      "file": "WebTrendsLight.dc.html",
+      "title": "Web · Xu hướng · light",
+      "x": 9360,
+      "y": 1100,
+      "w": 1440,
+      "h": 900,
+      "page": "page-1"
+    },
+    {
+      "file": "WebTrendsDark.dc.html",
+      "title": "Web · Xu hướng · dark",
+      "x": 10880,
+      "y": 1100,
+      "w": 1440,
+      "h": 900,
+      "page": "page-1"
+    },
+    {
+      "file": "WebRoutineLight.dc.html",
+      "title": "Web · Routine · light",
+      "x": 12480,
+      "y": 1100,
+      "w": 1440,
+      "h": 900,
+      "page": "page-1"
+    },
+    {
+      "file": "WebRoutineDark.dc.html",
+      "title": "Web · Routine · dark",
+      "x": 14000,
+      "y": 1100,
+      "w": 1440,
+      "h": 900,
+      "page": "page-1"
+    },
+    {
+      "file": "AndroidSignInLight.dc.html",
+      "title": "Android · Đăng nhập · light",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-2"
+    },
+    {
+      "file": "AndroidSignInDark.dc.html",
+      "title": "Android · Đăng nhập · dark",
+      "x": 470,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-2"
+    },
+    {
+      "file": "AndroidSettingsLight.dc.html",
+      "title": "Android · Cài đặt · light",
+      "x": 1020,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-2"
+    },
+    {
+      "file": "AndroidSettingsDark.dc.html",
+      "title": "Android · Cài đặt · dark",
+      "x": 1490,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-2"
+    },
+    {
+      "file": "AndroidDeleteLight.dc.html",
+      "title": "Android · Xóa tài khoản · light",
+      "x": 2040,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-2"
+    },
+    {
+      "file": "AndroidDeleteDark.dc.html",
+      "title": "Android · Xóa tài khoản · dark",
+      "x": 2510,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-2"
+    },
+    {
+      "file": "AndroidFirstRunLight.dc.html",
+      "title": "Android · Lần đầu, chưa có ảnh · light",
+      "x": 3060,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-2"
+    },
+    {
+      "file": "AndroidFirstRunDark.dc.html",
+      "title": "Android · Lần đầu, chưa có ảnh · dark",
+      "x": 3530,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-2"
+    },
+    {
+      "file": "AndroidLoadingLight.dc.html",
+      "title": "Android · Đang tải · light",
+      "x": 4080,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-2"
+    },
+    {
+      "file": "AndroidLoadingDark.dc.html",
+      "title": "Android · Đang tải · dark",
+      "x": 4550,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-2"
+    },
+    {
+      "file": "AndroidLoadErrorLight.dc.html",
+      "title": "Android · Lỗi tải · light",
+      "x": 5100,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-2"
+    },
+    {
+      "file": "AndroidLoadErrorDark.dc.html",
+      "title": "Android · Lỗi tải · dark",
+      "x": 5570,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-2"
+    },
+    {
+      "file": "AndroidCaptureReviewLight.dc.html",
+      "title": "Android · Chụp · xem lại · light",
+      "x": 6120,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-2"
+    },
+    {
+      "file": "AndroidCaptureReviewDark.dc.html",
+      "title": "Android · Chụp · xem lại · dark",
+      "x": 6590,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-2"
+    },
+    {
+      "file": "AndroidCaptureSavedLight.dc.html",
+      "title": "Android · Chụp · đã lưu · light",
+      "x": 7140,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-2"
+    },
+    {
+      "file": "AndroidCaptureSavedDark.dc.html",
+      "title": "Android · Chụp · đã lưu · dark",
+      "x": 7610,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-2"
+    },
+    {
+      "file": "AndroidCameraDeniedLight.dc.html",
+      "title": "Android · Không có camera · light",
+      "x": 8160,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-2"
+    },
+    {
+      "file": "AndroidCameraDeniedDark.dc.html",
+      "title": "Android · Không có camera · dark",
+      "x": 8630,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-2"
+    },
+    {
+      "file": "WebSettingsLight.dc.html",
+      "title": "Web · Cài đặt · light",
+      "x": 0,
+      "y": 1024,
+      "w": 1440,
+      "h": 900,
+      "page": "page-2"
+    },
+    {
+      "file": "WebSettingsDark.dc.html",
+      "title": "Web · Cài đặt · dark",
+      "x": 1520,
+      "y": 1024,
+      "w": 1440,
+      "h": 900,
+      "page": "page-2"
+    },
+    {
+      "file": "WebDeleteLight.dc.html",
+      "title": "Web · Xóa tài khoản · light",
+      "x": 3120,
+      "y": 1024,
+      "w": 1440,
+      "h": 900,
+      "page": "page-2"
+    },
+    {
+      "file": "WebDeleteDark.dc.html",
+      "title": "Web · Xóa tài khoản · dark",
+      "x": 4640,
+      "y": 1024,
+      "w": 1440,
+      "h": 900,
+      "page": "page-2"
+    },
+    {
+      "file": "WebFirstRunLight.dc.html",
+      "title": "Web · Lần đầu, chưa có ảnh · light",
+      "x": 6240,
+      "y": 1024,
+      "w": 1440,
+      "h": 900,
+      "page": "page-2"
+    },
+    {
+      "file": "WebFirstRunDark.dc.html",
+      "title": "Web · Lần đầu, chưa có ảnh · dark",
+      "x": 7760,
+      "y": 1024,
+      "w": 1440,
+      "h": 900,
+      "page": "page-2"
+    },
+    {
+      "file": "WebLoadingLight.dc.html",
+      "title": "Web · Đang tải · light",
+      "x": 9360,
+      "y": 1024,
+      "w": 1440,
+      "h": 900,
+      "page": "page-2"
+    },
+    {
+      "file": "WebLoadingDark.dc.html",
+      "title": "Web · Đang tải · dark",
+      "x": 10880,
+      "y": 1024,
+      "w": 1440,
+      "h": 900,
+      "page": "page-2"
+    },
+    {
+      "file": "WebLoadErrorLight.dc.html",
+      "title": "Web · Lỗi tải · light",
+      "x": 12480,
+      "y": 1024,
+      "w": 1440,
+      "h": 900,
+      "page": "page-2"
+    },
+    {
+      "file": "WebLoadErrorDark.dc.html",
+      "title": "Web · Lỗi tải · dark",
+      "x": 14000,
+      "y": 1024,
+      "w": 1440,
+      "h": 900,
+      "page": "page-2"
+    },
+    {
+      "file": "WebCaptureReviewLight.dc.html",
+      "title": "Web · Chụp · xem lại · light",
+      "x": 15600,
+      "y": 1024,
+      "w": 1440,
+      "h": 900,
+      "page": "page-2"
+    },
+    {
+      "file": "WebCaptureReviewDark.dc.html",
+      "title": "Web · Chụp · xem lại · dark",
+      "x": 17120,
+      "y": 1024,
+      "w": 1440,
+      "h": 900,
+      "page": "page-2"
+    },
+    {
+      "file": "WebCaptureSavedLight.dc.html",
+      "title": "Web · Chụp · đã lưu · light",
+      "x": 18720,
+      "y": 1024,
+      "w": 1440,
+      "h": 900,
+      "page": "page-2"
+    },
+    {
+      "file": "WebCaptureSavedDark.dc.html",
+      "title": "Web · Chụp · đã lưu · dark",
+      "x": 20240,
+      "y": 1024,
+      "w": 1440,
+      "h": 900,
+      "page": "page-2"
+    },
+    {
+      "file": "WebCameraDeniedLight.dc.html",
+      "title": "Web · Không có camera · light",
+      "x": 21840,
+      "y": 1024,
+      "w": 1440,
+      "h": 900,
+      "page": "page-2"
+    },
+    {
+      "file": "WebCameraDeniedDark.dc.html",
+      "title": "Web · Không có camera · dark",
+      "x": 23360,
+      "y": 1024,
+      "w": 1440,
+      "h": 900,
+      "page": "page-2"
+    },
+    {
+      "file": "WebLandingLight.dc.html",
+      "title": "Web · Landing · light",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 5328,
+      "page": "page-3"
+    },
+    {
+      "file": "WebLandingDark.dc.html",
+      "title": "Web · Landing · dark",
+      "x": 1520,
+      "y": 0,
+      "w": 1440,
+      "h": 5328,
+      "page": "page-3"
+    },
+    {
+      "file": "WebCaseStudyLight.dc.html",
+      "title": "Web · Case study · light",
+      "x": 3120,
+      "y": 0,
+      "w": 1440,
+      "h": 5728,
+      "page": "page-3"
+    },
+    {
+      "file": "WebCaseStudyDark.dc.html",
+      "title": "Web · Case study · dark",
+      "x": 4640,
+      "y": 0,
+      "w": 1440,
+      "h": 5728,
+      "page": "page-3"
+    },
+    {
+      "file": "WebPrivacyLight.dc.html",
+      "title": "Web · Chính sách riêng tư · light",
+      "x": 6240,
+      "y": 0,
+      "w": 1440,
+      "h": 1760,
+      "page": "page-3"
+    },
+    {
+      "file": "WebPrivacyDark.dc.html",
+      "title": "Web · Chính sách riêng tư · dark",
+      "x": 7760,
+      "y": 0,
+      "w": 1440,
+      "h": 1760,
+      "page": "page-3"
+    },
+    {
+      "file": "WebNotFoundLight.dc.html",
+      "title": "Web · 404 · light",
+      "x": 9360,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "page": "page-3"
+    },
+    {
+      "file": "WebNotFoundDark.dc.html",
+      "title": "Web · 404 · dark",
+      "x": 10880,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "page": "page-3"
+    },
+    {
+      "file": "PhoneLandingLight.dc.html",
+      "title": "Web 390 · Landing · light",
+      "x": 0,
+      "y": 5908,
+      "w": 390,
+      "h": 5884,
+      "page": "page-3"
+    },
+    {
+      "file": "PhoneLandingDark.dc.html",
+      "title": "Web 390 · Landing · dark",
+      "x": 470,
+      "y": 5908,
+      "w": 390,
+      "h": 5884,
+      "page": "page-3"
+    },
+    {
+      "file": "PhoneCaseStudyLight.dc.html",
+      "title": "Web 390 · Case study · light",
+      "x": 1020,
+      "y": 5908,
+      "w": 390,
+      "h": 6710,
+      "page": "page-3"
+    },
+    {
+      "file": "PhoneCaseStudyDark.dc.html",
+      "title": "Web 390 · Case study · dark",
+      "x": 1490,
+      "y": 5908,
+      "w": 390,
+      "h": 6710,
+      "page": "page-3"
+    },
+    {
+      "file": "AndroidOnboarding1Light.dc.html",
+      "title": "Android · Onboarding 1/3 · light",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-4"
+    },
+    {
+      "file": "AndroidOnboarding1Dark.dc.html",
+      "title": "Android · Onboarding 1/3 · dark",
+      "x": 470,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-4"
+    },
+    {
+      "file": "AndroidOnboarding2Light.dc.html",
+      "title": "Android · Onboarding 2/3 · light",
+      "x": 1020,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-4"
+    },
+    {
+      "file": "AndroidOnboarding2Dark.dc.html",
+      "title": "Android · Onboarding 2/3 · dark",
+      "x": 1490,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-4"
+    },
+    {
+      "file": "AndroidOnboarding3Light.dc.html",
+      "title": "Android · Onboarding 3/3 · light",
+      "x": 2040,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-4"
+    },
+    {
+      "file": "AndroidOnboarding3Dark.dc.html",
+      "title": "Android · Onboarding 3/3 · dark",
+      "x": 2510,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-4"
+    },
+    {
+      "file": "AndroidHistoryLight.dc.html",
+      "title": "Android · Lịch sử ảnh · light",
+      "x": 3060,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-4"
+    },
+    {
+      "file": "AndroidHistoryDark.dc.html",
+      "title": "Android · Lịch sử ảnh · dark",
+      "x": 3530,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-4"
+    },
+    {
+      "file": "AndroidPhotoLight.dc.html",
+      "title": "Android · Chi tiết ảnh · ghi chú, tag · light",
+      "x": 4080,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-4"
+    },
+    {
+      "file": "AndroidPhotoDark.dc.html",
+      "title": "Android · Chi tiết ảnh · ghi chú, tag · dark",
+      "x": 4550,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-4"
+    },
+    {
+      "file": "AndroidCompareLight.dc.html",
+      "title": "Android · Chọn 2 ngày so sánh · light",
+      "x": 5100,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-4"
+    },
+    {
+      "file": "AndroidCompareDark.dc.html",
+      "title": "Android · Chọn 2 ngày so sánh · dark",
+      "x": 5570,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-4"
+    },
+    {
+      "file": "AndroidShareLight.dc.html",
+      "title": "Android · Chia sẻ trước/sau · light",
+      "x": 6120,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-4"
+    },
+    {
+      "file": "AndroidShareDark.dc.html",
+      "title": "Android · Chia sẻ trước/sau · dark",
+      "x": 6590,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-4"
+    },
+    {
+      "file": "AndroidReminderLight.dc.html",
+      "title": "Android · Nhắc routine · light",
+      "x": 7140,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-4"
+    },
+    {
+      "file": "AndroidReminderDark.dc.html",
+      "title": "Android · Nhắc routine · dark",
+      "x": 7610,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-4"
+    },
+    {
+      "file": "AndroidExportLight.dc.html",
+      "title": "Android · Xuất dữ liệu · light",
+      "x": 8160,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-4"
+    },
+    {
+      "file": "AndroidExportDark.dc.html",
+      "title": "Android · Xuất dữ liệu · dark",
+      "x": 8630,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-4"
+    },
+    {
+      "file": "AndroidFeedbackLight.dc.html",
+      "title": "Android · Góp ý · light",
+      "x": 9180,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-4"
+    },
+    {
+      "file": "AndroidFeedbackDark.dc.html",
+      "title": "Android · Góp ý · dark",
+      "x": 9650,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-4"
+    },
+    {
+      "file": "AndroidAboutLight.dc.html",
+      "title": "Android · Giới thiệu & giấy phép · light",
+      "x": 10200,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-4"
+    },
+    {
+      "file": "AndroidAboutDark.dc.html",
+      "title": "Android · Giới thiệu & giấy phép · dark",
+      "x": 10670,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-4"
+    },
+    {
+      "file": "AndroidLockLight.dc.html",
+      "title": "Android · Khóa vân tay · light",
+      "x": 11220,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-4"
+    },
+    {
+      "file": "AndroidLockDark.dc.html",
+      "title": "Android · Khóa vân tay · dark",
+      "x": 11690,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-4"
+    },
+    {
+      "file": "WebOnboardingLight.dc.html",
+      "title": "Web · Onboarding · light",
+      "x": 0,
+      "y": 1024,
+      "w": 1440,
+      "h": 900,
+      "page": "page-4"
+    },
+    {
+      "file": "WebOnboardingDark.dc.html",
+      "title": "Web · Onboarding · dark",
+      "x": 1520,
+      "y": 1024,
+      "w": 1440,
+      "h": 900,
+      "page": "page-4"
+    },
+    {
+      "file": "WebHistoryLight.dc.html",
+      "title": "Web · Lịch sử ảnh · light",
+      "x": 3120,
+      "y": 1024,
+      "w": 1440,
+      "h": 900,
+      "page": "page-4"
+    },
+    {
+      "file": "WebHistoryDark.dc.html",
+      "title": "Web · Lịch sử ảnh · dark",
+      "x": 4640,
+      "y": 1024,
+      "w": 1440,
+      "h": 900,
+      "page": "page-4"
+    },
+    {
+      "file": "WebPhotoLight.dc.html",
+      "title": "Web · Chi tiết ảnh · ghi chú, tag · light",
+      "x": 6240,
+      "y": 1024,
+      "w": 1440,
+      "h": 900,
+      "page": "page-4"
+    },
+    {
+      "file": "WebPhotoDark.dc.html",
+      "title": "Web · Chi tiết ảnh · ghi chú, tag · dark",
+      "x": 7760,
+      "y": 1024,
+      "w": 1440,
+      "h": 900,
+      "page": "page-4"
+    },
+    {
+      "file": "WebCompareLight.dc.html",
+      "title": "Web · Chọn 2 ngày so sánh · light",
+      "x": 9360,
+      "y": 1024,
+      "w": 1440,
+      "h": 900,
+      "page": "page-4"
+    },
+    {
+      "file": "WebCompareDark.dc.html",
+      "title": "Web · Chọn 2 ngày so sánh · dark",
+      "x": 10880,
+      "y": 1024,
+      "w": 1440,
+      "h": 900,
+      "page": "page-4"
+    },
+    {
+      "file": "WebShareLight.dc.html",
+      "title": "Web · Chia sẻ trước/sau · light",
+      "x": 12480,
+      "y": 1024,
+      "w": 1440,
+      "h": 900,
+      "page": "page-4"
+    },
+    {
+      "file": "WebShareDark.dc.html",
+      "title": "Web · Chia sẻ trước/sau · dark",
+      "x": 14000,
+      "y": 1024,
+      "w": 1440,
+      "h": 900,
+      "page": "page-4"
+    },
+    {
+      "file": "WebExportLight.dc.html",
+      "title": "Web · Xuất dữ liệu · light",
+      "x": 15600,
+      "y": 1024,
+      "w": 1440,
+      "h": 900,
+      "page": "page-4"
+    },
+    {
+      "file": "WebExportDark.dc.html",
+      "title": "Web · Xuất dữ liệu · dark",
+      "x": 17120,
+      "y": 1024,
+      "w": 1440,
+      "h": 900,
+      "page": "page-4"
+    },
+    {
+      "file": "WebFeedbackLight.dc.html",
+      "title": "Web · Góp ý · light",
+      "x": 18720,
+      "y": 1024,
+      "w": 1440,
+      "h": 900,
+      "page": "page-4"
+    },
+    {
+      "file": "WebFeedbackDark.dc.html",
+      "title": "Web · Góp ý · dark",
+      "x": 20240,
+      "y": 1024,
+      "w": 1440,
+      "h": 900,
+      "page": "page-4"
+    },
+    {
+      "file": "PhoneTodayLight.dc.html",
+      "title": "Web 390 · Hôm nay · light",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "PhoneTodayDark.dc.html",
+      "title": "Web 390 · Hôm nay · dark",
+      "x": 470,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "PhoneCaptureLight.dc.html",
+      "title": "Web 390 · Chụp · light",
+      "x": 1020,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "PhoneCaptureDark.dc.html",
+      "title": "Web 390 · Chụp · dark",
+      "x": 1490,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "PhoneSpotsLight.dc.html",
+      "title": "Web 390 · Đánh dấu nốt · light",
+      "x": 2040,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "PhoneSpotsDark.dc.html",
+      "title": "Web 390 · Đánh dấu nốt · dark",
+      "x": 2510,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "PhoneTrendsLight.dc.html",
+      "title": "Web 390 · Xu hướng · light",
+      "x": 3060,
+      "y": 0,
+      "w": 390,
+      "h": 920,
+      "page": "page-5"
+    },
+    {
+      "file": "PhoneTrendsDark.dc.html",
+      "title": "Web 390 · Xu hướng · dark",
+      "x": 3530,
+      "y": 0,
+      "w": 390,
+      "h": 920,
+      "page": "page-5"
+    },
+    {
+      "file": "PhoneRoutineLight.dc.html",
+      "title": "Web 390 · Routine · light",
+      "x": 4080,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "PhoneRoutineDark.dc.html",
+      "title": "Web 390 · Routine · dark",
+      "x": 4550,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "PhoneHistoryLight.dc.html",
+      "title": "Web 390 · Lịch sử ảnh · light",
+      "x": 5100,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "PhoneHistoryDark.dc.html",
+      "title": "Web 390 · Lịch sử ảnh · dark",
+      "x": 5570,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "PhoneSettingsLight.dc.html",
+      "title": "Web 390 · Cài đặt · light",
+      "x": 6120,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "PhoneSettingsDark.dc.html",
+      "title": "Web 390 · Cài đặt · dark",
+      "x": 6590,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "PhoneDemoTodayLight.dc.html",
+      "title": "Web 390 · Xem thử · Hôm nay · light",
+      "x": 7140,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "PhoneDemoTodayDark.dc.html",
+      "title": "Web 390 · Xem thử · Hôm nay · dark",
+      "x": 7610,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "PhoneOnboardingLight.dc.html",
+      "title": "Web 390 · Onboarding · light",
+      "x": 8160,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "PhoneOnboardingDark.dc.html",
+      "title": "Web 390 · Onboarding · dark",
+      "x": 8630,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "PhonePhotoLight.dc.html",
+      "title": "Web 390 · Chi tiết ảnh · ghi chú, tag · light",
+      "x": 9180,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "PhonePhotoDark.dc.html",
+      "title": "Web 390 · Chi tiết ảnh · ghi chú, tag · dark",
+      "x": 9650,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "PhoneCompareLight.dc.html",
+      "title": "Web 390 · Chọn 2 ngày so sánh · light",
+      "x": 10200,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "PhoneCompareDark.dc.html",
+      "title": "Web 390 · Chọn 2 ngày so sánh · dark",
+      "x": 10670,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "PhoneShareLight.dc.html",
+      "title": "Web 390 · Chia sẻ trước/sau · light",
+      "x": 11220,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "PhoneShareDark.dc.html",
+      "title": "Web 390 · Chia sẻ trước/sau · dark",
+      "x": 11690,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "PhoneExportLight.dc.html",
+      "title": "Web 390 · Xuất dữ liệu · light",
+      "x": 12240,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "PhoneExportDark.dc.html",
+      "title": "Web 390 · Xuất dữ liệu · dark",
+      "x": 12710,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "PhoneFeedbackLight.dc.html",
+      "title": "Web 390 · Góp ý · light",
+      "x": 13260,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "PhoneFeedbackDark.dc.html",
+      "title": "Web 390 · Góp ý · dark",
+      "x": 13730,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "AndroidDemoTodayLight.dc.html",
+      "title": "Android · Xem thử · Hôm nay · light",
+      "x": 0,
+      "y": 1100,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "AndroidDemoTodayDark.dc.html",
+      "title": "Android · Xem thử · Hôm nay · dark",
+      "x": 470,
+      "y": 1100,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "AndroidCaptureIssueLight.dc.html",
+      "title": "Android · Chụp · ánh sáng kém · light",
+      "x": 1020,
+      "y": 1100,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "AndroidCaptureIssueDark.dc.html",
+      "title": "Android · Chụp · ánh sáng kém · dark",
+      "x": 1490,
+      "y": 1100,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "AndroidCaptureSaveErrorLight.dc.html",
+      "title": "Android · Chụp · lưu lỗi · light",
+      "x": 2040,
+      "y": 1100,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "AndroidCaptureSaveErrorDark.dc.html",
+      "title": "Android · Chụp · lưu lỗi · dark",
+      "x": 2510,
+      "y": 1100,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "AndroidSpotsNoFaceLight.dc.html",
+      "title": "Android · Đánh dấu · không thấy mặt · light",
+      "x": 3060,
+      "y": 1100,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "AndroidSpotsNoFaceDark.dc.html",
+      "title": "Android · Đánh dấu · không thấy mặt · dark",
+      "x": 3530,
+      "y": 1100,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "AndroidSpotsErrorLight.dc.html",
+      "title": "Android · Đánh dấu · ngoài vùng, lưu lỗi · light",
+      "x": 4080,
+      "y": 1100,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "AndroidSpotsErrorDark.dc.html",
+      "title": "Android · Đánh dấu · ngoài vùng, lưu lỗi · dark",
+      "x": 4550,
+      "y": 1100,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "AndroidTrendsEmptyLight.dc.html",
+      "title": "Android · Xu hướng · chưa đủ ảnh · light",
+      "x": 5100,
+      "y": 1100,
+      "w": 390,
+      "h": 920,
+      "page": "page-5"
+    },
+    {
+      "file": "AndroidTrendsEmptyDark.dc.html",
+      "title": "Android · Xu hướng · chưa đủ ảnh · dark",
+      "x": 5570,
+      "y": 1100,
+      "w": 390,
+      "h": 920,
+      "page": "page-5"
+    },
+    {
+      "file": "AndroidRoutineEditLight.dc.html",
+      "title": "Android · Routine · đổi tên, thêm bước · light",
+      "x": 6120,
+      "y": 1100,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "AndroidRoutineEditDark.dc.html",
+      "title": "Android · Routine · đổi tên, thêm bước · dark",
+      "x": 6590,
+      "y": 1100,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "AndroidSignInErrorLight.dc.html",
+      "title": "Android · Đăng nhập · lỗi · light",
+      "x": 7140,
+      "y": 1100,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "AndroidSignInErrorDark.dc.html",
+      "title": "Android · Đăng nhập · lỗi · dark",
+      "x": 7610,
+      "y": 1100,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "AndroidDeletingLight.dc.html",
+      "title": "Android · Xóa tài khoản · đang xóa, lỗi · light",
+      "x": 8160,
+      "y": 1100,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "AndroidDeletingDark.dc.html",
+      "title": "Android · Xóa tài khoản · đang xóa, lỗi · dark",
+      "x": 8630,
+      "y": 1100,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "AndroidPhotoDeleteLight.dc.html",
+      "title": "Android · Xóa ảnh · xác nhận · light",
+      "x": 9180,
+      "y": 1100,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "AndroidPhotoDeleteDark.dc.html",
+      "title": "Android · Xóa ảnh · xác nhận · dark",
+      "x": 9650,
+      "y": 1100,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "AndroidExportProgressLight.dc.html",
+      "title": "Android · Xuất dữ liệu · đang tạo · light",
+      "x": 10200,
+      "y": 1100,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "AndroidExportProgressDark.dc.html",
+      "title": "Android · Xuất dữ liệu · đang tạo · dark",
+      "x": 10670,
+      "y": 1100,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "AndroidExportErrorLight.dc.html",
+      "title": "Android · Xuất dữ liệu · lỗi · light",
+      "x": 11220,
+      "y": 1100,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "AndroidExportErrorDark.dc.html",
+      "title": "Android · Xuất dữ liệu · lỗi · dark",
+      "x": 11690,
+      "y": 1100,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "AndroidFeedbackSentLight.dc.html",
+      "title": "Android · Góp ý · đã gửi · light",
+      "x": 12240,
+      "y": 1100,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "AndroidFeedbackSentDark.dc.html",
+      "title": "Android · Góp ý · đã gửi · dark",
+      "x": 12710,
+      "y": 1100,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "AndroidFeedbackErrorLight.dc.html",
+      "title": "Android · Góp ý · gửi lỗi · light",
+      "x": 13260,
+      "y": 1100,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "AndroidFeedbackErrorDark.dc.html",
+      "title": "Android · Góp ý · gửi lỗi · dark",
+      "x": 13730,
+      "y": 1100,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "AndroidReminderDeniedLight.dc.html",
+      "title": "Android · Nhắc · chưa cho phép thông báo · light",
+      "x": 14280,
+      "y": 1100,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "AndroidReminderDeniedDark.dc.html",
+      "title": "Android · Nhắc · chưa cho phép thông báo · dark",
+      "x": 14750,
+      "y": 1100,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "AndroidLockNotEnrolledLight.dc.html",
+      "title": "Android · Khóa · máy chưa cài vân tay · light",
+      "x": 15300,
+      "y": 1100,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "AndroidLockNotEnrolledDark.dc.html",
+      "title": "Android · Khóa · máy chưa cài vân tay · dark",
+      "x": 15770,
+      "y": 1100,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "WebDemoTodayLight.dc.html",
+      "title": "Web · Xem thử · Hôm nay · light",
+      "x": 0,
+      "y": 2200,
+      "w": 1440,
+      "h": 900,
+      "page": "page-5"
+    },
+    {
+      "file": "WebDemoTodayDark.dc.html",
+      "title": "Web · Xem thử · Hôm nay · dark",
+      "x": 1520,
+      "y": 2200,
+      "w": 1440,
+      "h": 900,
+      "page": "page-5"
+    },
+    {
+      "file": "WebCaptureIssueLight.dc.html",
+      "title": "Web · Chụp · ánh sáng kém · light",
+      "x": 3120,
+      "y": 2200,
+      "w": 1440,
+      "h": 900,
+      "page": "page-5"
+    },
+    {
+      "file": "WebCaptureIssueDark.dc.html",
+      "title": "Web · Chụp · ánh sáng kém · dark",
+      "x": 4640,
+      "y": 2200,
+      "w": 1440,
+      "h": 900,
+      "page": "page-5"
+    },
+    {
+      "file": "WebSpotsErrorLight.dc.html",
+      "title": "Web · Đánh dấu · ngoài vùng, lưu lỗi · light",
+      "x": 6240,
+      "y": 2200,
+      "w": 1440,
+      "h": 900,
+      "page": "page-5"
+    },
+    {
+      "file": "WebSpotsErrorDark.dc.html",
+      "title": "Web · Đánh dấu · ngoài vùng, lưu lỗi · dark",
+      "x": 7760,
+      "y": 2200,
+      "w": 1440,
+      "h": 900,
+      "page": "page-5"
+    },
+    {
+      "file": "WebTrendsEmptyLight.dc.html",
+      "title": "Web · Xu hướng · chưa đủ ảnh · light",
+      "x": 9360,
+      "y": 2200,
+      "w": 1440,
+      "h": 900,
+      "page": "page-5"
+    },
+    {
+      "file": "WebTrendsEmptyDark.dc.html",
+      "title": "Web · Xu hướng · chưa đủ ảnh · dark",
+      "x": 10880,
+      "y": 2200,
+      "w": 1440,
+      "h": 900,
+      "page": "page-5"
+    },
+    {
+      "file": "WebRoutineEditLight.dc.html",
+      "title": "Web · Routine · đổi tên, thêm bước · light",
+      "x": 12480,
+      "y": 2200,
+      "w": 1440,
+      "h": 900,
+      "page": "page-5"
+    },
+    {
+      "file": "WebRoutineEditDark.dc.html",
+      "title": "Web · Routine · đổi tên, thêm bước · dark",
+      "x": 14000,
+      "y": 2200,
+      "w": 1440,
+      "h": 900,
+      "page": "page-5"
+    },
+    {
+      "file": "WebDeletingLight.dc.html",
+      "title": "Web · Xóa tài khoản · đang xóa, lỗi · light",
+      "x": 15600,
+      "y": 2200,
+      "w": 1440,
+      "h": 900,
+      "page": "page-5"
+    },
+    {
+      "file": "WebDeletingDark.dc.html",
+      "title": "Web · Xóa tài khoản · đang xóa, lỗi · dark",
+      "x": 17120,
+      "y": 2200,
+      "w": 1440,
+      "h": 900,
+      "page": "page-5"
+    },
+    {
+      "file": "WebPhotoDeleteLight.dc.html",
+      "title": "Web · Xóa ảnh · xác nhận · light",
+      "x": 18720,
+      "y": 2200,
+      "w": 1440,
+      "h": 900,
+      "page": "page-5"
+    },
+    {
+      "file": "WebPhotoDeleteDark.dc.html",
+      "title": "Web · Xóa ảnh · xác nhận · dark",
+      "x": 20240,
+      "y": 2200,
+      "w": 1440,
+      "h": 900,
+      "page": "page-5"
+    },
+    {
+      "file": "WebExportProgressLight.dc.html",
+      "title": "Web · Xuất dữ liệu · đang tạo · light",
+      "x": 21840,
+      "y": 2200,
+      "w": 1440,
+      "h": 900,
+      "page": "page-5"
+    },
+    {
+      "file": "WebExportProgressDark.dc.html",
+      "title": "Web · Xuất dữ liệu · đang tạo · dark",
+      "x": 23360,
+      "y": 2200,
+      "w": 1440,
+      "h": 900,
+      "page": "page-5"
+    },
+    {
+      "file": "WebExportErrorLight.dc.html",
+      "title": "Web · Xuất dữ liệu · lỗi · light",
+      "x": 24960,
+      "y": 2200,
+      "w": 1440,
+      "h": 900,
+      "page": "page-5"
+    },
+    {
+      "file": "WebExportErrorDark.dc.html",
+      "title": "Web · Xuất dữ liệu · lỗi · dark",
+      "x": 26480,
+      "y": 2200,
+      "w": 1440,
+      "h": 900,
+      "page": "page-5"
+    },
+    {
+      "file": "WebFeedbackSentLight.dc.html",
+      "title": "Web · Góp ý · đã gửi · light",
+      "x": 28080,
+      "y": 2200,
+      "w": 1440,
+      "h": 900,
+      "page": "page-5"
+    },
+    {
+      "file": "WebFeedbackSentDark.dc.html",
+      "title": "Web · Góp ý · đã gửi · dark",
+      "x": 29600,
+      "y": 2200,
+      "w": 1440,
+      "h": 900,
+      "page": "page-5"
+    },
+    {
+      "file": "WebFeedbackErrorLight.dc.html",
+      "title": "Web · Góp ý · gửi lỗi · light",
+      "x": 31200,
+      "y": 2200,
+      "w": 1440,
+      "h": 900,
+      "page": "page-5"
+    },
+    {
+      "file": "WebFeedbackErrorDark.dc.html",
+      "title": "Web · Góp ý · gửi lỗi · dark",
+      "x": 32720,
+      "y": 2200,
+      "w": 1440,
+      "h": 900,
+      "page": "page-5"
+    },
+    {
+      "file": "WebInteractionLight.dc.html",
+      "title": "Web · Trạng thái tương tác · light",
+      "x": 34320,
+      "y": 2200,
+      "w": 1440,
+      "h": 900,
+      "page": "page-5"
+    },
+    {
+      "file": "WebInteractionDark.dc.html",
+      "title": "Web · Trạng thái tương tác · dark",
+      "x": 35840,
+      "y": 2200,
+      "w": 1440,
+      "h": 900,
+      "page": "page-5"
+    },
+    {
+      "file": "BrandIconLight.dc.html",
+      "title": "Brand · Icon app & favicon · light",
+      "x": 0,
+      "y": 3280,
+      "w": 1440,
+      "h": 900,
+      "page": "page-5"
+    },
+    {
+      "file": "BrandIconDark.dc.html",
+      "title": "Brand · Icon app & favicon · dark",
+      "x": 1520,
+      "y": 3280,
+      "w": 1440,
+      "h": 900,
+      "page": "page-5"
+    },
+    {
+      "file": "BrandSplashLight.dc.html",
+      "title": "Brand · Splash · light",
+      "x": 3120,
+      "y": 3280,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "BrandSplashDark.dc.html",
+      "title": "Brand · Splash · dark",
+      "x": 3590,
+      "y": 3280,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "BrandOGLight.dc.html",
+      "title": "Brand · Ảnh OG 1200×630 · light",
+      "x": 4140,
+      "y": 3280,
+      "w": 1200,
+      "h": 630,
+      "page": "page-5"
+    },
+    {
+      "file": "BrandOGDark.dc.html",
+      "title": "Brand · Ảnh OG 1200×630 · dark",
+      "x": 5420,
+      "y": 3280,
+      "w": 1200,
+      "h": 630,
+      "page": "page-5"
+    },
+    {
+      "file": "BrandMotionLight.dc.html",
+      "title": "Brand · Motion (theo DESIGN.md) · light",
+      "x": 6780,
+      "y": 3280,
+      "w": 1440,
+      "h": 1180,
+      "page": "page-5"
+    },
+    {
+      "file": "BrandMotionDark.dc.html",
+      "title": "Brand · Motion (theo DESIGN.md) · dark",
+      "x": 8300,
+      "y": 3280,
+      "w": 1440,
+      "h": 1180,
+      "page": "page-5"
+    }
+  ],
+  "annotations": [
+    {
+      "id": "note-page-1",
+      "x": -400,
+      "y": 0,
+      "w": 320,
+      "page": "page-1",
+      "text": "App core · C3 Night photo\nNoto Serif Display 300/400 + Manrope, màu từ packages/tokens/tokens.json.\n\nẢnh và khung camera là placeholder gradient."
+    },
+    {
+      "id": "note-page-2",
+      "x": -400,
+      "y": 0,
+      "w": 320,
+      "page": "page-2",
+      "text": "Tài khoản, dialog và trạng thái\nWeb không có màn đăng nhập riêng: nút Google nằm trên landing (trang Trang web).\n\nCài đặt vẽ ở trạng thái cuối, đã có hàng cho các tính năng mới. Tên, email là placeholder trong ngoặc vuông."
+    },
+    {
+      "id": "note-page-3",
+      "x": -400,
+      "y": 0,
+      "w": 320,
+      "page": "page-3",
+      "text": "Trang web công khai\nLanding và case study có bản 1440 và 390 (Lighthouse chấm theo mobile). Privacy và 404 chỉ một cột nên chỉ vẽ 1440.\n\nCase study bằng tiếng Anh; số liệu chưa đo nằm trong ngoặc vuông."
+    },
+    {
+      "id": "note-page-4",
+      "x": -400,
+      "y": 0,
+      "w": 320,
+      "page": "page-4",
+      "text": "Tính năng mới\nNhắc routine, giới thiệu & giấy phép, khóa vân tay chỉ có trên Android.\n\nTag, giờ nhắc, dung lượng xuất là dữ liệu mẫu."
+    },
+    {
+      "id": "note-page-5",
+      "x": -400,
+      "y": 0,
+      "w": 320,
+      "page": "page-5",
+      "text": "Hoàn thiện cho production\nHàng 1: /app ở 390 (Lighthouse chấm mobile mọi trang). Hôm nay, Đánh dấu, Xu hướng, Routine, Lịch sử giống hệt Android; web khác ở Chụp (trình duyệt điện thoại chưa hỗ trợ) và Cài đặt (không có nhắc, khóa, giới thiệu).\nHàng 2–3: Xem thử và lỗi riêng từng màn. Hàng 3 cuối: trạng thái tương tác web.\nHàng 4: icon, splash, ảnh OG — bản light/dark là hai biến thể để chọn."
+    }
+  ],
+  "launch": {
+    "view": "canvas",
+    "page": "page-5"
+  }
+}
