@@ -1,0 +1,40 @@
+# Capture → Save → Mark spots → tap → Save (ticket 10). Same preconditions as
+# capture.yaml (signed-in session, dev build, device locale en, a face in front
+# of the camera). Taps walk forehead → centre → cheek until one lands in a zone:
+# on the emulator's 2026-09-13 photo the centre line at 40–60 % sat on the eyes,
+# nostrils and philtrum, all excluded, while 32%,28% (forehead) and 12%,58% (cheek) hit.
+appId: com.dinh144.skinsense
+---
+- launchApp
+- tapOn: "Tonight's photo"
+- tapOn: "Take photo"
+- extendedWaitUntil:
+    visible:
+      text: "Save.*"
+    timeout: 15000
+- tapOn:
+    text: "Save.*"
+- tapOn: "Mark spots"
+- extendedWaitUntil:
+    visible: "No spots yet.*"
+    timeout: 20000
+- tapOn:
+    id: "photo-canvas"
+    point: "50%,30%"
+- runFlow:
+    when:
+      notVisible: "1 spot marked.*"
+    commands:
+      - tapOn:
+          id: "photo-canvas"
+          point: "50%,50%"
+- runFlow:
+    when:
+      notVisible: "1 spot marked.*"
+    commands:
+      - tapOn:
+          id: "photo-canvas"
+          point: "25%,55%"
+- assertVisible: "1 spot marked.*"
+- tapOn: "Save"
+- assertVisible: "Saved"
