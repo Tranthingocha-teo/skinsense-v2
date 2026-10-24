@@ -1,0 +1,26 @@
+diff --git a/src/views/Camera.tsx b/src/views/Camera.tsx
+index 716e71f63d372e5c8b71ddda9a2b267e72db7b22..e5a5709b74bd8e2f90ac864478564448e35c5e89 100644
+--- a/src/views/Camera.tsx
++++ b/src/views/Camera.tsx
+@@ -92,12 +92,15 @@ export function Camera( {
+     const camera = cameraRef.current
+     if ( camera?.preview == null ) return
+ 
+-    onFacesDetected(
+-      transformFacesToPreviewCoordinates(
+-        faces,
+-        camera
+-      )
+-    )
++    // skinsense patch: convertCameraPointToViewPoint throws "PreviewView isn't
++    // ready yet" for frames that arrive while the preview (re)mounts; drop them.
++    let transformed: Parameters<typeof onFacesDetected>[ 0 ]
++    try {
++      transformed = transformFacesToPreviewCoordinates( faces, camera )
++    } catch {
++      return
++    }
++    onFacesDetected( transformed )
+   }, [
+     autoMode,
+     onFacesDetected

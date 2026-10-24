@@ -1,0 +1,22 @@
+node_modules
+.turbo
+.next
+.expo
+dist
+*.log
+.env*
+!.env.example
+.claude/
+.agents/
+mpbench/photos/
+apps/mobile/android/
+apps/mobile/ios/
+.vercel
+.playwright-mcp/
+graphify-out/
+
+# signing material
+*.jks
+*.keystore
+*.p12
+*.pem

@@ -1,0 +1,21 @@
+{
+  "name": "skinsense-v2",
+  "private": true,
+  "packageManager": "bun@1.4.0",
+  "workspaces": ["apps/*", "packages/*", "mpbench"],
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "test": "turbo test"
+  },
+  "devDependencies": {
+    "shadcn": "^4.21.0",
+    "turbo": "^2",
+    "typescript": "^5"
+  },
+  "patchedDependencies": {
+    "react-native-vision-camera-face-detector@2.1.0": "patches/react-native-vision-camera-face-detector@2.1.0.patch"
+  }
+}
