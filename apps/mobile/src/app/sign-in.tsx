@@ -39,7 +39,7 @@ export default function SignInScreen() {
 
   async function tryDemo() {
     await setDemoActive(true);
-    router.replace('/(app)');
+    router.replace('/');
   }
 
   return (
