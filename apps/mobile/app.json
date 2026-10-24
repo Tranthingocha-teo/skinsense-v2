@@ -11,7 +11,7 @@
       "icon": "./assets/expo.icon"
     },
     "android": {
-      "package": "com.dinh144.skinsense",
+      "package": "com.skinsense.app",
       "adaptiveIcon": {
         "backgroundColor": "#A7694C",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -73,11 +73,7 @@
       "reactCompiler": true
     },
     "extra": {
-      "router": {},
-      "eas": {
-        "projectId": "998d1b2e-6785-488a-a14c-3fb292cfdad9"
-      }
-    },
-    "owner": "dinh135s-team"
+      "router": {}
+    }
   }
 }

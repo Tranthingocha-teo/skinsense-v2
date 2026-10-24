@@ -16,7 +16,7 @@ describe('About', () => {
 
   it.each([
     ['Privacy policy', 'https://skinsense-v2.vercel.app/privacy'],
-    ['Source code on GitHub', 'https://github.com/dinh144/skinsense-v2'],
+    ['Source code on GitHub', 'https://github.com/Tranthingocha-teo/skinsense-v2'],
   ])('%s opens in the browser', async (label, url) => {
     await render(<About />);
     await fireEvent.press(screen.getByText(label));

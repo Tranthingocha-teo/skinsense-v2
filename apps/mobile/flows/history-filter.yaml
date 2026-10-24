@@ -2,7 +2,7 @@
 # history.yaml (signed-in session, dev build, device locale en) plus at least one
 # saved photo with a Note and one with the Tag "Short sleep" (add them on Photo
 # detail first). Read-only: only taps filter chips.
-appId: com.dinh144.skinsense
+appId: com.skinsense.app
 ---
 - launchApp
 - tapOn: "Settings"

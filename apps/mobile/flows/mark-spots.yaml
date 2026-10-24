@@ -3,7 +3,7 @@
 # of the camera). Taps walk forehead → centre → cheek until one lands in a zone:
 # on the emulator's 2026-09-13 photo the centre line at 40–60 % sat on the eyes,
 # nostrils and philtrum, all excluded, while 32%,28% (forehead) and 12%,58% (cheek) hit.
-appId: com.dinh144.skinsense
+appId: com.skinsense.app
 ---
 - launchApp
 - tapOn: "Tonight's photo"

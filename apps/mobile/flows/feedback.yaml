@@ -1,7 +1,7 @@
 # Cài đặt → Góp ý → send → confirmation (ticket 20). Writes one feedback row to
 # production Supabase: run only after Dinh approves. Preconditions: signed-in
 # session, dev build, device locale en. Not executed yet.
-appId: com.dinh144.skinsense
+appId: com.skinsense.app
 ---
 - launchApp
 - tapOn: "Settings"

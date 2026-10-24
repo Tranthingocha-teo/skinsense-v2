@@ -5,7 +5,7 @@
 # returns real webcam frames there (unlike expo-camera in ticket 18). The capture →
 # review → retake half ran green on the emulator on 2026-09-13 behind a temporary
 # sign-in bypass; sign-in and save wait for 01b.
-appId: com.dinh144.skinsense
+appId: com.skinsense.app
 ---
 - launchApp
 - tapOn: "Tonight's photo"

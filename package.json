@@ -10,7 +10,8 @@
     "typecheck": "turbo typecheck",
     "test": "turbo test",
     "doctor": "bun run scripts/doctor.ts",
-    "seed": "bun run scripts/seed.ts"
+    "seed": "bun run scripts/seed.ts",
+    "audit:lighthouse": "bun run scripts/lighthouse.ts"
   },
   "devDependencies": {
     "shadcn": "^4.21.0",

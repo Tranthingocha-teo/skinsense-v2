@@ -20,7 +20,7 @@ const LINE = 'border-t border-border';
 const PREVIEW = 5;
 // The web app's public privacy page (same URL as settings.tsx and sign-in.tsx).
 const PRIVACY_URL = 'https://skinsense-v2.vercel.app/privacy';
-const SOURCE_URL = 'https://github.com/dinh144/skinsense-v2';
+const SOURCE_URL = 'https://github.com/Tranthingocha-teo/skinsense-v2';
 
 export function About() {
   const { t } = useTranslation();

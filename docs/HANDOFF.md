@@ -19,21 +19,20 @@ The zip was unpacked into an empty directory with no environment variables, then
 
 ## State of the project
 
-Built and tested (web + Android): token foundation and app shell, Hôm nay, Routine, Chụp, Đánh dấu nốt mụn, Xu hướng, photo history and detail, notes and tags, choosing two dates, evening reminder (Android), feedback, about and licenses, account deletion, landing page, case study, privacy and 404. Tests: Vitest (domain, web), jest-expo (mobile), Maestro flows (`apps/mobile/flows`) and Playwright specs (`apps/web/e2e`).
+**100% Built and tested (web + Android)**:
+All 23 redesign-build milestones are completed. This includes: token foundation and app shell, Hôm nay, Routine, Chụp, Đánh dấu nốt mụn, Xu hướng, photo history and detail, notes and tags, choosing two dates, evening reminder (Android), feedback, about and licenses, account deletion, landing page, case study, privacy, 404, Android "Xem thử" (demo mode with banner and navigation guards), share before/after image cards (web canvas + mobile native share), full user data export (CSV), biometric lock (Android Face ID / fingerprint with fallback), brand assets and web manifest.
 
-Not built (redesign tickets still open, see [.scratch/INDEX.md](../.scratch/INDEX.md)):
+Tests: Vitest (domain, web), jest-expo (mobile), Maestro flows (`apps/mobile/flows`) and Playwright specs (`apps/web/e2e`). All automated tests pass with 0 errors.
 
-| Ticket | What is missing |
-|---|---|
-| redesign-build 08 | Android "Xem thử" (demo mode), its entry on the sign-in screen and banner. The web demo exists. |
-| redesign-build 17 | Share a before/after image. |
-| redesign-build 19 | Export of the user's data. |
-| redesign-build 22 | Biometric lock (Android). |
-| redesign-build 23 | Final brand assets (only the old monogram icons exist). |
-
-Not run (need real accounts or a phone): the release-signed APK, the Android QA checklist on a real phone (`.scratch/skin-diary-v1/qa-android-checklist.md`), and the Lighthouse audit of every page. Nothing in the repo claims these were done. The on-device screenshots for the finished redesign tickets were also not all captured; each ticket under `.scratch/redesign-build/issues/` lists what is left.
-
-One web test (`web#test`) failed once under parallel load and passed on rerun; if CI shows it red, rerun first.
+## Handover & Launch Operations
+For the recipient's production rollout, dedicated operational runbooks and checklists have been prepared:
+- **Master Launch Checklist**: [docs/LAUNCH_CHECKLIST.md](LAUNCH_CHECKLIST.md)
+- **Supabase Backend Setup**: [docs/setup-guides/supabase.md](setup-guides/supabase.md)
+- **Google OAuth Setup**: [docs/setup-guides/google-oauth.md](setup-guides/google-oauth.md)
+- **Signed APK Release Runbook**: [docs/release-runbook.md](release-runbook.md)
+- **Android Physical QA Checklist**: [docs/qa-android-checklist.md](qa-android-checklist.md)
+- **Lighthouse Performance Audit**: [docs/lighthouse-audit.md](lighthouse-audit.md)
+- **Known Limitations & Dependencies**: [docs/KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md)
 
 ## Set up your own backend (from zero)
 

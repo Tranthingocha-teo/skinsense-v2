@@ -1,7 +1,7 @@
 # Trends: 7/30-day toggle and the before/after slider (ticket 13). Same
 # preconditions as capture.yaml (signed-in session, dev build, device locale en)
 # plus at least 2 photos in the last 30 days so the slider renders.
-appId: com.dinh144.skinsense
+appId: com.skinsense.app
 ---
 - launchApp
 - tapOn: "Trends"

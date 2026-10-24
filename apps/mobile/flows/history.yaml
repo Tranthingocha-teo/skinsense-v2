@@ -1,7 +1,7 @@
 # Cài đặt → Photo history → Photo detail (ticket 14). Same preconditions as
 # capture.yaml (signed-in session, dev build, device locale en) plus at least one
 # saved photo. Read-only: the delete dialog is opened and cancelled, never confirmed.
-appId: com.dinh144.skinsense
+appId: com.skinsense.app
 ---
 - launchApp
 - tapOn: "Settings"

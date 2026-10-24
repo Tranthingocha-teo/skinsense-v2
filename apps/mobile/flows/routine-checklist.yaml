@@ -1,7 +1,7 @@
 # Tick → persist → restart → still ticked (ticket 05).
 # Precondition: a signed-in session on the device (mobile Google sign-in is ticket 01b),
 # and a dev build installed (first `expo run:android` is ticket 18). Not executed yet.
-appId: com.dinh144.skinsense
+appId: com.skinsense.app
 ---
 - launchApp
 - tapOn: "Tonight's routine"

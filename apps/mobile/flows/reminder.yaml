@@ -2,8 +2,8 @@
 # Writes nothing to Supabase: the reminder lives in AsyncStorage and local notifications.
 # Preconditions: signed-in session, onboarding done, dev build, reminder off. Texts match
 # both app languages (en | vi). For the prompt to show, notifications must not be granted yet:
-# `adb shell pm revoke com.dinh144.skinsense android.permission.POST_NOTIFICATIONS && adb shell pm clear-permission-flags com.dinh144.skinsense android.permission.POST_NOTIFICATIONS user-set user-fixed`
-appId: com.dinh144.skinsense
+# `adb shell pm revoke com.skinsense.app android.permission.POST_NOTIFICATIONS && adb shell pm clear-permission-flags com.skinsense.app android.permission.POST_NOTIFICATIONS user-set user-fixed`
+appId: com.skinsense.app
 ---
 # launchApp grants every permission unless told otherwise; leave notifications to the prompt.
 - launchApp:

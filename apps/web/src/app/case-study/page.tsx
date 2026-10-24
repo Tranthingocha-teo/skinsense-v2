@@ -3,7 +3,7 @@ import { CanvasIcon, SiteHeader } from "@/components/site-header";
 import { APK_URL } from "@/lib/utils";
 
 const LIVE_URL = "https://skinsense-v2.vercel.app";
-const REPO_URL = "https://github.com/dinh144/skinsense-v2";
+const REPO_URL = "https://github.com/Tranthingocha-teo/skinsense-v2";
 
 const INTRO =
   "SkinSense lets people photograph their skin every night under a guide, mark spots by hand and follow per-zone redness over time, on the web and on Android.";

@@ -1,3 +1,3 @@
 export { cn } from "cn"
 
-export const APK_URL = "https://github.com/dinh144/skinsense-releases/releases/latest/download/skinsense.apk";
+export const APK_URL = "https://github.com/Tranthingocha-teo/skinsense-v2/releases/latest/download/skinsense.apk";
