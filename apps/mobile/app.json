@@ -49,17 +49,35 @@
               {
                 "fontFamily": "Noto Serif Display",
                 "fontDefinitions": [
-                  { "path": "./assets/fonts/NotoSerifDisplay_300Light.ttf", "weight": 300 },
-                  { "path": "./assets/fonts/NotoSerifDisplay_400Regular.ttf", "weight": 400 }
+                  {
+                    "path": "./assets/fonts/NotoSerifDisplay_300Light.ttf",
+                    "weight": 300
+                  },
+                  {
+                    "path": "./assets/fonts/NotoSerifDisplay_400Regular.ttf",
+                    "weight": 400
+                  }
                 ]
               },
               {
                 "fontFamily": "Manrope",
                 "fontDefinitions": [
-                  { "path": "./assets/fonts/Manrope_300Light.ttf", "weight": 300 },
-                  { "path": "./assets/fonts/Manrope_400Regular.ttf", "weight": 400 },
-                  { "path": "./assets/fonts/Manrope_500Medium.ttf", "weight": 500 },
-                  { "path": "./assets/fonts/Manrope_600SemiBold.ttf", "weight": 600 }
+                  {
+                    "path": "./assets/fonts/Manrope_300Light.ttf",
+                    "weight": 300
+                  },
+                  {
+                    "path": "./assets/fonts/Manrope_400Regular.ttf",
+                    "weight": 400
+                  },
+                  {
+                    "path": "./assets/fonts/Manrope_500Medium.ttf",
+                    "weight": 500
+                  },
+                  {
+                    "path": "./assets/fonts/Manrope_600SemiBold.ttf",
+                    "weight": 600
+                  }
                 ]
               }
             ]
@@ -73,7 +91,11 @@
       "reactCompiler": true
     },
     "extra": {
-      "router": {}
-    }
+      "router": {},
+      "eas": {
+        "projectId": "883b2f42-49e6-45fa-87eb-163f2ac70505"
+      }
+    },
+    "owner": "h05"
   }
 }
