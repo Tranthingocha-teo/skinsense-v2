@@ -4,6 +4,7 @@ Skin diary app: capture a face photo with a guide, tap-mark spots, tick tonight'
 
 You need only git, [bun](https://bun.sh), and for the Android app Android Studio. No AI tooling, shell aliases or editor plugins are required.
 
+- **Team Roadmap & GitHub Projects**: [ROADMAP.md](ROADMAP.md) | [Interactive GitHub Board](https://github.com/users/Tranthingocha-teo/projects/2)
 - Start here if you are taking this project over: [docs/HANDOFF.md](docs/HANDOFF.md)
 - Day-to-day commands, repository layout, emulator, Maestro and backend facts: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)
 - Architecture decisions: `docs/adr/`. Research and rationale: `docs/research/` (start with `2026-09-11-landscape-and-decisions.md`).
