@@ -72,13 +72,35 @@ check("Environment Files", () => {
 });
 
 // 3. Supabase Variables
+function readEnvFile(filepath: string): Record<string, string> {
+  if (!fs.existsSync(filepath)) return {};
+  const content = fs.readFileSync(filepath, "utf8");
+  const res: Record<string, string> = {};
+  for (const line of content.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eq = trimmed.indexOf("=");
+    if (eq > 0) {
+      res[trimmed.slice(0, eq).trim()] = trimmed.slice(eq + 1).trim();
+    }
+  }
+  return res;
+}
+
+const webEnvs = { ...readEnvFile(webEnvPath), ...readEnvFile(webEnvLocalPath) };
+const mobileEnvs = readEnvFile(mobileEnvPath);
+
 const supabaseUrl =
   process.env.NEXT_PUBLIC_SUPABASE_URL ||
   process.env.EXPO_PUBLIC_SUPABASE_URL ||
+  webEnvs.NEXT_PUBLIC_SUPABASE_URL ||
+  mobileEnvs.EXPO_PUBLIC_SUPABASE_URL ||
   "";
 const supabaseAnonKey =
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
   process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ||
+  webEnvs.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+  mobileEnvs.EXPO_PUBLIC_SUPABASE_ANON_KEY ||
   "";
 
 check("Supabase Configuration", () => {
