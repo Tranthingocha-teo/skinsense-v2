@@ -1,0 +1,83 @@
+{
+  "expo": {
+    "name": "SkinSense",
+    "slug": "skinsense",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "skinsense",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "icon": "./assets/expo.icon"
+    },
+    "android": {
+      "package": "com.dinh144.skinsense",
+      "adaptiveIcon": {
+        "backgroundColor": "#A7694C",
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.POST_NOTIFICATIONS"
+      ]
+    },
+    "web": {
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#F9F7F2",
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 160
+        }
+      ],
+      "expo-secure-store",
+      "expo-localization",
+      "react-native-fast-tflite",
+      "expo-asset",
+      [
+        "expo-font",
+        {
+          "android": {
+            "fonts": [
+              {
+                "fontFamily": "Noto Serif Display",
+                "fontDefinitions": [
+                  { "path": "./assets/fonts/NotoSerifDisplay_300Light.ttf", "weight": 300 },
+                  { "path": "./assets/fonts/NotoSerifDisplay_400Regular.ttf", "weight": 400 }
+                ]
+              },
+              {
+                "fontFamily": "Manrope",
+                "fontDefinitions": [
+                  { "path": "./assets/fonts/Manrope_300Light.ttf", "weight": 300 },
+                  { "path": "./assets/fonts/Manrope_400Regular.ttf", "weight": 400 },
+                  { "path": "./assets/fonts/Manrope_500Medium.ttf", "weight": 500 },
+                  { "path": "./assets/fonts/Manrope_600SemiBold.ttf", "weight": 600 }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "expo-quick-actions"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "998d1b2e-6785-488a-a14c-3fb292cfdad9"
+      }
+    },
+    "owner": "dinh135s-team"
+  }
+}

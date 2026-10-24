@@ -1,0 +1,1 @@
+Static TTFs from `@expo-google-fonts/noto-serif-display` and `@expo-google-fonts/manrope` 0.4.2 (npm), the weights DESIGN.md uses. Both families are SIL Open Font License 1.1 (https://openfontlicense.org). Embedded on Android by the `expo-font` plugin in `app.json`.
