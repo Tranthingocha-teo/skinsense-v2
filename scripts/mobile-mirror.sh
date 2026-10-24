@@ -2,7 +2,7 @@
 set -e
 
 export ANDROID_HOME="${ANDROID_HOME:-/home/tranthingocha/Android/Sdk}"
-export PATH="$ANDROID_HOME/platform-tools:$PATH"
+export PATH="$HOME/.local/bin:$ANDROID_HOME/platform-tools:$PATH"
 
 # Check if scrcpy is installed
 if ! command -v scrcpy &> /dev/null; then
@@ -18,8 +18,6 @@ DEVICE=$(adb devices | grep -w "device" | grep -v ":" | awk '{print $1}' | head 
 
 if [ -n "$DEVICE" ]; then
   echo "✅ Đã tìm thấy thiết bị qua USB: $DEVICE"
-  # Tự động kích hoạt cổng TCP/IP cho Wi-Fi phòng khi rút cáp
-  adb -s "$DEVICE" tcpip 5555 >/dev/null 2>&1 || true
   TARGET_SERIAL="$DEVICE"
 else
   # 2. Thử kết nối không dây qua Wi-Fi nếu không cắm cáp
@@ -48,5 +46,4 @@ exec scrcpy \
   --window-title="SkinSense Mobile" \
   --window-width=380 \
   --window-height=820 \
-  --stay-awake \
-  --power-off-on-close=false
+  --stay-awake
