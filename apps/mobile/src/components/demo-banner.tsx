@@ -1,5 +1,4 @@
 import { router } from 'expo-router';
-import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -7,7 +6,6 @@ import { Spacing } from '@/constants/theme';
 import { resetDemoData, setDemoActive, useDemoActive } from '@/lib/demo';
 
 export function DemoBanner() {
-  const { t } = useTranslation();
   const isDemo = useDemoActive();
 
   if (!isDemo) return null;

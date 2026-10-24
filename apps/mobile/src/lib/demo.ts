@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 const DEMO_ACTIVE_KEY = 'skinsense_demo_active';
 const DEMO_STORED_KEY = 'skinsense_demo_data';
 
-type StoredDemoData = {
+export type StoredDemoData = {
   items?: any[];
   entries: Record<string, any>;
   spots?: Record<string, any[]>;

@@ -10,8 +10,8 @@ import { Text } from '@/components/ui/text';
 export function MobileShareCompare({
   beforeDate,
   afterDate,
-  beforeUrl,
-  afterUrl,
+  beforeUrl: _beforeUrl,
+  afterUrl: _afterUrl,
 }: {
   beforeDate: string;
   afterDate: string;

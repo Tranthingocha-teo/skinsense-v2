@@ -4,7 +4,7 @@ import { useFormatter, useTranslations } from "next-intl";
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerDescription, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import { Switch } from "@/components/ui/switch";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -44,7 +44,7 @@ export function ShareCompare({
 
     // Load before & after images
     const loadImg = (url: string) =>
-      new Promise<HTMLImageElement>((resolve, reject) => {
+      new Promise<HTMLImageElement>((resolve) => {
         const img = new Image();
         img.crossOrigin = "anonymous";
         img.onload = () => resolve(img);

@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { ShareCompare } from "./share-compare";
 import messages from "../../messages/en.json";
 
