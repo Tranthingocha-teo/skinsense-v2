@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 import { Trends } from '@/components/trends';
+import { useDemoActive } from '@/lib/demo';
 
 // Canvas AndroidTrends: the night tint from Hôm nay, shallower (the photo lives in the compare card),
 // under the status bar (SVG: the NativeWind tokens are HSL vars, gradients need hex).
@@ -31,10 +32,11 @@ function NightTint() {
 export default function TrendsScreen() {
   // Tabs stay mounted; remounting on focus reloads data a new capture changed.
   const focused = useIsFocused();
+  const isDemo = useDemoActive();
   return (
     <View className="flex-1 bg-background">
       <NightTint />
-      <SafeAreaView edges={['top']} style={{ flex: 1 }}>
+      <SafeAreaView edges={isDemo ? [] : ['top']} style={{ flex: 1 }}>
         {focused && <Trends />}
       </SafeAreaView>
     </View>

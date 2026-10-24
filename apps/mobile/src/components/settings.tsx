@@ -25,6 +25,7 @@ import { Text } from '@/components/ui/text';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { LANGUAGE_KEY } from '@/i18n';
 import { useSession } from '@/lib/auth';
+import { useDemoActive } from '@/lib/demo';
 import { formatTime, useReminder, WEEK } from '@/lib/reminder';
 import { supabase } from '@/lib/supabase';
 
@@ -238,10 +239,12 @@ function ExportRow() {
 export function Settings() {
   const { t, i18n } = useTranslation();
   const session = useSession();
+  const isDemo = useDemoActive();
   const palette = usePalette();
   // Google puts the display name in user_metadata (full_name, or name on some accounts) and the avatar in picture.
   const meta = session?.user.user_metadata as { full_name?: string; name?: string; picture?: string } | undefined;
-  const name = meta?.full_name ?? meta?.name;
+  const name = isDemo ? 'Người dùng thử nghiệm' : (meta?.full_name ?? meta?.name);
+  const email = isDemo ? 'demo@skinsense.app' : session?.user.email;
   const reminder = useReminder();
   const time = formatTime(reminder);
   const reminderSummary = !reminder.on
@@ -251,8 +254,8 @@ export function Settings() {
       : t('settings.reminderDays', { time, days: WEEK.filter((d) => reminder.days.includes(d)).map((d) => t(`reminder.day${d}`)).join(', ') });
 
   return (
-    <ScrollView contentContainerClassName="gap-2.5 px-[18px] pb-24 pt-6">
-      <Text role="heading" aria-level="1" className="px-1 pb-3.5 font-display text-[54px] font-light leading-[60px]">
+    <ScrollView contentContainerClassName="gap-2.5 px-[18px] pb-24 pt-4">
+      <Text role="heading" aria-level="1" className="px-1 pb-3 font-display text-[50px] font-light leading-[56px]">
         {t('settings.title')}
       </Text>
 
@@ -260,7 +263,7 @@ export function Settings() {
         <Avatar uri={meta?.picture} />
         <View className="min-w-0 flex-1 gap-0.5">
           {name && <Text className="text-[15.5px] font-medium">{name}</Text>}
-          <Text className="text-[13px] font-light text-muted-foreground">{session?.user.email}</Text>
+          {email && <Text className="text-[13px] font-light text-muted-foreground">{email}</Text>}
         </View>
       </View>
 

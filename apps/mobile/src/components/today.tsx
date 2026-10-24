@@ -25,6 +25,7 @@ import { RoutineChecklist } from '@/components/routine-checklist';
 import { FLAT_TOLERANCE } from '@/components/trends';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
+import { useDemoActive } from '@/lib/demo';
 import { loadTrends, type TrendData } from '@/lib/trends';
 
 // Same derivations as apps/web/src/components/today.tsx; layout from the AndroidToday,
@@ -79,11 +80,12 @@ function Band({ photo }: { photo: boolean }) {
 function Frame({ photo, date, loading = false, children }: { photo: boolean; date: string; loading?: boolean; children: ReactNode }) {
   const { t } = useTranslation();
   const { top } = useSafeAreaInsets();
+  const isDemo = useDemoActive();
   const enter = useEnter();
   return (
     <View className="flex-1">
       <Band photo={photo} />
-      <ScrollView contentContainerClassName="flex-grow gap-3 px-[18px] pb-24" contentContainerStyle={{ paddingTop: top + 24 }} role={loading ? 'status' : undefined}>
+      <ScrollView contentContainerClassName="flex-grow gap-3 px-[18px] pb-32" contentContainerStyle={{ paddingTop: isDemo ? 16 : top + 16 }} role={loading ? 'status' : undefined}>
         <Animated.View entering={enter(0)} className="flex-row items-end justify-between px-1 pb-[18px]">
           <View className="gap-0.5">
             <Text className="text-[11.5px] font-medium uppercase tracking-[1.6px]">{date}</Text>

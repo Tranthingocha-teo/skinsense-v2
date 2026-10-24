@@ -73,9 +73,9 @@ export function CompareDates({
 
   return (
     <>
-      <Pressable role="button" onPress={show} className="-my-3 -mr-2 h-11 flex-row items-center gap-1.5 px-2">
-        <Icon as={CalendarDays} size={16} strokeWidth={1.5} className="text-foreground" />
-        <Text className="text-[13px] font-medium">{t('trends.choose')}</Text>
+      <Pressable role="button" onPress={show} className="-my-3 h-11 flex-row items-center gap-1 px-1.5">
+        <Icon as={CalendarDays} size={15} strokeWidth={1.5} className="text-foreground" />
+        <Text className="text-[12.5px] font-medium">{t('trends.choose')}</Text>
       </Pressable>
       <Modal
         visible={open}

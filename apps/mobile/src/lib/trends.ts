@@ -1,5 +1,7 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Zone } from '@skinsense/domain';
 
+import { getMobileDemoData } from './demo';
 import { fail, type RoutineEntry } from './routine';
 import { supabase } from './supabase';
 
@@ -14,6 +16,17 @@ export type TrendData = {
 
 // Everything the Trends screen shows, from local day `firstDay` ("YYYY-MM-DD") onwards.
 export async function loadTrends(firstDay: string): Promise<TrendData> {
+  const isDemo = (await AsyncStorage.getItem('skinsense_demo_active')) === 'true';
+  if (isDemo) {
+    const demo = getMobileDemoData();
+    return {
+      photos: demo.photos.filter((p) => p.taken_at >= firstDay) as TrendPhoto[],
+      readings: demo.readings as TrendData['readings'],
+      spots: demo.spots as TrendData['spots'],
+      entries: demo.entries.filter((e) => e.night >= firstDay) as RoutineEntry[],
+    };
+  }
+
   const [y, m, d] = firstDay.split('-').map(Number);
   const since = new Date(y, m - 1, d).toISOString();
   const [photos, entries] = await Promise.all([
@@ -38,6 +51,10 @@ export async function loadTrends(firstDay: string): Promise<TrendData> {
 }
 
 export async function signedPhotoUrls(paths: string[]): Promise<string[]> {
+  const isDemo = (await AsyncStorage.getItem('skinsense_demo_active')) === 'true';
+  if (isDemo) {
+    return paths;
+  }
   const { data, error } = await supabase.storage.from('photos').createSignedUrls(paths, 600);
   fail(error);
   return data!.map((d) => d.signedUrl!);

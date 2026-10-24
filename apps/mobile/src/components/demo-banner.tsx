@@ -1,5 +1,6 @@
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
@@ -7,6 +8,7 @@ import { resetDemoData, setDemoActive, useDemoActive } from '@/lib/demo';
 
 export function DemoBanner() {
   const isDemo = useDemoActive();
+  const insets = useSafeAreaInsets();
 
   if (!isDemo) return null;
 
@@ -20,7 +22,7 @@ export function DemoBanner() {
   }
 
   return (
-    <View style={styles.banner}>
+    <View style={[styles.banner, { paddingTop: Math.max(insets.top, 12) + 4 }]}>
       <View style={styles.left}>
         <ThemedText type="smallBold" style={styles.title}>
           Dữ liệu mẫu

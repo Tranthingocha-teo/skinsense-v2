@@ -1,3 +1,5 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getMobileDemoData } from './demo';
 import { supabase } from './supabase';
 
 // Same contract as apps/web/src/lib/routine.ts; only the client differs.
@@ -11,6 +13,13 @@ export function fail(error: { message: string } | null) {
 }
 
 export async function loadRoutine(night: string, defaults: string[]) {
+  const isDemo = (await AsyncStorage.getItem('skinsense_demo_active')) === 'true';
+  if (isDemo) {
+    const demo = getMobileDemoData();
+    const entry = demo.entries.find((e) => e.night === night) || null;
+    return { items: demo.routineItems, entry };
+  }
+
   const [items, entry, entryCount] = await Promise.all([
     supabase.from('routine_items').select(ITEM_COLUMNS).order('position'),
     supabase.from('routine_entries').select('night,completed_labels,item_count').eq('night', night).maybeSingle(),
@@ -62,6 +71,8 @@ export async function swapPositions(a: RoutineItem, b: RoutineItem) {
 
 // One row per (user, night); labels are a snapshot at tick time (ADR 0004).
 export async function saveEntry(night: string, completedLabels: string[], itemCount: number) {
+  const isDemo = (await AsyncStorage.getItem('skinsense_demo_active')) === 'true';
+  if (isDemo) return;
   const { error } = await supabase
     .from('routine_entries')
     .upsert({ night, completed_labels: completedLabels, item_count: itemCount }, { onConflict: 'user_id,night' });

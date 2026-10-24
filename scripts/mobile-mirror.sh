@@ -35,6 +35,9 @@ else
   fi
 fi
 
+# Tự động kết nối port 8081 cho Hot Reload (Fast Refresh)
+adb -s "$TARGET_SERIAL" reverse tcp:8081 tcp:8081 >/dev/null 2>&1 || true
+
 # Tự động khởi chạy app SkinSense
 echo "📱 Đang mở ứng dụng SkinSense..."
 adb -s "$TARGET_SERIAL" shell monkey -p com.skinsense.app -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1 || true
@@ -44,6 +47,6 @@ echo "🚀 Đang khởi động cửa sổ Scrcpy..."
 exec scrcpy \
   --serial="$TARGET_SERIAL" \
   --window-title="SkinSense Mobile" \
-  --window-width=380 \
+  --window-width=376 \
   --window-height=820 \
   --stay-awake

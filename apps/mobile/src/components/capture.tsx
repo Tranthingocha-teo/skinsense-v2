@@ -242,13 +242,13 @@ export function Capture() {
   }
 
   const header = (
-    <View className="flex-row items-center gap-1 pl-2.5 pr-[18px] pt-4">
+    <View className="flex-row items-center gap-1 pl-2.5 pr-[18px] pt-2">
       <Link href="/" asChild>
         <Pressable className="size-11 items-center justify-center" role="button" accessibilityLabel={t('markSpots.back')}>
           <Icon as={ChevronLeft} size={23} strokeWidth={1.5} />
         </Pressable>
       </Link>
-      <Text role="heading" aria-level="1" className="font-display text-[34px] font-light leading-[39px]">
+      <Text role="heading" aria-level="1" className="font-display text-[32px] font-light leading-[38px]">
         {t('capture.title')}
       </Text>
     </View>
@@ -313,20 +313,23 @@ export function Capture() {
 
       {denied ? (
         // Canvas AndroidCameraDenied: the card takes the viewfinder's place.
-        <View accessible role="alert" className={`mx-5 mt-3 aspect-[3/4] items-center justify-center gap-[18px] px-8 ${CARD}`}>
-          <View className="size-16 items-center justify-center rounded-pill border border-foreground/30">
-            <Icon as={CameraOff} size={28} strokeWidth={1.5} />
+        <View className="flex-1 items-center justify-center px-5 py-2">
+          <View accessible role="alert" className={`aspect-[3/4] h-full max-h-[360px] w-full items-center justify-center gap-[18px] px-8 ${CARD}`}>
+            <View className="size-16 items-center justify-center rounded-pill border border-foreground/30">
+              <Icon as={CameraOff} size={28} strokeWidth={1.5} />
+            </View>
+            <Text className="text-center text-[15px] font-light leading-[23px]">{t('capture.privateNote')}</Text>
+            <Pressable role="button" onPress={allowCamera} className={`self-stretch px-3 ${BTN}`}>
+              <Text className="text-[15px] font-medium text-primary-foreground">{t('capture.permission')}</Text>
+            </Pressable>
           </View>
-          <Text className="text-center text-[15px] font-light leading-[23px]">{t('capture.privateNote')}</Text>
-          <Pressable role="button" onPress={allowCamera} className={`self-stretch px-3 ${BTN}`}>
-            <Text className="text-[15px] font-medium text-primary-foreground">{t('capture.permission')}</Text>
-          </Pressable>
         </View>
       ) : (
-        <View
-          className="relative mx-5 mt-3 aspect-[3/4] overflow-hidden rounded-card bg-surface-2"
-          onLayout={(e: LayoutChangeEvent) => setView(e.nativeEvent.layout)}
-        >
+        <View className="flex-1 items-center justify-center px-4 py-1">
+          <View
+            className="relative aspect-[3/4] h-full max-h-[365px] overflow-hidden rounded-card bg-surface-2"
+            onLayout={(e: LayoutChangeEvent) => setView(e.nativeEvent.layout)}
+          >
           {/* The stored JPEG is the raw camera frame (web's mirror rule): the preview
               is mirrored by the camera, the still and the ghost by style only. */}
           {hasPermission && phase !== 'cameraError' && (
@@ -392,6 +395,7 @@ export function Capture() {
             </View>
           )}
         </View>
+        </View>
       )}
 
       {still && (phase === 'review' || phase === 'saving') ? (
@@ -431,27 +435,27 @@ export function Capture() {
           </View>
         </>
       ) : (
-        <>
+        <View className="shrink-0 gap-1.5 pb-2 pt-0.5">
           {!denied && (
-            <View className="gap-1 px-8 pt-4">
-              <Text className="text-center text-[13px] font-light text-muted-foreground">{t('capture.keepDistance')}</Text>
-              <Text className="text-center text-[13px] font-light text-muted-foreground">{t('capture.lightHint')}</Text>
+            <View className="gap-0.5 px-6">
+              <Text className="text-center text-[12px] font-light text-muted-foreground">{t('capture.keepDistance')}</Text>
+              <Text className="text-center text-[12px] font-light text-muted-foreground">{t('capture.lightHint')}</Text>
             </View>
           )}
           {/* Canvas: ring fg/55 around the accent disc; the whole block dims until the camera is ready. */}
-          <View className={`mt-auto items-center gap-2.5 pb-5 ${phase === 'live' ? '' : 'opacity-40'}`}>
+          <View className={`items-center gap-1.5 ${phase === 'live' ? '' : 'opacity-40'}`}>
             <Pressable
               onPress={shutter}
               disabled={phase !== 'live'}
               accessibilityLabel={shutterLabel}
               role="button"
-              className="size-[68px] items-center justify-center rounded-pill border-[1.5px] border-foreground/55"
+              className="size-[64px] items-center justify-center rounded-pill border-[1.5px] border-foreground/55"
             >
-              <View className="size-[54px] rounded-pill bg-primary" />
+              <View className="size-[50px] rounded-pill bg-primary" />
             </Pressable>
-            <Text className="text-[12.5px] font-light text-muted-foreground">{shutterLabel}</Text>
+            <Text className="text-[12px] font-light text-muted-foreground">{shutterLabel}</Text>
           </View>
-        </>
+        </View>
       )}
     </View>
   );

@@ -41,11 +41,11 @@ export function MobileShareCompare({
       <Pressable
         role="button"
         onPress={() => setOpen(true)}
-        className="-my-3 -mr-2 h-11 flex-row items-center gap-1.5 px-2"
+        className="-my-3 h-11 flex-row items-center gap-1 px-1.5"
         accessibilityLabel={t('trends.share')}
       >
-        <Icon as={Share2} size={16} strokeWidth={1.5} className="text-foreground" />
-        <Text className="text-[13px] font-medium">{t('trends.share')}</Text>
+        <Icon as={Share2} size={15} strokeWidth={1.5} className="text-foreground" />
+        <Text className="text-[12.5px] font-medium">{t('trends.share')}</Text>
       </Pressable>
 
       <Modal

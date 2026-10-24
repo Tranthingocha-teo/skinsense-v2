@@ -261,11 +261,11 @@ export function Trends() {
         </View>
       </View>
 
-      <View className={`${CARD} gap-3 p-5 pt-[18px]`}>
-        <View className="flex-row items-center justify-between gap-3">
+      <View className={`${CARD} gap-3 p-4 pt-3.5`}>
+        <View className="flex-row flex-wrap items-center justify-between gap-x-2 gap-y-1">
           <Text className={LABEL}>{t('trends.compare')}</Text>
           {pair && (
-            <View className="flex-row items-center gap-2">
+            <View className="flex-row items-center gap-1.5">
               <MobileShareCompare
                 beforeDate={localDay(new Date(pair.before.taken_at))}
                 afterDate={localDay(new Date(pair.after.taken_at))}

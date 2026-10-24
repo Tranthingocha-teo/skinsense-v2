@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 import { RoutineChecklist } from '@/components/routine-checklist';
+import { useDemoActive } from '@/lib/demo';
 
 // Canvas AndroidRoutine: the night tint carried over from Xu hướng, under the status bar
 // (SVG: the NativeWind tokens are HSL vars, gradients need hex).
@@ -28,11 +29,12 @@ function NightTint() {
 }
 
 export default function RoutineScreen() {
+  const isDemo = useDemoActive();
   // className on SafeAreaView is not interop'd by NativeWind 4; the plain View carries the token.
   return (
     <View className="flex-1 bg-background">
       <NightTint />
-      <SafeAreaView style={{ flex: 1 }}>
+      <SafeAreaView edges={isDemo ? ['bottom', 'left', 'right'] : ['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
         <RoutineChecklist />
       </SafeAreaView>
     </View>
