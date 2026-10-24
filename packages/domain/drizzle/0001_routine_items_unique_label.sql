@@ -1,0 +1,1 @@
+ALTER TABLE "routine_items" ADD CONSTRAINT "routine_items_user_id_label_unique" UNIQUE("user_id","label");
