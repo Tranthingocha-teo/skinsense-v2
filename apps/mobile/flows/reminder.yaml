@@ -1,0 +1,34 @@
+# Cài đặt → Nhắc routine → turn on with the notification permission prompt → off (ticket 18).
+# Writes nothing to Supabase: the reminder lives in AsyncStorage and local notifications.
+# Preconditions: signed-in session, onboarding done, dev build, reminder off. Texts match
+# both app languages (en | vi). For the prompt to show, notifications must not be granted yet:
+# `adb shell pm revoke com.dinh144.skinsense android.permission.POST_NOTIFICATIONS && adb shell pm clear-permission-flags com.dinh144.skinsense android.permission.POST_NOTIFICATIONS user-set user-fixed`
+appId: com.dinh144.skinsense
+---
+# launchApp grants every permission unless told otherwise; leave notifications to the prompt.
+- launchApp:
+    permissions:
+      notifications: unset
+# A cold start loads the dev bundle from Metro.
+- extendedWaitUntil:
+    visible: "Settings|Cài đặt"
+    timeout: 30000
+- tapOn: "Settings|Cài đặt"
+- tapOn: "Evening routine reminder|Nhắc routine buổi tối"
+- assertVisible: "Routine reminder|Nhắc routine"
+- assertVisible:
+    text: "Remind every night|Nhắc mỗi tối"
+    checked: false
+- tapOn: "Remind every night|Nhắc mỗi tối"
+- tapOn:
+    text: "Allow|Cho phép"
+    optional: true
+- assertVisible:
+    text: "Remind every night|Nhắc mỗi tối"
+    checked: true
+- assertVisible: "Tonight's routine|Routine tối nay"
+- assertNotVisible: "Notifications are off for SkinSense|Thông báo đang tắt cho SkinSense"
+- tapOn: "Remind every night|Nhắc mỗi tối"
+- assertVisible:
+    text: "Remind every night|Nhắc mỗi tối"
+    checked: false
