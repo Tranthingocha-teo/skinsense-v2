@@ -25,6 +25,7 @@
       },
       "env": {
         "CI": "1",
+        "NODE_OPTIONS": "--dns-result-order=ipv4first",
         "EXPO_PUBLIC_SUPABASE_URL": "https://gzecjsqnehgrvkgnznec.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd6ZWNqc3FuZWhncnZrZ256bmVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI4MTUxOTAsImV4cCI6MjEwODM5MTE5MH0.ADlTHsMLa8pVVSL7c8zhD6nUpX_wCRvpYFSYBgRf8CE",
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "338000412218-8s7c6pm30gu2t2olitifjk7554s8a2bp.apps.googleusercontent.com",
