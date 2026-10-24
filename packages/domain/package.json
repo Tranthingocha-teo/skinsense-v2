@@ -1,0 +1,22 @@
+{
+  "name": "@skinsense/domain",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "db:generate": "drizzle-kit generate"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.10",
+    "drizzle-kit": "0.31.10",
+    "typescript": "^5",
+    "vitest": "^3"
+  },
+  "dependencies": {
+    "drizzle-orm": "0.45.2"
+  }
+}
