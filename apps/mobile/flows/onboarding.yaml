@@ -1,0 +1,24 @@
+# First-run onboarding: three steps → camera permission → Today (ticket 13). Reads only.
+# Preconditions: a signed-in session, dev build, device locale en, camera not yet granted.
+# clearState would sign the device out, so the flag is reset with
+# `adb shell pm clear com.dinh144.skinsense` only when sign-in can be redone. Not executed yet.
+appId: com.dinh144.skinsense
+---
+- launchApp
+- assertVisible: "A skin diary, one photo a night."
+- tapOn: "Continue"
+- assertVisible: "Same place, same light."
+- tapOn: "Continue"
+- assertVisible: "Private, and not a diagnosis."
+- assertNotVisible: "Skip"
+- tapOn: "Allow"
+- tapOn:
+    text: "While using the app|Only this time|Allow"
+    optional: true
+- assertVisible: "Allowed"
+- tapOn: "Get started"
+- assertVisible: "Tonight's photo"
+- stopApp
+- launchApp
+- assertNotVisible: "A skin diary, one photo a night."
+- assertVisible: "Tonight's photo"
