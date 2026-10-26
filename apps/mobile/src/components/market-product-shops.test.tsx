@@ -31,11 +31,36 @@ describe('MarketProductShops Component', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Đặt Mua Chính Hãng SkinSense')).toBeTruthy();
-      expect(screen.getByText(/La Roche-Posay/i)).toBeTruthy();
+      expect(screen.getAllByText(/La Roche-Posay/i).length).toBeGreaterThanOrEqual(1);
       expect(screen.getByText(/Effaclar Duo\+M/i)).toBeTruthy();
       expect(screen.getByText('100% Chính Hãng')).toBeTruthy();
       expect(screen.getByText('Xác nhận đặt hàng')).toBeTruthy();
       expect(screen.getByText(/Thanh toán khi nhận hàng \(COD\)/)).toBeTruthy();
+      expect(screen.getByText(/Gian Hàng Đang Bán/)).toBeTruthy();
+    });
+  });
+
+  it('supports searching and selecting different shop vendors', async () => {
+    await render(<MarketProductShops productId="lrp-effaclar-duo-m" />);
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('Tìm kiếm shop, khu vực kho (Hà Nội, HCM)...')).toBeTruthy();
+    });
+
+    const searchInput = screen.getByPlaceholderText('Tìm kiếm shop, khu vực kho (Hà Nội, HCM)...');
+    fireEvent.changeText(searchInput, 'Hà Nội');
+
+    await waitFor(() => {
+      expect(screen.getAllByText(/Hà Nội/i).length).toBeGreaterThanOrEqual(1);
+    });
+
+    // Tap 'Xem Shop' button
+    const viewShopBtns = screen.getAllByText('Xem Shop');
+    expect(viewShopBtns.length).toBeGreaterThanOrEqual(1);
+    fireEvent.press(viewShopBtns[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText('Hồ Sơ Gian Hàng Đối Tác')).toBeTruthy();
     });
   });
 

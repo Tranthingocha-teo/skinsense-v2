@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   formatVnd,
   generateVietQrUrl,
+  getListingsForProduct,
+  getShopById,
   INITIAL_LISTINGS,
   INITIAL_SHOPS,
 } from "./marketplace";
@@ -43,5 +45,16 @@ describe("Marketplace Domain Entity & VietQR generator", () => {
     expect(qrUrl).toContain("https://img.vietqr.io/image/MB-999988886666-compact2.png");
     expect(qrUrl).toContain("amount=385000");
     expect(qrUrl).toContain("addInfo=SKINSENSE-ORD-001");
+  });
+
+  it("retrieves shop by id and listings for product", () => {
+    const shop = getShopById("shop-skinsense-official");
+    expect(shop).toBeDefined();
+    expect(shop?.shopName).toBe("SkinSense Official Store");
+    expect(shop?.isOfficial).toBe(true);
+
+    const listings = getListingsForProduct("lrp-effaclar-duo-m");
+    expect(listings.length).toBeGreaterThanOrEqual(2);
+    expect(listings.some((l) => l.shopId === "shop-skinsense-official")).toBe(true);
   });
 });

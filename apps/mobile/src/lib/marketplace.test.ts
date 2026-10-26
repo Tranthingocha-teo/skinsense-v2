@@ -12,6 +12,8 @@ import {
   saveCustomProduct,
   saveListing,
   setCurrentRole,
+  toggleShopOfficial,
+  loadProductShopVendors,
   updateOrderStatus,
   updateShopStatus,
 } from './marketplace';
@@ -146,5 +148,27 @@ describe('Marketplace Storage & Management Service', () => {
     expect(order.shopName).toContain('SkinSense');
     expect(order.totalVnd).toBe(345000);
     expect(order.status).toBe('pending');
+  });
+
+  it('toggles shop official mall badge', async () => {
+    const shops = await loadShops();
+    const targetShop = shops[0];
+    const initialOfficial = targetShop.isOfficial;
+    const toggled = await toggleShopOfficial(targetShop.id);
+    expect(toggled).toBe(!initialOfficial);
+
+    const reloaded = await loadShops();
+    expect(reloaded.find((s) => s.id === targetShop.id)?.isOfficial).toBe(!initialOfficial);
+  });
+
+  it('loads multi-vendor shop options for a product', async () => {
+    const vendors = await loadProductShopVendors('lrp-effaclar-duo-m');
+    expect(vendors.length).toBeGreaterThanOrEqual(2);
+    for (const v of vendors) {
+      expect(v.shop).toBeDefined();
+      expect(v.shop.status).toBe('approved');
+      expect(v.priceVnd).toBeGreaterThan(0);
+      expect(v.priceFormatted).toContain('₫');
+    }
   });
 });

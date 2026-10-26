@@ -564,6 +564,7 @@ function AdminTodayWorkstation({ user, date }: { user: AuthUser; date: string })
 function ShopTodayWorkstation({ user, date }: { user: AuthUser; date: string }) {
   const router = useRouter();
   const enter = useEnter();
+  const isPending = user.shopStatus === 'pending';
 
   return (
     <Frame photo={false} date={date}>
@@ -583,14 +584,35 @@ function ShopTodayWorkstation({ user, date }: { user: AuthUser; date: string }) 
               </Text>
             </View>
           </View>
-          <View className="flex-row items-center gap-1.5 rounded-pill border border-amber-500/30 bg-amber-500/10 px-2.5 py-1">
-            <View className="size-2 rounded-full bg-amber-400" />
-            <Text className="text-[11px] font-medium text-amber-400">Mở bán</Text>
-          </View>
+          {isPending ? (
+            <View className="flex-row items-center gap-1.5 rounded-pill border border-warning/40 bg-warning/15 px-2.5 py-1">
+              <Icon as={Clock} size={12} className="text-warning" />
+              <Text className="text-[11px] font-semibold text-warning">Chờ duyệt</Text>
+            </View>
+          ) : (
+            <View className="flex-row items-center gap-1.5 rounded-pill border border-amber-500/30 bg-amber-500/10 px-2.5 py-1">
+              <View className="size-2 rounded-full bg-amber-400" />
+              <Text className="text-[11px] font-medium text-amber-400">Mở bán</Text>
+            </View>
+          )}
         </View>
         <Text className="text-[13px] text-muted-foreground">
           Chủ gian hàng: {user.fullName} • SĐT: {user.phoneNumber}
         </Text>
+
+        {isPending && (
+          <View className="rounded-control bg-warning/15 border border-warning/30 p-3.5 gap-1.5">
+            <View className="flex-row items-center gap-2">
+              <Icon as={Clock} size={16} className="text-warning" />
+              <Text className="text-[13px] font-bold text-warning">
+                Hồ sơ gian hàng đang chờ Admin SkinSense duyệt
+              </Text>
+            </View>
+            <Text className="text-[12px] text-muted-foreground leading-4">
+              Sau khi được Admin phê duyệt, gian hàng sẽ được mở bán chính thức trên sàn Shopee Mall và hiển thị cho khách mua.
+            </Text>
+          </View>
+        )}
       </Animated.View>
 
       {/* Shop Metrics */}

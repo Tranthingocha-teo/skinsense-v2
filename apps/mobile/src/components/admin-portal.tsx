@@ -2,6 +2,8 @@ import {
   formatVnd,
   type Order,
   type OrderStatus,
+  type Shop,
+  type ShopStatus,
   type SkinConditionClass,
   type Zone,
 } from '@skinsense/domain';
@@ -16,7 +18,9 @@ import {
   Clock,
   CreditCard,
   DollarSign,
+  MapPin,
   Package,
+  Phone,
   Plus,
   QrCode,
   RefreshCw,
@@ -24,9 +28,12 @@ import {
   ShieldCheck,
   ShoppingBag,
   Sparkles,
+  Star,
+  Store,
   Tag,
   Trash2,
   Truck,
+  User,
   Users,
   X,
   XCircle,
@@ -49,10 +56,14 @@ import {
   deleteCustomProduct,
   loadAllStoreProducts,
   loadOrders,
+  loadShops,
+  registerShop,
   saveCustomProduct,
   type StoreProduct,
   toggleProductActive,
+  toggleShopOfficial,
   updateOrderStatus,
+  updateShopStatus,
 } from '@/lib/marketplace';
 
 const PRESET_IMAGES = [
@@ -80,11 +91,13 @@ export function AdminPortal() {
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<StoreProduct[]>([]);
+  const [shops, setShops] = useState<Shop[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Tabs: 'orders' | 'products' | 'analytics'
-  const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'analytics'>('orders');
+  // Tabs: 'orders' | 'products' | 'shops' | 'analytics'
+  const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'shops' | 'analytics'>('orders');
   const [orderFilter, setOrderFilter] = useState<'all' | OrderStatus>('all');
+  const [shopFilter, setShopFilter] = useState<'all' | ShopStatus>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
   // Add Product Modal
@@ -98,15 +111,25 @@ export function AdminPortal() {
   const [newProdImage, setNewProdImage] = useState(PRESET_IMAGES[0].url);
   const [savingProduct, setSavingProduct] = useState(false);
 
+  // Add Shop Modal
+  const [showAddShopModal, setShowAddShopModal] = useState(false);
+  const [newShopName, setNewShopName] = useState('');
+  const [newOwnerName, setNewOwnerName] = useState('');
+  const [newShopPhone, setNewShopPhone] = useState('');
+  const [newShopAddress, setNewShopAddress] = useState('');
+  const [savingShop, setSavingShop] = useState(false);
+
   async function refreshData() {
     setLoading(true);
     try {
-      const [allOrders, allProducts] = await Promise.all([
+      const [allOrders, allProducts, allShops] = await Promise.all([
         loadOrders(),
         loadAllStoreProducts(),
+        loadShops(),
       ]);
       setOrders(allOrders);
       setProducts(allProducts);
+      setShops(allShops);
     } finally {
       setLoading(false);
     }
@@ -115,6 +138,69 @@ export function AdminPortal() {
   useEffect(() => {
     void refreshData();
   }, []);
+
+  async function handleApproveShop(shopId: string, shopName: string) {
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    await updateShopStatus(shopId, 'approved');
+    Alert.alert('Đã duyệt mở bán', `Gian hàng "${shopName}" đã được phê duyệt và mở bán chính thức trên sàn Shopee Mall.`);
+    await refreshData();
+  }
+
+  async function handleRejectShop(shopId: string, shopName: string) {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    await updateShopStatus(shopId, 'rejected');
+    Alert.alert('Đã khóa gian hàng', `Gian hàng "${shopName}" đã bị từ chối / tạm khóa hoạt động.`);
+    await refreshData();
+  }
+
+  async function handleToggleShopMall(shopId: string) {
+    void Haptics.selectionAsync().catch(() => {});
+    const isNowOfficial = await toggleShopOfficial(shopId);
+    Alert.alert(
+      isNowOfficial ? 'Đã cấp Shopee Mall' : 'Đã gỡ Shopee Mall',
+      isNowOfficial
+        ? 'Gian hàng đã được gắn huy hiệu Shopee Mall chính hãng.'
+        : 'Gian hàng đã chuyển về shop tiêu chuẩn.',
+    );
+    await refreshData();
+  }
+
+  async function handleCreateNewShop() {
+    if (!newShopName.trim()) {
+      Alert.alert('Thiếu thông tin', 'Vui lòng nhập tên gian hàng');
+      return;
+    }
+    if (!newOwnerName.trim()) {
+      Alert.alert('Thiếu thông tin', 'Vui lòng nhập tên chủ gian hàng');
+      return;
+    }
+    if (!newShopPhone.trim()) {
+      Alert.alert('Thiếu thông tin', 'Vui lòng nhập số điện thoại');
+      return;
+    }
+
+    setSavingShop(true);
+    try {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      await registerShop({
+        shopName: newShopName.trim(),
+        ownerName: newOwnerName.trim(),
+        phone: newShopPhone.trim(),
+        address: newShopAddress.trim() || 'Hà Nội',
+      });
+      setShowAddShopModal(false);
+      setNewShopName('');
+      setNewOwnerName('');
+      setNewShopPhone('');
+      setNewShopAddress('');
+      Alert.alert('Thành công', 'Đã tạo gian hàng mới. Gian hàng đang ở trạng thái Chờ duyệt.');
+      await refreshData();
+    } catch {
+      Alert.alert('Lỗi', 'Không thể tạo gian hàng. Vui lòng thử lại.');
+    } finally {
+      setSavingShop(false);
+    }
+  }
 
   async function handleUpdateOrderStatus(orderId: string, newStatus: OrderStatus) {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
@@ -209,6 +295,25 @@ export function AdminPortal() {
     return true;
   });
 
+  // Shops Metrics & Filtering
+  const pendingShops = shops.filter((s) => s.status === 'pending');
+  const approvedShops = shops.filter((s) => s.status === 'approved');
+  const rejectedShops = shops.filter((s) => s.status === 'rejected');
+
+  const filteredShops = shops.filter((s) => {
+    if (shopFilter !== 'all' && s.status !== shopFilter) return false;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      return (
+        s.shopName.toLowerCase().includes(q) ||
+        s.ownerName.toLowerCase().includes(q) ||
+        s.phone.includes(q) ||
+        s.address.toLowerCase().includes(q)
+      );
+    }
+    return true;
+  });
+
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: top, paddingBottom: bottom }}>
       {/* Header */}
@@ -279,17 +384,22 @@ export function AdminPortal() {
 
       {/* Tabs Selector */}
       <View className="px-4 py-2">
-        <View className="flex-row rounded-control border border-border bg-surface-1 p-1">
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: 6 }}
+          className="rounded-control border border-border bg-surface-1 p-1"
+        >
           <Pressable
             role="tab"
             accessibilityState={{ selected: activeTab === 'orders' }}
             onPress={() => setActiveTab('orders')}
-            className={`flex-1 flex-row items-center justify-center gap-1.5 py-2 rounded-control ${
+            className={`px-3 py-2 rounded-control flex-row items-center gap-1.5 ${
               activeTab === 'orders' ? 'bg-card border border-border' : ''
             }`}
           >
             <Text
-              className={`text-[13px] font-medium ${
+              className={`text-[12.5px] font-medium ${
                 activeTab === 'orders' ? 'text-primary font-semibold' : 'text-muted-foreground'
               }`}
             >
@@ -304,12 +414,12 @@ export function AdminPortal() {
             role="tab"
             accessibilityState={{ selected: activeTab === 'products' }}
             onPress={() => setActiveTab('products')}
-            className={`flex-1 py-2 rounded-control items-center justify-center ${
+            className={`px-3 py-2 rounded-control items-center justify-center ${
               activeTab === 'products' ? 'bg-card border border-border' : ''
             }`}
           >
             <Text
-              className={`text-[13px] font-medium ${
+              className={`text-[12.5px] font-medium ${
                 activeTab === 'products' ? 'text-primary font-semibold' : 'text-muted-foreground'
               }`}
             >
@@ -319,21 +429,41 @@ export function AdminPortal() {
 
           <Pressable
             role="tab"
+            accessibilityState={{ selected: activeTab === 'shops' }}
+            onPress={() => setActiveTab('shops')}
+            className={`px-3 py-2 rounded-control flex-row items-center gap-1.5 ${
+              activeTab === 'shops' ? 'bg-card border border-border' : ''
+            }`}
+          >
+            <Text
+              className={`text-[12.5px] font-medium ${
+                activeTab === 'shops' ? 'text-primary font-semibold' : 'text-muted-foreground'
+              }`}
+            >
+              Duyệt Shop ({shops.length})
+            </Text>
+            {pendingShops.length > 0 && (
+              <View className="size-2 rounded-pill bg-destructive" />
+            )}
+          </Pressable>
+
+          <Pressable
+            role="tab"
             accessibilityState={{ selected: activeTab === 'analytics' }}
             onPress={() => setActiveTab('analytics')}
-            className={`flex-1 py-2 rounded-control items-center justify-center ${
+            className={`px-3 py-2 rounded-control items-center justify-center ${
               activeTab === 'analytics' ? 'bg-card border border-border' : ''
             }`}
           >
             <Text
-              className={`text-[13px] font-medium ${
+              className={`text-[12.5px] font-medium ${
                 activeTab === 'analytics' ? 'text-primary font-semibold' : 'text-muted-foreground'
               }`}
             >
               Báo cáo doanh số
             </Text>
           </Pressable>
-        </View>
+        </ScrollView>
       </View>
 
       {/* Search Input */}
@@ -347,6 +477,8 @@ export function AdminPortal() {
               placeholder={
                 activeTab === 'orders'
                   ? 'Tìm theo tên khách, SĐT, mã đơn...'
+                  : activeTab === 'shops'
+                  ? 'Tìm shop theo tên, chủ shop, SĐT...'
                   : 'Tìm sản phẩm theo tên hoặc hãng...'
               }
               placeholderTextColor="#888"
@@ -683,7 +815,259 @@ export function AdminPortal() {
             </>
           )}
 
-          {/* TAB 3: ANALYTICS */}
+          {/* TAB 3: SHOPS APPROVAL & MANAGEMENT */}
+          {activeTab === 'shops' && (
+            <>
+              {/* Add New Shop Button */}
+              <Pressable
+                role="button"
+                onPress={() => setShowAddShopModal(true)}
+                className="h-12 flex-row items-center justify-center gap-2 rounded-control bg-primary active:opacity-90 shadow-sm"
+              >
+                <Icon as={Plus} size={18} className="text-primary-foreground" />
+                <Text className="text-[15px] font-semibold text-primary-foreground">
+                  + Tạo Shop Bán Hàng Mới
+                </Text>
+              </Pressable>
+
+              {/* Shop Status Filter Chips */}
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: 8, paddingBottom: 4 }}
+              >
+                {(
+                  [
+                    { id: 'all', label: `Tất cả (${shops.length})` },
+                    { id: 'pending', label: `Chờ duyệt (${pendingShops.length})` },
+                    { id: 'approved', label: `Đang bán (${approvedShops.length})` },
+                    { id: 'rejected', label: `Đã khóa (${rejectedShops.length})` },
+                  ] as const
+                ).map((f) => (
+                  <Pressable
+                    key={f.id}
+                    role="button"
+                    onPress={() => setShopFilter(f.id)}
+                    className={`rounded-pill px-3 py-1.5 border ${
+                      shopFilter === f.id
+                        ? 'border-primary bg-primary/10'
+                        : 'border-border bg-surface-1'
+                    }`}
+                  >
+                    <Text
+                      className={`text-[12px] ${
+                        shopFilter === f.id ? 'font-semibold text-primary' : 'text-muted-foreground'
+                      }`}
+                    >
+                      {f.label}
+                    </Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+
+              {/* Pending Alert if any */}
+              {pendingShops.length > 0 && shopFilter !== 'approved' && shopFilter !== 'rejected' && (
+                <View className="rounded-control bg-warning/10 border border-warning/30 p-3 flex-row items-center gap-2.5">
+                  <Icon as={Clock} size={18} className="text-warning" />
+                  <View className="flex-1">
+                    <Text className="text-[13px] font-bold text-warning">
+                      Có {pendingShops.length} hồ sơ gian hàng mới chờ bạn duyệt!
+                    </Text>
+                    <Text className="text-[11.5px] text-muted-foreground">
+                      Duyệt để shop xuất hiện trên sàn Shopee Mall và bắt đầu bán hàng.
+                    </Text>
+                  </View>
+                </View>
+              )}
+
+              {filteredShops.length === 0 ? (
+                <View className="items-center justify-center py-12 rounded-card border border-border bg-card">
+                  <Icon as={Store} size={40} className="text-muted-foreground mb-2" />
+                  <Text className="text-[14px] font-medium text-foreground">
+                    Không có gian hàng nào
+                  </Text>
+                  <Text className="text-[12px] text-muted-foreground">
+                    Danh sách các shop đối tác sẽ hiển thị tại đây.
+                  </Text>
+                </View>
+              ) : (
+                filteredShops.map((s) => {
+                  const shopOrders = orders.filter((o) => o.shopId === s.id);
+                  const shopRevenue = shopOrders
+                    .filter((o) => o.status === 'completed')
+                    .reduce((sum, o) => sum + o.totalVnd, 0);
+
+                  return (
+                    <View
+                      key={s.id}
+                      className="rounded-card border border-border bg-card p-4 gap-3"
+                    >
+                      {/* Shop Header */}
+                      <View className="flex-row items-start justify-between pb-2 border-b border-border">
+                        <View className="flex-row items-center gap-2.5 flex-1 pr-2">
+                          <Image
+                            source={{ uri: s.avatarUrl }}
+                            className="size-11 rounded-pill bg-surface-2 border border-border"
+                            contentFit="cover"
+                          />
+                          <View className="flex-1">
+                            <View className="flex-row items-center gap-1.5 flex-wrap">
+                              <Text className="text-[14.5px] font-bold text-foreground">
+                                {s.shopName}
+                              </Text>
+                              {s.isOfficial ? (
+                                <View className="rounded-pill bg-destructive/15 px-1.5 py-0.5">
+                                  <Text className="text-[10px] font-bold text-destructive uppercase">
+                                    Shopee Mall
+                                  </Text>
+                                </View>
+                              ) : (
+                                <View className="rounded-pill bg-blue-500/15 px-1.5 py-0.5">
+                                  <Text className="text-[10px] font-bold text-blue-500 uppercase">
+                                    Shop Chuẩn
+                                  </Text>
+                                </View>
+                              )}
+                            </View>
+                            <Text className="text-[12px] text-muted-foreground">
+                              Chủ shop: <Text className="font-medium text-foreground">{s.ownerName}</Text> • SĐT: {s.phone}
+                            </Text>
+                          </View>
+                        </View>
+
+                        {/* Status Badge */}
+                        <View
+                          className={`rounded-pill px-2.5 py-1 ${
+                            s.status === 'approved'
+                              ? 'bg-success/15'
+                              : s.status === 'pending'
+                              ? 'bg-warning/15'
+                              : 'bg-destructive/15'
+                          }`}
+                        >
+                          <Text
+                            className={`text-[11px] font-bold uppercase ${
+                              s.status === 'approved'
+                                ? 'text-success'
+                                : s.status === 'pending'
+                                ? 'text-warning'
+                                : 'text-destructive'
+                            }`}
+                          >
+                            {s.status === 'approved'
+                              ? 'Đang Bán'
+                              : s.status === 'pending'
+                              ? 'Chờ Duyệt'
+                              : 'Đã Khóa'}
+                          </Text>
+                        </View>
+                      </View>
+
+                      {/* Shop Details */}
+                      <View className="gap-1.5">
+                        <View className="flex-row items-start gap-1.5">
+                          <Icon as={MapPin} size={13} className="text-muted-foreground mt-0.5" />
+                          <Text className="text-[12px] text-muted-foreground flex-1">
+                            Kho hàng: <Text className="text-foreground">{s.address}</Text>
+                          </Text>
+                        </View>
+                        <View className="flex-row items-center justify-between pt-1">
+                          <Text className="text-[12px] text-muted-foreground">
+                            Đơn hàng: <Text className="font-semibold text-foreground">{shopOrders.length} đơn</Text>
+                          </Text>
+                          <Text className="text-[12px] text-muted-foreground">
+                            Doanh thu shop: <Text className="font-bold text-primary">{formatVnd(shopRevenue)}</Text>
+                          </Text>
+                        </View>
+                      </View>
+
+                      {/* Admin Action Buttons */}
+                      <View className="flex-row items-center gap-2 pt-2 border-t border-border">
+                        {s.status === 'pending' && (
+                          <>
+                            <Pressable
+                              role="button"
+                              onPress={() => handleApproveShop(s.id, s.shopName)}
+                              className="flex-1 h-9 flex-row items-center justify-center gap-1.5 rounded-control bg-success active:opacity-90"
+                            >
+                              <Icon as={CheckCircle2} size={14} className="text-white" />
+                              <Text className="text-[12.5px] font-bold text-white">
+                                Duyệt Mở Bán
+                              </Text>
+                            </Pressable>
+
+                            <Pressable
+                              role="button"
+                              onPress={() => handleRejectShop(s.id, s.shopName)}
+                              className="h-9 px-3 flex-row items-center justify-center gap-1 rounded-control bg-destructive/15 active:opacity-90"
+                            >
+                              <Icon as={XCircle} size={14} className="text-destructive" />
+                              <Text className="text-[12px] font-medium text-destructive">
+                                Từ Chối
+                              </Text>
+                            </Pressable>
+                          </>
+                        )}
+
+                        {s.status === 'approved' && (
+                          <>
+                            <Pressable
+                              role="button"
+                              onPress={() => handleToggleShopMall(s.id)}
+                              className={`flex-1 h-9 flex-row items-center justify-center gap-1.5 rounded-control border ${
+                                s.isOfficial
+                                  ? 'border-destructive/30 bg-destructive/10'
+                                  : 'border-amber-500/30 bg-amber-500/10'
+                              }`}
+                            >
+                              <Icon
+                                as={BadgeCheck}
+                                size={14}
+                                className={s.isOfficial ? 'text-destructive' : 'text-amber-500'}
+                              />
+                              <Text
+                                className={`text-[12px] font-semibold ${
+                                  s.isOfficial ? 'text-destructive' : 'text-amber-500'
+                                }`}
+                              >
+                                {s.isOfficial ? 'Gỡ Shopee Mall' : 'Cấp Shopee Mall'}
+                              </Text>
+                            </Pressable>
+
+                            <Pressable
+                              role="button"
+                              onPress={() => handleRejectShop(s.id, s.shopName)}
+                              className="h-9 px-3 flex-row items-center justify-center gap-1 rounded-control bg-surface-2 active:opacity-80"
+                            >
+                              <Icon as={XCircle} size={13} className="text-muted-foreground" />
+                              <Text className="text-[12px] text-muted-foreground">
+                                Tạm Khóa
+                              </Text>
+                            </Pressable>
+                          </>
+                        )}
+
+                        {s.status === 'rejected' && (
+                          <Pressable
+                            role="button"
+                            onPress={() => handleApproveShop(s.id, s.shopName)}
+                            className="flex-1 h-9 flex-row items-center justify-center gap-1.5 rounded-control bg-primary active:opacity-90"
+                          >
+                            <Icon as={CheckCircle2} size={14} className="text-primary-foreground" />
+                            <Text className="text-[12.5px] font-bold text-primary-foreground">
+                              Mở Lại Hoạt Động
+                            </Text>
+                          </Pressable>
+                        )}
+                      </View>
+                    </View>
+                  );
+                })
+              )}
+            </>
+          )}
+
+          {/* TAB 4: ANALYTICS */}
           {activeTab === 'analytics' && (
             <View className="gap-3">
               <View className="rounded-card border border-border bg-card p-4 gap-3">
@@ -882,6 +1266,118 @@ export function AdminPortal() {
                   ) : (
                     <Text className="text-[14px] font-semibold text-primary-foreground">
                       Lưu & Bày bán ngay
+                    </Text>
+                  )}
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
+
+      {/* Modal: Add New Shop */}
+      {showAddShopModal && (
+        <Modal
+          visible={true}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setShowAddShopModal(false)}
+        >
+          <View className="flex-1 bg-black/60 justify-end">
+            <View
+              style={{ paddingBottom: Math.max(bottom, 28) }}
+              className="w-full max-h-[88%] rounded-t-sheet border-t border-border bg-card p-5"
+            >
+              <View className="flex-row items-center justify-between pb-3 border-b border-border">
+                <View className="flex-row items-center gap-2">
+                  <Icon as={Store} size={18} className="text-primary" />
+                  <Text className="text-[16px] font-bold text-foreground">
+                    + Tạo Shop Bán Hàng Mới
+                  </Text>
+                </View>
+                <Pressable
+                  role="button"
+                  onPress={() => setShowAddShopModal(false)}
+                  className="size-8 items-center justify-center rounded-pill active:bg-surface-2"
+                >
+                  <Icon as={X} size={18} className="text-muted-foreground" />
+                </Pressable>
+              </View>
+
+              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingVertical: 14, gap: 12 }}>
+                <View className="gap-1">
+                  <Text className="text-[12.5px] font-medium text-muted-foreground">
+                    Tên gian hàng / Thương hiệu <Text className="text-destructive">*</Text>
+                  </Text>
+                  <TextInput
+                    value={newShopName}
+                    onChangeText={setNewShopName}
+                    placeholder="Ví dụ: Cocolux Dược Mỹ Phẩm"
+                    placeholderTextColor="#888"
+                    className="h-11 rounded-control border border-border bg-surface-1 px-3 text-[14px] text-foreground"
+                  />
+                </View>
+
+                <View className="gap-1">
+                  <Text className="text-[12.5px] font-medium text-muted-foreground">
+                    Họ tên chủ gian hàng <Text className="text-destructive">*</Text>
+                  </Text>
+                  <TextInput
+                    value={newOwnerName}
+                    onChangeText={setNewOwnerName}
+                    placeholder="Ví dụ: Nguyễn Văn Bình"
+                    placeholderTextColor="#888"
+                    className="h-11 rounded-control border border-border bg-surface-1 px-3 text-[14px] text-foreground"
+                  />
+                </View>
+
+                <View className="gap-1">
+                  <Text className="text-[12.5px] font-medium text-muted-foreground">
+                    Số điện thoại liên hệ <Text className="text-destructive">*</Text>
+                  </Text>
+                  <TextInput
+                    value={newShopPhone}
+                    onChangeText={setNewShopPhone}
+                    placeholder="Ví dụ: 0988665544"
+                    placeholderTextColor="#888"
+                    keyboardType="phone-pad"
+                    className="h-11 rounded-control border border-border bg-surface-1 px-3 text-[14px] text-foreground"
+                  />
+                </View>
+
+                <View className="gap-1">
+                  <Text className="text-[12.5px] font-medium text-muted-foreground">
+                    Địa chỉ kho hàng / Cửa hàng
+                  </Text>
+                  <TextInput
+                    value={newShopAddress}
+                    onChangeText={setNewShopAddress}
+                    placeholder="Ví dụ: 128 Cầu Giấy, Hà Nội"
+                    placeholderTextColor="#888"
+                    className="h-11 rounded-control border border-border bg-surface-1 px-3 text-[14px] text-foreground"
+                  />
+                </View>
+              </ScrollView>
+
+              <View className="flex-row gap-3 pt-3 border-t border-border">
+                <Pressable
+                  role="button"
+                  onPress={() => setShowAddShopModal(false)}
+                  className="flex-1 h-11 items-center justify-center rounded-control border border-border"
+                >
+                  <Text className="text-[14px] font-medium text-foreground">Huỷ</Text>
+                </Pressable>
+                <Pressable
+                  role="button"
+                  disabled={savingShop}
+                  onPress={handleCreateNewShop}
+                  className="flex-1 h-11 items-center justify-center rounded-control bg-primary active:opacity-90"
+                >
+                  {savingShop ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text className="text-[14px] font-semibold text-primary-foreground">
+                      Tạo & Nộp Duyệt
                     </Text>
                   )}
                 </Pressable>

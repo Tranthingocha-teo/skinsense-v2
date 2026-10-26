@@ -80,4 +80,27 @@ describe('AdminPortal Component', () => {
       expect(screen.getByText('Chọn ảnh sản phẩm mẫu')).toBeTruthy();
     });
   });
+
+  it('switches to Duyệt Shop tab and renders shop management controls', async () => {
+    await render(<AdminPortal />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Duyệt Shop/i)).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByText(/Duyệt Shop/i));
+
+    await waitFor(() => {
+      expect(screen.getByText(/\+ Tạo Shop Bán Hàng Mới/i)).toBeTruthy();
+      expect(screen.getAllByText(/La Roche-Posay Official Store/i).length).toBeGreaterThan(0);
+    });
+
+    // Tap + Tạo Shop Bán Hàng Mới
+    fireEvent.press(screen.getByText(/\+ Tạo Shop Bán Hàng Mới/i));
+
+    await waitFor(() => {
+      expect(screen.getByText('Tạo & Nộp Duyệt')).toBeTruthy();
+      expect(screen.getByPlaceholderText(/Cocolux Dược Mỹ Phẩm/i)).toBeTruthy();
+    });
+  });
 });

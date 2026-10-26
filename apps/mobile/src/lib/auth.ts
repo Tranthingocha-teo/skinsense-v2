@@ -21,6 +21,7 @@ export interface AuthUser {
   phoneNumber: string;
   role: UserRole;
   shopName?: string;
+  shopStatus?: 'pending' | 'approved' | 'rejected';
   specialty?: string;
   createdAt: string;
 }
@@ -57,6 +58,7 @@ export const DEFAULT_ACCOUNTS: UserAccount[] = [
     phoneNumber: '0900000003',
     shopName: 'La Roche-Posay Official Store',
     role: 'shop',
+    shopStatus: 'approved',
     createdAt: '2026-01-01T00:00:00.000Z',
   },
   {
@@ -170,12 +172,25 @@ export async function registerAccount(data: {
     phoneNumber: data.phoneNumber.trim(),
     role: data.role,
     shopName: data.role === 'shop' ? (data.shopName?.trim() || 'Gian hàng mới') : undefined,
+    shopStatus: data.role === 'shop' ? 'pending' : undefined,
     specialty: data.role === 'specialist' ? (data.specialty?.trim() || 'Chuyên viên tư vấn da liễu') : undefined,
     createdAt: new Date().toISOString(),
   };
 
   accounts.push(newAccount);
   await saveAccounts(accounts);
+
+  if (data.role === 'shop') {
+    try {
+      const { registerShop } = require('./marketplace');
+      await registerShop({
+        shopName: data.shopName?.trim() || 'Gian hàng mới',
+        ownerName: data.fullName.trim(),
+        phone: data.phoneNumber.trim(),
+        address: 'Hà Nội',
+      });
+    } catch {}
+  }
 
   const { password: _, ...userWithoutPassword } = newAccount;
   await setCurrentUser(userWithoutPassword);

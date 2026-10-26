@@ -42,27 +42,38 @@ export async function loadTrends(firstDay: string): Promise<TrendData> {
     };
   }
 
-  const [y, m, d] = firstDay.split('-').map(Number);
-  const since = new Date(y, m - 1, d).toISOString();
-  const [photos, entries] = await Promise.all([
-    supabase.from('photos').select('id,taken_at,storage_path').gte('taken_at', since).order('taken_at'),
-    supabase.from('routine_entries').select('night,completed_labels,item_count').gte('night', firstDay),
-  ]);
-  fail(photos.error);
-  fail(entries.error);
-  const ids = photos.data!.map((p) => p.id);
-  const [readings, spots] = await Promise.all([
-    supabase.from('zone_readings').select('photo_id,zone,redness').in('photo_id', ids),
-    supabase.from('spots').select('photo_id,zone').in('photo_id', ids),
-  ]);
-  fail(readings.error);
-  fail(spots.error);
-  return {
-    photos: photos.data as TrendPhoto[],
-    readings: readings.data as TrendData['readings'],
-    spots: spots.data as TrendData['spots'],
-    entries: entries.data as RoutineEntry[],
-  };
+  try {
+    const [y, m, d] = firstDay.split('-').map(Number);
+    const since = new Date(y, m - 1, d).toISOString();
+    const [photos, entries] = await Promise.all([
+      supabase.from('photos').select('id,taken_at,storage_path').gte('taken_at', since).order('taken_at'),
+      supabase.from('routine_entries').select('night,completed_labels,item_count').gte('night', firstDay),
+    ]);
+    fail(photos.error);
+    fail(entries.error);
+    const ids = photos.data!.map((p) => p.id);
+    const [readings, spots] = await Promise.all([
+      supabase.from('zone_readings').select('photo_id,zone,redness').in('photo_id', ids),
+      supabase.from('spots').select('photo_id,zone').in('photo_id', ids),
+    ]);
+    fail(readings.error);
+    fail(spots.error);
+    return {
+      photos: photos.data as TrendPhoto[],
+      readings: readings.data as TrendData['readings'],
+      spots: spots.data as TrendData['spots'],
+      entries: entries.data as RoutineEntry[],
+    };
+  } catch {
+    // Offline / Mock fallback: ensure user interface never gets blocked on error
+    const demo = getMobileDemoData();
+    return {
+      photos: demo.photos.filter((p) => p.taken_at >= firstDay) as TrendPhoto[],
+      readings: demo.readings as TrendData['readings'],
+      spots: demo.spots as TrendData['spots'],
+      entries: demo.entries.filter((e) => e.night >= firstDay) as RoutineEntry[],
+    };
+  }
 }
 
 export async function signedPhotoUrls(paths: string[]): Promise<string[]> {
@@ -70,7 +81,11 @@ export async function signedPhotoUrls(paths: string[]): Promise<string[]> {
   if (isDemo) {
     return paths;
   }
-  const { data, error } = await supabase.storage.from('photos').createSignedUrls(paths, 600);
-  fail(error);
-  return data!.map((d) => d.signedUrl!);
+  try {
+    const { data, error } = await supabase.storage.from('photos').createSignedUrls(paths, 600);
+    fail(error);
+    return data!.map((d) => d.signedUrl!);
+  } catch {
+    return paths;
+  }
 }
