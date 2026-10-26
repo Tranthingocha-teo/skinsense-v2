@@ -33,7 +33,10 @@ export async function loadRoutineModel(): Promise<TfliteModel | null> {
   if (cachedModel) return cachedModel;
   if (modelLoadFailed) return null;
   try {
-    cachedModel = await loadTensorflowModel(require('../../assets/models/routine_recommendation.tflite'));
+    cachedModel = await loadTensorflowModel(
+      require('../../assets/models/routine_recommendation.tflite'),
+      [],
+    );
     return cachedModel;
   } catch (error) {
     modelLoadFailed = true;
@@ -67,8 +70,8 @@ export async function predictZoneCondition(
       const featSkinType = skinType / 4.0;
 
       const input = new Float32Array([featZone, featRedness, featUneven, featSpots, featSkinType]);
-      const outputs = await model.run([input]);
-      const confidences = outputs[0] as Float32Array | number[];
+      const outputs = await model.run([input as any]);
+      const confidences = (outputs[0] as unknown as Float32Array | number[]) || [];
 
       let bestIdx = 0;
       let maxConf = -1;
