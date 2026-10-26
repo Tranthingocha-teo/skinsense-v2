@@ -8,9 +8,10 @@ import i18n from '@/i18n';
 import { supabase } from '@/lib/supabase';
 import { Settings } from './settings';
 
+let mockCurrentUser: any = null;
 jest.mock('@/lib/auth', () => ({
   useSession: () => ({ user: { email: 'e2e@skinsense.test', user_metadata: { full_name: 'Test User' } } }),
-  useCurrentUser: () => null,
+  useCurrentUser: () => mockCurrentUser,
   signOut: jest.fn(),
 }));
 jest.mock('@/lib/supabase', () => ({ supabase: { auth: { signOut: jest.fn() }, functions: { invoke: jest.fn() } } }));
@@ -129,9 +130,10 @@ describe('Settings', () => {
   });
 
   it('renders SkinSense boutique and store admin management section', async () => {
+    mockCurrentUser = null; // defaults to customer
     await renderSettings();
     expect(screen.getByText('Cửa Hàng & Quản Trị SkinSense')).toBeTruthy();
     expect(screen.getByText('Đơn mua của tôi')).toBeTruthy();
-    expect(screen.getByText('Quản Trị Cửa Hàng (Admin)')).toBeTruthy();
+    expect(screen.queryByText('Quản Trị Cửa Hàng (Admin)')).toBeNull();
   });
 });

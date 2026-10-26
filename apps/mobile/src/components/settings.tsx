@@ -337,7 +337,7 @@ function MarketplaceSection({ role = 'customer' }: { role?: UserRole }) {
       )}
 
       {/* Admin Store Management */}
-      {(role === 'admin' || role === 'customer') && (
+      {role === 'admin' && (
         <Pressable
           role="button"
           onPress={() => {

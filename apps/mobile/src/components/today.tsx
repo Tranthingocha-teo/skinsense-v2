@@ -659,35 +659,23 @@ function ShopTodayWorkstation({ user, date }: { user: AuthUser; date: string }) 
 }
 
 // =========================================================================
-// MAIN TODAY COMPONENT
+// CUSTOMER WORKSTATION
 // =========================================================================
-export function Today() {
+function CustomerToday() {
   const { t, i18n } = useTranslation();
-  const currentUser = useCurrentUser();
+  const palette = usePalette();
   const enter = useEnter();
   const [today] = useState(() => localDay(new Date()));
   const [data, setData] = useState<TrendData | null>(); // undefined loading, null failed
   const [attempt, retry] = useReducer((n: number) => n + 1, 0);
 
   useEffect(() => {
-    if (currentUser && currentUser.role !== 'customer') return;
-    loadTrends(windowDays(90, today)[0])?.then(setData, () => setData(null));
-  }, [today, attempt, currentUser]);
+    // 90 days in one load: the streaks and the 7-day directions both derive from it.
+    loadTrends(windowDays(90, today)[0]).then(setData, () => setData(null));
+  }, [today, attempt]);
 
   const date = new Date(today).toLocaleDateString(i18n.language, { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
 
-  // Role-based distinct workstations
-  if (currentUser?.role === 'specialist') {
-    return <SpecialistTodayWorkstation user={currentUser} date={date} />;
-  }
-  if (currentUser?.role === 'admin') {
-    return <AdminTodayWorkstation user={currentUser} date={date} />;
-  }
-  if (currentUser?.role === 'shop') {
-    return <ShopTodayWorkstation user={currentUser} date={date} />;
-  }
-
-  // Default customer workstation (Routine AI & Skin Telemetry)
   if (data === undefined) {
     return (
       <Frame photo={false} date={date} loading>
@@ -718,7 +706,7 @@ export function Today() {
       <Animated.View
         entering={enter(1)}
         className={`gap-4 p-5 ${last ? 'rounded-card border' : CARD}`}
-        style={last ? { backgroundColor: `${usePalette().surface}B8`, borderColor: `${usePalette().fg}24` } : undefined}>
+        style={last ? { backgroundColor: `${palette.surface}B8`, borderColor: `${palette.fg}24` } : undefined}>
         <View className="gap-1.5">
           <Text role="heading" aria-level="2" className="font-display text-[28px] font-normal leading-[34px]">
             {tonight ? t('today.tonightSaved') : t('today.noTonight')}
@@ -794,4 +782,27 @@ export function Today() {
       />
     </Frame>
   );
+}
+
+// =========================================================================
+// MAIN TODAY EXPORT
+// =========================================================================
+export function Today() {
+  const currentUser = useCurrentUser();
+  const { i18n } = useTranslation();
+  const date = new Date().toLocaleDateString(i18n.language, { weekday: 'long', day: 'numeric', month: 'long' });
+
+  // Role-based distinct workstations
+  if (currentUser?.role === 'specialist') {
+    return <SpecialistTodayWorkstation user={currentUser} date={date} />;
+  }
+  if (currentUser?.role === 'admin') {
+    return <AdminTodayWorkstation user={currentUser} date={date} />;
+  }
+  if (currentUser?.role === 'shop') {
+    return <ShopTodayWorkstation user={currentUser} date={date} />;
+  }
+
+  // Default customer workstation (Routine AI & Skin Telemetry)
+  return <CustomerToday />;
 }

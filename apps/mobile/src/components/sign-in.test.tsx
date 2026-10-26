@@ -16,7 +16,7 @@ jest.mock('@/lib/supabase', () => ({
 }));
 
 import * as auth from '@/lib/auth';
-import SignInScreen from './sign-in';
+import SignInScreen from '../app/sign-in';
 
 jest.mock('expo-router', () => ({
   router: {
