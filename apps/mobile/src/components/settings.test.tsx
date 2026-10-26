@@ -10,6 +10,8 @@ import { Settings } from './settings';
 
 jest.mock('@/lib/auth', () => ({
   useSession: () => ({ user: { email: 'e2e@skinsense.test', user_metadata: { full_name: 'Test User' } } }),
+  useCurrentUser: () => null,
+  signOut: jest.fn(),
 }));
 jest.mock('@/lib/supabase', () => ({ supabase: { auth: { signOut: jest.fn() }, functions: { invoke: jest.fn() } } }));
 const mocked = supabase as unknown as { auth: { signOut: jest.Mock }; functions: { invoke: jest.Mock } };

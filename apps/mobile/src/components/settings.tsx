@@ -9,6 +9,7 @@ import {
   Package,
   ShieldCheck,
   ShoppingBag,
+  Stethoscope,
   Store,
   X,
 } from 'lucide-react-native';
@@ -30,7 +31,7 @@ import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { exportNotesAndTagsCsv, exportRoutineCsv, exportSpotsCsv, exportZoneReadingsCsv } from '@skinsense/domain';
 import { useBiometricsSetting } from '@/lib/biometrics';
-import { getCurrentRole, setCurrentRole, type UserRole } from '@/lib/marketplace';
+import { getCurrentRole, setCurrentRole } from '@/lib/marketplace';
 
 import { ExternalLink } from '@/components/external-link';
 import {
@@ -45,7 +46,7 @@ import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { LANGUAGE_KEY } from '@/i18n';
-import { useSession } from '@/lib/auth';
+import { signOut, useCurrentUser, useSession, type UserRole } from '@/lib/auth';
 import { useDemoActive } from '@/lib/demo';
 import { formatTime, useReminder, WEEK } from '@/lib/reminder';
 import { supabase } from '@/lib/supabase';
@@ -257,7 +258,7 @@ function ExportRow() {
   );
 }
 
-function MarketplaceSection() {
+function MarketplaceSection({ role = 'customer' }: { role?: UserRole }) {
   const router = useRouter();
 
   return (
@@ -285,28 +286,80 @@ function MarketplaceSection() {
         <Icon as={ChevronRight} size={18} strokeWidth={1.5} className="text-muted-foreground" />
       </Pressable>
 
+      {/* Specialist Consultation */}
+      {role === 'specialist' && (
+        <Pressable
+          role="button"
+          onPress={() => {
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push('/(tabs)' as any);
+          }}
+          className={`${ROW} ${LINE}`}
+        >
+          <View className="flex-row items-center gap-3">
+            <View className="size-8 items-center justify-center rounded-pill bg-emerald-500/10">
+              <Icon as={Stethoscope} size={16} className="text-emerald-500" />
+            </View>
+            <View className="gap-0.5">
+              <Text className="text-[14.5px] font-medium">Hồ Sơ & Tư Vấn Chuyên Viên</Text>
+              <Text className="text-[12px] font-light text-muted-foreground">
+                Quản lý danh sách bệnh nhân & phác đồ điều trị
+              </Text>
+            </View>
+          </View>
+          <Icon as={ChevronRight} size={18} strokeWidth={1.5} className="text-muted-foreground" />
+        </Pressable>
+      )}
+
+      {/* Shop Partner Management */}
+      {role === 'shop' && (
+        <Pressable
+          role="button"
+          onPress={() => {
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push('/shop' as any);
+          }}
+          className={`${ROW} ${LINE}`}
+        >
+          <View className="flex-row items-center gap-3">
+            <View className="size-8 items-center justify-center rounded-pill bg-amber-500/10">
+              <Icon as={Store} size={16} className="text-amber-500" />
+            </View>
+            <View className="gap-0.5">
+              <Text className="text-[14.5px] font-medium">Quản Trị Gian Hàng Của Shop</Text>
+              <Text className="text-[12px] font-light text-muted-foreground">
+                Đăng bán sản phẩm, xử lý đơn shop & doanh thu
+              </Text>
+            </View>
+          </View>
+          <Icon as={ChevronRight} size={18} strokeWidth={1.5} className="text-muted-foreground" />
+        </Pressable>
+      )}
+
       {/* Admin Store Management */}
-      <Pressable
-        role="button"
-        onPress={() => {
-          void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          router.push('/admin' as any);
-        }}
-        className={`${ROW} ${LINE}`}
-      >
-        <View className="flex-row items-center gap-3">
-          <View className="size-8 items-center justify-center rounded-pill bg-purple-500/10">
-            <Icon as={ShieldCheck} size={16} className="text-purple-500" />
+      {(role === 'admin' || role === 'customer') && (
+        <Pressable
+          role="button"
+          onPress={() => {
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push('/admin' as any);
+          }}
+          className={`${ROW} ${LINE}`}
+        >
+          <View className="flex-row items-center gap-3">
+            <View className="size-8 items-center justify-center rounded-pill bg-purple-500/10">
+              <Icon as={ShieldCheck} size={16} className="text-purple-500" />
+            </View>
+            <View className="gap-0.5">
+              <Text className="text-[14.5px] font-medium">Quản Trị Cửa Hàng (Admin)</Text>
+              <Text className="text-[12px] font-light text-muted-foreground">
+                Bán thêm sản phẩm mới, duyệt đơn & doanh thu
+              </Text>
+            </View>
           </View>
-          <View className="gap-0.5">
-            <Text className="text-[14.5px] font-medium">Quản Trị Cửa Hàng (Admin)</Text>
-            <Text className="text-[12px] font-light text-muted-foreground">
-              Bán thêm sản phẩm mới, duyệt đơn & doanh thu
-            </Text>
-          </View>
-        </View>
-        <Icon as={ChevronRight} size={18} strokeWidth={1.5} className="text-muted-foreground" />
-      </Pressable>
+          <Icon as={ChevronRight} size={18} strokeWidth={1.5} className="text-muted-foreground" />
+        </Pressable>
+      )}
     </Group>
   );
 }
@@ -314,12 +367,14 @@ function MarketplaceSection() {
 export function Settings() {
   const { t, i18n } = useTranslation();
   const session = useSession();
+  const currentUser = useCurrentUser();
   const isDemo = useDemoActive();
   const palette = usePalette();
   // Google puts the display name in user_metadata (full_name, or name on some accounts) and the avatar in picture.
-  const meta = session?.user.user_metadata as { full_name?: string; name?: string; picture?: string } | undefined;
-  const name = isDemo ? 'Người dùng thử nghiệm' : (meta?.full_name ?? meta?.name);
-  const email = isDemo ? 'demo@skinsense.app' : session?.user.email;
+  const meta = session?.user.user_metadata as { full_name?: string; name?: string; picture?: string; role?: UserRole } | undefined;
+  const role: UserRole = currentUser?.role ?? meta?.role ?? 'customer';
+  const name = currentUser?.fullName ?? (isDemo ? 'Người dùng thử nghiệm' : (meta?.full_name ?? meta?.name));
+  const email = currentUser?.email ?? (isDemo ? 'demo@skinsense.app' : session?.user.email);
   const reminder = useReminder();
   const time = formatTime(reminder);
   const reminderSummary = !reminder.on
@@ -327,6 +382,24 @@ export function Settings() {
     : reminder.days.length === 7
       ? t('settings.reminderEvery', { time })
       : t('settings.reminderDays', { time, days: WEEK.filter((d) => reminder.days.includes(d)).map((d) => t(`reminder.day${d}`)).join(', ') });
+
+  const roleBadgeText =
+    role === 'admin'
+      ? 'Quản Trị Tối Cao'
+      : role === 'specialist'
+        ? 'Chuyên Viên Da Liễu'
+        : role === 'shop'
+          ? 'Gian Hàng Đối Tác'
+          : 'Khách Hàng (VIP)';
+
+  const roleBadgeColor =
+    role === 'admin'
+      ? 'text-purple-400 bg-purple-500/10 border-purple-500/25'
+      : role === 'specialist'
+        ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/25'
+        : role === 'shop'
+          ? 'text-amber-400 bg-amber-500/10 border-amber-500/25'
+          : 'text-sky-400 bg-sky-500/10 border-sky-500/25';
 
   return (
     <ScrollView contentContainerClassName="gap-2.5 px-[18px] pb-24 pt-4">
@@ -336,13 +409,21 @@ export function Settings() {
 
       <View className={`flex-row items-center gap-3.5 px-[18px] py-3.5 ${CARD}`}>
         <Avatar uri={meta?.picture} />
-        <View className="min-w-0 flex-1 gap-0.5">
-          {name && <Text className="text-[15.5px] font-medium">{name}</Text>}
+        <View className="min-w-0 flex-1 gap-1">
+          <View className="flex-row items-center gap-2">
+            {name && <Text className="text-[15.5px] font-medium">{name}</Text>}
+            <View className={`rounded-pill border px-2 py-0.5 ${roleBadgeColor}`}>
+              <Text className="text-[10px] font-semibold">{roleBadgeText}</Text>
+            </View>
+          </View>
           {email && <Text className="text-[13px] font-light text-muted-foreground">{email}</Text>}
+          {currentUser?.phoneNumber && (
+            <Text className="text-[11.5px] font-light text-muted-foreground">SĐT: {currentUser.phoneNumber}</Text>
+          )}
         </View>
       </View>
 
-      <MarketplaceSection />
+      <MarketplaceSection role={role} />
 
       <Group label={t('settings.display')} className="py-1.5 pl-[18px] pr-1.5">
         <View className={ROW}>
@@ -426,7 +507,14 @@ export function Settings() {
 
       <View className="mt-2.5">
         <Group>
-          <Pressable role="button" onPress={() => supabase.auth.signOut()} className={ROW}>
+          <Pressable
+            role="button"
+            onPress={async () => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              await signOut();
+              await supabase.auth.signOut();
+            }}
+            className={ROW}>
             <Text className="text-[15px]">{t('shell.signOut')}</Text>
           </Pressable>
           <DeleteAccountRow />

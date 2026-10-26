@@ -1,10 +1,41 @@
 import { dailySeries, localDay, rednessShare, streak, trendDirection, windowDays, ZONES } from '@skinsense/domain';
 import { color } from '@skinsense/tokens/tokens.json';
-import { Link } from 'expo-router';
-import { Camera } from 'lucide-react-native';
+import * as Haptics from 'expo-haptics';
+import { Link, useRouter } from 'expo-router';
+import {
+  Activity,
+  AlertCircle,
+  Award,
+  Camera,
+  CheckCircle2,
+  ChevronRight,
+  ClipboardList,
+  Clock,
+  DollarSign,
+  FileText,
+  Package,
+  Plus,
+  Send,
+  ShieldCheck,
+  ShoppingBag,
+  Sparkles,
+  Stethoscope,
+  Store,
+  TrendingUp,
+  User,
+  Users,
+  X,
+} from 'lucide-react-native';
 import { useEffect, useReducer, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, ScrollView, useColorScheme, View } from 'react-native';
+import {
+  Modal,
+  Pressable,
+  ScrollView,
+  TextInput,
+  useColorScheme,
+  View,
+} from 'react-native';
 import Animated, {
   Easing,
   FadeIn,
@@ -26,6 +57,7 @@ import { RoutineChecklist } from '@/components/routine-checklist';
 import { FLAT_TOLERANCE } from '@/components/trends';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
+import { useCurrentUser, type AuthUser } from '@/lib/auth';
 import { useDemoActive } from '@/lib/demo';
 import { loadTrends, type TrendData } from '@/lib/trends';
 
@@ -125,8 +157,6 @@ function StreakCard({ title, days, today, success = false }: { title: string; da
   );
 }
 
-// DESIGN.md zone bar: the hairline under the row is the track, filled to the zone's share of tonight's
-// highest reading over 700ms ease-out cubic, 420ms + 80ms per row after the cards; reduced motion jumps.
 function ZoneBar({ share, good, order }: { share: number; good: boolean; order: number }) {
   const width = useSharedValue(0);
   useEffect(() => {
@@ -158,21 +188,506 @@ function Loading() {
   );
 }
 
+// =========================================================================
+// ROLE 2: CHUYÊN VIÊN DA LIỄU WORKSTATION
+// =========================================================================
+interface PatientCase {
+  id: string;
+  name: string;
+  age: number;
+  timeAgo: string;
+  redness: { forehead: string; leftCheek: string; rightCheek: string; nose: string; chin: string };
+  diagnosis: string;
+  recommendedRoutine: string;
+  urgent?: boolean;
+}
+
+const INITIAL_PATIENTS: PatientCase[] = [
+  {
+    id: 'pt-1',
+    name: 'Trần Thị Ngọc Hà',
+    age: 24,
+    timeAgo: '15 phút trước',
+    redness: { forehead: '-0.8 ↓', leftCheek: '+0.4 ↓', rightCheek: '-0.9 ↓', nose: '+2.9 ↑', chin: '+4.0 ↑' },
+    diagnosis: 'Mụn sưng viêm sưng đỏ vùng cằm & bít tắc lỗ chân lông vùng chữ T',
+    recommendedRoutine: 'Effaclar Duo+M 40ml & Tinh chất B5 phục hồi da',
+    urgent: true,
+  },
+  {
+    id: 'pt-2',
+    name: 'Lê Hoàng Nam',
+    age: 27,
+    timeAgo: '1 giờ trước',
+    redness: { forehead: '+2.5 ↑', leftCheek: '+1.2', rightCheek: '+3.1 ↑', nose: '+0.8', chin: '+1.5' },
+    diagnosis: 'Da dầu mụn kích ứng nhạy cảm, hàng rào bảo vệ suy giảm',
+    recommendedRoutine: 'Centella Ampoule 100ml làm dịu & Gel rửa mặt dịu nhẹ',
+  },
+  {
+    id: 'pt-3',
+    name: 'Đỗ Thu Trang',
+    age: 22,
+    timeAgo: 'Hôm nay',
+    redness: { forehead: '-1.1 ↓', leftCheek: '-0.9 ↓', rightCheek: '-1.2 ↓', nose: '-0.4 ↓', chin: '-0.6 ↓' },
+    diagnosis: 'Nền da phục hồi rất tốt sau phác đồ tuần trước, giảm viêm 80%',
+    recommendedRoutine: 'Routine dưỡng ẩm duy trì & Chống nắng hàng ngày',
+  },
+];
+
+function SpecialistTodayWorkstation({ user, date }: { user: AuthUser; date: string }) {
+  const enter = useEnter();
+  const { bottom } = useSafeAreaInsets();
+  const [patients, setPatients] = useState(INITIAL_PATIENTS);
+  const [activePatient, setActivePatient] = useState<PatientCase | null>(null);
+  const [adviceText, setAdviceText] = useState('');
+  const [selectedProduct, setSelectedProduct] = useState('Effaclar Duo+M Giảm Mụn 40ml');
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!toastMessage) return;
+    const timer = setTimeout(() => setToastMessage(null), 3000);
+    return () => clearTimeout(timer);
+  }, [toastMessage]);
+
+  function handleOpenPrescribe(pt: PatientCase) {
+    setActivePatient(pt);
+    setAdviceText(`Dặn dò bệnh nhân: ${pt.name} cần vệ sinh sạch vùng mũi và cằm, bôi mỏng 2 lần sáng/tối.`);
+  }
+
+  function handleSendPrescription() {
+    if (!activePatient) return;
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setToastMessage(`Đã gửi phác đồ điều trị thành công tới bệnh nhân ${activePatient.name}!`);
+    setActivePatient(null);
+  }
+
+  return (
+    <Frame photo={false} date={date}>
+      {/* Toast */}
+      {toastMessage && (
+        <View className="mb-2 flex-row items-center gap-2 rounded-card border border-emerald-500/30 bg-emerald-500/15 p-3.5">
+          <Icon as={CheckCircle2} size={18} className="text-emerald-500" />
+          <Text className="flex-1 text-[13px] font-medium text-emerald-400">{toastMessage}</Text>
+        </View>
+      )}
+
+      {/* Specialist Header Card */}
+      <Animated.View entering={enter(1)} className={`gap-3 p-5 ${CARD}`}>
+        <View className="flex-row items-center justify-between">
+          <View className="flex-row items-center gap-2">
+            <View className="size-9 items-center justify-center rounded-pill bg-emerald-500/15">
+              <Icon as={Stethoscope} size={18} className="text-emerald-400" />
+            </View>
+            <View>
+              <Text className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">
+                Bác Sĩ / Chuyên Viên Da Liễu
+              </Text>
+              <Text className="text-[17px] font-semibold">{user.fullName}</Text>
+            </View>
+          </View>
+          <View className="flex-row items-center gap-1.5 rounded-pill border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1">
+            <View className="size-2 rounded-full bg-emerald-400" />
+            <Text className="text-[11px] font-medium text-emerald-400">Đang trực tuyến</Text>
+          </View>
+        </View>
+        <Text className="text-[13px] text-muted-foreground">
+          Chuyên khoa: {user.specialty || 'Da liễu & Điều trị mụn chuyên sâu'}
+        </Text>
+      </Animated.View>
+
+      {/* Specialist Quick Metrics */}
+      <Animated.View entering={enter(2)} className="flex-row gap-2.5">
+        <View className={`flex-1 gap-1 p-3.5 ${CARD}`}>
+          <Text className={LABEL}>Bệnh nhân</Text>
+          <Text className="font-display text-[26px]">24</Text>
+          <Text className="text-[11px] text-muted-foreground">đang quản lý</Text>
+        </View>
+        <View className={`flex-1 gap-1 border-amber-500/25 bg-amber-500/5 p-3.5 ${CARD}`}>
+          <Text className={LABEL}>Chờ tư vấn</Text>
+          <Text className="font-display text-[26px] text-amber-400">8 ca</Text>
+          <Text className="text-[11px] text-amber-500/80">hôm nay</Text>
+        </View>
+        <View className={`flex-1 gap-1 p-3.5 ${CARD}`}>
+          <Text className={LABEL}>Phác đồ</Text>
+          <Text className="font-display text-[26px]">18</Text>
+          <Text className="text-[11px] text-muted-foreground">đã gửi tuần này</Text>
+        </View>
+      </Animated.View>
+
+      {/* Patient Queue Section */}
+      <Animated.View entering={enter(3)} className="gap-2.5">
+        <View className="flex-row items-center justify-between px-1 pt-2">
+          <Text className={LABEL}>Hồ sơ da & Yêu cầu tư vấn mới nhất</Text>
+          <Text className="text-[12px] font-medium text-primary">3 hồ sơ</Text>
+        </View>
+
+        {patients.map((pt) => (
+          <View key={pt.id} className={`gap-3 p-4 ${CARD}`}>
+            <View className="flex-row items-start justify-between">
+              <View className="gap-0.5">
+                <View className="flex-row items-center gap-2">
+                  <Text className="text-[15.5px] font-semibold">{pt.name}</Text>
+                  <Text className="text-[13px] text-muted-foreground">({pt.age} tuổi)</Text>
+                  {pt.urgent && (
+                    <View className="rounded-pill bg-rose-500/15 px-2 py-0.5">
+                      <Text className="text-[10px] font-bold text-rose-400">Mới gửi ảnh</Text>
+                    </View>
+                  )}
+                </View>
+                <Text className="text-[11.5px] text-muted-foreground">{pt.timeAgo}</Text>
+              </View>
+            </View>
+
+            {/* Redness telemetry pills */}
+            <View className="rounded-control bg-surface-2/60 p-2.5">
+              <Text className="mb-1 text-[11px] font-semibold text-muted-foreground">
+                Số đo vi diện mẩn đỏ AI:
+              </Text>
+              <View className="flex-row flex-wrap gap-2">
+                <Text className="text-[12px]">Trán: <Text className="font-semibold">{pt.redness.forehead}</Text></Text>
+                <Text className="text-[12px]">Má T: <Text className="font-semibold">{pt.redness.leftCheek}</Text></Text>
+                <Text className="text-[12px]">Má P: <Text className="font-semibold">{pt.redness.rightCheek}</Text></Text>
+                <Text className="text-[12px]">Mũi: <Text className="font-semibold text-rose-400">{pt.redness.nose}</Text></Text>
+                <Text className="text-[12px]">Cằm: <Text className="font-semibold text-rose-400">{pt.redness.chin}</Text></Text>
+              </View>
+            </View>
+
+            <View className="gap-1">
+              <Text className="text-[12.5px] font-medium text-foreground">Chẩn đoán sơ bộ:</Text>
+              <Text className="text-[12.5px] text-muted-foreground">{pt.diagnosis}</Text>
+            </View>
+
+            <View className="gap-1">
+              <Text className="text-[12.5px] font-medium text-emerald-400">Phác đồ gợi ý:</Text>
+              <Text className="text-[12.5px] text-muted-foreground">{pt.recommendedRoutine}</Text>
+            </View>
+
+            <Pressable
+              role="button"
+              onPress={() => handleOpenPrescribe(pt)}
+              className="mt-1 flex-row items-center justify-center gap-2 rounded-control bg-emerald-600/90 py-2.5">
+              <Icon as={FileText} size={15} className="text-white" />
+              <Text className="text-[13.5px] font-semibold text-white">Kê Phác Đồ & Dặn Dò</Text>
+            </Pressable>
+          </View>
+        ))}
+      </Animated.View>
+
+      {/* Modal Prescribe */}
+      <Modal visible={activePatient !== null} animationType="slide" transparent>
+        <View className="flex-1 justify-end bg-black/60">
+          <View
+            style={{ paddingBottom: Math.max(bottom, 24) }}
+            className="max-h-[85%] rounded-t-3xl border-t border-border bg-card p-5">
+            <View className="mb-4 flex-row items-center justify-between">
+              <View>
+                <Text className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">
+                  Kê phác đồ điều trị
+                </Text>
+                <Text className="text-[18px] font-semibold">{activePatient?.name}</Text>
+              </View>
+              <Pressable onPress={() => setActivePatient(null)} className="p-1">
+                <Icon as={X} size={20} className="text-muted-foreground" />
+              </Pressable>
+            </View>
+
+            <ScrollView className="gap-3">
+              <View className="gap-1.5">
+                <Text className="text-[13px] font-medium">Sản phẩm điều trị chỉ định</Text>
+                <View className="flex-row flex-wrap gap-2">
+                  {[
+                    'Effaclar Duo+M Giảm Mụn 40ml',
+                    'Centella Ampoule Rau Má 100ml',
+                    'Serum B5 Tái Tạo Phục Hồi',
+                    'Gel Rửa Mặt Dịu Nhẹ Cân Bằng',
+                  ].map((p) => (
+                    <Pressable
+                      key={p}
+                      onPress={() => setSelectedProduct(p)}
+                      className={`rounded-control border px-3 py-2 ${
+                        selectedProduct === p
+                          ? 'border-emerald-500 bg-emerald-500/15'
+                          : 'border-border bg-surface-2'
+                      }`}>
+                      <Text
+                        className={`text-[12px] ${
+                          selectedProduct === p ? 'font-semibold text-emerald-400' : 'text-foreground'
+                        }`}>
+                        {p}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+
+              <View className="gap-1.5 pt-2">
+                <Text className="text-[13px] font-medium">Chẩn đoán & Lời dặn chuyên khoa *</Text>
+                <TextInput
+                  value={adviceText}
+                  onChangeText={setAdviceText}
+                  multiline
+                  numberOfLines={4}
+                  className="min-h-[100px] rounded-control border border-border bg-surface-2 p-3 text-[13.5px] text-foreground"
+                  placeholder="Nhập hướng dẫn liều dùng, lưu ý chăm sóc da cho bệnh nhân..."
+                  placeholderTextColor="#888"
+                />
+              </View>
+            </ScrollView>
+
+            <View className="mt-4 flex-row gap-3 pt-2">
+              <Pressable
+                onPress={() => setActivePatient(null)}
+                className="flex-1 items-center justify-center rounded-control border border-border py-3">
+                <Text className="text-[14px]">Huỷ</Text>
+              </Pressable>
+              <Pressable
+                onPress={handleSendPrescription}
+                className="flex-1 flex-row items-center justify-center gap-2 rounded-control bg-emerald-600 py-3">
+                <Icon as={Send} size={15} className="text-white" />
+                <Text className="text-[14px] font-semibold text-white">Gửi Cho Bệnh Nhân</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </Frame>
+  );
+}
+
+// =========================================================================
+// ROLE 3: QUẢN LÝ CHUNG HẾT (SUPER ADMIN) WORKSTATION
+// =========================================================================
+function AdminTodayWorkstation({ user, date }: { user: AuthUser; date: string }) {
+  const router = useRouter();
+  const enter = useEnter();
+
+  return (
+    <Frame photo={false} date={date}>
+      {/* Super Admin Header Card */}
+      <Animated.View entering={enter(1)} className={`gap-3 p-5 ${CARD}`}>
+        <View className="flex-row items-center justify-between">
+          <View className="flex-row items-center gap-2">
+            <View className="size-9 items-center justify-center rounded-pill bg-purple-500/15">
+              <Icon as={ShieldCheck} size={18} className="text-purple-400" />
+            </View>
+            <View>
+              <Text className="text-[11px] font-bold uppercase tracking-wider text-purple-400">
+                Quản Trị Viên Tối Cao
+              </Text>
+              <Text className="text-[17px] font-semibold">{user.fullName}</Text>
+            </View>
+          </View>
+          <View className="flex-row items-center gap-1.5 rounded-pill border border-purple-500/30 bg-purple-500/10 px-2.5 py-1">
+            <Text className="text-[11px] font-medium text-purple-400">Toàn quyền</Text>
+          </View>
+        </View>
+        <Text className="text-[13px] text-muted-foreground">
+          Bảng điều khiển trung tâm quản lý toàn bộ hệ sinh thái SkinSense
+        </Text>
+      </Animated.View>
+
+      {/* System Metrics */}
+      <Animated.View entering={enter(2)} className="flex-row flex-wrap gap-2.5">
+        <View className={`flex-1 min-w-[46%] gap-1 p-3.5 ${CARD}`}>
+          <Text className={LABEL}>Doanh thu toàn sàn</Text>
+          <Text className="font-display text-[26px] text-emerald-400">740.000₫</Text>
+          <Text className="text-[11px] text-muted-foreground">2 đơn hoàn tất</Text>
+        </View>
+        <View className={`flex-1 min-w-[46%] gap-1 p-3.5 ${CARD}`}>
+          <Text className={LABEL}>Đơn hàng toàn sàn</Text>
+          <Text className="font-display text-[26px]">2 đơn</Text>
+          <Text className="text-[11px] text-muted-foreground">0 đơn chờ duyệt</Text>
+        </View>
+        <View className={`flex-1 min-w-[46%] gap-1 p-3.5 ${CARD}`}>
+          <Text className={LABEL}>Shop bán hàng</Text>
+          <Text className="font-display text-[26px]">1 shop</Text>
+          <Text className="text-[11px] text-muted-foreground">đang hoạt động</Text>
+        </View>
+        <View className={`flex-1 min-w-[46%] gap-1 p-3.5 ${CARD}`}>
+          <Text className={LABEL}>Chuyên viên tư vấn</Text>
+          <Text className="font-display text-[26px]">1 bác sĩ</Text>
+          <Text className="text-[11px] text-muted-foreground">trực tuyến</Text>
+        </View>
+      </Animated.View>
+
+      {/* System Recent Activities */}
+      <Animated.View entering={enter(3)} className={`gap-3 p-4 ${CARD}`}>
+        <Text className={LABEL}>Hoạt động toàn sàn gần nhất</Text>
+        <View className="gap-2.5">
+          <View className="flex-row items-center justify-between border-b border-border pb-2.5">
+            <View className="gap-0.5">
+              <Text className="text-[13.5px] font-medium">Đơn ORD-405503-9548 (Effaclar Duo+M)</Text>
+              <Text className="text-[11.5px] text-muted-foreground">Khách: Nguyen Van A • COD</Text>
+            </View>
+            <Text className="text-[13.5px] font-bold text-emerald-400">+395.000₫</Text>
+          </View>
+          <View className="flex-row items-center justify-between border-b border-border pb-2.5">
+            <View className="gap-0.5">
+              <Text className="text-[13.5px] font-medium">Đơn ORD-913038-9AAB (Centella Ampoule)</Text>
+              <Text className="text-[11.5px] text-muted-foreground">Khách: Tran Thi Ngoc Ha • COD</Text>
+            </View>
+            <Text className="text-[13.5px] font-bold text-emerald-400">+345.000₫</Text>
+          </View>
+          <View className="flex-row items-center justify-between">
+            <View className="gap-0.5">
+              <Text className="text-[13.5px] font-medium">Sản phẩm mới trong kho</Text>
+              <Text className="text-[11.5px] text-muted-foreground">Serum B5 SkinSense Tái Tạo</Text>
+            </View>
+            <View className="rounded-pill bg-purple-500/15 px-2 py-0.5">
+              <Text className="text-[11px] font-semibold text-purple-400">11 SP</Text>
+            </View>
+          </View>
+        </View>
+      </Animated.View>
+
+      {/* Enter Super Admin Portal Button */}
+      <Animated.View entering={enter(4)}>
+        <Pressable
+          role="button"
+          onPress={() => {
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            router.push('/admin' as any);
+          }}
+          className="h-[52px] flex-row items-center justify-center gap-2.5 rounded-control bg-purple-600">
+          <Icon as={ShieldCheck} size={19} className="text-white" />
+          <Text className="text-[15px] font-semibold text-white">
+            Vào Cổng Quản Trị Hệ Thống (Admin)
+          </Text>
+        </Pressable>
+      </Animated.View>
+    </Frame>
+  );
+}
+
+// =========================================================================
+// ROLE 4: SHOP ĐĂNG KÝ BÁN HÀNG WORKSTATION
+// =========================================================================
+function ShopTodayWorkstation({ user, date }: { user: AuthUser; date: string }) {
+  const router = useRouter();
+  const enter = useEnter();
+
+  return (
+    <Frame photo={false} date={date}>
+      {/* Shop Partner Header Card */}
+      <Animated.View entering={enter(1)} className={`gap-3 p-5 ${CARD}`}>
+        <View className="flex-row items-center justify-between">
+          <View className="flex-row items-center gap-2">
+            <View className="size-9 items-center justify-center rounded-pill bg-amber-500/15">
+              <Icon as={Store} size={18} className="text-amber-400" />
+            </View>
+            <View>
+              <Text className="text-[11px] font-bold uppercase tracking-wider text-amber-400">
+                Gian Hàng Đối Tác
+              </Text>
+              <Text className="text-[17px] font-semibold">
+                {user.shopName || 'Gian Hàng SkinSense Partner'}
+              </Text>
+            </View>
+          </View>
+          <View className="flex-row items-center gap-1.5 rounded-pill border border-amber-500/30 bg-amber-500/10 px-2.5 py-1">
+            <View className="size-2 rounded-full bg-amber-400" />
+            <Text className="text-[11px] font-medium text-amber-400">Mở bán</Text>
+          </View>
+        </View>
+        <Text className="text-[13px] text-muted-foreground">
+          Chủ gian hàng: {user.fullName} • SĐT: {user.phoneNumber}
+        </Text>
+      </Animated.View>
+
+      {/* Shop Metrics */}
+      <Animated.View entering={enter(2)} className="flex-row gap-2.5">
+        <View className={`flex-1 gap-1 p-3.5 ${CARD}`}>
+          <Text className={LABEL}>Doanh thu shop</Text>
+          <Text className="font-display text-[26px] text-amber-400">395.000₫</Text>
+          <Text className="text-[11px] text-muted-foreground">tháng này</Text>
+        </View>
+        <View className={`flex-1 gap-1 p-3.5 ${CARD}`}>
+          <Text className={LABEL}>Đơn cần gói</Text>
+          <Text className="font-display text-[26px]">1 đơn</Text>
+          <Text className="text-[11px] text-muted-foreground">chờ shipper lấy</Text>
+        </View>
+        <View className={`flex-1 gap-1 p-3.5 ${CARD}`}>
+          <Text className={LABEL}>Sản phẩm</Text>
+          <Text className="font-display text-[26px]">10 SP</Text>
+          <Text className="text-[11px] text-muted-foreground">đang bày bán</Text>
+        </View>
+      </Animated.View>
+
+      {/* Shop Orders Feed */}
+      <Animated.View entering={enter(3)} className={`gap-3 p-4 ${CARD}`}>
+        <Text className={LABEL}>Đơn đặt mua từ gian hàng của bạn</Text>
+        <View className="gap-2.5">
+          <View className="flex-row items-center justify-between border-b border-border pb-2.5">
+            <View className="gap-0.5">
+              <Text className="text-[13.5px] font-medium">Effaclar Duo+M Giảm Mụn (x1)</Text>
+              <Text className="text-[11.5px] text-muted-foreground">Mã: ORD-405503-9548 • COD</Text>
+            </View>
+            <View className="items-end">
+              <Text className="text-[13.5px] font-semibold text-amber-400">395.000₫</Text>
+              <Text className="text-[11px] text-emerald-400 font-medium">Đã giao</Text>
+            </View>
+          </View>
+          <View className="flex-row items-center justify-between">
+            <View className="gap-0.5">
+              <Text className="text-[13.5px] font-medium">Madagascar Centella Ampoule (x1)</Text>
+              <Text className="text-[11.5px] text-muted-foreground">Mã: ORD-913038-9AAB • COD</Text>
+            </View>
+            <View className="items-end">
+              <Text className="text-[13.5px] font-semibold text-amber-400">345.000₫</Text>
+              <Text className="text-[11px] text-emerald-400 font-medium">Đã giao</Text>
+            </View>
+          </View>
+        </View>
+      </Animated.View>
+
+      {/* Enter Shop Management Portal Button */}
+      <Animated.View entering={enter(4)}>
+        <Pressable
+          role="button"
+          onPress={() => {
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            router.push('/shop' as any);
+          }}
+          className="h-[52px] flex-row items-center justify-center gap-2.5 rounded-control bg-amber-600">
+          <Icon as={Store} size={19} className="text-white" />
+          <Text className="text-[15px] font-semibold text-white">
+            Quản Trị Gian Hàng & Đăng Bán Sản Phẩm
+          </Text>
+        </Pressable>
+      </Animated.View>
+    </Frame>
+  );
+}
+
+// =========================================================================
+// MAIN TODAY COMPONENT
+// =========================================================================
 export function Today() {
   const { t, i18n } = useTranslation();
-  const palette = usePalette();
+  const currentUser = useCurrentUser();
   const enter = useEnter();
   const [today] = useState(() => localDay(new Date()));
   const [data, setData] = useState<TrendData | null>(); // undefined loading, null failed
   const [attempt, retry] = useReducer((n: number) => n + 1, 0);
 
   useEffect(() => {
-    // 90 days in one load: the streaks and the 7-day directions both derive from it.
-    loadTrends(windowDays(90, today)[0]).then(setData, () => setData(null));
-  }, [today, attempt]);
+    if (currentUser && currentUser.role !== 'customer') return;
+    loadTrends(windowDays(90, today)[0])?.then(setData, () => setData(null));
+  }, [today, attempt, currentUser]);
 
   const date = new Date(today).toLocaleDateString(i18n.language, { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
 
+  // Role-based distinct workstations
+  if (currentUser?.role === 'specialist') {
+    return <SpecialistTodayWorkstation user={currentUser} date={date} />;
+  }
+  if (currentUser?.role === 'admin') {
+    return <AdminTodayWorkstation user={currentUser} date={date} />;
+  }
+  if (currentUser?.role === 'shop') {
+    return <ShopTodayWorkstation user={currentUser} date={date} />;
+  }
+
+  // Default customer workstation (Routine AI & Skin Telemetry)
   if (data === undefined) {
     return (
       <Frame photo={false} date={date} loading>
@@ -203,7 +718,7 @@ export function Today() {
       <Animated.View
         entering={enter(1)}
         className={`gap-4 p-5 ${last ? 'rounded-card border' : CARD}`}
-        style={last ? { backgroundColor: `${palette.surface}B8`, borderColor: `${palette.fg}24` } : undefined}>
+        style={last ? { backgroundColor: `${usePalette().surface}B8`, borderColor: `${usePalette().fg}24` } : undefined}>
         <View className="gap-1.5">
           <Text role="heading" aria-level="2" className="font-display text-[28px] font-normal leading-[34px]">
             {tonight ? t('today.tonightSaved') : t('today.noTonight')}
