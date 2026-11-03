@@ -1,6 +1,7 @@
 import { ZONES } from "@skinsense/domain";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
+import { AuthModal } from "@/components/auth-modal";
 import { ParticleFaceSlot } from "@/components/face/particle-face-loader";
 import { GoogleSignIn } from "@/components/google-sign-in";
 import { LocaleSwitch } from "@/components/locale-switch";
@@ -78,9 +79,10 @@ export function Landing() {
             <span className="hidden md:block">
               <LocaleSwitch />
             </span>
-            <a href="#cta" className={`${btnO} h-11 px-4 text-[13.5px] whitespace-nowrap md:px-[22px] md:text-sm`}>
-              {t("navSignIn")}
-            </a>
+            <AuthModal
+              triggerLabel={t("navSignIn")}
+              triggerClassName={`${btnO} h-11 px-4 text-[13.5px] whitespace-nowrap md:px-[22px] md:text-sm cursor-pointer`}
+            />
           </div>
         </SiteHeader>
         <span className={`relative mx-4 mt-2 self-end md:hidden ${ph}`}>Ảnh · placeholder</span>
@@ -91,6 +93,10 @@ export function Landing() {
           </h1>
           <p className="text-base font-light leading-[1.6] text-pretty md:max-w-[560px] md:text-lg">{t("subtitle")}</p>
           <div id="cta" className="flex flex-col gap-3 md:flex-row md:items-center md:gap-3.5">
+            <AuthModal
+              triggerLabel="Đăng nhập / Đăng ký"
+              triggerClassName={`${btn} md:px-7 cursor-pointer`}
+            />
             <span className="flex min-h-[52px] items-center justify-center">
               <GoogleSignIn locale={locale} />
             </span>
