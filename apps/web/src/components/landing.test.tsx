@@ -20,11 +20,11 @@ function renderLanding() {
 }
 
 describe("Landing", () => {
-  it("offers Google sign-in and Xem thử in the hero", () => {
+  it("offers 1-click entry and Xem thử in the hero", () => {
     renderLanding();
-    expect(screen.getByTestId("google-button")).toBeInTheDocument();
     const demo = screen.getAllByRole("link", { name: "Xem thử, không cần đăng nhập" });
     expect(demo[0]).toHaveAttribute("href", "/demo");
+    expect(screen.getByText("🚀 NHẤP VÀO LÀ VÀO XEM NGAY (1 CHẠM)")).toBeInTheDocument();
   });
 
   it("renders the three stage scenes and the data cards' final values before any motion loads", () => {

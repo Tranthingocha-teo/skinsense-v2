@@ -44,13 +44,17 @@ export {
 export type {
   OrderStatus,
   Order,
+  OrderTrackingEvent,
   PaymentMethod,
   Shop,
   ShopListing,
   ShopStatus,
+  WithdrawalRequest,
 } from "./marketplace";
 export {
+  calculateOrderFinancials,
   formatVnd,
+  generateTrackingTimeline,
   generateVietQrUrl,
   INITIAL_LISTINGS,
   INITIAL_SHOPS,

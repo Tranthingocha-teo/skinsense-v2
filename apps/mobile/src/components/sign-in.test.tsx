@@ -113,4 +113,22 @@ describe('SignInScreen Component', () => {
       expect(router.replace).toHaveBeenCalledWith('/');
     });
   });
+
+  it('displays error feedback when account is blocked or credentials invalid', async () => {
+    (auth.signInWithEmail as jest.Mock).mockRejectedValueOnce(
+      new Error('Tài khoản này đã bị Ban Quản Trị tạm khóa. Vui lòng liên hệ bộ phận hỗ trợ.'),
+    );
+
+    await renderSignIn();
+
+    await fireEvent.changeText(screen.getByPlaceholderText('name@example.com'), 'khachhang@gmail.com');
+    await fireEvent.changeText(screen.getByPlaceholderText('Nhập mật khẩu...'), '123456');
+
+    const signInBtn = screen.getByLabelText('Nút đăng nhập');
+    await fireEvent.press(signInBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText('Tài khoản này đã bị Ban Quản Trị tạm khóa. Vui lòng liên hệ bộ phận hỗ trợ.')).toBeTruthy();
+    });
+  });
 });

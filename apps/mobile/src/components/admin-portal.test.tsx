@@ -36,12 +36,12 @@ describe('AdminPortal Component', () => {
     });
   });
 
-  it('switches between tabs: Đơn hàng, Bán thêm sản phẩm, Báo cáo doanh số', async () => {
+  it('switches between tabs: Đơn hàng, Bán thêm sản phẩm, Tài chính & Ví Shop', async () => {
     await render(<AdminPortal />);
 
     await waitFor(() => {
       expect(screen.getByText(/Bán thêm sản phẩm/i)).toBeTruthy();
-      expect(screen.getByText(/Báo cáo doanh số/i)).toBeTruthy();
+      expect(screen.getByText(/Tài chính & Ví Shop/i)).toBeTruthy();
     });
 
     // Switch to Products tab
@@ -52,11 +52,12 @@ describe('AdminPortal Component', () => {
       expect(screen.getAllByText(/SkinSense Gốc/i).length).toBeGreaterThan(0);
     });
 
-    // Switch to Analytics tab
-    fireEvent.press(screen.getByText(/Báo cáo doanh số/i));
+    // Switch to Finance / Analytics tab
+    fireEvent.press(screen.getByText(/Tài chính & Ví Shop/i));
 
     await waitFor(() => {
-      expect(screen.getByText('Hiệu quả kinh doanh độc quyền')).toBeTruthy();
+      expect(screen.getByText('Tài Chính & Doanh Thu Sàn SkinSense')).toBeTruthy();
+      expect(screen.getByText(/Duyệt Lệnh Rút Tiền Ví Shop/i)).toBeTruthy();
     });
   });
 
@@ -101,6 +102,22 @@ describe('AdminPortal Component', () => {
     await waitFor(() => {
       expect(screen.getByText('Tạo & Nộp Duyệt')).toBeTruthy();
       expect(screen.getByPlaceholderText(/Cocolux Dược Mỹ Phẩm/i)).toBeTruthy();
+    });
+  });
+
+  it('switches to Người dùng tab and displays users list with lock status', async () => {
+    await render(<AdminPortal />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Người dùng/i)).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByText(/Người dùng/i));
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('Tìm theo tên, email, SĐT...')).toBeTruthy();
+      expect(screen.getAllByText(/Hoạt động|Đang bị khóa/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/Khóa tài khoản|Tài khoản cố định/i).length).toBeGreaterThan(0);
     });
   });
 });

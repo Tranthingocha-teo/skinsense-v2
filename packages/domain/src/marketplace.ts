@@ -14,6 +14,7 @@ export interface Shop {
   reviewCount: number;
   isOfficial: boolean;
   avatarUrl: string;
+  walletBalanceVnd?: number;
   createdAt: string;
 }
 
@@ -26,10 +27,27 @@ export interface ShopListing {
   stock: number;
   deliveryTime: string;
   isActive: boolean;
+  richDescription?: string;
+  images?: string[];
 }
 
 export type PaymentMethod = "cod" | "vietqr";
-export type OrderStatus = "pending" | "confirmed" | "shipping" | "completed" | "cancelled";
+export type OrderStatus =
+  | "pending"
+  | "confirmed"
+  | "processing"
+  | "shipping"
+  | "delivered"
+  | "completed"
+  | "cancelled"
+  | "refunded";
+
+export interface OrderTrackingEvent {
+  time: string;
+  title: string;
+  desc: string;
+  completed: boolean;
+}
 
 export interface Order {
   id: string;
@@ -48,7 +66,30 @@ export interface Order {
   note?: string;
   paymentMethod: PaymentMethod;
   status: OrderStatus;
+  trackingCode?: string;
+  shippingProvider?: string;
+  trackingTimeline?: OrderTrackingEvent[];
+  shopEarningsVnd?: number;
+  platformFeeVnd?: number;
+  rating?: number;
+  reviewComment?: string;
+  reviewedAt?: string;
   createdAt: string;
+  updatedAt?: string;
+}
+
+export interface WithdrawalRequest {
+  id: string;
+  shopId: string;
+  shopName: string;
+  amountVnd: number;
+  amountFormatted: string;
+  bankName: string;
+  accountNumber: string;
+  accountHolder: string;
+  status: "pending" | "approved" | "rejected";
+  createdAt: string;
+  processedAt?: string;
 }
 
 export const INITIAL_SHOPS: Shop[] = [
@@ -237,6 +278,73 @@ export function getListingsForProduct(productId: string): ShopListing[] {
 
 export function formatVnd(amount: number): string {
   return amount.toLocaleString("vi-VN") + "₫";
+}
+
+export function calculateOrderFinancials(
+  totalVnd: number,
+  platformCommissionRate = 0.05
+): { shopEarningsVnd: number; platformFeeVnd: number } {
+  const platformFeeVnd = Math.round(totalVnd * platformCommissionRate);
+  const shopEarningsVnd = totalVnd - platformFeeVnd;
+  return { shopEarningsVnd, platformFeeVnd };
+}
+
+export function generateTrackingTimeline(
+  status: OrderStatus,
+  trackingCode: string,
+  createdAt: string
+): OrderTrackingEvent[] {
+  const baseTime = new Date(createdAt);
+  const formatTime = (offsetMinutes: number) => {
+    const d = new Date(baseTime.getTime() + offsetMinutes * 60000);
+    return `${d.getHours().toString().padStart(2, "0")}:${d
+      .getMinutes()
+      .toString()
+      .padStart(2, "0")} ${d.getDate()}/${d.getMonth() + 1}`;
+  };
+
+  const isShipped = status === "shipping" || status === "delivered" || status === "completed";
+  const isDelivered = status === "delivered" || status === "completed";
+  const isCompleted = status === "completed";
+
+  return [
+    {
+      time: formatTime(0),
+      title: "Đơn hàng đã được đặt",
+      desc: "Người mua đã hoàn tất thông tin và gửi yêu cầu đặt hàng đến người bán.",
+      completed: true,
+    },
+    {
+      time: formatTime(30),
+      title: "Người bán chuẩn bị hàng",
+      desc: "Gian hàng đã xác nhận đơn hàng, đóng gói niêm phong chống sốc.",
+      completed: status !== "pending",
+    },
+    {
+      time: formatTime(90),
+      title: `Đã bàn giao cho ĐVVC SPX Express (${trackingCode})`,
+      desc: "Bưu tá SPX Express đã nhận kiện hàng tại kho xuất hàng và quét mã vận đơn.",
+      completed: isShipped,
+    },
+    {
+      time: formatTime(360),
+      title: "Đang trung chuyển qua Hub phân loại",
+      desc: "Kiện hàng đã xuất kho trung chuyển và đang trên đường đến bưu cục gần bạn nhất.",
+      completed: isShipped,
+    },
+    {
+      time: formatTime(720),
+      title: "Đang phát hàng đến bạn",
+      desc: "Shipper SPX Express đang liên hệ để giao hàng tận tay khách hàng.",
+      completed: isDelivered,
+    },
+    {
+      time: formatTime(780),
+      title: "Giao hàng thành công & Hoàn tất",
+      desc: "Đơn hàng đã được giao thành công. Tiền đã được giải ngân về Ví Người Bán.",
+      completed: isCompleted,
+    },
+  ];
 }
 
 export function generateVietQrUrl(params: {

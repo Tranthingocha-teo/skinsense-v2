@@ -5,6 +5,7 @@ import {
   type Shop,
   type ShopStatus,
   type SkinConditionClass,
+  type WithdrawalRequest,
   type Zone,
 } from '@skinsense/domain';
 import * as Haptics from 'expo-haptics';
@@ -12,6 +13,7 @@ import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import {
   AlertTriangle,
+  ArrowDownToLine,
   BadgeCheck,
   CheckCircle2,
   ChevronLeft,
@@ -29,12 +31,14 @@ import {
   ShoppingBag,
   Sparkles,
   Star,
+  Stethoscope,
   Store,
   Tag,
   Trash2,
   Truck,
   User,
   Users,
+  Wallet,
   X,
   XCircle,
 } from 'lucide-react-native';
@@ -52,12 +56,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
+import { getAllUsers, toggleUserStatus, type AuthUser, type UserRole } from '@/lib/auth';
 import {
+  approveWithdrawal,
   deleteCustomProduct,
   loadAllStoreProducts,
   loadOrders,
   loadShops,
+  loadWithdrawalRequests,
+  onMarketplaceChange,
   registerShop,
+  rejectWithdrawal,
   saveCustomProduct,
   type StoreProduct,
   toggleProductActive,
@@ -92,12 +101,16 @@ export function AdminPortal() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<StoreProduct[]>([]);
   const [shops, setShops] = useState<Shop[]>([]);
+  const [withdrawals, setWithdrawals] = useState<WithdrawalRequest[]>([]);
+  const [users, setUsers] = useState<AuthUser[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Tabs: 'orders' | 'products' | 'shops' | 'analytics'
-  const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'shops' | 'analytics'>('orders');
+  // Tabs: 'orders' | 'products' | 'shops' | 'analytics' | 'users'
+  const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'shops' | 'analytics' | 'users'>('orders');
   const [orderFilter, setOrderFilter] = useState<'all' | OrderStatus>('all');
   const [shopFilter, setShopFilter] = useState<'all' | ShopStatus>('all');
+  const [userRoleFilter, setUserRoleFilter] = useState<'all' | UserRole>('all');
+  const [userSearchQuery, setUserSearchQuery] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
 
   // Add Product Modal
@@ -120,16 +133,19 @@ export function AdminPortal() {
   const [savingShop, setSavingShop] = useState(false);
 
   async function refreshData() {
-    setLoading(true);
     try {
-      const [allOrders, allProducts, allShops] = await Promise.all([
+      const [allOrders, allProducts, allShops, allWithdrawals, allUsers] = await Promise.all([
         loadOrders(),
         loadAllStoreProducts(),
         loadShops(),
+        loadWithdrawalRequests(),
+        getAllUsers(),
       ]);
       setOrders(allOrders);
       setProducts(allProducts);
       setShops(allShops);
+      setWithdrawals(allWithdrawals);
+      setUsers(allUsers);
     } finally {
       setLoading(false);
     }
@@ -138,6 +154,35 @@ export function AdminPortal() {
   useEffect(() => {
     void refreshData();
   }, []);
+
+  useEffect(() => {
+    const unsubscribe = onMarketplaceChange(() => {
+      void refreshData();
+    });
+    return unsubscribe;
+  }, []);
+
+  async function handleApproveWithdrawal(requestId: string) {
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    await approveWithdrawal(requestId);
+    await refreshData();
+    Alert.alert('Thành công', 'Đã phê duyệt lệnh rút tiền và đối soát chuyển khoản cho Shop.');
+  }
+
+  async function handleRejectWithdrawal(requestId: string) {
+    Alert.alert('Từ chối lệnh rút tiền', 'Bạn có chắc chắn muốn từ chối và hoàn tiền lại vào ví Shop?', [
+      { text: 'Không', style: 'cancel' },
+      {
+        text: 'Từ chối',
+        style: 'destructive',
+        onPress: async () => {
+          void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+          await rejectWithdrawal(requestId, 'Thông tin tài khoản không khớp');
+          await refreshData();
+        },
+      },
+    ]);
+  }
 
   async function handleApproveShop(shopId: string, shopName: string) {
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
@@ -314,6 +359,52 @@ export function AdminPortal() {
     return true;
   });
 
+  // User Management Filtering
+  const filteredUsers = users.filter((u) => {
+    if (userRoleFilter !== 'all' && u.role !== userRoleFilter) return false;
+    if (userSearchQuery.trim()) {
+      const q = userSearchQuery.toLowerCase();
+      return (
+        u.fullName.toLowerCase().includes(q) ||
+        u.email.toLowerCase().includes(q) ||
+        u.phoneNumber.includes(q) ||
+        Boolean(u.shopName && u.shopName.toLowerCase().includes(q)) ||
+        Boolean(u.specialty && u.specialty.toLowerCase().includes(q))
+      );
+    }
+    return true;
+  });
+
+  async function handleToggleUserStatus(userId: string, currentStatus?: 'active' | 'blocked') {
+    const isBlocking = currentStatus !== 'blocked';
+    Alert.alert(
+      isBlocking ? 'Khóa tài khoản' : 'Mở khóa tài khoản',
+      isBlocking
+        ? 'Bạn có chắc chắn muốn khóa tài khoản này? Người dùng sẽ không thể đăng nhập vào SkinSense.'
+        : 'Bạn có chắc muốn kích hoạt mở khóa lại cho tài khoản này?',
+      [
+        { text: 'Hủy', style: 'cancel' },
+        {
+          text: isBlocking ? 'Khóa ngay' : 'Mở khóa',
+          style: isBlocking ? 'destructive' : 'default',
+          onPress: async () => {
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+            try {
+              const updated = await toggleUserStatus(userId);
+              await refreshData();
+              Alert.alert(
+                'Thành công',
+                `Đã ${updated.status === 'blocked' ? 'khóa' : 'mở khóa'} tài khoản ${updated.fullName} (${updated.email}).`,
+              );
+            } catch (err: any) {
+              Alert.alert('Lỗi', err.message || 'Không thể cập nhật trạng thái người dùng.');
+            }
+          },
+        },
+      ],
+    );
+  }
+
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: top, paddingBottom: bottom }}>
       {/* Header */}
@@ -345,38 +436,38 @@ export function AdminPortal() {
       </View>
 
       {/* Overview Stat Cards */}
-      <View className="flex-row gap-3 p-4 pb-2">
-        <View className="flex-1 rounded-card border border-border bg-card p-3 gap-1">
+      <View className="flex-row gap-2.5 p-4 pb-2">
+        <View className="flex-1 rounded-card border border-border/80 bg-card p-3 gap-1 shadow-xs">
           <View className="flex-row items-center justify-between">
-            <Text className="text-[11.5px] font-medium text-muted-foreground">Doanh thu thực</Text>
-            <Icon as={DollarSign} size={15} className="text-success" />
+            <Text className="text-[10.5px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">Doanh thu thực</Text>
+            <Icon as={DollarSign} size={14} className="text-emerald-400" />
           </View>
-          <Text className="text-[17px] font-bold text-foreground">
+          <Text className="font-display text-[17px] font-bold text-emerald-400">
             {formatVnd(totalRevenue)}
           </Text>
-          <Text className="text-[11px] text-muted-foreground">
+          <Text className="text-[10.5px] text-muted-foreground">
             {completedOrders.length} đơn hoàn thành
           </Text>
         </View>
 
-        <View className="flex-1 rounded-card border border-border bg-card p-3 gap-1">
+        <View className="flex-1 rounded-card border border-border/80 bg-card p-3 gap-1 shadow-xs">
           <View className="flex-row items-center justify-between">
-            <Text className="text-[11.5px] font-medium text-muted-foreground">Đơn đặt hàng</Text>
-            <Icon as={ShoppingBag} size={15} className="text-primary" />
+            <Text className="text-[10.5px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">Đơn đặt hàng</Text>
+            <Icon as={ShoppingBag} size={14} className="text-primary" />
           </View>
-          <Text className="text-[17px] font-bold text-foreground">{orders.length} đơn</Text>
-          <Text className="text-[11px] text-warning font-medium">
+          <Text className="font-display text-[17px] font-bold text-primary">{orders.length} đơn</Text>
+          <Text className="text-[10.5px] text-amber-400 font-medium">
             {pendingOrders.length} đơn chờ xử lý
           </Text>
         </View>
 
-        <View className="flex-1 rounded-card border border-border bg-card p-3 gap-1">
+        <View className="flex-1 rounded-card border border-border/80 bg-card p-3 gap-1 shadow-xs">
           <View className="flex-row items-center justify-between">
-            <Text className="text-[11.5px] font-medium text-muted-foreground">Kho hàng</Text>
-            <Icon as={Package} size={15} className="text-primary" />
+            <Text className="text-[10.5px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">Kho hàng</Text>
+            <Icon as={Package} size={14} className="text-primary" />
           </View>
-          <Text className="text-[17px] font-bold text-foreground">{products.length} SP</Text>
-          <Text className="text-[11px] text-muted-foreground">
+          <Text className="font-display text-[17px] font-bold text-primary">{products.length} SP</Text>
+          <Text className="text-[10.5px] text-muted-foreground">
             {products.filter((p) => p.isCustom).length} SP thêm mới
           </Text>
         </View>
@@ -451,7 +542,7 @@ export function AdminPortal() {
             role="tab"
             accessibilityState={{ selected: activeTab === 'analytics' }}
             onPress={() => setActiveTab('analytics')}
-            className={`px-3 py-2 rounded-control items-center justify-center ${
+            className={`px-3 py-2 rounded-control flex-row items-center gap-1.5 ${
               activeTab === 'analytics' ? 'bg-card border border-border' : ''
             }`}
           >
@@ -460,14 +551,35 @@ export function AdminPortal() {
                 activeTab === 'analytics' ? 'text-primary font-semibold' : 'text-muted-foreground'
               }`}
             >
-              Báo cáo doanh số
+              Tài chính & Ví Shop
+            </Text>
+            {withdrawals.filter((w) => w.status === 'pending').length > 0 && (
+              <View className="size-2 rounded-pill bg-warning" />
+            )}
+          </Pressable>
+
+          <Pressable
+            role="tab"
+            accessibilityLabel="Người dùng"
+            accessibilityState={{ selected: activeTab === 'users' }}
+            onPress={() => setActiveTab('users')}
+            className={`px-3 py-2 rounded-control flex-row items-center gap-1.5 ${
+              activeTab === 'users' ? 'bg-card border border-border' : ''
+            }`}
+          >
+            <Text
+              className={`text-[12.5px] font-medium ${
+                activeTab === 'users' ? 'text-primary font-semibold' : 'text-muted-foreground'
+              }`}
+            >
+              Người dùng ({users.length})
             </Text>
           </Pressable>
         </ScrollView>
       </View>
 
       {/* Search Input */}
-      {activeTab !== 'analytics' && (
+      {activeTab !== 'analytics' && activeTab !== 'users' && (
         <View className="px-4 pb-2">
           <View className="flex-row items-center gap-2 rounded-control border border-border bg-surface-1 px-3 py-2">
             <Icon as={Search} size={16} className="text-muted-foreground" />
@@ -1067,54 +1179,325 @@ export function AdminPortal() {
             </>
           )}
 
-          {/* TAB 4: ANALYTICS */}
+          {/* TAB 4: FINANCIALS & SHOP WITHDRAWALS */}
           {activeTab === 'analytics' && (
-            <View className="gap-3">
-              <View className="rounded-card border border-border bg-card p-4 gap-3">
-                <Text className="text-[15px] font-semibold text-foreground">
-                  Hiệu quả kinh doanh độc quyền
-                </Text>
+            <View className="gap-3.5">
+              {/* Platform Overview */}
+              <View className="rounded-card border border-border/80 bg-card p-4 gap-3 shadow-xs">
+                <View className="flex-row items-center justify-between">
+                  <Text className="font-display text-[15px] font-bold text-foreground">
+                    Tài Chính & Doanh Thu Sàn SkinSense
+                  </Text>
+                  <View className="rounded-pill bg-primary/10 border border-primary/20 px-2.5 py-0.5">
+                    <Text className="text-[11px] font-bold text-primary">Phí sàn: 5%</Text>
+                  </View>
+                </View>
 
                 <View className="gap-2.5">
-                  <View className="flex-row items-center justify-between py-1 border-b border-border">
-                    <Text className="text-[13px] text-muted-foreground">Doanh thu đã thu về</Text>
-                    <Text className="text-[15px] font-bold text-success">
-                      {formatVnd(totalRevenue)}
+                  <View className="flex-row items-center justify-between py-1 border-b border-border/40">
+                    <Text className="text-[12.5px] text-muted-foreground">Tổng GMV giao dịch toàn sàn</Text>
+                    <Text className="font-display text-[17px] font-bold text-primary">
+                      {formatVnd(orders.reduce((sum, o) => sum + (o.status !== 'cancelled' ? o.totalVnd : 0), 0))}
                     </Text>
                   </View>
 
-                  <View className="flex-row items-center justify-between py-1 border-b border-border">
-                    <Text className="text-[13px] text-muted-foreground">Đang vận chuyển (dự kiến)</Text>
-                    <Text className="text-[14px] font-bold text-foreground">
-                      {formatVnd(inTransitAmount)}
+                  <View className="flex-row items-center justify-between py-1 border-b border-border/40">
+                    <Text className="text-[12.5px] text-muted-foreground">Hoa hồng sàn thu được (5%)</Text>
+                    <Text className="font-display text-[17px] font-bold text-emerald-400">
+                      +{formatVnd(completedOrders.reduce((sum, o) => sum + (o.platformFeeVnd || Math.round(o.totalVnd * 0.05)), 0))}
                     </Text>
                   </View>
 
-                  <View className="flex-row items-center justify-between py-1 border-b border-border">
-                    <Text className="text-[13px] text-muted-foreground">Tỷ lệ hoàn thành đơn</Text>
-                    <Text className="text-[14px] font-bold text-primary">
+                  <View className="flex-row items-center justify-between py-1 border-b border-border/40">
+                    <Text className="text-[12.5px] text-muted-foreground">Gian hàng đang hoạt động</Text>
+                    <Text className="font-display text-[15px] font-bold text-foreground">
+                      {shops.filter((s) => s.status === 'approved').length} Shop
+                    </Text>
+                  </View>
+
+                  <View className="flex-row items-center justify-between py-1">
+                    <Text className="text-[12.5px] text-muted-foreground">Tỷ lệ đơn hoàn thành</Text>
+                    <Text className="font-display text-[15px] font-bold text-primary">
                       {orders.length > 0
                         ? `${Math.round((completedOrders.length / orders.length) * 100)}%`
                         : '0%'}
                     </Text>
                   </View>
-
-                  <View className="flex-row items-center justify-between py-1">
-                    <Text className="text-[13px] text-muted-foreground">Phương thức chuyển khoản VietQR</Text>
-                    <Text className="text-[14px] font-bold text-foreground">
-                      {orders.filter((o) => o.paymentMethod === 'vietqr').length} đơn
-                    </Text>
-                  </View>
                 </View>
               </View>
 
-              <View className="rounded-card border border-border bg-card p-4 gap-2">
-                <Text className="text-[15px] font-semibold text-foreground">
-                  Ghi chú cho Quản trị viên
-                </Text>
-                <Text className="text-[12.5px] text-muted-foreground leading-5">
-                  Hệ thống SkinSense Boutique hoạt động hoàn toàn độc quyền trong ứng dụng. Mọi sản phẩm bạn thêm mới sẽ xuất hiện trực tiếp cho người dùng đặt mua không qua bất kỳ bên trung gian nào. Tiền thanh toán VietQR chuyển thẳng về tài khoản ngân hàng của bạn.
-                </Text>
+              {/* Shop Withdrawal Requests Management */}
+              <View className="rounded-card border border-border bg-card p-4 gap-3">
+                <View className="flex-row items-center justify-between">
+                  <Text className="text-[15px] font-semibold text-foreground">
+                    Duyệt Lệnh Rút Tiền Ví Shop ({withdrawals.length})
+                  </Text>
+                  {withdrawals.filter((w) => w.status === 'pending').length > 0 && (
+                    <View className="rounded-pill bg-warning/20 px-2 py-0.5 border border-warning/40">
+                      <Text className="text-[10.5px] font-bold text-warning">
+                        {withdrawals.filter((w) => w.status === 'pending').length} chờ duyệt
+                      </Text>
+                    </View>
+                  )}
+                </View>
+
+                {withdrawals.length === 0 ? (
+                  <Text className="text-[12px] text-muted-foreground py-2 text-center">
+                    Chưa có yêu cầu rút tiền nào từ các gian hàng.
+                  </Text>
+                ) : (
+                  withdrawals.map((w) => {
+                    const isPending = w.status === 'pending';
+                    const isApproved = w.status === 'approved';
+                    const isRejected = w.status === 'rejected';
+
+                    return (
+                      <View
+                        key={w.id}
+                        className="rounded-control bg-surface-1 p-3 border border-border/50 gap-2"
+                      >
+                        <View className="flex-row items-center justify-between">
+                          <View>
+                            <Text className="text-[13px] font-bold text-foreground">{w.shopName}</Text>
+                            <Text className="text-[11px] font-mono text-muted-foreground">Mã: {w.id}</Text>
+                          </View>
+                          <Text className="text-[16px] font-bold text-emerald-600 dark:text-emerald-400">
+                            {w.amountFormatted}
+                          </Text>
+                        </View>
+
+                        <View className="rounded-control bg-surface-2 p-2 gap-0.5">
+                          <Text className="text-[11.5px] font-semibold text-foreground">
+                            Ngân hàng: {w.bankName}
+                          </Text>
+                          <Text className="text-[11.5px] font-mono text-foreground">
+                            STK: {w.accountNumber} • Chủ TK: {w.accountHolder}
+                          </Text>
+                          <Text className="text-[10.5px] text-muted-foreground">
+                            Ngày tạo: {new Date(w.createdAt).toLocaleDateString('vi-VN')} {new Date(w.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                          </Text>
+                        </View>
+
+                        {isPending ? (
+                          <View className="flex-row gap-2 pt-1 border-t border-border/30">
+                            <Pressable
+                              role="button"
+                              accessibilityLabel={`Từ chối lệnh rút ${w.id}`}
+                              onPress={() => handleRejectWithdrawal(w.id)}
+                              className="flex-1 h-9 items-center justify-center rounded-control border border-rose-500/40 bg-rose-500/10 active:opacity-80"
+                            >
+                              <Text className="text-[12px] font-semibold text-rose-600 dark:text-rose-400">
+                                Từ chối
+                              </Text>
+                            </Pressable>
+                            <Pressable
+                              role="button"
+                              accessibilityLabel={`Duyệt chuyển khoản ${w.id}`}
+                              onPress={() => handleApproveWithdrawal(w.id)}
+                              className="flex-1 h-9 items-center justify-center rounded-control bg-primary active:opacity-90"
+                            >
+                              <Text className="text-[12px] font-bold text-primary-foreground">
+                                Duyệt chuyển khoản
+                              </Text>
+                            </Pressable>
+                          </View>
+                        ) : (
+                          <View className="self-end rounded-pill px-2.5 py-0.5 bg-surface-3">
+                            <Text
+                              className={`text-[11px] font-bold ${
+                                isApproved ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                              }`}
+                            >
+                              {isApproved ? '✓ Đã chuyển khoản đối soát' : '✕ Đã từ chối'}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })
+                )}
+              </View>
+            </View>
+          )}
+
+          {/* TAB 5: USERS MANAGEMENT */}
+          {activeTab === 'users' && (
+            <View className="gap-3.5">
+              {/* User search bar */}
+              <View className="flex-row items-center gap-2 rounded-control border border-border/80 bg-surface-1 px-3 py-2">
+                <Icon as={Search} size={16} className="text-muted-foreground" />
+                <TextInput
+                  value={userSearchQuery}
+                  onChangeText={setUserSearchQuery}
+                  placeholder="Tìm theo tên, email, SĐT..."
+                  placeholderTextColor="#777"
+                  className="flex-1 text-[13px] text-foreground p-0"
+                />
+                {userSearchQuery.length > 0 && (
+                  <Pressable onPress={() => setUserSearchQuery('')} className="active:scale-[0.98]">
+                    <Icon as={X} size={15} className="text-muted-foreground" />
+                  </Pressable>
+                )}
+              </View>
+
+              {/* Role Filter Pills */}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <View className="flex-row gap-2 pb-1">
+                  {[
+                    { id: 'all', label: `Tất cả (${users.length})` },
+                    { id: 'customer', label: `Khách hàng (${users.filter((u) => u.role === 'customer').length})` },
+                    { id: 'shop', label: `Gian hàng (${users.filter((u) => u.role === 'shop').length})` },
+                    { id: 'specialist', label: `Bác sĩ (${users.filter((u) => u.role === 'specialist').length})` },
+                    { id: 'admin', label: `Quản trị (${users.filter((u) => u.role === 'admin').length})` },
+                  ].map((f) => {
+                    const active = userRoleFilter === f.id;
+                    return (
+                      <Pressable
+                        key={f.id}
+                        role="button"
+                        accessibilityLabel={f.label}
+                        onPress={() => {
+                          void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+                          setUserRoleFilter(f.id as any);
+                        }}
+                        className={`rounded-pill px-3 py-1.5 border active:scale-[0.98] ${
+                          active ? 'border-primary bg-primary' : 'border-border/80 bg-card'
+                        }`}
+                      >
+                        <Text
+                          className={`text-[12px] font-medium ${
+                            active ? 'text-primary-foreground font-bold' : 'text-muted-foreground'
+                          }`}
+                        >
+                          {f.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </ScrollView>
+
+              {/* Users list */}
+              <View className="gap-2.5">
+                {filteredUsers.length === 0 ? (
+                  <View className="items-center justify-center rounded-card border border-border/80 bg-card p-8">
+                    <Icon as={Users} size={32} className="text-muted-foreground/60" />
+                    <Text className="mt-2 text-[14px] font-medium text-foreground">Không tìm thấy người dùng</Text>
+                  </View>
+                ) : (
+                  filteredUsers.map((u) => {
+                    const isBlocked = u.status === 'blocked';
+                    const isAdmin = u.role === 'admin';
+                    const RoleIcon =
+                      u.role === 'specialist'
+                        ? Stethoscope
+                        : u.role === 'shop'
+                          ? Store
+                          : u.role === 'admin'
+                            ? ShieldCheck
+                            : User;
+
+                    const roleLabel =
+                      u.role === 'specialist'
+                        ? 'Bác Sĩ Da Liễu'
+                        : u.role === 'shop'
+                          ? 'Gian Hàng'
+                          : u.role === 'admin'
+                            ? 'Quản Trị Viên'
+                            : 'Khách Hàng';
+
+                    return (
+                      <View
+                        key={u.id}
+                        className={`rounded-card border p-3.5 gap-2.5 shadow-xs ${
+                          isBlocked
+                            ? 'border-rose-500/30 bg-rose-500/5'
+                            : 'border-border/80 bg-card'
+                        }`}
+                      >
+                        <View className="flex-row items-start justify-between">
+                          <View className="flex-row items-center gap-2.5 flex-1">
+                            <View className="size-10 rounded-pill bg-surface-2 border border-border/60 items-center justify-center">
+                              <Icon as={RoleIcon} size={18} className={isAdmin ? 'text-purple-400' : 'text-primary'} />
+                            </View>
+                            <View className="flex-1">
+                              <View className="flex-row items-center gap-1.5">
+                                <Text className="text-[14px] font-bold text-foreground">{u.fullName}</Text>
+                                {isAdmin && (
+                                  <View className="rounded bg-purple-500/10 px-1 border border-purple-500/30">
+                                    <Text className="text-[9px] font-bold text-purple-600 dark:text-purple-400">ADMIN</Text>
+                                  </View>
+                                )}
+                              </View>
+                              <Text className="text-[12px] text-muted-foreground">{u.email}</Text>
+                              <Text className="text-[11.5px] text-muted-foreground">SĐT: {u.phoneNumber}</Text>
+                              {u.role === 'shop' && u.shopName && (
+                                <Text className="text-[11px] text-primary">Shop: {u.shopName}</Text>
+                              )}
+                              {u.role === 'specialist' && u.specialty && (
+                                <Text className="text-[11px] text-emerald-400">Khoa: {u.specialty}</Text>
+                              )}
+                            </View>
+                          </View>
+
+                          <View
+                            className={`flex-row items-center gap-1.5 rounded-pill px-2.5 py-0.5 border ${
+                              isBlocked
+                                ? 'bg-rose-500/15 border-rose-500/30'
+                                : 'bg-emerald-500/15 border-emerald-500/30'
+                            }`}
+                          >
+                            <View
+                              className={`size-1.5 rounded-full ${
+                                isBlocked
+                                  ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]'
+                                  : 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]'
+                              }`}
+                            />
+                            <Text
+                              className={`text-[10px] font-bold ${
+                                isBlocked ? 'text-rose-400' : 'text-emerald-400'
+                              }`}
+                            >
+                              {isBlocked ? 'Đang bị khóa' : 'Hoạt động'}
+                            </Text>
+                          </View>
+                        </View>
+
+                        <View className="pt-2 border-t border-border/40 flex-row items-center justify-between">
+                          <View className="rounded-control bg-surface-2 border border-border/60 px-2 py-0.5">
+                            <Text className="text-[10px] font-semibold text-muted-foreground">{roleLabel}</Text>
+                          </View>
+
+                          {isAdmin ? (
+                            <Text className="text-[11px] text-muted-foreground italic">
+                              Tài khoản cố định
+                            </Text>
+                          ) : (
+                            <Pressable
+                              role="button"
+                              accessibilityLabel={isBlocked ? `Mở khóa ${u.fullName}` : `Khóa ${u.fullName}`}
+                              onPress={() => handleToggleUserStatus(u.id, u.status)}
+                              className={`px-3 py-1 rounded-control border active:scale-[0.98] ${
+                                isBlocked
+                                  ? 'border-emerald-500/40 bg-emerald-500/10'
+                                  : 'border-rose-500/40 bg-rose-500/10'
+                              }`}
+                            >
+                              <Text
+                                className={`text-[11.5px] font-semibold ${
+                                  isBlocked ? 'text-emerald-400' : 'text-rose-400'
+                                }`}
+                              >
+                                {isBlocked ? 'Mở khóa tài khoản' : 'Khóa tài khoản'}
+                              </Text>
+                            </Pressable>
+                          )}
+                        </View>
+                      </View>
+                    );
+                  })
+                )}
               </View>
             </View>
           )}

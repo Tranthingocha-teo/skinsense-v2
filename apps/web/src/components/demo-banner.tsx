@@ -22,8 +22,8 @@ export function DemoBanner() {
         >
           {t("reset")}
         </button>
-        <Link href="/#cta" className="flex min-h-11 items-center rounded-[10px] bg-primary px-4 text-[13.5px] font-semibold text-primary-foreground">
-          {t("signIn")}
+        <Link href="/" className="flex min-h-11 items-center rounded-[10px] bg-primary px-4 text-[13.5px] font-semibold text-primary-foreground">
+          Trang chủ
         </Link>
       </div>
     </div>

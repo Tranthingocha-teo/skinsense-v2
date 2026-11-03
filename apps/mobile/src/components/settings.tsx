@@ -266,6 +266,7 @@ function MarketplaceSection({ role = 'customer' }: { role?: UserRole }) {
       {/* Customer Orders */}
       <Pressable
         role="button"
+        accessibilityLabel="Đơn mua của tôi"
         onPress={() => {
           void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           router.push('/orders' as any);
@@ -279,7 +280,7 @@ function MarketplaceSection({ role = 'customer' }: { role?: UserRole }) {
           <View className="gap-0.5">
             <Text className="text-[14.5px] font-medium">Đơn mua của tôi</Text>
             <Text className="text-[12px] font-light text-muted-foreground">
-              Theo dõi tiến độ đơn hàng & mã VietQR
+              Theo dõi vận đơn SPX Express & đánh giá nhận hàng
             </Text>
           </View>
         </View>
@@ -315,6 +316,7 @@ function MarketplaceSection({ role = 'customer' }: { role?: UserRole }) {
       {role === 'shop' && (
         <Pressable
           role="button"
+          accessibilityLabel="Kênh Người Bán"
           onPress={() => {
             void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             router.push('/shop' as any);
@@ -340,6 +342,7 @@ function MarketplaceSection({ role = 'customer' }: { role?: UserRole }) {
       {role === 'admin' && (
         <Pressable
           role="button"
+          accessibilityLabel="Quản Trị Cửa Hàng (Admin)"
           onPress={() => {
             void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             router.push('/admin' as any);
@@ -360,6 +363,25 @@ function MarketplaceSection({ role = 'customer' }: { role?: UserRole }) {
           <Icon as={ChevronRight} size={18} strokeWidth={1.5} className="text-muted-foreground" />
         </Pressable>
       )}
+
+      {/* Role Isolation Summary Badge */}
+      <View className={`${LINE} py-2.5 flex-row items-center justify-between`}>
+        <View className="flex-row items-center gap-2">
+          <View className="size-2 rounded-full bg-emerald-500" />
+          <Text className="text-[12px] text-muted-foreground">Phân quyền tài khoản:</Text>
+        </View>
+        <View className="rounded-pill bg-primary/10 px-2.5 py-0.5">
+          <Text className="text-[11.5px] font-semibold text-primary capitalize">
+            {role === 'admin'
+              ? 'Quản trị viên'
+              : role === 'shop'
+              ? 'Gian hàng đối tác'
+              : role === 'specialist'
+              ? 'Bác sĩ da liễu'
+              : 'Khách hàng'}
+          </Text>
+        </View>
+      </View>
     </Group>
   );
 }

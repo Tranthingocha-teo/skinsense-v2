@@ -17,8 +17,8 @@ export type TodayApi = { loadTrends: typeof loadTrends; routine: RoutineApi };
 const PHOTO =
   "bg-[radial-gradient(60%_50%_at_70%_18%,color-mix(in_oklab,var(--photo-c)_55%,transparent),transparent_70%),radial-gradient(90%_70%_at_20%_70%,var(--photo-a),transparent_75%),linear-gradient(180deg,var(--photo-b),var(--background))] md:bg-[radial-gradient(40%_55%_at_78%_18%,color-mix(in_oklab,var(--photo-c)_55%,transparent),transparent_70%),radial-gradient(60%_80%_at_18%_75%,var(--photo-a),transparent_75%),linear-gradient(180deg,var(--photo-b),var(--background))]";
 const SCRIM = "bg-[linear-gradient(180deg,color-mix(in_oklab,var(--background)_25%,transparent),var(--background))]";
-const CARD = "rounded-2xl border border-foreground/10 bg-card";
-const GLASS = "rounded-2xl border border-foreground/14 bg-card/72 backdrop-blur-[18px]";
+const CARD = "rounded-3xl border border-foreground/10 bg-card shadow-xs";
+const GLASS = "rounded-3xl border border-foreground/14 bg-card/72 backdrop-blur-[18px]";
 const LABEL = "text-[11px] font-medium tracking-[0.12em] uppercase text-muted-foreground";
 const LINK = "flex min-h-11 items-center text-[13px] underline underline-offset-4";
 

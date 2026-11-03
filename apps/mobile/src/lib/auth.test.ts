@@ -13,6 +13,7 @@ jest.mock('@/lib/supabase', () => ({
 
 import {
   findAccountByPhone,
+  getAllUsers,
   getCurrentUser,
   loadAccounts,
   registerAccount,
@@ -20,6 +21,7 @@ import {
   setCurrentUser,
   signInWithEmail,
   signOut,
+  toggleUserStatus,
 } from './auth';
 
 describe('Authentication & User Role Engine', () => {
@@ -136,5 +138,42 @@ describe('Authentication & User Role Engine', () => {
 
     await signOut();
     expect(await getCurrentUser()).toBeNull();
+  });
+
+  it('rejects registering as admin and enforces role restrictions', async () => {
+    await expect(
+      registerAccount({
+        email: 'hacker.admin@skinsense.vn',
+        password: 'password123',
+        fullName: 'Fake Admin',
+        phoneNumber: '0911223344',
+        role: 'admin',
+      }),
+    ).rejects.toThrow('Không thể đăng ký tài khoản Quản trị viên');
+  });
+
+  it('allows admin to manage user accounts and blocks blocked users from signing in', async () => {
+    const allUsers = await getAllUsers();
+    expect(allUsers.length).toBeGreaterThanOrEqual(4);
+
+    const targetCustomer = allUsers.find((u) => u.email === 'khachhang@gmail.com');
+    expect(targetCustomer).toBeDefined();
+
+    // Toggle to blocked
+    const blocked = await toggleUserStatus(targetCustomer!.id);
+    expect(blocked.status).toBe('blocked');
+
+    // Attempting to sign in while blocked must throw
+    await expect(signInWithEmail('khachhang@gmail.com', '123456')).rejects.toThrow(
+      'tạm khóa',
+    );
+
+    // Unblock
+    const unblocked = await toggleUserStatus(targetCustomer!.id);
+    expect(unblocked.status).toBe('active');
+
+    // Sign in now succeeds
+    const user = await signInWithEmail('khachhang@gmail.com', '123456');
+    expect(user.status).toBe('active');
   });
 });

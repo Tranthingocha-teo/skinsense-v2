@@ -124,8 +124,8 @@ export function RoutineChecklist({ api, embedded = false }: { api: RoutineApi; e
   );
 
   const progress = (
-    <div className="flex items-center gap-3">
-      <div className="h-px flex-1 bg-border">
+    <div className="flex items-center gap-3 pt-1">
+      <div className="h-px flex-1 bg-border/80">
         <div
           className="h-px bg-foreground transition-[width] duration-[360ms] motion-reduce:transition-none"
           style={{ width: `${routineCompletionPercent(done, items.length)}%` }}
@@ -142,10 +142,10 @@ export function RoutineChecklist({ api, embedded = false }: { api: RoutineApi; e
     return (
       <li
         key={item.id}
-        className={`flex items-center gap-3.5 ${embedded ? "h-12" : "min-h-14 border-t border-border first:border-t-0"}`}
+        className={`flex items-center gap-3.5 ${embedded ? "h-13 py-2" : "min-h-14 border-t border-border first:border-t-0"}`}
       >
         {/* The whole row is the tap target (DESIGN.md), not the 22px circle. */}
-        <label className={`flex min-w-0 items-center gap-3.5 self-stretch ${editing === item.id ? "pointer-events-none" : "flex-1 cursor-pointer"}`}>
+        <label className={`flex min-w-0 items-center gap-4 self-stretch ${editing === item.id ? "pointer-events-none" : "flex-1 cursor-pointer"}`}>
           <input
             type="checkbox"
             className="peer sr-only"
@@ -153,13 +153,13 @@ export function RoutineChecklist({ api, embedded = false }: { api: RoutineApi; e
             onChange={() => toggle(item)}
             aria-label={item.label}
           />
-          <span className="grid size-[22px] shrink-0 place-items-center rounded-4xl border border-foreground text-transparent transition-colors peer-checked:border-transparent peer-checked:bg-primary peer-checked:text-primary-foreground peer-focus-visible:ring-2 peer-focus-visible:ring-foreground/25 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-card">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <span className="grid size-6 shrink-0 place-items-center rounded-full border border-foreground/45 text-transparent transition-all peer-checked:border-primary peer-checked:bg-primary peer-checked:text-primary-foreground peer-focus-visible:ring-2 peer-focus-visible:ring-foreground/25 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-card hover:border-foreground/80">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <path d="M5 13l4 4L19 7" />
             </svg>
           </span>
           {editing !== item.id && (
-            <span className={`min-w-0 flex-1 truncate text-[15.5px] ${isTicked ? "font-light text-muted-foreground" : ""}`}>{item.label}</span>
+            <span className={`min-w-0 flex-1 truncate text-[16px] sm:text-[17px] transition-colors ${isTicked ? "font-light text-muted-foreground line-through decoration-muted-foreground/40" : "font-normal text-foreground/90"}`}>{item.label}</span>
           )}
         </label>
 
@@ -224,17 +224,37 @@ export function RoutineChecklist({ api, embedded = false }: { api: RoutineApi; e
     );
   });
 
+  const rawTitle = t("title");
+  const titleParts = rawTitle.split(/\s+/);
+  const titleFirst = titleParts[0] ?? "Routine";
+  const titleSecond = titleParts.slice(1).join(" ") || "";
+
+  const editLabel = t("edit");
+  const editParts = editLabel.split(/\s+/);
+  const editFirst = editParts[0] ?? editLabel;
+  const editSecond = editParts.slice(1).join(" ") || "";
+
   if (embedded) {
     return (
-      <div className="flex flex-col gap-2.5 px-6 pt-5 pb-2 motion-safe:animate-in fade-in">
-        <header className="flex items-baseline justify-between gap-3">
-          <h2 className="font-display text-[26px] font-normal">{t("title")}</h2>
-          <Link href={appHref("/routine")} className="flex min-h-11 items-center text-[13px]">
-            {t("edit")}
+      <div className="flex flex-col gap-3 px-6 pt-6 pb-4 motion-safe:animate-in fade-in">
+        <header className="flex items-start justify-between gap-3">
+          <div className="flex flex-col">
+            <h2 className="font-display text-[32px] sm:text-[34px] font-normal leading-[1.08] tracking-tight text-foreground">
+              <span className="block">{titleFirst}</span>
+              {titleSecond ? <span className="block">{titleSecond}</span> : null}
+            </h2>
+          </div>
+          <Link
+            href={appHref("/routine")}
+            aria-label={editLabel}
+            className="pt-1 text-right text-[13.5px] leading-tight text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <span className="block">{editFirst}</span>
+            {editSecond ? <span className="block">{editSecond}</span> : null}
           </Link>
         </header>
         {progress}
-        <ul className="flex flex-col">{rows}</ul>
+        <ul className="flex flex-col pt-1">{rows}</ul>
       </div>
     );
   }

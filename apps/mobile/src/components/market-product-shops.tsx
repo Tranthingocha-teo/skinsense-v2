@@ -20,6 +20,7 @@ import {
   MapPin,
   Minus,
   Phone,
+  Package,
   Plus,
   QrCode,
   Search,
@@ -43,6 +44,8 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { BuyerOrdersModal } from '@/components/buyer-orders';
 
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
@@ -79,6 +82,7 @@ export function MarketProductShops({ productId }: { productId: string }) {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cod');
   const [submitting, setSubmitting] = useState(false);
   const [placedOrder, setPlacedOrder] = useState<Order | null>(null);
+  const [showOrdersModal, setShowOrdersModal] = useState(false);
 
   useEffect(() => {
     async function init() {
@@ -202,24 +206,32 @@ export function MarketProductShops({ productId }: { productId: string }) {
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: top, paddingBottom: bottom }}>
       {/* Header */}
-      <View className="flex-row items-center justify-between border-b border-border px-4 py-3">
+      <View className="flex-row items-center justify-between border-b border-border/40 px-4 py-3 bg-background">
         <Pressable
           role="button"
           accessibilityLabel="Quay lại"
           onPress={() => router.back()}
-          className="size-9 items-center justify-center rounded-pill active:bg-surface-2"
+          className="size-9 items-center justify-center rounded-pill border border-border/40 bg-surface-1 active:scale-[0.98] active:bg-surface-2"
         >
-          <Icon as={ChevronLeft} size={22} className="text-foreground" />
+          <Icon as={ChevronLeft} size={20} className="text-foreground" />
         </Pressable>
         <View className="items-center">
-          <Text className="text-[17px] font-semibold text-foreground">
+          <Text className="font-display text-[17px] font-semibold text-foreground tracking-tight">
             Đặt Mua Chính Hãng SkinSense
           </Text>
-          <Text className="text-[12px] text-muted-foreground">
-            Chọn gian hàng & so sánh giá như Shopee Mall
+          <Text className="text-[11.5px] text-muted-foreground">
+            Boutique phân phối chính ngạch & Hệ thống đối tác
           </Text>
         </View>
-        <View className="size-9" />
+        <Pressable
+          role="button"
+          accessibilityLabel="Đơn mua của tôi"
+          onPress={() => setShowOrdersModal(true)}
+          className="flex-row items-center gap-1.5 rounded-pill bg-surface-2 px-3 py-1.5 active:scale-[0.98] active:bg-surface-3 border border-border/60"
+        >
+          <Icon as={Package} size={14} className="text-primary" />
+          <Text className="text-[11.5px] font-semibold text-foreground">Đơn mua</Text>
+        </Pressable>
       </View>
 
       <ScrollView
@@ -227,29 +239,29 @@ export function MarketProductShops({ productId }: { productId: string }) {
         contentContainerStyle={{ padding: 16, paddingBottom: 120, gap: 16 }}
       >
         {/* Product Summary Card */}
-        <View className="rounded-card border border-border bg-card p-4 gap-3">
-          <View className="flex-row gap-3">
+        <View className="rounded-card border border-border/80 bg-card p-4 gap-3.5">
+          <View className="flex-row gap-3.5">
             <Image
               source={{ uri: product.imageUrl }}
-              className="size-20 rounded-control bg-surface-2 border border-border"
+              className="size-20 rounded-control bg-surface-2 border border-border/60"
               contentFit="cover"
             />
             <View className="flex-1 justify-center gap-1">
               <View className="flex-row items-center gap-1.5">
-                <Text className="text-[12px] font-semibold text-primary uppercase">
+                <Text className="text-[11px] font-semibold text-primary uppercase tracking-[0.12em]">
                   {product.brand}
                 </Text>
-                <Icon as={BadgeCheck} size={14} className="text-primary" />
+                <Icon as={BadgeCheck} size={13} className="text-primary" />
               </View>
-              <Text className="text-[15px] font-medium text-foreground" numberOfLines={2}>
+              <Text className="text-[15px] font-medium text-foreground leading-5" numberOfLines={2}>
                 {product.name}
               </Text>
-              <View className="flex-row items-baseline gap-2">
-                <Text className="text-[16px] font-bold text-primary">
+              <View className="flex-row items-baseline gap-2 pt-0.5">
+                <Text className="font-display text-[18px] font-bold text-primary">
                   {formatVnd(activeUnitPrice)}
                 </Text>
                 {selectedVendor && selectedVendor.priceVnd < product.priceVnd && (
-                  <Text className="text-[13px] text-muted-foreground line-through">
+                  <Text className="text-[12.5px] text-muted-foreground line-through">
                     {formatVnd(product.priceVnd)}
                   </Text>
                 )}
@@ -258,18 +270,18 @@ export function MarketProductShops({ productId }: { productId: string }) {
           </View>
 
           {/* Guarantee Badges */}
-          <View className="flex-row flex-wrap gap-2 pt-2 border-t border-border">
-            <View className="flex-row items-center gap-1 bg-success/10 px-2.5 py-1 rounded-pill">
-              <Icon as={ShieldCheck} size={13} className="text-success" />
-              <Text className="text-[11.5px] font-medium text-success">100% Chính Hãng</Text>
+          <View className="flex-row flex-wrap gap-2 pt-2.5 border-t border-border/50">
+            <View className="flex-row items-center gap-1.5 bg-success/10 border border-success/20 px-2.5 py-1 rounded-pill">
+              <Icon as={ShieldCheck} size={12} className="text-success" />
+              <Text className="text-[11px] font-semibold text-success">100% Chính Hãng</Text>
             </View>
-            <View className="flex-row items-center gap-1 bg-primary/10 px-2.5 py-1 rounded-pill">
-              <Icon as={Truck} size={13} className="text-primary" />
-              <Text className="text-[11.5px] font-medium text-primary">Giao Nhanh 1-2 Ngày</Text>
+            <View className="flex-row items-center gap-1.5 bg-primary/10 border border-primary/20 px-2.5 py-1 rounded-pill">
+              <Icon as={Truck} size={12} className="text-primary" />
+              <Text className="text-[11px] font-semibold text-primary">Giao Nhanh SPX</Text>
             </View>
-            <View className="flex-row items-center gap-1 bg-surface-2 px-2.5 py-1 rounded-pill">
-              <Icon as={CheckCircle2} size={13} className="text-muted-foreground" />
-              <Text className="text-[11.5px] text-muted-foreground">Dược sĩ đồng hành</Text>
+            <View className="flex-row items-center gap-1.5 bg-surface-2 border border-border/40 px-2.5 py-1 rounded-pill">
+              <Icon as={CheckCircle2} size={12} className="text-muted-foreground" />
+              <Text className="text-[11px] text-muted-foreground">Dược sĩ đồng hành</Text>
             </View>
           </View>
         </View>
@@ -421,8 +433,8 @@ export function MarketProductShops({ productId }: { productId: string }) {
                     key={vendor.listingId}
                     className={`rounded-control border p-3.5 gap-2.5 ${
                       isSelected
-                        ? 'border-primary bg-primary/5'
-                        : 'border-border bg-surface-1'
+                        ? 'border-primary/50 bg-primary/10 shadow-sm'
+                        : 'border-border/70 bg-surface-1'
                     }`}
                   >
                     {/* Shop Info Row */}
@@ -430,23 +442,23 @@ export function MarketProductShops({ productId }: { productId: string }) {
                       <View className="flex-row items-center gap-2.5 flex-1 pr-2">
                         <Image
                           source={{ uri: vendor.shop.avatarUrl }}
-                          className="size-10 rounded-pill bg-surface-2 border border-border"
+                          className="size-10 rounded-pill bg-surface-2 border border-border/60"
                           contentFit="cover"
                         />
                         <View className="flex-1">
                           <View className="flex-row items-center gap-1.5 flex-wrap">
-                            <Text className="text-[14px] font-bold text-foreground" numberOfLines={1}>
+                            <Text className="text-[13.5px] font-bold text-foreground" numberOfLines={1}>
                               {vendor.shop.shopName}
                             </Text>
                             {vendor.shop.isOfficial ? (
-                              <View className="rounded-pill bg-destructive/15 px-1.5 py-0.5">
-                                <Text className="text-[10px] font-bold text-destructive uppercase">
-                                  Shopee Mall
+                              <View className="rounded-pill bg-primary/15 border border-primary/25 px-2 py-0.5">
+                                <Text className="text-[9.5px] font-bold text-primary uppercase tracking-wider">
+                                  Boutique Mall
                                 </Text>
                               </View>
                             ) : (
-                              <View className="rounded-pill bg-blue-500/15 px-1.5 py-0.5">
-                                <Text className="text-[10px] font-bold text-blue-500 uppercase">
+                              <View className="rounded-pill bg-blue-500/15 border border-blue-500/25 px-2 py-0.5">
+                                <Text className="text-[9.5px] font-bold text-blue-400 uppercase tracking-wider">
                                   Shop Yêu Thích
                                 </Text>
                               </View>
@@ -454,12 +466,12 @@ export function MarketProductShops({ productId }: { productId: string }) {
                           </View>
                           <View className="flex-row items-center gap-2 mt-0.5">
                             <View className="flex-row items-center gap-0.5">
-                              <Icon as={Star} size={11} className="text-amber-500 fill-amber-500" />
+                              <Icon as={Star} size={11} className="text-amber-400 fill-amber-400" />
                               <Text className="text-[11.5px] font-semibold text-foreground">
                                 {vendor.shop.rating}
                               </Text>
                             </View>
-                            <Text className="text-[11.5px] text-muted-foreground">
+                            <Text className="text-[11px] text-muted-foreground">
                               ({vendor.shop.reviewCount} đánh giá)
                             </Text>
                           </View>
@@ -468,17 +480,17 @@ export function MarketProductShops({ productId }: { productId: string }) {
 
                       {/* Shop Price */}
                       <View className="items-end">
-                        <Text className="text-[16px] font-extrabold text-primary">
+                        <Text className="font-display text-[16px] font-bold text-primary">
                           {vendor.priceFormatted}
                         </Text>
-                        <Text className="text-[11px] text-muted-foreground">
+                        <Text className="text-[10.5px] text-muted-foreground">
                           Kho: {vendor.shop.address.includes('Hà Nội') ? 'Hà Nội' : 'TP.HCM'}
                         </Text>
                       </View>
                     </View>
 
                     {/* Delivery & Stock badges */}
-                    <View className="flex-row items-center justify-between pt-1 border-t border-border/60">
+                    <View className="flex-row items-center justify-between pt-1 border-t border-border/50">
                       <View className="flex-row items-center gap-1.5">
                         <Icon as={Truck} size={12} className="text-primary" />
                         <Text className="text-[11.5px] text-muted-foreground">
@@ -498,10 +510,10 @@ export function MarketProductShops({ productId }: { productId: string }) {
                           void Haptics.selectionAsync().catch(() => {});
                           setViewingShopModal(vendor.shop);
                         }}
-                        className="flex-1 h-9 flex-row items-center justify-center gap-1.5 rounded-control border border-border bg-card active:opacity-75"
+                        className="flex-1 h-9 flex-row items-center justify-center gap-1.5 rounded-control border border-border/80 bg-card active:scale-[0.98] active:bg-surface-2"
                       >
                         <Icon as={Store} size={13} className="text-foreground" />
-                        <Text className="text-[12.5px] font-medium text-foreground">
+                        <Text className="text-[12px] font-medium text-foreground">
                           Xem Shop
                         </Text>
                       </Pressable>
@@ -512,7 +524,7 @@ export function MarketProductShops({ productId }: { productId: string }) {
                           void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
                           setSelectedVendor(vendor);
                         }}
-                        className={`flex-[1.5] h-9 flex-row items-center justify-center gap-1.5 rounded-control active:opacity-90 ${
+                        className={`flex-[1.5] h-9 flex-row items-center justify-center gap-1.5 rounded-control active:scale-[0.98] ${
                           isSelected
                             ? 'bg-success text-success-foreground'
                             : 'bg-primary text-primary-foreground'
@@ -759,9 +771,9 @@ export function MarketProductShops({ productId }: { productId: string }) {
             <Text className="text-[13.5px] text-muted-foreground">Phí vận chuyển:</Text>
             <Text className="text-[13.5px] font-medium text-success">Miễn phí giao hàng</Text>
           </View>
-          <View className="flex-row justify-between items-baseline pt-2 border-t border-border">
-            <Text className="text-[15px] font-semibold text-foreground">Tổng thanh toán:</Text>
-            <Text className="text-[20px] font-bold text-primary">
+          <View className="flex-row justify-between items-baseline pt-2 border-t border-border/50">
+            <Text className="text-[14.5px] font-medium text-foreground">Tổng thanh toán:</Text>
+            <Text className="font-display text-[22px] font-bold text-primary tracking-tight">
               {formatVnd(totalAmount)}
             </Text>
           </View>
@@ -770,7 +782,7 @@ export function MarketProductShops({ productId }: { productId: string }) {
             role="button"
             onPress={handleConfirmOrder}
             disabled={submitting}
-            className="mt-2 h-12 flex-row items-center justify-center gap-2 rounded-control bg-primary active:opacity-90 disabled:opacity-50"
+            className="mt-2 h-12 flex-row items-center justify-center gap-2 rounded-control bg-primary active:scale-[0.98] disabled:opacity-50"
           >
             {submitting ? (
               <ActivityIndicator color="#fff" />
@@ -867,6 +879,39 @@ export function MarketProductShops({ productId }: { productId: string }) {
                   </View>
                 </View>
 
+                {/* Product Presentation from this Shop */}
+                {(() => {
+                  const matchedVendor = vendors.find((v) => v.shop.id === viewingShopModal.id);
+                  const listingDesc =
+                    matchedVendor?.richDescription ||
+                    `• Cam kết nguồn gốc: 100% phân phối chính hãng bởi ${viewingShopModal.shopName}, đầy đủ tem chống giả và hóa đơn xuất xứ.\n• Công dụng chuyên khoa: Chăm sóc phục hồi da, làm dịu ửng đỏ và kiểm soát dầu mụn theo tiêu chuẩn dược mỹ phẩm an toàn.\n• Hướng dẫn sử dụng: Làm sạch da mặt, thoa lượng vừa đủ vào buổi sáng và tối. Kết hợp kem chống nắng khi ra ngoài.\n• Chính sách đổi trả: Miễn phí đổi trả trong vòng 15 ngày nếu có lỗi từ nhà sản xuất.`;
+
+                  return (
+                    <View className="gap-2.5 rounded-control border border-border bg-surface-1 p-3.5">
+                      <View className="flex-row items-center justify-between">
+                        <Text className="text-[12px] font-semibold text-primary uppercase">
+                          Sản phẩm tại gian hàng này
+                        </Text>
+                        <Text className="text-[15px] font-extrabold text-primary">
+                          {matchedVendor ? matchedVendor.priceFormatted : formatVnd(activeUnitPrice)}
+                        </Text>
+                      </View>
+                      <Text className="text-[14px] font-medium text-foreground">
+                        {product.name}
+                      </Text>
+
+                      <View className="pt-2 border-t border-border/60 gap-1.5">
+                        <Text className="text-[12.5px] font-semibold text-foreground">
+                          Bài viết giới thiệu & mô tả sản phẩm của Shop:
+                        </Text>
+                        <Text className="text-[12px] text-muted-foreground leading-5">
+                          {listingDesc}
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                })()}
+
                 <View className="flex-row items-center justify-around rounded-control bg-success/10 p-3">
                   <View className="items-center">
                     <Text className="text-[12px] text-success font-medium">Cam kết</Text>
@@ -886,13 +931,16 @@ export function MarketProductShops({ productId }: { productId: string }) {
                     if (matchedVendor) {
                       setSelectedVendor(matchedVendor);
                     }
+                    if (!customerName) setCustomerName('Trần Thị Ngọc Hà');
+                    if (!customerPhone) setCustomerPhone('0988776655');
+                    if (!customerAddress) setCustomerAddress('72 Phạm Hùng, Cầu Giấy, Hà Nội');
                     setViewingShopModal(null);
                   }}
                   className="h-11 flex-row items-center justify-center gap-2 rounded-control bg-primary active:opacity-90 mt-1"
                 >
                   <Icon as={ShoppingBag} size={16} className="text-primary-foreground" />
                   <Text className="text-[14px] font-semibold text-primary-foreground">
-                    Chọn Mua Hàng Từ Shop Này
+                    Mua Ngay / Đặt Hàng Từ Shop Này
                   </Text>
                 </Pressable>
               </View>
@@ -946,9 +994,10 @@ export function MarketProductShops({ productId }: { productId: string }) {
             <View className="gap-2 pt-2">
               <Pressable
                 role="button"
+                accessibilityLabel="Xem Đơn Mua Của Tôi"
                 onPress={() => {
                   setPlacedOrder(null);
-                  router.push('/orders' as any);
+                  setShowOrdersModal(true);
                 }}
                 className="h-11 flex-row items-center justify-center gap-2 rounded-control bg-primary active:opacity-90"
               >
@@ -960,6 +1009,7 @@ export function MarketProductShops({ productId }: { productId: string }) {
 
               <Pressable
                 role="button"
+                accessibilityLabel="Tiếp tục mua sắm"
                 onPress={() => {
                   setPlacedOrder(null);
                   router.back();
@@ -974,6 +1024,12 @@ export function MarketProductShops({ productId }: { productId: string }) {
           </View>
         </View>
       </Modal>
+
+      {/* Shopee Buyer Orders Modal */}
+      <BuyerOrdersModal
+        visible={showOrdersModal}
+        onClose={() => setShowOrdersModal(false)}
+      />
     </View>
   );
 }

@@ -4,7 +4,6 @@ import Link from "next/link";
 import { AuthModal } from "@/components/auth-modal";
 import { QuickAccessButtons } from "@/components/quick-access-buttons";
 import { ParticleFaceSlot } from "@/components/face/particle-face-loader";
-import { GoogleSignIn } from "@/components/google-sign-in";
 import { LocaleSwitch } from "@/components/locale-switch";
 import { CanvasIcon, SiteHeader } from "@/components/site-header";
 import { ScrollStage } from "@/components/stage/scroll-stage";
@@ -115,9 +114,6 @@ export function Landing() {
                 triggerLabel="Đăng nhập / Đăng ký"
                 triggerClassName="flex h-[54px] items-center justify-center gap-2 rounded-xl border border-foreground/30 px-5 text-[14px] font-medium transition hover:border-foreground hover:bg-foreground/5 cursor-pointer"
               />
-              <span className="flex min-h-[52px] items-center justify-center">
-                <GoogleSignIn locale={locale} />
-              </span>
             </div>
 
             <QuickAccessButtons />
