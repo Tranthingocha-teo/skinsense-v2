@@ -1,10 +1,19 @@
 import { isDuplicateRoutineLabel, routineCompletionPercent } from '@skinsense/domain';
 import * as Haptics from 'expo-haptics';
 import { Link } from 'expo-router';
-import { Check, ChevronLeft, EllipsisVertical, Plus } from 'lucide-react-native';
+import {
+  Check,
+  ChevronLeft,
+  Clock,
+  EllipsisVertical,
+  Plus,
+  ShieldCheck,
+  Sparkles,
+  X,
+} from 'lucide-react-native';
 import { useCallback, useEffect, useReducer, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Keyboard, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { Keyboard, Modal, Pressable, ScrollView, TextInput, View } from 'react-native';
 import Animated, {
   FadeIn,
   ReduceMotion,
@@ -44,6 +53,50 @@ function localDate() {
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
+
+// Dr. Whitney Bowe (FAAD) 4-night skin cycling phases
+const SKIN_CYCLING_PHASES = [
+  {
+    step: 1,
+    phase: 'Exfoliation',
+    label: 'Đêm 1: Tẩy tế bào chết (AHA/BHA)',
+    labelEn: 'Night 1: Exfoliation (AHA/BHA)',
+    icon: '✨',
+    tag: 'Thông thoáng lỗ chân lông',
+    desc: 'Làm sạch tế bào sừng với BHA 2% hoặc AHA dịu nhẹ. Giúp da thông thoáng hấp thụ tối đa các đêm sau.',
+    dermatologistNote: 'Chỉ tẩy da chết hóa học 1 lần/chu kỳ để tránh làm tổn thương màng bảo vệ da.',
+  },
+  {
+    step: 2,
+    phase: 'Retinoid',
+    label: 'Đêm 2: Retinoid Tái tạo sâu',
+    labelEn: 'Night 2: Retinoid Renewal',
+    icon: '🌙',
+    tag: 'Tăng sinh Collagen & Mờ thâm',
+    desc: 'Bôi một lượng bằng hạt đậu Retinol/Tretinoin trên nền da khô ráo. Tránh vùng mắt nhạy cảm.',
+    dermatologistNote: 'Mẹo da liễu: Dùng phương pháp kẹp ẩm (Sandwich method) nếu da bạn dễ kích ứng.',
+  },
+  {
+    step: 3,
+    phase: 'Recovery 1',
+    label: 'Đêm 3: Phục hồi màng ẩm (I)',
+    labelEn: 'Night 3: Barrier Recovery (I)',
+    icon: '🌿',
+    tag: 'Ceramides & B5 Cấp ẩm',
+    desc: 'Ngưng toàn bộ acid/retinol. Bổ sung Hyaluronic Acid, B5, Ceramides để làm dịu và phục hồi màng lipid.',
+    dermatologistNote: 'Không dùng hoạt chất mạnh trong 2 đêm phục hồi để hàng rào da nghỉ ngơi và tái tạo.',
+  },
+  {
+    step: 4,
+    phase: 'Recovery 2',
+    label: 'Đêm 4: Khóa ẩm chuyên sâu (II)',
+    labelEn: 'Night 4: Moisture Seal (II)',
+    icon: '💧',
+    tag: 'Peptides & Khóa ẩm sâu',
+    desc: 'Củng cố màng lipid với kem dưỡng ẩm giàu Peptides & Ceramides trước khi bước sang chu kỳ mới.',
+    dermatologistNote: 'Làn da khỏe mạnh có màng bảo vệ vững chãi sẽ giảm 80% nguy cơ bùng phát mụn viêm.',
+  },
+];
 
 // DESIGN.md motion: the hairline follows a tick in 360ms; reduced motion jumps.
 function ProgressLine({ percent }: { percent: number }) {
@@ -107,6 +160,39 @@ export function RoutineChecklist({ embedded = false }: { embedded?: boolean }) {
   const [duplicate, setDuplicate] = useState(false);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
 
+  // Skin Cycling phase calculation
+  const [showCycleModal, setShowCycleModal] = useState(false);
+  const dayNumber = Math.floor(new Date(night).getTime() / (1000 * 60 * 60 * 24));
+  const cycleIndex = Math.abs(dayNumber % 4);
+  const currentPhase = SKIN_CYCLING_PHASES[cycleIndex] ?? SKIN_CYCLING_PHASES[0];
+
+  // Active step timer (Skin Bliss absorption & 60s rule)
+  const [activeTimer, setActiveTimer] = useState<{ id: string; seconds: number } | null>(null);
+
+  useEffect(() => {
+    if (!activeTimer || activeTimer.seconds <= 0) return;
+    const timer = setInterval(() => {
+      setActiveTimer((cur) => {
+        if (!cur) return null;
+        if (cur.seconds <= 1) {
+          void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+          return null;
+        }
+        return { ...cur, seconds: cur.seconds - 1 };
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [activeTimer]);
+
+  function toggleTimer(id: string) {
+    if (activeTimer?.id === id) {
+      setActiveTimer(null);
+    } else {
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+      setActiveTimer({ id, seconds: 60 });
+    }
+  }
+
   const reload = useCallback(async () => {
     const loaded = await loadRoutine(night, t('routine.defaults', { returnObjects: true }) as string[]);
     setItems(loaded.items);
@@ -132,11 +218,17 @@ export function RoutineChecklist({ embedded = false }: { embedded?: boolean }) {
   }
 
   function toggle(item: RoutineItem) {
+    const isNowTicking = !ticked.has(item.label);
     const labels = items
-      .filter((i) => (i.id === item.id ? !ticked.has(i.label) : ticked.has(i.label)))
+      .filter((i) => (i.id === item.id ? isNowTicking : ticked.has(i.label)))
       .map((i) => i.label);
     setEntry({ night, completed_labels: labels, item_count: items.length });
     persist(() => saveEntry(night, labels, items.length));
+
+    // When all items complete (100%): trigger Apple HIG celebratory haptic
+    if (isNowTicking && labels.length === items.length) {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    }
   }
 
   // Labels are tonight's snapshot key (ADR 0004): a duplicate keeps the field open with the error.
@@ -203,6 +295,10 @@ export function RoutineChecklist({ embedded = false }: { embedded?: boolean }) {
 
   const rows = items.map((item, index) => {
     const isTicked = ticked.has(item.label);
+    const lower = item.label.toLowerCase();
+    const isTimerEligible = lower.includes('rửa mặt') || lower.includes('cleanser') || lower.includes('serum') || lower.includes('mụn');
+    const isTimerRunning = activeTimer?.id === item.id;
+
     return (
       <View
         key={item.id}
@@ -223,9 +319,27 @@ export function RoutineChecklist({ embedded = false }: { embedded?: boolean }) {
               {error}
             </View>
           ) : (
-            <Text numberOfLines={1} className={`flex-1 text-[15.5px] ${isTicked ? 'font-light text-muted-foreground' : ''}`}>
-              {item.label}
-            </Text>
+            <View className="flex-1 flex-row items-center justify-between pr-1">
+              <Text numberOfLines={1} className={`flex-1 text-[15.5px] ${isTicked ? 'font-light text-muted-foreground line-through' : ''}`}>
+                {item.label}
+              </Text>
+              {isTimerEligible && (
+                <Pressable
+                  role="button"
+                  onPress={(e) => {
+                    e.stopPropagation?.();
+                    toggleTimer(item.id);
+                  }}
+                  className={`ml-2 flex-row items-center gap-1 rounded-pill px-2 py-0.5 ${
+                    isTimerRunning ? 'bg-primary' : 'bg-surface-2 border border-border/70'
+                  }`}>
+                  <Icon as={Clock} size={11} className={isTimerRunning ? 'text-primary-foreground' : 'text-muted-foreground'} />
+                  <Text className={`text-[10.5px] font-semibold tabular-nums ${isTimerRunning ? 'text-primary-foreground' : 'text-muted-foreground'}`}>
+                    {isTimerRunning ? `${activeTimer.seconds}s` : '60s'}
+                  </Text>
+                </Pressable>
+              )}
+            </View>
           )}
         </Tick>
         {!embedded && (
@@ -261,21 +375,146 @@ export function RoutineChecklist({ embedded = false }: { embedded?: boolean }) {
     );
   });
 
+  const rawTitle = t('routine.title');
+  const titleParts = rawTitle.split(/\s+/);
+  const titleFirst = titleParts[0] ?? 'Routine';
+  const titleSecond = titleParts.slice(1).join(' ') || '';
+
   if (embedded) {
     return (
       <Animated.View entering={FadeIn.duration(200)}>
-        <View className="gap-2.5 px-5 pb-2 pt-[18px]">
-          <View className="flex-row items-baseline justify-between">
-            <Text className="font-display text-[26px] font-normal">{t('routine.title')}</Text>
+        <View className="gap-3 px-5 pb-3 pt-[20px]">
+          {/* Editorial Luxury Header matching uploaded reference */}
+          <View className="flex-row items-start justify-between">
+            <View>
+              <Text className="font-display text-[32px] font-normal leading-[36px] tracking-tight text-foreground">
+                {titleFirst}
+              </Text>
+              {titleSecond !== '' && (
+                <Text className="font-display text-[32px] font-normal leading-[36px] tracking-tight text-foreground">
+                  {titleSecond}
+                </Text>
+              )}
+            </View>
             <Link href="/routine" asChild>
-              <Pressable role="button" className="min-h-11 justify-center">
-                <Text className="text-[13px]">{t('routine.edit')}</Text>
+              <Pressable role="button" className="min-h-11 justify-start pt-1">
+                <Text className="text-[13.5px] font-medium text-muted-foreground hover:text-foreground">
+                  {t('routine.edit')}
+                </Text>
               </Pressable>
             </Link>
           </View>
+
+          {/* Skin Cycling Intelligence Badge */}
+          <Pressable
+            role="button"
+            onPress={() => setShowCycleModal(true)}
+            className="flex-row items-center justify-between rounded-control border border-border/60 bg-surface-2/40 px-3 py-2">
+            <View className="flex-1 flex-row items-center gap-2">
+              <Text className="text-[13px]">{currentPhase.icon}</Text>
+              <View className="flex-1">
+                <Text className="text-[11.5px] font-semibold text-foreground" numberOfLines={1}>
+                  {i18n.language === 'vi' ? currentPhase.label : currentPhase.labelEn}
+                </Text>
+                <Text className="text-[10px] text-muted-foreground" numberOfLines={1}>
+                  {currentPhase.tag} • Chu kỳ Dr. Whitney Bowe
+                </Text>
+              </View>
+            </View>
+            <View className="flex-row items-center gap-1 rounded-pill bg-success/15 px-2 py-0.5">
+              <Icon as={ShieldCheck} size={11} className="text-success" />
+              <Text className="text-[10px] font-semibold text-success">An toàn</Text>
+            </View>
+          </Pressable>
+
           {progress}
           <View>{rows}</View>
+
+          {/* 100% Completion Moment */}
+          {done === items.length && items.length > 0 && (
+            <Animated.View entering={FadeIn.duration(400)} className="mt-2 rounded-control border border-success/30 bg-success/10 p-3">
+              <View className="flex-row items-center gap-2">
+                <Icon as={Sparkles} size={15} className="text-success" />
+                <Text className="text-[13px] font-semibold text-success">
+                  Nghi thức trọn vẹn tối nay!
+                </Text>
+              </View>
+              <Text className="mt-1 text-[11.5px] text-muted-foreground leading-4">
+                Làn da đã được bảo vệ và nuôi dưỡng tối ưu. Chúc bạn một giấc ngủ ngon để tế bào phục hồi rạng rỡ! ✨
+              </Text>
+            </Animated.View>
+          )}
         </View>
+
+        {/* Skin Cycling Science Info Modal */}
+        <Modal
+          visible={showCycleModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowCycleModal(false)}>
+          <View className="flex-1 items-center justify-center bg-black/60 px-4">
+            <View className="w-full max-w-sm rounded-[24px] border border-border bg-card p-5 shadow-lg">
+              <View className="flex-row items-center justify-between pb-3 border-b border-border">
+                <View className="flex-row items-center gap-2">
+                  <Text className="text-[18px]">🌙</Text>
+                  <Text className="font-display text-[18px] font-semibold text-foreground">
+                    Skin Cycling Khoa Học
+                  </Text>
+                </View>
+                <Pressable
+                  role="button"
+                  onPress={() => setShowCycleModal(false)}
+                  className="size-8 items-center justify-center rounded-pill bg-surface-2">
+                  <Icon as={X} size={16} className="text-muted-foreground" />
+                </Pressable>
+              </View>
+
+              <ScrollView className="max-h-[360px] py-3">
+                <Text className="text-[12.5px] leading-5 text-muted-foreground">
+                  Phương pháp <Text className="font-semibold text-foreground">Skin Cycling</Text> được sáng lập bởi Tiến sĩ - Bác sĩ da liễu <Text className="font-semibold text-foreground">Dr. Whitney Bowe (FAAD - New York)</Text>. Luân phiên 4 đêm giúp tối đa hóa tác dụng hoạt chất mà không gây tổn thương hàng rào ẩm.
+                </Text>
+
+                <View className="mt-3 gap-2">
+                  {SKIN_CYCLING_PHASES.map((p, idx) => (
+                    <View
+                      key={p.step}
+                      className={`rounded-control border p-2.5 ${
+                        idx === cycleIndex ? 'border-primary bg-primary/10' : 'border-border/60 bg-surface-2/30'
+                      }`}>
+                      <View className="flex-row items-center justify-between">
+                        <Text className="text-[12px] font-semibold text-foreground">
+                          {p.icon} {p.label}
+                        </Text>
+                        {idx === cycleIndex && (
+                          <View className="rounded-pill bg-primary px-2 py-0.5">
+                            <Text className="text-[9.5px] font-bold text-primary-foreground">Đêm nay</Text>
+                          </View>
+                        )}
+                      </View>
+                      <Text className="mt-1 text-[11px] text-muted-foreground leading-4">{p.desc}</Text>
+                    </View>
+                  ))}
+                </View>
+
+                <View className="mt-3.5 rounded-control border border-success/30 bg-success/10 p-2.5">
+                  <Text className="text-[11px] font-semibold text-success">
+                    🛡️ Lời khuyên da liễu đêm nay:
+                  </Text>
+                  <Text className="mt-0.5 text-[10.5px] text-muted-foreground leading-4">
+                    {currentPhase.dermatologistNote}
+                  </Text>
+                </View>
+              </ScrollView>
+
+              <Pressable
+                role="button"
+                onPress={() => setShowCycleModal(false)}
+                className="mt-3 h-10 items-center justify-center rounded-control bg-primary">
+                <Text className="text-[13px] font-semibold text-primary-foreground">Đã hiểu</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
       </Animated.View>
     );
   }
