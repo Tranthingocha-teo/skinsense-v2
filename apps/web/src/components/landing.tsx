@@ -265,13 +265,12 @@ export function Landing() {
         <h2 className="font-display text-[32px] leading-[1.2] font-light text-balance md:max-w-[760px] md:text-[44px]">{t("trustTitle")}</h2>
         <p className="text-[15px] font-light leading-[1.7] text-pretty md:max-w-[640px] md:text-base">{t("trustBody")}</p>
         <div className="flex flex-col gap-3 self-stretch pt-2 md:flex-row md:self-auto md:gap-3.5 md:pt-2.5">
-          <a href="#cta" className={btn}>
-            <CanvasIcon name="google" size={17} />
-            {t("signInGoogle")}
-          </a>
-          <Link href="/demo" className={btnO}>
-            {t("tryDemoShort")}
+          <Link href="/demo" className={btn}>
+            🚀 {locale === "vi" ? "Vào trải nghiệm ngay (1 chạm)" : "Try demo instantly (1 click)"}
           </Link>
+          <a href="#quick-access" className={btnO}>
+            {locale === "vi" ? "Chọn vai trò mẫu" : "Choose demo role"}
+          </a>
         </div>
       </section>
 
