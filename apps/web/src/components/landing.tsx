@@ -2,6 +2,7 @@ import { ZONES } from "@skinsense/domain";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { AuthModal } from "@/components/auth-modal";
+import { QuickAccessButtons } from "@/components/quick-access-buttons";
 import { ParticleFaceSlot } from "@/components/face/particle-face-loader";
 import { GoogleSignIn } from "@/components/google-sign-in";
 import { LocaleSwitch } from "@/components/locale-switch";
@@ -74,35 +75,52 @@ export function Landing() {
             </nav>
           }
         >
-          <div className="flex items-center gap-3 md:justify-end md:gap-5">
+          <div className="flex items-center gap-3 md:justify-end md:gap-4">
             {/* PhoneLanding has no switch: the phone locale comes from Accept-Language (i18n/request.ts). */}
             <span className="hidden md:block">
               <LocaleSwitch />
             </span>
+            <Link
+              href="/demo"
+              className={`${btn} h-11 px-5 text-[14px] font-semibold whitespace-nowrap md:text-sm shadow-sm hover:opacity-95`}
+            >
+              🚀 Vào xem ngay
+            </Link>
             <AuthModal
-              triggerLabel={t("navSignIn")}
-              triggerClassName={`${btnO} h-11 px-4 text-[13.5px] whitespace-nowrap md:px-[22px] md:text-sm cursor-pointer`}
+              triggerLabel="Tài khoản / Vai trò"
+              triggerClassName={`${btnO} h-11 px-3 text-[13px] whitespace-nowrap text-muted-foreground hover:text-foreground cursor-pointer`}
             />
           </div>
         </SiteHeader>
         <span className={`relative mx-4 mt-2 self-end md:hidden ${ph}`}>Ảnh · placeholder</span>
 
-        <div className="relative mt-auto flex flex-col gap-[22px] px-6 pb-9 md:mt-0 md:items-center md:gap-[30px] md:px-24 md:pt-[150px] md:pb-0 md:text-center">
+        <div className="relative mt-auto flex flex-col gap-[22px] px-6 pb-9 md:mt-0 md:items-center md:gap-[26px] md:px-24 md:pt-[130px] md:pb-0 md:text-center">
           <h1 className="font-display text-[40px] leading-[1.14] font-light tracking-[0.01em] uppercase text-balance md:max-w-[1080px] md:text-[clamp(36px,5.2vw,74px)]">
             {t("headline")}
           </h1>
           <p className="text-base font-light leading-[1.6] text-pretty md:max-w-[560px] md:text-lg">{t("subtitle")}</p>
-          <div id="cta" className="flex flex-col gap-3 md:flex-row md:items-center md:gap-3.5">
-            <AuthModal
-              triggerLabel="Đăng nhập / Đăng ký"
-              triggerClassName={`${btn} md:px-7 cursor-pointer`}
-            />
-            <span className="flex min-h-[52px] items-center justify-center">
-              <GoogleSignIn locale={locale} />
-            </span>
-            <Link href="/demo" className={`${btnO} md:px-7`}>
-              {t("tryDemo")}
-            </Link>
+          
+          <div id="cta" className="flex flex-col gap-4 w-full md:items-center">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center justify-center flex-wrap">
+              <Link
+                href="/demo"
+                className="flex h-[54px] items-center justify-center gap-2.5 rounded-xl bg-primary px-8 text-[16px] font-bold text-primary-foreground shadow-xl transition hover:scale-[1.02] active:scale-[0.98]"
+              >
+                🚀 NHẤP VÀO LÀ VÀO XEM NGAY (1 CHẠM)
+              </Link>
+              <Link href="/demo" className={`${btnO} md:px-7`}>
+                {t("tryDemo")}
+              </Link>
+              <AuthModal
+                triggerLabel="Đăng nhập / Đăng ký"
+                triggerClassName="flex h-[54px] items-center justify-center gap-2 rounded-xl border border-foreground/30 px-5 text-[14px] font-medium transition hover:border-foreground hover:bg-foreground/5 cursor-pointer"
+              />
+              <span className="flex min-h-[52px] items-center justify-center">
+                <GoogleSignIn locale={locale} />
+              </span>
+            </div>
+
+            <QuickAccessButtons />
           </div>
           <div className="flex flex-col gap-0.5 text-[11.5px] tracking-[0.06em] uppercase md:flex-row md:items-center md:gap-6 md:text-xs md:tracking-[0.08em]">
             <span>{t("finePrint")}</span>

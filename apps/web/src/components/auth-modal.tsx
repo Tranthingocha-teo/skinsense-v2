@@ -100,11 +100,29 @@ export function AuthModal({
     setIsOpen(true);
   }
 
-  function handleQuickFill(acc: (typeof DEMO_ACCOUNTS)[0]) {
+  async function handleQuickFill(acc: (typeof DEMO_ACCOUNTS)[0]) {
     setSignInEmail(acc.email);
     setSignInPassword(acc.password);
     setError(null);
-    setSuccess(`Đã điền tài khoản: ${acc.label} (${acc.email})`);
+    setSuccess(`Đang vào với vai trò: ${acc.label}...`);
+    setLoading(true);
+    try {
+      const supabase = createClient();
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: acc.email,
+        password: acc.password,
+      });
+
+      if (signInError) {
+        router.push("/demo");
+        return;
+      }
+
+      router.push("/app");
+      router.refresh();
+    } catch {
+      router.push("/demo");
+    }
   }
 
   async function handleSignIn(e?: React.FormEvent) {
@@ -298,6 +316,31 @@ export function AuthModal({
 
             {/* Scrollable Body */}
             <div className="overflow-y-auto px-6 py-5">
+              {/* Instant 1-Click Enter Banner */}
+              <div className="mb-4 flex flex-col gap-2 rounded-xl border border-primary/30 bg-primary/10 p-3.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="size-4 text-primary" />
+                    <span className="text-xs font-bold text-primary uppercase tracking-wide">
+                      Truy cập nhanh (Không cần gõ mật khẩu)
+                    </span>
+                  </div>
+                  <span className="rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-bold text-primary">
+                    1 Chạm
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsOpen(false);
+                    router.push("/demo");
+                  }}
+                  className="mt-1 flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-primary text-sm font-semibold text-primary-foreground shadow-sm transition hover:opacity-95 cursor-pointer"
+                >
+                  🚀 Nhấp vào là vào xem ngay
+                </button>
+              </div>
+
               {/* Alert Feedback */}
               {error && (
                 <div
