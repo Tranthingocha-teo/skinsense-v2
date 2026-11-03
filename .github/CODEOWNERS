@@ -1,0 +1,4 @@
+# CODEOWNERS for SkinSense v2
+# Enforces that all code changes must be approved by Tranthingocha-teo before merging into main.
+
+* @Tranthingocha-teo
