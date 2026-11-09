@@ -50,6 +50,13 @@ export function QuickAccessButtons() {
 
   async function handleQuickEnter(acc: (typeof QUICK_ROLES)[0]) {
     setLoadingRole(acc.role);
+
+    // If Admin role clicked, route directly to the Admin Dashboard
+    if (acc.role === "admin") {
+      router.push("/admin");
+      return;
+    }
+
     try {
       const supabase = createClient();
       const { error } = await supabase.auth.signInWithPassword({

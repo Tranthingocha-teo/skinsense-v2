@@ -441,7 +441,7 @@ export function AuthModal({
                                 {acc.label}
                               </span>
                             </div>
-                            <span className="mt-1 text-[11px] text-muted-foreground" numberOfLines={1}>
+                            <span className="mt-1 text-[11px] text-muted-foreground">
                               {acc.email}
                             </span>
                           </button>
