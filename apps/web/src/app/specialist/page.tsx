@@ -17,9 +17,11 @@ import {
   Home,
   Activity,
   Check,
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { LogoMark } from "@/components/site-header";
+import { SafeProductImage } from "@/components/safe-product-image";
 
 export type CaseStatus = "pending_routine" | "in_treatment" | "completed";
 export type SeverityLevel = "mild" | "moderate" | "severe";
@@ -1008,7 +1010,7 @@ function SpecialistContent() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 text-sm">
               <div className="space-y-2.5">
-                <img
+                <SafeProductImage
                   src={selectedCase.skinPhotoUrl}
                   alt={selectedCase.patientName}
                   className="w-full h-56 rounded-2xl object-cover border border-[#D8D4CA]"
@@ -1019,12 +1021,36 @@ function SpecialistContent() {
               </div>
 
               <div className="space-y-3">
-                <div className="bg-white border border-[#D8D4CA] rounded-2xl p-4 space-y-1.5">
-                  <div>Bệnh nhân: <strong>{selectedCase.patientName}</strong> ({selectedCase.patientAge}t • {selectedCase.patientGender})</div>
-                  <div>SĐT: <strong>{selectedCase.phone}</strong></div>
-                  <div>Loại da: <strong>{selectedCase.skinType}</strong></div>
-                  <div>Phân loại Fitzpatrick: <strong>{selectedCase.fitzpatrickScale}</strong></div>
-                  <div>Dị ứng: <strong className="text-rose-700">{selectedCase.allergies}</strong></div>
+                <div className="bg-white border border-[#D8D4CA] rounded-2xl p-4 space-y-2">
+                  <div className="flex justify-between items-center border-b border-[#D8D4CA]/50 pb-2">
+                    <span className="text-[#5C605C]">Bệnh nhân:</span>
+                    <strong className="text-[#191B19]">{selectedCase.patientName} ({selectedCase.patientAge}t • {selectedCase.patientGender})</strong>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-[#5C605C]">Số điện thoại:</span>
+                    <strong className="font-mono">{selectedCase.phone}</strong>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-[#5C605C]">Loại da & Cơ địa:</span>
+                    <strong>{selectedCase.skinType}</strong>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-[#5C605C]">Phân loại Fitzpatrick:</span>
+                    <strong className="bg-[#F6F4EF] px-2 py-0.5 rounded-md border border-[#D8D4CA]">{selectedCase.fitzpatrickScale}</strong>
+                  </div>
+                  <div className="pt-1">
+                    {selectedCase.allergies && !["Không", "Không có", "None"].includes(selectedCase.allergies.trim()) ? (
+                      <div className="flex items-center gap-1.5 p-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium">
+                        <AlertTriangle className="size-4 shrink-0 text-rose-600" />
+                        <span>Cảnh báo tiền sử dị ứng: <strong>{selectedCase.allergies}</strong></span>
+                      </div>
+                    ) : (
+                      <div className="text-xs text-emerald-800 bg-emerald-50/60 border border-emerald-200/60 rounded-xl px-2.5 py-1.5 flex items-center gap-1.5">
+                        <CheckCircle2 className="size-3.5 text-emerald-600" />
+                        <span>Chưa ghi nhận tiền sử dị ứng mỹ phẩm</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="bg-[#F6F4EF] border border-[#D8D4CA] rounded-2xl p-3.5">
