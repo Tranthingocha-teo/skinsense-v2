@@ -257,13 +257,16 @@ export function Landing() {
         <span className="rounded-4xl border border-foreground/30 px-3.5 py-1.5 text-[12.5px] font-medium">{t("trustBadge")}</span>
         <h2 className="font-display text-[32px] leading-[1.2] font-light text-balance md:max-w-[760px] md:text-[44px]">{t("trustTitle")}</h2>
         <p className="text-[15px] font-light leading-[1.7] text-pretty md:max-w-[640px] md:text-base">{t("trustBody")}</p>
-        <div className="flex flex-col gap-3 self-stretch pt-2 md:flex-row md:self-auto md:gap-3.5 md:pt-2.5">
-          <Link href="/demo" className={btn}>
-            🚀 {locale === "vi" ? "Vào trải nghiệm ngay (1 chạm)" : "Try demo instantly (1 click)"}
-          </Link>
-          <a href="#quick-access" className={btnO}>
-            {locale === "vi" ? "Chọn vai trò mẫu" : "Choose demo role"}
-          </a>
+        <div className="flex flex-col gap-3 self-stretch pt-2 sm:flex-row sm:items-center sm:justify-center md:self-auto md:gap-3.5 md:pt-2.5">
+          <GoogleOAuthButton
+            className="flex h-[52px] items-center justify-center gap-2.5 rounded-lg border border-foreground/30 bg-card px-6 text-[15px] font-semibold text-foreground shadow-sm transition hover:border-foreground active:scale-[0.98] cursor-pointer"
+            label={locale === "vi" ? "Đăng nhập bằng Gmail (Google / Supabase)" : "Sign in with Google"}
+          />
+          <AuthModal
+            defaultTab="doctor-approval"
+            triggerLabel={locale === "vi" ? "🩺 Bác sĩ: Gửi hồ sơ duyệt" : "🩺 Doctor registration"}
+            triggerClassName="flex h-[52px] items-center justify-center gap-2 rounded-lg border border-emerald-600/40 bg-emerald-500/10 px-6 text-[15px] font-semibold text-emerald-800 dark:text-emerald-300 transition hover:border-emerald-600 hover:bg-emerald-500/20 cursor-pointer"
+          />
         </div>
       </section>
 

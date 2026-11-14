@@ -10,7 +10,6 @@ import {
   User,
   Store,
   Stethoscope,
-  ShieldCheck,
   CheckCircle2,
   AlertCircle,
   Sparkles,
@@ -25,55 +24,7 @@ import { GoogleOAuthButton } from "@/components/google-oauth-button";
 
 export type UserRole = "customer" | "shop" | "specialist" | "admin";
 
-export const DEMO_ACCOUNTS = [
-  {
-    role: "admin" as UserRole,
-    label: "Super Admin (Ngọc Hà)",
-    name: "Trần Thị Ngọc Hà (Super Admin)",
-    email: "hattn.23itb@vku.udn.vn",
-    password: "adminPassword123@",
-    icon: ShieldCheck,
-    desc: "Toàn quyền quản trị, duyệt Bác sĩ & Cửa hàng",
-  },
-  {
-    role: "specialist" as UserRole,
-    label: "Bác sĩ Da liễu (Đã duyệt)",
-    name: "BS. CKI Nguyễn Mai Hoa",
-    email: "bacsi.hoa@skinsense.vn",
-    password: "password123",
-    icon: Stethoscope,
-    desc: "Kê phác đồ điều trị, tư vấn chuyên khoa",
-    status: "active",
-  },
-  {
-    role: "specialist" as UserRole,
-    label: "Bác sĩ (Chờ duyệt)",
-    name: "ThS. BS Trần Quốc Tuấn",
-    email: "bacsi.tuan@skinsense.vn",
-    password: "password123",
-    icon: Stethoscope,
-    desc: "Hồ sơ CCHN đang chờ phê duyệt",
-    status: "pending",
-  },
-  {
-    role: "shop" as UserRole,
-    label: "Chủ Cửa hàng",
-    name: "La Roche-Posay Official",
-    email: "shop.laroche@skinsense.vn",
-    password: "password123",
-    icon: Store,
-    desc: "Kênh người bán, quản lý bài đăng & kho hàng",
-  },
-  {
-    role: "customer" as UserRole,
-    label: "Khách hàng",
-    name: "Khách hàng Test",
-    email: "khachhang@gmail.com",
-    password: "password123",
-    icon: User,
-    desc: "Soi da AI, theo dõi mụn, đơn mua & routine",
-  },
-];
+export const DEMO_ACCOUNTS: any[] = [];
 
 export function AuthModal({
   triggerLabel,
@@ -120,75 +71,6 @@ export function AuthModal({
     setError(null);
     setSuccess(null);
     setIsOpen(true);
-  }
-
-  async function handleQuickFill(acc: (typeof DEMO_ACCOUNTS)[0]) {
-    setSignInEmail(acc.email);
-    setSignInPassword(acc.password);
-    setError(null);
-    setSuccess(`Đang vào với vai trò: ${acc.label}...`);
-
-    if (acc.role === "admin") {
-      setIsOpen(false);
-      try {
-        const supabase = createClient();
-        await supabase.auth.signInWithPassword({
-          email: acc.email,
-          password: acc.password,
-        });
-      } catch {}
-      router.push("/admin");
-      return;
-    }
-
-    if (acc.role === "specialist") {
-      setIsOpen(false);
-      try {
-        const supabase = createClient();
-        await supabase.auth.signInWithPassword({
-          email: acc.email,
-          password: acc.password,
-        });
-      } catch {}
-      if ("status" in acc && acc.status === "pending") {
-        router.push("/specialist?status=pending");
-      } else {
-        router.push("/specialist");
-      }
-      return;
-    }
-
-    if (acc.role === "shop") {
-      setIsOpen(false);
-      try {
-        const supabase = createClient();
-        await supabase.auth.signInWithPassword({
-          email: acc.email,
-          password: acc.password,
-        });
-      } catch {}
-      router.push("/shop");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const supabase = createClient();
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: acc.email,
-        password: acc.password,
-      });
-
-      if (signInError) {
-        router.push("/demo");
-        return;
-      }
-
-      router.push("/app");
-      router.refresh();
-    } catch {
-      router.push("/demo");
-    }
   }
 
   async function handleSignIn(e?: React.FormEvent) {
@@ -589,7 +471,7 @@ export function AuthModal({
                         required
                         value={signInEmail}
                         onChange={(e) => setSignInEmail(e.target.value)}
-                        placeholder="hattn.23itb@vku.udn.vn hoặc bacsi.hoa@skinsense.vn"
+                        placeholder="nhap-email-cua-ban@gmail.com"
                         className="h-10 w-full rounded-lg border border-border bg-background pr-3 pl-9 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                       />
                     </div>
@@ -630,57 +512,6 @@ export function AuthModal({
                   >
                     {loading ? "Đang xác thực..." : "Đăng nhập ngay"}
                   </button>
-
-                  {/* 1-Click Demo / Role Accounts */}
-                  <div className="mt-2 border-t border-border pt-3">
-                    <div className="mb-2 flex items-center justify-between">
-                      <span className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                        <Sparkles className="size-3 text-primary" />
-                        Đăng nhập mẫu theo vai trò (1 Chạm)
-                      </span>
-                      <span className="text-[10px] text-muted-foreground">Nhấp là vào xem ngay</span>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {DEMO_ACCOUNTS.map((acc) => {
-                        const IconComponent = acc.icon;
-                        const isSuperAdmin = acc.email === "hattn.23itb@vku.udn.vn";
-                        return (
-                          <button
-                            key={acc.email + acc.label}
-                            type="button"
-                            onClick={() => handleQuickFill(acc)}
-                            className={`flex flex-col items-start rounded-lg border p-2.5 text-left transition cursor-pointer ${
-                              isSuperAdmin
-                                ? "border-purple-600/40 bg-purple-500/10 hover:border-purple-600"
-                                : "border-border/70 bg-muted/20 hover:border-primary/60 hover:bg-muted/40"
-                            }`}
-                          >
-                            <div className="flex w-full items-center justify-between">
-                              <div className="flex items-center gap-1.5">
-                                <IconComponent
-                                  className={`size-3.5 ${isSuperAdmin ? "text-purple-600 dark:text-purple-400" : "text-primary"}`}
-                                />
-                                <span className="text-xs font-semibold text-foreground">
-                                  {acc.label}
-                                </span>
-                              </div>
-                              {isSuperAdmin && (
-                                <span className="rounded bg-purple-600/20 px-1 py-0.2 text-[9px] font-bold text-purple-700 dark:text-purple-300">
-                                  ADMIN
-                                </span>
-                              )}
-                            </div>
-                            <span className="mt-1 text-[11px] font-mono text-muted-foreground">
-                              {acc.email}
-                            </span>
-                            <span className="text-[10px] text-muted-foreground/80 line-clamp-1">
-                              {acc.desc}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
                 </form>
               )}
 
