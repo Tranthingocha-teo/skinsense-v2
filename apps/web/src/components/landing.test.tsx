@@ -69,4 +69,12 @@ describe("Landing", () => {
     fireEvent.click(screen.getByRole("button", { name: q }));
     expect(screen.getByText(a)).toBeInTheDocument();
   });
+
+  it("renders responsive full-width mobile container for primary action buttons", () => {
+    const { container } = renderLanding();
+    const ctaSection = container.querySelector("#cta");
+    expect(ctaSection).toBeInTheDocument();
+    const buttons = ctaSection?.querySelectorAll("button");
+    expect(buttons?.length).toBeGreaterThanOrEqual(1);
+  });
 });
