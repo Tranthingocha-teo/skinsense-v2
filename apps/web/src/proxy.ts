@@ -6,12 +6,6 @@ import { supabaseEnv } from "@/lib/env";
 // can't write cookies) and gates /app behind a session.
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const gated = pathname === "/" || pathname.startsWith("/app");
-  // Only the landing redirect and /app need a session. Everything else (/demo,
-  // /privacy, ...) passes through, so it works with no Supabase project.
-  if (!gated) return NextResponse.next({ request });
-  // The landing page stays reachable without a backend; /app fails loudly.
-  if (pathname === "/" && !process.env.NEXT_PUBLIC_SUPABASE_URL) return NextResponse.next({ request });
 
   let response = NextResponse.next({ request });
   const { url, anonKey } = supabaseEnv();
@@ -35,9 +29,10 @@ export async function proxy(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
   const signedIn = !!data?.claims;
 
-  if (pathname.startsWith("/app") && !signedIn) return redirectTo("/");
+  // Gate ONLY /app: The home landing page ("/") is ALWAYS accessible so users can click "Trang chủ" from any portal!
+  if (pathname.startsWith("/app")) {
+    if (!signedIn) return redirectTo("/");
 
-  if (signedIn) {
     const claims = data.claims as Record<string, any>;
     const email = ((claims?.email as string) || "").trim().toLowerCase();
     const meta = (claims?.user_metadata || {}) as Record<string, any>;
@@ -59,24 +54,19 @@ export async function proxy(request: NextRequest) {
     const isAdmin = email === "hattn.23itb@vku.udn.vn" || role === "admin";
     const isShop = role === "shop";
 
-    // 1. If Doctor / Specialist visits "/" or "/app" -> ALWAYS open Doctor Portal /specialist!
-    if (isSpecialist && (pathname === "/" || pathname.startsWith("/app"))) {
+    // If Doctor / Specialist visits "/app" -> ALWAYS open Doctor Portal /specialist!
+    if (isSpecialist) {
       return redirectTo(status === "pending" ? "/specialist?status=pending" : "/specialist");
     }
 
-    // 2. If Admin visits "/" or "/app" -> ALWAYS open Admin Dashboard /admin!
-    if (isAdmin && (pathname === "/" || pathname.startsWith("/app"))) {
+    // If Admin visits "/app" -> ALWAYS open Admin Dashboard /admin!
+    if (isAdmin) {
       return redirectTo("/admin");
     }
 
-    // 3. If Shop visits "/" or "/app" -> ALWAYS open Shop Portal /shop!
-    if (isShop && (pathname === "/" || pathname.startsWith("/app"))) {
+    // If Shop visits "/app" -> ALWAYS open Shop Portal /shop!
+    if (isShop) {
       return redirectTo("/shop");
-    }
-
-    // 4. If Customer visits "/" -> open Customer App /app!
-    if (pathname === "/") {
-      return redirectTo("/app");
     }
   }
 
