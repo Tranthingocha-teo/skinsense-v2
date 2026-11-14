@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Store,
   ShoppingBag,
@@ -23,12 +23,15 @@ import {
   Clock,
   X,
   Plus,
+  Package,
 } from "lucide-react";
 import { toast } from "sonner";
 import { LogoMark } from "@/components/site-header";
+import { INITIAL_SHOPEE_PRODUCTS, ShopeeProduct } from "@/app/shop/page";
 
 interface CheckoutItem {
   id: string;
+  productId: string;
   name: string;
   brand: string;
   variant: string;
@@ -37,70 +40,72 @@ interface CheckoutItem {
   priceVnd: number;
   originalPriceVnd: number;
   quantity: number;
+  selected: boolean;
 }
-
-// Default items in checkout (based on prescribed routine)
-const DEFAULT_CHECKOUT_ITEMS: CheckoutItem[] = [
-  {
-    id: "co_01",
-    name: "Kem Dưỡng Giảm Mụn & Ngừa Thâm La Roche-Posay Effaclar Duo+M",
-    brand: "La Roche-Posay",
-    variant: "Tuýp 40ml",
-    volume: "40ml",
-    image: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=600&auto=format&fit=crop&q=80",
-    priceVnd: 395000,
-    originalPriceVnd: 495000,
-    quantity: 1,
-  },
-  {
-    id: "co_02",
-    name: "Sữa Rửa Mặt Dưỡng Ẩm Chuyên Sâu CeraVe Hydrating Cleanser",
-    brand: "CeraVe Skincare",
-    variant: "Chai 473ml Tiết Kiệm",
-    volume: "473ml",
-    image: "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=600&auto=format&fit=crop&q=80",
-    priceVnd: 380000,
-    originalPriceVnd: 450000,
-    quantity: 1,
-  },
-  {
-    id: "co_03",
-    name: "Tinh Chất Phục Hồi & Cấp Nước Đa Tầng La Roche-Posay Hyalu B5 Serum",
-    brand: "La Roche-Posay",
-    variant: "Chai 30ml",
-    volume: "30ml",
-    image: "https://images.unsplash.com/photo-1617897903246-719242758050?w=600&auto=format&fit=crop&q=80",
-    priceVnd: 890000,
-    originalPriceVnd: 1100000,
-    quantity: 1,
-  },
-  {
-    id: "co_04",
-    name: "Kem Chống Nắng Kiểm Soát Dầu 12H La Roche-Posay Anthelios UVMune 400",
-    brand: "La Roche-Posay",
-    variant: "Tuýp 50ml",
-    volume: "50ml",
-    image: "https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?w=600&auto=format&fit=crop&q=80",
-    priceVnd: 475000,
-    originalPriceVnd: 560000,
-    quantity: 1,
-  },
-];
 
 function formatMoney(amount: number) {
   return new Intl.NumberFormat("vi-VN").format(amount) + "\u00A0₫";
 }
 
-export default function ShopCheckoutPage() {
+function CheckoutInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
-  // Items in checkout
-  const [items, setItems] = useState<CheckoutItem[]>(DEFAULT_CHECKOUT_ITEMS);
+  const productIdParam = searchParams.get("productId");
+  const variantParam = parseInt(searchParams.get("variant") || "0", 10);
+  const qtyParam = Math.max(1, parseInt(searchParams.get("quantity") || searchParams.get("qty") || "1", 10));
+  const modeParam = searchParams.get("mode");
+
+  // Determine which product to checkout:
+  // If specific productId passed -> ONLY checkout that 1 product!
+  // If mode === "routine" -> checkout the 4 prescribed products.
+  // Default -> ONLY checkout 1 product (the primary product)
+  const [items, setItems] = useState<CheckoutItem[]>(() => {
+    if (modeParam === "routine") {
+      // 4 products in routine
+      return INITIAL_SHOPEE_PRODUCTS.slice(0, 4).map((p, idx) => ({
+        id: `item_${p.id}_${idx}`,
+        productId: p.id,
+        name: p.name,
+        brand: p.brand,
+        variant: p.variants[0]?.name || `Tuýp ${p.specifications.volume}`,
+        volume: p.specifications.volume,
+        image: p.coverImage,
+        priceVnd: p.priceVnd,
+        originalPriceVnd: p.originalPriceVnd,
+        quantity: 1,
+        selected: true,
+      }));
+    }
+
+    // Single product checkout (the exact product the user clicked!)
+    const targetProduct =
+      INITIAL_SHOPEE_PRODUCTS.find((p) => p.id === productIdParam) || INITIAL_SHOPEE_PRODUCTS[0];
+    const targetVariant = targetProduct.variants[variantParam] || targetProduct.variants[0];
+
+    return [
+      {
+        id: `item_${targetProduct.id}`,
+        productId: targetProduct.id,
+        name: targetProduct.name,
+        brand: targetProduct.brand,
+        variant: targetVariant?.name || `Dung tích ${targetProduct.specifications.volume}`,
+        volume: targetProduct.specifications.volume,
+        image: targetProduct.coverImage,
+        priceVnd: targetVariant?.priceVnd || targetProduct.priceVnd,
+        originalPriceVnd: targetVariant?.originalPriceVnd || targetProduct.originalPriceVnd,
+        quantity: qtyParam,
+        selected: true,
+      },
+    ];
+  });
 
   // Address
   const [recipientName, setRecipientName] = useState("Trần Thị Ngọc Hà");
   const [recipientPhone, setRecipientPhone] = useState("(+84) 987 654 321");
-  const [recipientAddress, setRecipientAddress] = useState("Số 123 Đường Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh");
+  const [recipientAddress, setRecipientAddress] = useState(
+    "Số 123 Đường Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh",
+  );
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
 
   // Note for seller
@@ -136,15 +141,39 @@ export default function ShopCheckoutPage() {
     );
   }
 
-  // Calculations
-  const rawTotal = items.reduce((acc, item) => acc + item.priceVnd * item.quantity, 0);
-  const voucherDiscount = useShopVoucher ? shopVoucherDiscountVnd : 0;
-  const coinsDeduction = useCoins ? coinDiscountVnd : 0;
+  // Switch product helper (allows changing to any other product easily)
+  function handleSelectAnotherProduct(prodId: string) {
+    const p = INITIAL_SHOPEE_PRODUCTS.find((item) => item.id === prodId);
+    if (!p) return;
+
+    setItems([
+      {
+        id: `item_${p.id}`,
+        productId: p.id,
+        name: p.name,
+        brand: p.brand,
+        variant: p.variants[0]?.name || `Dung tích ${p.specifications.volume}`,
+        volume: p.specifications.volume,
+        image: p.coverImage,
+        priceVnd: p.priceVnd,
+        originalPriceVnd: p.originalPriceVnd,
+        quantity: 1,
+        selected: true,
+      },
+    ]);
+    toast.info(`Đã chọn thanh toán sản phẩm: ${p.brand} - ${p.name}`);
+  }
+
+  // Selected items calculation
+  const selectedItems = useMemo(() => items.filter((i) => i.selected), [items]);
+  const rawTotal = selectedItems.reduce((acc, item) => acc + item.priceVnd * item.quantity, 0);
+  const voucherDiscount = useShopVoucher && rawTotal >= 300000 ? shopVoucherDiscountVnd : 0;
+  const coinsDeduction = useCoins ? Math.min(rawTotal, coinDiscountVnd) : 0;
   const finalTotal = Math.max(0, rawTotal + (shippingFeeVnd - shippingDiscountVnd) - voucherDiscount - coinsDeduction);
 
   function handlePlaceOrder() {
-    if (items.length === 0) {
-      toast.error("Giỏ hàng của bạn đang trống!");
+    if (selectedItems.length === 0) {
+      toast.error("Vui lòng chọn ít nhất 1 sản phẩm để thanh toán!");
       return;
     }
 
@@ -184,7 +213,7 @@ export default function ShopCheckoutPage() {
           <div className="flex items-center gap-2">
             <Link
               href="/shop"
-              className="flex items-center gap-1.5 rounded-xl border border-[#D8D4CA] bg-[#F6F4EF] px-3 py-1.5 text-xs font-semibold text-[#5C605C] hover:text-[#191B19] transition"
+              className="flex items-center gap-1.5 rounded-xl border border-[#D8D4CA] bg-[#F6F4EF] px-3.5 py-1.5 text-xs font-semibold text-[#5C605C] hover:text-[#191B19] transition"
             >
               <ArrowLeft className="size-3.5" />
               <span>Quay lại Shop</span>
@@ -231,10 +260,10 @@ export default function ShopCheckoutPage() {
           </div>
         </div>
 
-        {/* KHỐI 2: DANH SÁCH SẢN PHẨM THANH TOÁN (SHOPEE MALL STORE) */}
+        {/* KHỐI 2: DANH SÁCH SẢN PHẨM ĐANG THANH TOÁN (ĐÚNG SẢN PHẨM ĐÃ CHỌN) */}
         <div className="rounded-3xl border border-[#D8D4CA] bg-white p-5 sm:p-6 shadow-xs space-y-4">
-          {/* Shop Header */}
-          <div className="flex items-center justify-between border-b border-[#D8D4CA]/60 pb-3">
+          {/* Shop Header & Bộ đổi sản phẩm */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#D8D4CA]/60 pb-3">
             <div className="flex items-center gap-2.5">
               <span className="rounded bg-rose-600 px-2 py-0.5 text-[10px] font-bold text-white shadow-2xs">
                 Shopee Mall
@@ -245,10 +274,21 @@ export default function ShopCheckoutPage() {
               </span>
             </div>
 
-            <span className="text-xs text-[#2D5A43] font-semibold flex items-center gap-1">
-              <ShieldCheck className="size-3.5" />
-              <span>Chính Hãng 100%</span>
-            </span>
+            {/* Quick Switcher: Đổi sang sản phẩm khác nếu muốn */}
+            <div className="flex items-center gap-2 text-xs">
+              <span className="text-[#5C605C] hidden md:inline">Đổi sản phẩm thanh toán:</span>
+              <select
+                value={items[0]?.productId || ""}
+                onChange={(e) => handleSelectAnotherProduct(e.target.value)}
+                className="rounded-xl border border-[#D8D4CA] bg-[#FAF8F5] px-3 py-1.5 text-xs font-medium text-[#191B19] focus:outline-none focus:border-[#C2410C] cursor-pointer max-w-[240px] truncate"
+              >
+                {INITIAL_SHOPEE_PRODUCTS.map((prod) => (
+                  <option key={prod.id} value={prod.id}>
+                    {prod.brand} - {prod.name.slice(0, 45)}...
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* Product Items Table */}
@@ -369,20 +409,24 @@ export default function ShopCheckoutPage() {
             </div>
 
             <div className="flex items-center gap-2">
-              {useShopVoucher ? (
+              {useShopVoucher && voucherDiscount > 0 ? (
                 <span className="rounded-lg border border-dashed border-[#C2410C] bg-[#C2410C]/10 px-2.5 py-1 text-xs font-bold text-[#C2410C]">
                   Đã áp dụng: Giảm 50.000₫ (Voucher Shop)
                 </span>
               ) : (
-                <span className="text-xs text-[#5C605C]">Chưa áp dụng voucher</span>
+                <span className="text-xs text-[#5C605C]">
+                  {rawTotal < 300000 ? "Voucher áp dụng cho đơn từ 300.000₫" : "Chưa áp dụng voucher"}
+                </span>
               )}
-              <button
-                type="button"
-                onClick={() => setUseShopVoucher(!useShopVoucher)}
-                className="text-xs font-bold text-[#2563EB] hover:underline cursor-pointer ml-1"
-              >
-                {useShopVoucher ? "Bỏ chọn" : "Áp dụng"}
-              </button>
+              {rawTotal >= 300000 && (
+                <button
+                  type="button"
+                  onClick={() => setUseShopVoucher(!useShopVoucher)}
+                  className="text-xs font-bold text-[#2563EB] hover:underline cursor-pointer ml-1"
+                >
+                  {useShopVoucher ? "Bỏ chọn" : "Áp dụng"}
+                </button>
+              )}
             </div>
           </div>
 
@@ -564,7 +608,7 @@ export default function ShopCheckoutPage() {
                 <span>-{formatMoney(shippingDiscountVnd)}</span>
               </div>
 
-              {useShopVoucher && (
+              {useShopVoucher && voucherDiscount > 0 && (
                 <div className="flex justify-between text-[#C2410C]">
                   <span>Voucher giảm giá của Shop:</span>
                   <span>-{formatMoney(shopVoucherDiscountVnd)}</span>
@@ -574,7 +618,7 @@ export default function ShopCheckoutPage() {
               {useCoins && (
                 <div className="flex justify-between text-amber-700">
                   <span>Dùng Xu Shopee:</span>
-                  <span>-{formatMoney(coinDiscountVnd)}</span>
+                  <span>-{formatMoney(coinsDeduction)}</span>
                 </div>
               )}
 
@@ -738,5 +782,22 @@ export default function ShopCheckoutPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function ShopCheckoutPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#E8E5DE] flex items-center justify-center p-6">
+          <div className="rounded-2xl border border-[#D8D4CA] bg-white p-6 shadow-sm flex items-center gap-3">
+            <span className="size-5 rounded-full border-2 border-[#C2410C] border-t-transparent animate-spin" />
+            <span className="text-sm font-semibold text-[#191B19]">Đang tải trang thanh toán Shopee...</span>
+          </div>
+        </div>
+      }
+    >
+      <CheckoutInner />
+    </Suspense>
   );
 }
