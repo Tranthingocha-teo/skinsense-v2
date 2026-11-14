@@ -107,6 +107,18 @@ export function Today({ api }: { api: TodayApi }) {
   const [data, setData] = useState<TrendData | null>(); // undefined loading, null failed
   const [attempt, retry] = useReducer((n: number) => n + 1, 0);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.authenticated && res.user?.role) {
+          setUserRole(res.user.role);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => setToday(localDay(new Date())), []);
   useEffect(() => {
@@ -150,6 +162,41 @@ export function Today({ api }: { api: TodayApi }) {
 
   return (
     <Frame photo={last !== undefined} date={date}>
+      {userRole === "specialist" && (
+        <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-emerald-600/30 bg-emerald-500/10 p-3.5 text-xs text-emerald-950 dark:text-emerald-100 shadow-2xs">
+          <div className="flex items-center gap-2">
+            <span className="flex size-2 rounded-full bg-emerald-600 animate-pulse shrink-0" />
+            <span>
+              Bác sĩ đang xem giao diện <strong>Soi Da AI (Trang chủ)</strong>. Bệnh án bệnh nhân gửi về được quản lý tại Cổng Bác sĩ.
+            </span>
+          </div>
+          <Link
+            href="/specialist"
+            className="inline-flex items-center gap-1.5 self-start sm:self-auto rounded-xl bg-[#2D5A43] px-3.5 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-[#234835] transition"
+          >
+            <Stethoscope className="size-3.5" />
+            <span>Mở Cổng Bác sĩ Chuyên khoa</span>
+          </Link>
+        </div>
+      )}
+
+      {userRole === "admin" && (
+        <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-purple-600/30 bg-purple-500/10 p-3.5 text-xs text-purple-950 dark:text-purple-100 shadow-2xs">
+          <div className="flex items-center gap-2">
+            <span className="flex size-2 rounded-full bg-purple-600 animate-pulse shrink-0" />
+            <span>
+              Super Admin đang xem giao diện <strong>Soi Da AI (Trang chủ)</strong>.
+            </span>
+          </div>
+          <Link
+            href="/admin"
+            className="inline-flex items-center gap-1.5 self-start sm:self-auto rounded-xl bg-purple-800 px-3.5 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-purple-900 transition"
+          >
+            👉 Mở Bảng Quản Trị
+          </Link>
+        </div>
+      )}
+
       <div className="flex flex-col gap-3 md:grid md:grid-cols-12 md:items-start md:gap-4">
         <section className={`flex flex-col gap-4 p-5 md:col-span-7 md:gap-[18px] md:p-6 ${last ? GLASS : CARD}`}>
           <div className="flex flex-col gap-1.5">

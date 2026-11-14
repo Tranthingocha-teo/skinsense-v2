@@ -35,11 +35,11 @@ export default function UserRoutinePage() {
             </Link>
 
             <Link
-              href="/"
+              href="/app"
               className="flex items-center gap-1.5 rounded-xl border border-[#D8D4CA] bg-[#F6F4EF] px-3.5 py-1.5 text-xs font-semibold text-[#5C605C] hover:text-[#191B19] transition"
             >
               <Home className="size-3.5" />
-              <span>Trang chủ</span>
+              <span>Trang chủ (Soi da)</span>
             </Link>
           </div>
         </div>
@@ -50,7 +50,7 @@ export default function UserRoutinePage() {
         <div className="mb-6 flex items-center justify-between max-w-5xl mx-auto">
           <div className="flex items-center gap-2">
             <Link
-              href="/"
+              href="/app"
               className="size-8 flex items-center justify-center rounded-xl bg-white border border-[#D8D4CA] text-[#5C605C] hover:text-[#191B19] transition"
             >
               <ArrowLeft className="size-4" />

@@ -29,45 +29,10 @@ export async function proxy(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
   const signedIn = !!data?.claims;
 
-  // Gate ONLY /app: The home landing page ("/") is ALWAYS accessible so users can click "Trang chủ" from any portal!
-  if (pathname.startsWith("/app")) {
-    if (!signedIn) return redirectTo("/");
-
-    const claims = data.claims as Record<string, any>;
-    const email = ((claims?.email as string) || "").trim().toLowerCase();
-    const meta = (claims?.user_metadata || {}) as Record<string, any>;
-    const role = meta.role;
-    const status = meta.status;
-
-    const isDoctorEmail =
-      email.includes("doctor") ||
-      email.includes("bacsi") ||
-      email.startsWith("dr.") ||
-      email.includes("dr_") ||
-      email.includes("dr-") ||
-      email === "bacsi.hoa@skinsense.vn" ||
-      email === "dr.ha@gmail.com" ||
-      email === "dr.lananh@skinsense.vn" ||
-      email === "thuydung.doctor@gmail.com";
-
-    const isSpecialist = role === "specialist" || isDoctorEmail;
-    const isAdmin = email === "hattn.23itb@vku.udn.vn" || role === "admin";
-    const isShop = role === "shop";
-
-    // If Doctor / Specialist visits "/app" -> ALWAYS open Doctor Portal /specialist!
-    if (isSpecialist) {
-      return redirectTo(status === "pending" ? "/specialist?status=pending" : "/specialist");
-    }
-
-    // If Admin visits "/app" -> ALWAYS open Admin Dashboard /admin!
-    if (isAdmin) {
-      return redirectTo("/admin");
-    }
-
-    // If Shop visits "/app" -> ALWAYS open Shop Portal /shop!
-    if (isShop) {
-      return redirectTo("/shop");
-    }
+  // Gate ONLY /app for unauthenticated visitors:
+  // If not signed in and accessing /app -> redirect to "/"
+  if (pathname.startsWith("/app") && !signedIn) {
+    return redirectTo("/");
   }
 
   return response;

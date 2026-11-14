@@ -654,7 +654,7 @@ function SpecialistContent() {
       <header className="sticky top-0 z-40 border-b border-[#D8D4CA] bg-[#E8E5DE]/95 backdrop-blur-md">
         <div className="mx-auto flex max-w-[1440px] items-center justify-between px-4 py-3.5 sm:px-8">
           <div className="flex items-center gap-3.5">
-            <Link href="/" className="flex items-center gap-2.5 group">
+            <Link href="/app" className="flex items-center gap-2.5 group" title="Về trang soi da (Hôm nay)">
               <LogoMark className="size-9 transition group-hover:scale-105" />
               <div className="flex flex-col">
                 <span className="font-serif text-xl font-bold tracking-tight text-[#191B19] leading-tight">
@@ -711,11 +711,12 @@ function SpecialistContent() {
             </div>
 
             <Link
-              href="/"
+              href="/app"
               className="flex items-center gap-1.5 rounded-xl border border-[#D8D4CA] bg-[#F6F4EF] px-3.5 py-2 text-xs font-semibold text-[#5C605C] transition hover:text-[#191B19]"
+              title="Về trang soi da (Hôm nay)"
             >
               <Home className="size-4" />
-              <span className="hidden sm:inline">Trang chủ</span>
+              <span className="hidden sm:inline">Trang chủ (Soi da)</span>
             </Link>
           </div>
         </div>

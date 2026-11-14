@@ -722,11 +722,12 @@ export default function ShopProductPage() {
             </div>
 
             <Link
-              href="/"
+              href="/app"
               className="flex items-center gap-1.5 rounded-xl border border-[#D8D4CA] bg-[#F6F4EF] px-3 py-1.5 text-xs font-semibold text-[#5C605C] transition hover:text-[#191B19]"
+              title="Về trang soi da (Hôm nay)"
             >
               <Home className="size-3.5" />
-              <span className="hidden sm:inline">Trang chủ</span>
+              <span className="hidden sm:inline">Trang soi da (Trang chủ)</span>
             </Link>
           </div>
         </div>
