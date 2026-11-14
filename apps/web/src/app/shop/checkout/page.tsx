@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useEffect, useMemo } from "react";
+import { Suspense, useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -24,10 +24,120 @@ import {
   X,
   Plus,
   Package,
+  Smartphone,
+  ExternalLink,
+  Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 import { LogoMark } from "@/components/site-header";
 import { INITIAL_SHOPEE_PRODUCTS, ShopeeProduct } from "@/app/shop/page";
+
+// ============================================================================
+// 1. CẤU HÌNH SHOP & MÃ QR MOMO CỐ ĐỊNH CHO TỪNG GIAN HÀNG ("MỖI SHOP 1 MÃ CỐ ĐỊNH")
+// ============================================================================
+export interface ShopMoMoProfile {
+  shopId: string;
+  shopName: string;
+  brand: string;
+  momoReceiver: string;
+  momoPhone: string;
+  momoCode: string;
+  badge: string;
+  address: string;
+}
+
+export const SHOP_MOMO_PROFILES: Record<string, ShopMoMoProfile> = {
+  "La Roche-Posay": {
+    shopId: "shop_lrp",
+    shopName: "La Roche-Posay Flagship Store",
+    brand: "La Roche-Posay",
+    momoReceiver: "L'OREAL VIETNAM - LA ROCHE-POSAY",
+    momoPhone: "0901 234 567",
+    momoCode: "MOMO-LRP-MALL",
+    badge: "Shopee Mall Chính Hãng",
+    address: "Tòa nhà L'Oreal, Quận 1, TP. Hồ Chí Minh",
+  },
+  "CeraVe": {
+    shopId: "shop_cerave",
+    shopName: "CeraVe Vietnam Official Store",
+    brand: "CeraVe",
+    momoReceiver: "CERAVE OFFICIAL STORE VN",
+    momoPhone: "0902 345 678",
+    momoCode: "MOMO-CERAVE-MALL",
+    badge: "Shopee Mall Chính Hãng",
+    address: "Tòa nhà CentrePoint, Quận Phú Nhuận, TP. HCM",
+  },
+  "Paula's Choice": {
+    shopId: "shop_paula",
+    shopName: "Paula's Choice Skincare Vietnam",
+    brand: "Paula's Choice",
+    momoReceiver: "PAULA CHOICE VN CO., LTD",
+    momoPhone: "0903 456 789",
+    momoCode: "MOMO-PAULA-MALL",
+    badge: "Shopee Mall Chính Hãng",
+    address: "Phường Thảo Điền, TP. Thủ Đức, TP. HCM",
+  },
+  "Skin1004": {
+    shopId: "shop_skin1004",
+    shopName: "Skin1004 Official Vietnam",
+    brand: "Skin1004",
+    momoReceiver: "SKIN1004 VIETNAM STORE",
+    momoPhone: "0905 678 901",
+    momoCode: "MOMO-SKIN1004-MALL",
+    badge: "Shopee Mall Chính Hãng",
+    address: "Phường 2, Quận Tân Bình, TP. HCM",
+  },
+  "The Ordinary": {
+    shopId: "shop_to",
+    shopName: "The Ordinary Authentic Mall",
+    brand: "The Ordinary",
+    momoReceiver: "DECIEM BEAUTY VIETNAM",
+    momoPhone: "0906 789 012",
+    momoCode: "MOMO-TO-MALL",
+    badge: "Shopee Mall Chính Hãng",
+    address: "Tòa nhà Bitexco, Quận 1, TP. HCM",
+  },
+  "Anua": {
+    shopId: "shop_anua",
+    shopName: "Anua Skincare Official Store",
+    brand: "Anua",
+    momoReceiver: "ANUA KOREA & VIETNAM",
+    momoPhone: "0907 890 123",
+    momoCode: "MOMO-ANUA-MALL",
+    badge: "Shopee Mall Chính Hãng",
+    address: "Quận Hoàn Kiếm, Hà Nội",
+  },
+  "Dear Klairs": {
+    shopId: "shop_klairs",
+    shopName: "Klairs Official Vietnam Store",
+    brand: "Dear Klairs",
+    momoReceiver: "KLAIRS OFFICIAL VIETNAM",
+    momoPhone: "0908 901 234",
+    momoCode: "MOMO-KLAIRS-MALL",
+    badge: "Shopee Mall Chính Hãng",
+    address: "Phường Đa Kao, Quận 1, TP. HCM",
+  },
+  "COSRX": {
+    shopId: "shop_cosrx",
+    shopName: "COSRX Official Flagship Store",
+    brand: "COSRX",
+    momoReceiver: "COSRX VIETNAM STORE",
+    momoPhone: "0909 012 345",
+    momoCode: "MOMO-COSRX-MALL",
+    badge: "Shopee Mall Chính Hãng",
+    address: "Quận Cầu Giấy, Hà Nội",
+  },
+  default: {
+    shopId: "shop_skinsense",
+    shopName: "SkinSense Official Medical Mall",
+    brand: "SkinSense",
+    momoReceiver: "SKINSENSE CLINIC & PHARMACY",
+    momoPhone: "0901 888 999",
+    momoCode: "MOMO-SKINSENSE-MALL",
+    badge: "Shopee Mall Chính Hãng",
+    address: "Tòa nhà Landmark 72, Nam Từ Liêm, Hà Nội",
+  },
+};
 
 interface CheckoutItem {
   id: string;
@@ -47,6 +157,9 @@ function formatMoney(amount: number) {
   return new Intl.NumberFormat("vi-VN").format(amount) + "\u00A0₫";
 }
 
+// ============================================================================
+// 2. CHECKOUT INNER COMPONENT (WRAPPED IN SUSPENSE FOR NEXT.JS)
+// ============================================================================
 function CheckoutInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -56,19 +169,38 @@ function CheckoutInner() {
   const qtyParam = Math.max(1, parseInt(searchParams.get("quantity") || searchParams.get("qty") || "1", 10));
   const modeParam = searchParams.get("mode");
 
-  // Determine which product to checkout:
-  // If specific productId passed -> ONLY checkout that 1 product!
-  // If mode === "routine" -> checkout the 4 prescribed products.
-  // Default -> ONLY checkout 1 product (the primary product)
+  // Khởi tạo sản phẩm thanh toán: Ưu tiên đúng 1 sản phẩm được bấm "Mua Ngay"
   const [items, setItems] = useState<CheckoutItem[]>(() => {
+    if (productIdParam) {
+      const found = INITIAL_SHOPEE_PRODUCTS.find((p) => p.id === productIdParam);
+      if (found) {
+        const chosenVariant = found.variants[variantParam] || found.variants[0];
+        return [
+          {
+            id: `item_${found.id}`,
+            productId: found.id,
+            name: found.name,
+            brand: found.brand,
+            variant: chosenVariant ? chosenVariant.name : `Dung tích ${found.specifications.volume}`,
+            volume: found.specifications.volume,
+            image: found.coverImage,
+            priceVnd: chosenVariant ? chosenVariant.priceVnd : found.priceVnd,
+            originalPriceVnd: chosenVariant ? chosenVariant.originalPriceVnd : found.originalPriceVnd,
+            quantity: qtyParam,
+            selected: true,
+          },
+        ];
+      }
+    }
+
     if (modeParam === "routine") {
-      // 4 products in routine
-      return INITIAL_SHOPEE_PRODUCTS.slice(0, 4).map((p, idx) => ({
-        id: `item_${p.id}_${idx}`,
+      const routineProds = INITIAL_SHOPEE_PRODUCTS.slice(0, 4);
+      return routineProds.map((p) => ({
+        id: `item_${p.id}`,
         productId: p.id,
         name: p.name,
         brand: p.brand,
-        variant: p.variants[0]?.name || `Tuýp ${p.specifications.volume}`,
+        variant: p.variants[0]?.name || `Dung tích ${p.specifications.volume}`,
         volume: p.specifications.volume,
         image: p.coverImage,
         priceVnd: p.priceVnd,
@@ -78,29 +210,25 @@ function CheckoutInner() {
       }));
     }
 
-    // Single product checkout (the exact product the user clicked!)
-    const targetProduct =
-      INITIAL_SHOPEE_PRODUCTS.find((p) => p.id === productIdParam) || INITIAL_SHOPEE_PRODUCTS[0];
-    const targetVariant = targetProduct.variants[variantParam] || targetProduct.variants[0];
-
+    const defaultProd = INITIAL_SHOPEE_PRODUCTS[0];
     return [
       {
-        id: `item_${targetProduct.id}`,
-        productId: targetProduct.id,
-        name: targetProduct.name,
-        brand: targetProduct.brand,
-        variant: targetVariant?.name || `Dung tích ${targetProduct.specifications.volume}`,
-        volume: targetProduct.specifications.volume,
-        image: targetProduct.coverImage,
-        priceVnd: targetVariant?.priceVnd || targetProduct.priceVnd,
-        originalPriceVnd: targetVariant?.originalPriceVnd || targetProduct.originalPriceVnd,
-        quantity: qtyParam,
+        id: `item_${defaultProd.id}`,
+        productId: defaultProd.id,
+        name: defaultProd.name,
+        brand: defaultProd.brand,
+        variant: defaultProd.variants[0]?.name || `Dung tích ${defaultProd.specifications.volume}`,
+        volume: defaultProd.specifications.volume,
+        image: defaultProd.coverImage,
+        priceVnd: defaultProd.priceVnd,
+        originalPriceVnd: defaultProd.originalPriceVnd,
+        quantity: 1,
         selected: true,
       },
     ];
   });
 
-  // Address
+  // Thông tin địa chỉ giao hàng
   const [recipientName, setRecipientName] = useState("Trần Thị Ngọc Hà");
   const [recipientPhone, setRecipientPhone] = useState("(+84) 987 654 321");
   const [recipientAddress, setRecipientAddress] = useState(
@@ -108,13 +236,17 @@ function CheckoutInner() {
   );
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
 
-  // Note for seller
+  // Lời nhắn cho shop
   const [sellerNote, setSellerNote] = useState("Gói hàng kỹ kèm túi chống sốc giúp mình nha shop.");
 
-  // Payment method: "cod" | "qr" | "shopeepay" | "card"
-  const [paymentMethod, setPaymentMethod] = useState<"cod" | "qr" | "shopeepay" | "card">("cod");
+  // PHƯƠNG THỨC THANH TOÁN (Mặc định là MoMo theo chỉ đạo của Hà)
+  // "momo": Quét mã QR MoMo cố định của shop
+  // "cod": Thanh toán khi nhận hàng
+  // "vietqr": Quét mã VietQR ngân hàng
+  // "card": Thẻ quốc tế Visa/Mastercard
+  const [paymentMethod, setPaymentMethod] = useState<"momo" | "cod" | "vietqr" | "card">("momo");
 
-  // Vouchers & Coins
+  // Vouchers & Xu Shopee
   const [useShopVoucher, setUseShopVoucher] = useState(true);
   const [useCoins, setUseCoins] = useState(false);
   const coinDiscountVnd = 20000;
@@ -122,9 +254,35 @@ function CheckoutInner() {
   const shippingFeeVnd = 40000;
   const shippingDiscountVnd = 40000; // Freeship Xtra
 
-  // Success modal
-  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  // Mã đơn hàng được sinh ra khi thanh toán
   const [orderCode, setOrderCode] = useState("");
+
+  // ==========================================================================
+  // STATE CHO POPUP MÃ QR MOMO ("SAU QUÉT TỰ TẮT")
+  // ==========================================================================
+  const [isMomoModalOpen, setIsMomoModalOpen] = useState(false);
+  const [momoScanningState, setMomoScanningState] = useState<"waiting" | "success">("waiting");
+  const [momoCountdown, setMomoCountdown] = useState(300); // 5 phút
+
+  // Modal đơn hàng thành công sau khi popup MoMo tự tắt
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+
+  // Helper tính toán các sản phẩm được chọn
+  const selectedItems = useMemo(() => items.filter((i) => i.selected), [items]);
+
+  // Xác định Shop và Mã MoMo cố định tương ứng với sản phẩm đang thanh toán
+  const activeShop = useMemo(() => {
+    const primaryBrand = selectedItems[0]?.brand;
+    if (primaryBrand && SHOP_MOMO_PROFILES[primaryBrand]) {
+      return SHOP_MOMO_PROFILES[primaryBrand];
+    }
+    return SHOP_MOMO_PROFILES.default;
+  }, [selectedItems]);
+
+  const rawTotal = selectedItems.reduce((acc, item) => acc + item.priceVnd * item.quantity, 0);
+  const voucherDiscount = useShopVoucher && rawTotal >= 300000 ? shopVoucherDiscountVnd : 0;
+  const coinsDeduction = useCoins ? Math.min(rawTotal, coinDiscountVnd) : 0;
+  const finalTotal = Math.max(0, rawTotal + (shippingFeeVnd - shippingDiscountVnd) - voucherDiscount - coinsDeduction);
 
   // Quantity helpers
   function updateQuantity(id: string, delta: number) {
@@ -141,7 +299,7 @@ function CheckoutInner() {
     );
   }
 
-  // Switch product helper (allows changing to any other product easily)
+  // Switch product helper (cho phép đổi nhanh sang món khác)
   function handleSelectAnotherProduct(prodId: string) {
     const p = INITIAL_SHOPEE_PRODUCTS.find((item) => item.id === prodId);
     if (!p) return;
@@ -161,16 +319,12 @@ function CheckoutInner() {
         selected: true,
       },
     ]);
-    toast.info(`Đã chọn thanh toán sản phẩm: ${p.brand} - ${p.name}`);
+    toast.info(`Đã chọn sản phẩm của Shop: ${p.brand}`);
   }
 
-  // Selected items calculation
-  const selectedItems = useMemo(() => items.filter((i) => i.selected), [items]);
-  const rawTotal = selectedItems.reduce((acc, item) => acc + item.priceVnd * item.quantity, 0);
-  const voucherDiscount = useShopVoucher && rawTotal >= 300000 ? shopVoucherDiscountVnd : 0;
-  const coinsDeduction = useCoins ? Math.min(rawTotal, coinDiscountVnd) : 0;
-  const finalTotal = Math.max(0, rawTotal + (shippingFeeVnd - shippingDiscountVnd) - voucherDiscount - coinsDeduction);
-
+  // ==========================================================================
+  // XỬ LÝ ĐẶT HÀNG / BẬT POPUP QR MOMO
+  // ==========================================================================
   function handlePlaceOrder() {
     if (selectedItems.length === 0) {
       toast.error("Vui lòng chọn ít nhất 1 sản phẩm để thanh toán!");
@@ -179,9 +333,69 @@ function CheckoutInner() {
 
     const randomOrderNumber = `SHOPEE-SS-${Math.floor(100000 + Math.random() * 900000)}`;
     setOrderCode(randomOrderNumber);
-    setIsSuccessModalOpen(true);
-    toast.success("Đặt hàng thành công! Đơn hàng đang được chuẩn bị.");
+
+    if (paymentMethod === "momo" || paymentMethod === "vietqr") {
+      // Bật Popup hiển thị Mã QR MoMo cố định của shop
+      setMomoScanningState("waiting");
+      setMomoCountdown(300);
+      setIsMomoModalOpen(true);
+      toast.info(`Đang mở mã QR MoMo của Shop ${activeShop.shopName}...`);
+    } else {
+      // Với COD hoặc Thẻ: Thành công ngay lập tức
+      setIsSuccessModalOpen(true);
+      toast.success("Đặt hàng thành công! Đơn hàng đang được chuẩn bị.");
+    }
   }
+
+  // ==========================================================================
+  // LOGIC "SAU QUÉT TỰ TẮT" KHI BẬT POPUP MOMO
+  // Mô phỏng: Người dùng quét mã trên app -> sau 3.5s hệ thống nhận được tiền ->
+  // đổi trạng thái sang tích xanh -> sau 1.5s popup TỰ ĐỘNG TẮT và mở trang thành công
+  // ==========================================================================
+  useEffect(() => {
+    if (!isMomoModalOpen) return;
+
+    // Đếm ngược thời gian hết hạn mã
+    const countdownInterval = setInterval(() => {
+      setMomoCountdown((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+
+    // Mô phỏng quét xong sau 3.5 giây
+    const scanSuccessTimer = setTimeout(() => {
+      setMomoScanningState("success");
+      toast.success("Đã nhận được thanh toán từ Ví MoMo thành công!");
+
+      // "SAU QUÉT TỰ TẮT": Đợi 1.5 giây để khách thấy thông báo thành công rồi tự động đóng popup!
+      const autoCloseTimer = setTimeout(() => {
+        setIsMomoModalOpen(false);
+        setIsSuccessModalOpen(true);
+      }, 1500);
+
+      return () => clearTimeout(autoCloseTimer);
+    }, 3800);
+
+    return () => {
+      clearInterval(countdownInterval);
+      clearTimeout(scanSuccessTimer);
+    };
+  }, [isMomoModalOpen]);
+
+  // Nút hỗ trợ test nhanh: Bỏ qua đếm giây, hoàn tất quét ngay
+  function handleQuickCompleteMomo() {
+    setMomoScanningState("success");
+    toast.success("Xác nhận thanh toán MoMo hoàn tất!");
+    setTimeout(() => {
+      setIsMomoModalOpen(false);
+      setIsSuccessModalOpen(true);
+    }, 800);
+  }
+
+  // Format đếm ngược mm:ss
+  const formatCountdown = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  };
 
   return (
     <div className="min-h-screen bg-[#E8E5DE] text-[#191B19] antialiased">
@@ -205,7 +419,7 @@ function CheckoutInner() {
 
             <div className="hidden sm:flex items-center gap-2 text-xs font-bold text-[#C2410C]">
               <span className="rounded-full bg-[#C2410C]/10 px-3 py-1">
-                Thanh Toán Đơn Hàng Dược Mỹ Phẩm
+                Thanh Toán MoMo & Dược Mỹ Phẩm Chính Hãng
               </span>
             </div>
           </div>
@@ -239,235 +453,326 @@ function CheckoutInner() {
               <button
                 type="button"
                 onClick={() => setIsAddressModalOpen(true)}
-                className="text-xs font-bold text-[#2563EB] hover:underline cursor-pointer"
+                className="text-xs font-semibold text-blue-600 hover:text-blue-800 transition cursor-pointer"
               >
                 Thay đổi
               </button>
             </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-xs sm:text-sm text-[#191B19]">
-              <div className="font-bold shrink-0">
-                {recipientName} {recipientPhone}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs">
+              <div className="font-bold text-[#191B19]">
+                {recipientName} <span className="font-mono font-medium text-[#5C605C]">({recipientPhone})</span>
               </div>
-              <span className="hidden sm:inline text-[#D8D4CA]">•</span>
-              <div className="text-[#4A4D4A] flex-1">
+              <div className="text-[#5C605C] flex-1 line-clamp-2">
                 {recipientAddress}
               </div>
-              <span className="rounded bg-rose-50 border border-rose-200 px-2 py-0.5 text-[10px] font-bold text-rose-700 shrink-0 self-start sm:self-auto">
+              <span className="self-start sm:self-auto rounded-md border border-[#C2410C] bg-[#C2410C]/5 px-2 py-0.5 text-[10px] font-bold text-[#C2410C]">
                 Mặc định
               </span>
             </div>
           </div>
         </div>
 
-        {/* KHỐI 2: DANH SÁCH SẢN PHẨM ĐANG THANH TOÁN (ĐÚNG SẢN PHẨM ĐÃ CHỌN) */}
-        <div className="rounded-3xl border border-[#D8D4CA] bg-white p-5 sm:p-6 shadow-xs space-y-4">
-          {/* Shop Header & Bộ đổi sản phẩm */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#D8D4CA]/60 pb-3">
+        {/* KHỐI 2: DANH SÁCH SẢN PHẨM THANH TOÁN (THEO TỪNG GIAN HÀNG) */}
+        <div className="rounded-3xl border border-[#D8D4CA] bg-white overflow-hidden shadow-xs">
+          {/* Header Shop Shopee Mall & Mã Cố Định */}
+          <div className="border-b border-[#D8D4CA] bg-[#FAF8F5] px-5 py-3.5 sm:px-6 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
-              <span className="rounded bg-rose-600 px-2 py-0.5 text-[10px] font-bold text-white shadow-2xs">
+              <span className="rounded-md bg-[#C2410C] px-2 py-0.5 text-[11px] font-bold text-white">
                 Shopee Mall
               </span>
-              <span className="font-bold text-sm text-[#191B19] flex items-center gap-1.5">
-                <Store className="size-4 text-[#C2410C]" />
-                <span>La Roche-Posay Official Store</span>
+              <Store className="size-4 text-[#5C605C]" />
+              <span className="font-serif font-bold text-sm text-[#191B19]">
+                {activeShop.shopName}
+              </span>
+              <span className="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-800 flex items-center gap-1">
+                <ShieldCheck className="size-3 text-emerald-600" />
+                <span>100% Chính Hãng</span>
               </span>
             </div>
 
-            {/* Quick Switcher: Đổi sang sản phẩm khác nếu muốn */}
+            {/* Thông tin mã MoMo cố định của shop */}
             <div className="flex items-center gap-2 text-xs">
-              <span className="text-[#5C605C] hidden md:inline">Đổi sản phẩm thanh toán:</span>
+              <span className="rounded-lg bg-pink-50 border border-pink-200 px-2.5 py-1 text-[11px] font-bold text-[#A50064] flex items-center gap-1.5">
+                <Smartphone className="size-3.5" />
+                <span>Mã MoMo Shop: <strong className="font-mono">{activeShop.momoCode}</strong></span>
+              </span>
+            </div>
+          </div>
+
+          {/* Ô chọn đổi nhanh sản phẩm khác nếu muốn */}
+          <div className="bg-[#FFFBEB] border-b border-amber-200/80 px-5 py-2.5 sm:px-6 flex flex-wrap items-center justify-between gap-2 text-xs">
+            <div className="flex items-center gap-1.5 text-amber-900 font-medium">
+              <Sparkles className="size-4 text-amber-600 shrink-0" />
+              <span>Đang thanh toán cho gian hàng <strong>{activeShop.brand}</strong>. Muốn đổi món khác?</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <label htmlFor="prodSelect" className="text-amber-800 font-semibold text-[11px]">Đổi sản phẩm:</label>
               <select
-                value={items[0]?.productId || ""}
+                id="prodSelect"
+                value={selectedItems[0]?.productId || ""}
                 onChange={(e) => handleSelectAnotherProduct(e.target.value)}
-                className="rounded-xl border border-[#D8D4CA] bg-[#FAF8F5] px-3 py-1.5 text-xs font-medium text-[#191B19] focus:outline-none focus:border-[#C2410C] cursor-pointer max-w-[240px] truncate"
+                className="rounded-lg border border-amber-300 bg-white px-2 py-1 text-xs text-[#191B19] focus:outline-none focus:ring-1 focus:ring-amber-500 font-medium cursor-pointer"
               >
-                {INITIAL_SHOPEE_PRODUCTS.map((prod) => (
-                  <option key={prod.id} value={prod.id}>
-                    {prod.brand} - {prod.name.slice(0, 45)}...
+                {INITIAL_SHOPEE_PRODUCTS.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    [{p.brand}] - {p.name.slice(0, 45)}... ({formatMoney(p.priceVnd)})
                   </option>
                 ))}
               </select>
             </div>
           </div>
 
-          {/* Product Items Table */}
-          <div className="divide-y divide-[#D8D4CA]/50 space-y-3">
+          {/* Bảng sản phẩm */}
+          <div className="divide-y divide-[#D8D4CA]/60">
             {items.map((item) => (
-              <div
-                key={item.id}
-                className="pt-3 first:pt-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
-              >
-                {/* Ảnh & Tên */}
-                <div className="flex items-center gap-3.5 flex-1 min-w-0">
+              <div key={item.id} className="p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-4 flex-1">
+                  <input
+                    type="checkbox"
+                    checked={item.selected}
+                    onChange={(e) => {
+                      setItems((prev) =>
+                        prev.map((i) => (i.id === item.id ? { ...i, selected: e.target.checked } : i)),
+                      );
+                    }}
+                    className="size-4 rounded border-[#D8D4CA] text-[#C2410C] focus:ring-[#C2410C] cursor-pointer"
+                  />
+
                   <img
                     src={item.image}
                     alt={item.name}
-                    className="size-16 rounded-xl object-cover border border-[#D8D4CA] shrink-0"
+                    className="size-20 rounded-2xl border border-[#D8D4CA] object-cover bg-white shrink-0"
                   />
-                  <div className="min-w-0 space-y-1">
-                    <h4 className="font-bold text-xs sm:text-sm text-[#191B19] leading-snug line-clamp-1">
+
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="rounded bg-rose-100 px-1.5 py-0.5 text-[10px] font-bold text-rose-700">
+                        {item.brand}
+                      </span>
+                      <span className="text-[11px] font-mono text-[#5C605C] bg-[#FAF8F5] px-1.5 py-0.5 rounded border border-[#D8D4CA]">
+                        {item.volume}
+                      </span>
+                    </div>
+
+                    <h4 className="text-xs sm:text-sm font-semibold text-[#191B19] line-clamp-2 leading-snug">
                       {item.name}
                     </h4>
-                    <div className="flex items-center gap-2 text-[11px] text-[#5C605C]">
-                      <span>Phân loại: <strong className="text-[#191B19]">{item.variant}</strong></span>
-                      <span>•</span>
-                      <span>Dung tích: {item.volume}</span>
+
+                    <div className="text-[11px] text-[#5C605C]">
+                      Phân loại: <span className="font-medium text-[#191B19]">{item.variant}</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Đơn giá, Số lượng, Thành tiền */}
-                <div className="flex items-center justify-between sm:justify-end gap-5 shrink-0 pl-19 sm:pl-0">
+                {/* Cột giá & số lượng */}
+                <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-0 border-[#D8D4CA]/40">
                   <div className="text-right">
-                    <span className="font-bold text-xs sm:text-sm text-[#191B19] block">
+                    <div className="font-serif font-bold text-sm text-[#C2410C]">
                       {formatMoney(item.priceVnd)}
-                    </span>
-                    <span className="text-[10px] text-[#5C605C] line-through block">
-                      {formatMoney(item.originalPriceVnd)}
-                    </span>
+                    </div>
+                    {item.originalPriceVnd > item.priceVnd && (
+                      <div className="text-[11px] text-[#5C605C] line-through">
+                        {formatMoney(item.originalPriceVnd)}
+                      </div>
+                    )}
                   </div>
 
                   {/* Quantity Stepper */}
-                  <div className="flex items-center rounded-lg border border-[#D8D4CA] bg-[#FAF8F5]">
+                  <div className="flex items-center rounded-xl border border-[#D8D4CA] bg-[#FAF8F5] overflow-hidden">
                     <button
                       type="button"
                       onClick={() => updateQuantity(item.id, -1)}
-                      className="px-2 py-0.5 text-xs font-bold text-[#5C605C] hover:text-[#191B19] cursor-pointer"
+                      className="size-7 flex items-center justify-center text-[#5C605C] hover:bg-white transition cursor-pointer"
                     >
                       -
                     </button>
-                    <span className="px-2 py-0.5 text-xs font-bold text-[#191B19] font-mono">
+                    <span className="w-8 text-center text-xs font-bold text-[#191B19]">
                       {item.quantity}
                     </span>
                     <button
                       type="button"
                       onClick={() => updateQuantity(item.id, 1)}
-                      className="px-2 py-0.5 text-xs font-bold text-[#5C605C] hover:text-[#191B19] cursor-pointer"
+                      className="size-7 flex items-center justify-center text-[#5C605C] hover:bg-white transition cursor-pointer"
                     >
                       +
                     </button>
                   </div>
 
-                  <div className="text-right min-w-[90px]">
-                    <span className="text-xs sm:text-sm font-bold font-serif text-[#C2410C]">
-                      {formatMoney(item.priceVnd * item.quantity)}
-                    </span>
+                  <div className="min-w-[100px] text-right font-serif font-bold text-sm text-[#191B19]">
+                    {formatMoney(item.priceVnd * item.quantity)}
                   </div>
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Lời nhắn cho Shop */}
-          <div className="pt-3 border-t border-[#D8D4CA]/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs bg-[#FAF8F5] p-3 rounded-2xl">
-            <span className="text-[#5C605C] shrink-0 font-medium">Lời nhắn cho Người bán:</span>
-            <input
-              type="text"
-              value={sellerNote}
-              onChange={(e) => setSellerNote(e.target.value)}
-              placeholder="Lưu ý cho đơn vị bán hàng và đóng gói..."
-              className="flex-1 rounded-xl border border-[#D8D4CA] bg-white px-3 py-1.5 text-xs text-[#191B19] focus:outline-none focus:border-[#C2410C]"
-            />
+          {/* Lời nhắn cho shop */}
+          <div className="border-t border-[#D8D4CA] bg-[#FAF8F5]/50 px-5 py-3 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2 text-[#5C605C]">
+              <span>Lời nhắn cho shop:</span>
+              <input
+                type="text"
+                value={sellerNote}
+                onChange={(e) => setSellerNote(e.target.value)}
+                placeholder="Lưu ý cho Người bán..."
+                className="flex-1 sm:w-80 rounded-xl border border-[#D8D4CA] bg-white px-3 py-1.5 text-xs text-[#191B19] focus:outline-none focus:border-[#C2410C]"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 text-[#5C605C] text-[11px]">
+              <Truck className="size-4 text-[#2D5A43]" />
+              <span>Được đồng kiểm khi nhận hàng</span>
+            </div>
           </div>
         </div>
 
-        {/* KHỐI 3: VẬN CHUYỂN SHOPEE EXPRESS */}
-        <div className="rounded-3xl border border-[#D8D4CA] bg-white p-5 sm:p-6 shadow-xs space-y-3">
+        {/* KHỐI 3: PHƯƠNG THỨC VẬN CHUYỂN (FREESHIP XTRA) */}
+        <div className="rounded-3xl border border-[#D8D4CA] bg-white p-5 sm:p-6 shadow-xs space-y-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-xs font-bold text-[#2D5A43] uppercase tracking-wider">
-              <Truck className="size-4" />
-              <span>Phương thức vận chuyển: Shopee Express (Hỏa Tốc Y Khoa)</span>
+            <div className="flex items-center gap-2 font-bold text-sm text-[#191B19]">
+              <Truck className="size-4.5 text-[#2D5A43]" />
+              <span>Phương Thức Vận Chuyển</span>
             </div>
-
-            <div className="flex items-center gap-2 text-xs">
-              <span className="text-[#5C605C] line-through">{formatMoney(shippingFeeVnd)}</span>
-              <span className="font-bold text-[#2D5A43]">MIỄN PHÍ 0₫</span>
-              <span className="rounded bg-[#2D5A43] px-1.5 py-0.2 text-[9px] font-bold text-white">
-                Freeship Xtra
-              </span>
-            </div>
-          </div>
-
-          <div className="text-xs text-[#5C605C] bg-[#FAF8F5] p-3 rounded-2xl flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Clock className="size-3.5 text-[#C2410C]" />
-              <span>Dự kiến giao hàng: <strong>Từ 1 - 2 ngày làm việc</strong> (Nhận hàng kiểm tra trước khi thanh toán)</span>
-            </div>
-            <span className="text-[#2D5A43] font-semibold text-[11px] hidden sm:inline">
-              ✓ Đảm bảo hoàn tiền 100% nếu bể vỡ
+            <span className="rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
+              Freeship Xtra
             </span>
           </div>
-        </div>
 
-        {/* KHỐI 4: VOUCHERS & XU SHOPEE */}
-        <div className="rounded-3xl border border-[#D8D4CA] bg-white p-5 sm:p-6 shadow-xs space-y-3 text-xs">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-xs font-bold text-[#C2410C]">
-              <Tag className="size-4" />
-              <span>Shopee Voucher & Mã Giảm Giá</span>
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50/40 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 font-bold text-xs text-[#191B19]">
+                <span>Nhanh - SPX Express (Giao Tiết Kiệm)</span>
+                <span className="rounded bg-emerald-600 px-1.5 py-0.2 text-[9px] font-bold text-white uppercase">
+                  Miễn phí
+                </span>
+              </div>
+              <p className="text-[11px] text-[#5C605C]">
+                Nhận hàng vào <strong>16 Tháng 11 - 18 Tháng 11</strong> (Giao hỏa tốc dược mỹ phẩm đóng gói cẩn thận)
+              </p>
             </div>
 
-            <div className="flex items-center gap-2">
-              {useShopVoucher && voucherDiscount > 0 ? (
-                <span className="rounded-lg border border-dashed border-[#C2410C] bg-[#C2410C]/10 px-2.5 py-1 text-xs font-bold text-[#C2410C]">
-                  Đã áp dụng: Giảm 50.000₫ (Voucher Shop)
-                </span>
-              ) : (
-                <span className="text-xs text-[#5C605C]">
-                  {rawTotal < 300000 ? "Voucher áp dụng cho đơn từ 300.000₫" : "Chưa áp dụng voucher"}
-                </span>
-              )}
-              {rawTotal >= 300000 && (
-                <button
-                  type="button"
-                  onClick={() => setUseShopVoucher(!useShopVoucher)}
-                  className="text-xs font-bold text-[#2563EB] hover:underline cursor-pointer ml-1"
-                >
-                  {useShopVoucher ? "Bỏ chọn" : "Áp dụng"}
-                </button>
-              )}
+            <div className="text-right">
+              <span className="text-xs text-[#5C605C] line-through mr-2">{formatMoney(shippingFeeVnd)}</span>
+              <span className="font-serif font-bold text-sm text-[#2D5A43]">0&nbsp;₫</span>
             </div>
           </div>
+        </div>
 
-          {/* Dùng Xu Shopee */}
-          <div className="pt-2 border-t border-[#D8D4CA]/50 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Coins className="size-4 text-amber-500" />
-              <span className="text-[#191B19]">
-                Dùng <strong>20.000 Xu Shopee</strong> (Tiết kiệm {formatMoney(coinDiscountVnd)})
-              </span>
+        {/* KHỐI 4: VOUCHER GIẢM GIÁ & XU SHOPEE */}
+        <div className="rounded-3xl border border-[#D8D4CA] bg-white p-5 sm:p-6 shadow-xs space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 font-bold text-sm text-[#191B19]">
+              <Tag className="size-4.5 text-[#C2410C]" />
+              <span>Shopee Voucher & Khuyến Mãi Shop</span>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setUseCoins(!useCoins)}
-              className={`rounded-full px-3 py-1 text-xs font-bold transition cursor-pointer ${
-                useCoins
-                  ? "bg-amber-600 text-white"
-                  : "border border-[#D8D4CA] text-[#5C605C] hover:text-[#191B19]"
+            <span className="text-xs font-semibold text-[#C2410C]">
+              Tiết kiệm đến 90.000&nbsp;₫
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            {/* Voucher Shop */}
+            <div
+              onClick={() => setUseShopVoucher(!useShopVoucher)}
+              className={`rounded-2xl border p-3.5 flex items-center justify-between transition cursor-pointer ${
+                useShopVoucher
+                  ? "border-[#C2410C] bg-[#C2410C]/5"
+                  : "border-[#D8D4CA] bg-[#FAF8F5] opacity-80"
               }`}
             >
-              {useCoins ? "Đã dùng" : "Dùng Xu"}
-            </button>
+              <div className="flex items-center gap-3">
+                <div className="size-8 rounded-xl bg-[#C2410C] text-white flex items-center justify-center font-bold text-xs">
+                  %
+                </div>
+                <div>
+                  <div className="font-bold text-[#191B19]">Voucher Shop Giảm 50.000₫</div>
+                  <div className="text-[11px] text-[#5C605C]">Áp dụng cho đơn từ 300k</div>
+                </div>
+              </div>
+              <input
+                type="checkbox"
+                checked={useShopVoucher}
+                onChange={() => {}}
+                className="size-4 rounded text-[#C2410C] focus:ring-[#C2410C] cursor-pointer"
+              />
+            </div>
+
+            {/* Dùng Xu */}
+            <div
+              onClick={() => setUseCoins(!useCoins)}
+              className={`rounded-2xl border p-3.5 flex items-center justify-between transition cursor-pointer ${
+                useCoins
+                  ? "border-amber-500 bg-amber-50/60"
+                  : "border-[#D8D4CA] bg-[#FAF8F5] opacity-80"
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div className="size-8 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold text-xs">
+                  <Coins className="size-4" />
+                </div>
+                <div>
+                  <div className="font-bold text-[#191B19]">Dùng 20.000 Xu Shopee</div>
+                  <div className="text-[11px] text-[#5C605C]">Giảm trực tiếp 20.000₫</div>
+                </div>
+              </div>
+              <input
+                type="checkbox"
+                checked={useCoins}
+                onChange={() => {}}
+                className="size-4 rounded text-amber-600 focus:ring-amber-500 cursor-pointer"
+              />
+            </div>
           </div>
         </div>
 
-        {/* KHỐI 5: PHƯƠNG THỨC THANH TOÁN (ĐA DẠNG & CÓ MÃ QR ĐỘNG) */}
+        {/* KHỐI 5: PHƯƠNG THỨC THANH TOÁN (ƯU TIÊN QUÉT MÃ MOMO CỐ ĐỊNH CỦA SHOP) */}
         <div className="rounded-3xl border border-[#D8D4CA] bg-white p-5 sm:p-6 shadow-xs space-y-4">
-          <div className="flex items-center justify-between border-b border-[#D8D4CA]/60 pb-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#191B19] flex items-center gap-1.5">
-              <CreditCard className="size-4 text-[#C2410C]" />
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2 font-bold text-sm text-[#191B19]">
+              <Wallet className="size-4.5 text-[#A50064]" />
               <span>Phương Thức Thanh Toán</span>
-            </span>
-            <span className="text-xs text-[#5C605C]">
-              Bảo mật SSL 256-bit chuẩn ngân hàng
+            </div>
+
+            <span className="text-xs font-semibold text-[#A50064] bg-pink-50 border border-pink-200 rounded-full px-3 py-0.5 flex items-center gap-1">
+              <Zap className="size-3" />
+              <span>Quét MoMo - Tự động tắt sau khi quét</span>
             </span>
           </div>
 
-          {/* 4 Phương thức thanh toán */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-            {/* 1. COD */}
+            {/* 1. VÍ MOMO (MÃ QR SHOP CỐ ĐỊNH) - THEO YÊU CẦU CỦA HÀ */}
+            <button
+              type="button"
+              onClick={() => setPaymentMethod("momo")}
+              className={`rounded-2xl border p-3.5 text-left transition cursor-pointer flex flex-col justify-between space-y-2 relative overflow-hidden ${
+                paymentMethod === "momo"
+                  ? "border-[#A50064] bg-pink-50/70 ring-2 ring-[#A50064]/25"
+                  : "border-[#D8D4CA] bg-[#FAF8F5] hover:bg-white"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-[#A50064] flex items-center gap-1.5">
+                  <Smartphone className="size-4 text-[#A50064]" />
+                  <span>Ví Điện Tử MoMo</span>
+                </span>
+                <span className={`size-4 rounded-full border flex items-center justify-center ${
+                  paymentMethod === "momo" ? "border-[#A50064] bg-[#A50064]" : "border-[#D8D4CA]"
+                }`}>
+                  {paymentMethod === "momo" && <span className="size-1.5 rounded-full bg-white" />}
+                </span>
+              </div>
+              <p className="text-[11px] text-[#5C605C]">
+                Hiện mã QR MoMo cố định của shop, quét xong tự tắt và tạo đơn hàng.
+              </p>
+              <div className="flex items-center gap-1 text-[10px] font-bold text-[#A50064] pt-1">
+                <span className="rounded bg-pink-200/60 px-1.5 py-0.5">Khuyên dùng</span>
+                <span>{activeShop.momoCode}</span>
+              </div>
+            </button>
+
+            {/* 2. Thanh toán COD */}
             <button
               type="button"
               onClick={() => setPaymentMethod("cod")}
@@ -488,52 +793,28 @@ function CheckoutInner() {
               <p className="text-[11px] text-[#5C605C]">Thanh toán tiền mặt cho shipper (COD) khi nhận bưu phẩm.</p>
             </button>
 
-            {/* 2. QR Code VietQR */}
+            {/* 3. VietQR Ngân Hàng */}
             <button
               type="button"
-              onClick={() => setPaymentMethod("qr")}
+              onClick={() => setPaymentMethod("vietqr")}
               className={`rounded-2xl border p-3.5 text-left transition cursor-pointer flex flex-col justify-between space-y-2 ${
-                paymentMethod === "qr"
-                  ? "border-[#C2410C] bg-[#C2410C]/5 ring-2 ring-[#C2410C]/25"
+                paymentMethod === "vietqr"
+                  ? "border-blue-600 bg-blue-50/60 ring-2 ring-blue-500/25"
                   : "border-[#D8D4CA] bg-[#FAF8F5] hover:bg-white"
               }`}
             >
               <div className="flex items-center justify-between">
                 <span className="font-bold text-[#191B19] flex items-center gap-1">
-                  <QrCode className="size-3.5 text-[#C2410C]" />
+                  <QrCode className="size-3.5 text-blue-600" />
                   <span>Quét Mã VietQR</span>
                 </span>
                 <span className={`size-4 rounded-full border flex items-center justify-center ${
-                  paymentMethod === "qr" ? "border-[#C2410C] bg-[#C2410C]" : "border-[#D8D4CA]"
+                  paymentMethod === "vietqr" ? "border-blue-600 bg-blue-600" : "border-[#D8D4CA]"
                 }`}>
-                  {paymentMethod === "qr" && <span className="size-1.5 rounded-full bg-white" />}
+                  {paymentMethod === "vietqr" && <span className="size-1.5 rounded-full bg-white" />}
                 </span>
               </div>
-              <p className="text-[11px] text-[#5C605C]">Chuyển khoản 24/7 qua mã QR tự động điền số tiền và nội dung.</p>
-            </button>
-
-            {/* 3. ShopeePay / MoMo */}
-            <button
-              type="button"
-              onClick={() => setPaymentMethod("shopeepay")}
-              className={`rounded-2xl border p-3.5 text-left transition cursor-pointer flex flex-col justify-between space-y-2 ${
-                paymentMethod === "shopeepay"
-                  ? "border-[#C2410C] bg-[#C2410C]/5 ring-2 ring-[#C2410C]/25"
-                  : "border-[#D8D4CA] bg-[#FAF8F5] hover:bg-white"
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-[#191B19] flex items-center gap-1">
-                  <Wallet className="size-3.5 text-[#C2410C]" />
-                  <span>Ví ShopeePay</span>
-                </span>
-                <span className={`size-4 rounded-full border flex items-center justify-center ${
-                  paymentMethod === "shopeepay" ? "border-[#C2410C] bg-[#C2410C]" : "border-[#D8D4CA]"
-                }`}>
-                  {paymentMethod === "shopeepay" && <span className="size-1.5 rounded-full bg-white" />}
-                </span>
-              </div>
-              <p className="text-[11px] text-[#5C605C]">Giảm thêm 10k khi thanh toán bằng ví điện tử ShopeePay.</p>
+              <p className="text-[11px] text-[#5C605C]">Chuyển khoản 24/7 qua mã VietQR liên ngân hàng.</p>
             </button>
 
             {/* 4. Thẻ Quốc Tế Visa / Mastercard */}
@@ -554,48 +835,41 @@ function CheckoutInner() {
                   {paymentMethod === "card" && <span className="size-1.5 rounded-full bg-white" />}
                 </span>
               </div>
-              <p className="text-[11px] text-[#5C605C]">Hỗ trợ thẻ tín dụng và thẻ ghi nợ quốc tế mọi ngân hàng.</p>
+              <p className="text-[11px] text-[#5C605C]">Hỗ trợ thẻ tín dụng và ghi nợ quốc tế mọi ngân hàng.</p>
             </button>
           </div>
 
-          {/* Nếu chọn Quét QR: Hiển thị Demo mã VietQR thanh toán ngay */}
-          {paymentMethod === "qr" && (
-            <div className="rounded-2xl border border-[#D8D4CA] bg-[#FAF8F5] p-4 flex flex-col sm:flex-row items-center gap-4 text-xs">
-              <div className="size-28 bg-white border border-[#D8D4CA] rounded-xl p-2 flex flex-col items-center justify-center shrink-0 shadow-2xs">
-                <QrCode className="size-20 text-[#191B19]" />
-                <span className="text-[9px] font-mono font-bold text-[#C2410C]">VIETQR 24/7</span>
+          {/* Banner hướng dẫn thanh toán MoMo cố định theo lời Hà */}
+          {paymentMethod === "momo" && (
+            <div className="rounded-2xl border border-pink-200 bg-gradient-to-r from-pink-50 to-white p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-3">
+                <div className="size-10 rounded-2xl bg-[#A50064] text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-xs">
+                  M
+                </div>
+                <div>
+                  <h5 className="font-bold text-[#A50064] flex items-center gap-1.5">
+                    <span>Mã QR MoMo Cố Định - {activeShop.shopName}</span>
+                  </h5>
+                  <p className="text-[11px] text-[#5C605C]">
+                    Số tài khoản: <strong>{activeShop.momoPhone}</strong> ({activeShop.momoReceiver}) • Mã nhận diện: <strong>{activeShop.momoCode}</strong>
+                  </p>
+                </div>
               </div>
-              <div className="space-y-1 text-center sm:text-left">
-                <span className="font-bold text-sm text-[#191B19] block">
-                  Quét Mã Để Thanh Toán {formatMoney(finalTotal)}
-                </span>
-                <p className="text-[#5C605C]">Ngân hàng: <strong>Vietcombank (Chi nhánh Sài Gòn)</strong></p>
-                <p className="text-[#5C605C]">Số tài khoản: <strong className="font-mono text-[#191B19]">1038 9999 8888</strong></p>
-                <p className="text-[#5C605C]">Nội dung chuyển khoản: <strong className="font-mono text-[#C2410C]">SKINSENSE {recipientPhone.slice(-4)}</strong></p>
+
+              <div className="text-[11px] text-pink-700 bg-pink-100/70 border border-pink-300 rounded-xl px-3 py-1 font-medium">
+                ⚡ Khi bấm "Đặt Hàng", mã QR sẽ hiện lên để bạn quét và tự tắt sau khi quét.
               </div>
             </div>
           )}
         </div>
 
-        {/* KHỐI 6: CHI TIẾT THANH TOÁN & NÚT ĐẶT HÀNG (ORDER SUMMARY & CTA) */}
-        <div className="rounded-3xl border border-[#D8D4CA] bg-white p-5 sm:p-7 shadow-xs space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-5 text-xs sm:text-sm">
-            {/* Điều khoản & Cam kết Shopee */}
-            <div className="space-y-1.5 text-xs text-[#5C605C] max-w-md">
-              <div className="flex items-center gap-1.5 text-[#2D5A43] font-bold">
-                <ShieldCheck className="size-4" />
-                <span>Shopee Đảm Bảo - An Tâm Mua Sắm Dược Mỹ Phẩm</span>
-              </div>
-              <p>
-                Nhấn "Đặt Hàng" đồng nghĩa với việc bạn đồng ý tuân theo Điều Khoản Dịch Vụ Shopee Mall và Chính Sách Hoàn Tiền 100% của SkinSense.
-              </p>
-            </div>
-
-            {/* Bảng Chi Tiết Tiền */}
-            <div className="space-y-2 min-w-[280px]">
+        {/* KHỐI 6: TỔNG KẾT CHI PHÍ & NÚT ĐẶT HÀNG / THANH TOÁN MOMO */}
+        <div className="rounded-3xl border border-[#D8D4CA] bg-white p-5 sm:p-6 shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row justify-end items-end gap-2 text-xs">
+            <div className="w-full sm:w-96 space-y-2">
               <div className="flex justify-between text-[#5C605C]">
-                <span>Tổng tiền hàng ({items.reduce((acc, i) => acc + i.quantity, 0)} món):</span>
-                <span className="text-[#191B19] font-medium">{formatMoney(rawTotal)}</span>
+                <span>Tổng tiền hàng ({selectedItems.length} sản phẩm):</span>
+                <span className="font-medium text-[#191B19]">{formatMoney(rawTotal)}</span>
               </div>
 
               <div className="flex justify-between text-[#5C605C]">
@@ -604,7 +878,7 @@ function CheckoutInner() {
               </div>
 
               <div className="flex justify-between text-[#2D5A43]">
-                <span>Giảm giá phí vận chuyển:</span>
+                <span>Giảm giá phí vận chuyển (Freeship):</span>
                 <span>-{formatMoney(shippingDiscountVnd)}</span>
               </div>
 
@@ -635,27 +909,183 @@ function CheckoutInner() {
           <div className="pt-2 border-t border-[#D8D4CA]/60 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="text-xs text-[#5C605C] hidden sm:block">
               Phương thức: <strong>{
+                paymentMethod === "momo" ? `Ví MoMo (QR Shop ${activeShop.brand})` :
                 paymentMethod === "cod" ? "Thanh toán khi nhận hàng (COD)" :
-                paymentMethod === "qr" ? "Quét mã VietQR" :
-                paymentMethod === "shopeepay" ? "Ví ShopeePay" : "Thẻ Visa / Master"
+                paymentMethod === "vietqr" ? "Quét mã VietQR" : "Thẻ Visa / Master"
               }</strong>
             </div>
 
             <button
               type="button"
               onClick={handlePlaceOrder}
-              className="w-full sm:w-auto h-12 px-10 flex items-center justify-center gap-2 rounded-2xl bg-[#C2410C] text-sm font-bold text-white shadow-md hover:bg-[#9A3412] active:scale-[0.98] transition cursor-pointer"
+              className={`w-full sm:w-auto h-12 px-10 flex items-center justify-center gap-2 rounded-2xl text-sm font-bold text-white shadow-md active:scale-[0.98] transition cursor-pointer ${
+                paymentMethod === "momo"
+                  ? "bg-[#A50064] hover:bg-[#880052] shadow-pink-900/20"
+                  : "bg-[#C2410C] hover:bg-[#9A3412]"
+              }`}
             >
-              <ShoppingBag className="size-5" />
-              <span>Đặt Hàng ({formatMoney(finalTotal)})</span>
+              {paymentMethod === "momo" ? (
+                <>
+                  <Smartphone className="size-5" />
+                  <span>Thanh Toán MoMo ({formatMoney(finalTotal)})</span>
+                </>
+              ) : (
+                <>
+                  <ShoppingBag className="size-5" />
+                  <span>Đặt Hàng ({formatMoney(finalTotal)})</span>
+                </>
+              )}
             </button>
           </div>
         </div>
       </main>
 
-      {/* MODAL: ĐẶT HÀNG THÀNH CÔNG */}
+      {/* ==================================================================== */}
+      {/* MODAL MÃ QR MOMO ("MỖI SHOP 1 MÃ CỐ ĐỊNH, SAU QUÉT TỰ TẮT") */}
+      {/* ==================================================================== */}
+      {isMomoModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="w-full max-w-md rounded-3xl border border-[#D8D4CA] bg-white overflow-hidden shadow-2xl space-y-0 text-center">
+            {/* Header MoMo chuẩn nhận diện thương hiệu */}
+            <div className="bg-gradient-to-r from-[#A50064] via-[#C2185B] to-[#D82D8B] p-5 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2.5 text-left">
+                <div className="size-9 rounded-2xl bg-white text-[#A50064] flex items-center justify-center font-bold text-base shadow-sm">
+                  M
+                </div>
+                <div>
+                  <h4 className="font-bold text-sm tracking-wide leading-tight">Thanh Toán Ví MoMo</h4>
+                  <p className="text-[11px] text-pink-100">Mã QR Cố Định • {activeShop.shopName}</p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsMomoModalOpen(false)}
+                className="size-8 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition cursor-pointer"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+
+            {/* Nội dung Popup QR */}
+            <div className="p-6 space-y-4">
+              {/* Thẻ thông tin Shop & Số tiền */}
+              <div className="rounded-2xl bg-pink-50/60 border border-pink-100 p-3.5 text-xs text-left space-y-1.5">
+                <div className="flex justify-between items-center">
+                  <span className="text-[#5C605C]">Gian hàng nhận tiền:</span>
+                  <span className="font-bold text-[#191B19]">{activeShop.shopName}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[#5C605C]">Chủ tài khoản MoMo:</span>
+                  <span className="font-semibold text-[#191B19]">{activeShop.momoReceiver}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[#5C605C]">Số điện thoại MoMo:</span>
+                  <span className="font-mono font-bold text-[#A50064]">{activeShop.momoPhone}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[#5C605C]">Mã đơn hàng:</span>
+                  <span className="font-mono font-bold text-[#191B19]">{orderCode}</span>
+                </div>
+                <div className="pt-1 border-t border-pink-200/80 flex justify-between items-center text-sm">
+                  <span className="font-bold text-[#191B19]">Số tiền cần thanh toán:</span>
+                  <span className="font-serif font-bold text-lg text-[#A50064]">
+                    {formatMoney(finalTotal)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Khung hiển thị Mã QR MoMo + Tia Laser quét */}
+              <div className="relative mx-auto w-64 h-64 rounded-3xl border-2 border-pink-300 bg-white p-3 shadow-inner flex flex-col items-center justify-center overflow-hidden">
+                {/* Tia Laser Quét Động (Laser Scanning Line) */}
+                {momoScanningState === "waiting" && (
+                  <div className="absolute inset-x-3 h-1 bg-gradient-to-r from-transparent via-[#D82D8B] to-transparent shadow-[0_0_12px_#D82D8B] animate-bounce pointer-events-none z-10 opacity-80" />
+                )}
+
+                {/* Ảnh Mã QR MoMo độ phân giải cao kết nối API VietQR với thông tin cố định của shop */}
+                <img
+                  src={`https://api.vietqr.io/image/970422-${activeShop.momoPhone.replace(/\s+/g, "")}-compact.png?amount=${finalTotal}&addInfo=${encodeURIComponent(activeShop.momoCode + " " + orderCode)}&accountName=${encodeURIComponent(activeShop.momoReceiver)}`}
+                  alt="Mã QR MoMo Shop"
+                  className="w-full h-full object-contain rounded-xl"
+                  onError={(e) => {
+                    // Fallback sang QR generator tiêu chuẩn nếu cần
+                    (e.target as HTMLImageElement).src = `https://quickchart.io/qr?text=2%7C99%7C${activeShop.momoPhone}%7C${activeShop.momoReceiver}%7C${orderCode}%7C0%7C0%7C${finalTotal}&size=250`;
+                  }}
+                />
+
+                {/* Logo MoMo nằm giữa mã QR */}
+                <div className="absolute size-10 rounded-xl bg-[#A50064] text-white flex items-center justify-center font-bold text-base shadow-md border-2 border-white pointer-events-none">
+                  M
+                </div>
+
+                {/* Lớp phủ thông báo khi quét xong ("SAU QUÉT TỰ TẮT") */}
+                {momoScanningState === "success" && (
+                  <div className="absolute inset-0 bg-white/95 backdrop-blur-xs flex flex-col items-center justify-center p-4 animate-in zoom-in-95 duration-200 z-20">
+                    <div className="size-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-2 animate-bounce">
+                      <CheckCircle2 className="size-10" />
+                    </div>
+                    <h5 className="font-bold text-sm text-emerald-700">Đã Nhận Thanh Toán!</h5>
+                    <p className="text-[11px] text-[#5C605C] mt-1">Cửa sổ sẽ tự đóng trong giây lát...</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Trạng thái quét & Thời gian đếm ngược */}
+              <div className="space-y-1.5">
+                {momoScanningState === "waiting" ? (
+                  <div className="flex items-center justify-center gap-2 text-xs font-semibold text-[#A50064]">
+                    <span className="size-2 rounded-full bg-[#A50064] animate-ping" />
+                    <span>Đang chờ bạn mở ứng dụng MoMo để quét mã...</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-emerald-700">
+                    <CheckCircle2 className="size-4" />
+                    <span>Thanh toán thành công! Đang chuyển hướng...</span>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-center gap-1.5 text-[11px] text-[#5C605C]">
+                  <Clock className="size-3.5" />
+                  <span>Mã có hiệu lực trong: <strong className="font-mono text-[#191B19]">{formatCountdown(momoCountdown)}</strong></span>
+                </div>
+              </div>
+
+              {/* Hướng dẫn thao tác nhanh 3 bước */}
+              <div className="rounded-xl bg-[#FAF8F5] p-3 text-[11px] text-[#5C605C] text-left space-y-1 border border-[#D8D4CA]/60">
+                <p>1. Mở ứng dụng <strong>MoMo</strong> trên điện thoại.</p>
+                <p>2. Chọn <strong>"Quét Mã"</strong> và hướng camera vào mã QR ở trên.</p>
+                <p>3. Xác nhận số tiền & <strong>cửa sổ sẽ tự động tắt</strong> ngay khi hoàn tất.</p>
+              </div>
+
+              {/* Nút mô phỏng quét xong nhanh (dành cho người test / demo) */}
+              <div className="pt-2 border-t border-[#D8D4CA]/50 flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsMomoModalOpen(false)}
+                  className="rounded-xl border border-[#D8D4CA] px-3 py-1.5 text-[11px] font-semibold text-[#5C605C] hover:bg-[#FAF8F5]"
+                >
+                  Đổi cách thanh toán
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleQuickCompleteMomo}
+                  className="rounded-xl bg-pink-100 border border-pink-300 px-3.5 py-1.5 text-[11px] font-bold text-[#A50064] hover:bg-pink-200 flex items-center gap-1 transition cursor-pointer"
+                >
+                  <Zap className="size-3" />
+                  <span>⚡ Tôi đã quét xong (Bỏ qua chờ)</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================================================================== */}
+      {/* MODAL: ĐẶT HÀNG / THANH TOÁN THÀNH CÔNG */}
+      {/* ==================================================================== */}
       {isSuccessModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-in fade-in duration-200">
           <div className="w-full max-w-lg rounded-3xl border border-[#D8D4CA] bg-[#FAF8F5] p-6 sm:p-8 shadow-2xl space-y-6 text-center">
             <div className="size-16 rounded-full bg-[#2D5A43]/10 text-[#2D5A43] flex items-center justify-center mx-auto">
               <CheckCircle2 className="size-10" />
@@ -669,7 +1099,7 @@ function CheckoutInner() {
                 Đặt Hàng Thành Công!
               </h3>
               <p className="text-xs text-[#5C605C]">
-                Cảm ơn bạn đã tin dùng sản phẩm theo phác đồ y khoa của SkinSense.
+                Cảm ơn bạn đã tin dùng sản phẩm chăm sóc da chính hãng từ gian hàng <strong>{activeShop.shopName}</strong>.
               </p>
             </div>
 
@@ -682,31 +1112,49 @@ function CheckoutInner() {
                 <span className="text-[#5C605C]">Tổng thanh toán:</span>
                 <strong className="font-bold text-[#191B19]">{formatMoney(finalTotal)}</strong>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center">
                 <span className="text-[#5C605C]">Hình thức thanh toán:</span>
                 <span className="font-semibold text-[#191B19]">
-                  {paymentMethod === "cod" ? "Thanh toán khi nhận hàng (COD)" : "Chuyển khoản VietQR"}
+                  {paymentMethod === "momo" ? (
+                    <span className="text-[#A50064] font-bold">Ví MoMo (Đã thanh toán qua mã QR của shop)</span>
+                  ) : paymentMethod === "cod" ? (
+                    "Thanh toán khi nhận hàng (COD)"
+                  ) : (
+                    "Chuyển khoản VietQR"
+                  )}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#5C605C]">Giao tới:</span>
-                <span className="font-semibold text-[#191B19] truncate max-w-[250px]">{recipientAddress}</span>
+                <span className="text-[#5C605C]">Đơn vị vận chuyển:</span>
+                <span className="text-[#191B19]">SPX Express (Freeship Xtra)</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[#5C605C]">Dự kiến nhận hàng:</span>
+                <span className="font-medium text-[#2D5A43]">16 Tháng 11 - 18 Tháng 11</span>
+              </div>
+              <div className="pt-2 border-t border-[#D8D4CA]/60 flex justify-between">
+                <span className="text-[#5C605C]">Địa chỉ giao:</span>
+                <span className="text-[#191B19] text-right max-w-[240px] truncate">{recipientAddress}</span>
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-center gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <Link
                 href="/shop"
-                className="w-full h-11 flex items-center justify-center gap-1.5 rounded-xl border border-[#D8D4CA] bg-white text-xs font-bold text-[#191B19] hover:bg-[#E8E5DE] transition"
+                className="flex-1 rounded-2xl bg-[#C2410C] py-3 text-xs font-bold text-white shadow-xs hover:bg-[#9A3412] text-center"
               >
-                <span>Tiếp Tục Mua Sắm</span>
+                Tiếp Tục Mua Sắm
               </Link>
-              <Link
-                href="/user/routine"
-                className="w-full h-11 flex items-center justify-center gap-1.5 rounded-xl bg-[#C2410C] text-xs font-bold text-white shadow-xs hover:bg-[#9A3412] transition"
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSuccessModalOpen(false);
+                  router.push("/shop");
+                }}
+                className="flex-1 rounded-2xl border border-[#D8D4CA] bg-white py-3 text-xs font-semibold text-[#191B19] hover:bg-[#FAF8F5]"
               >
-                <span>Xem Lại Phác Đồ Routine</span>
-              </Link>
+                Về Trang Chủ
+              </button>
             </div>
           </div>
         </div>
@@ -714,10 +1162,10 @@ function CheckoutInner() {
 
       {/* MODAL: SỬA ĐỊA CHỈ NHẬN HÀNG */}
       {isAddressModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-md rounded-3xl border border-[#D8D4CA] bg-[#FAF8F5] p-6 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
+          <div className="w-full max-w-md rounded-3xl border border-[#D8D4CA] bg-white p-6 shadow-xl space-y-4">
             <div className="flex items-center justify-between border-b border-[#D8D4CA] pb-3">
-              <h4 className="font-bold text-base text-[#191B19]">Thay Đổi Địa Chỉ Nhận Hàng</h4>
+              <h4 className="font-bold text-sm text-[#191B19]">Cập Nhật Địa Chỉ Nhận Hàng</h4>
               <button
                 type="button"
                 onClick={() => setIsAddressModalOpen(false)}
@@ -785,6 +1233,7 @@ function CheckoutInner() {
   );
 }
 
+// Default export wrapped in Suspense for Next.js App Router
 export default function ShopCheckoutPage() {
   return (
     <Suspense
