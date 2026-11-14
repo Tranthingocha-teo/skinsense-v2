@@ -190,8 +190,8 @@ export function UserPrescribedRoutine({
   const totalSaved = totalOriginalPrice - totalPrice;
 
   function handleGoToShop() {
-    toast.success("Đang chuyển hướng sang trang sản phẩm của Shop...");
-    router.push("/shop");
+    toast.success("Đang chuyển đến trang thanh toán Shopee Mall...");
+    router.push("/shop/checkout");
   }
 
   return (

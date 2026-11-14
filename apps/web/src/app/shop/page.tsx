@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Store,
@@ -518,6 +519,7 @@ export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
 ];
 
 export default function ShopProductPage() {
+  const router = useRouter();
   // Page mode: "seller" (Shopee Seller Center) vs "buyer" (Shopee Marketplace Storefront)
   const [viewMode, setViewMode] = useState<"seller" | "buyer">("seller");
 
@@ -720,6 +722,14 @@ export default function ShopProductPage() {
                 <span>Xem Giao Diện Mua Hàng</span>
               </button>
             </div>
+
+            <Link
+              href="/shop/checkout"
+              className="flex items-center gap-1.5 rounded-xl border border-[#C2410C]/40 bg-[#C2410C]/10 px-3 py-1.5 text-xs font-bold text-[#C2410C] hover:bg-[#C2410C] hover:text-white transition shadow-2xs"
+            >
+              <ShoppingBag className="size-3.5" />
+              <span>Thanh Toán</span>
+            </Link>
 
             <Link
               href="/"
@@ -1339,7 +1349,10 @@ export default function ShopProductPage() {
 
                     <button
                       type="button"
-                      onClick={() => toast.success(`Đang chuyển hướng thanh toán đơn hàng ${formatMoney(selectedProduct.priceVnd * buyerQuantity)}...`)}
+                      onClick={() => {
+                        toast.success(`Đang chuyển sang trang thanh toán đơn hàng ${formatMoney(selectedProduct.priceVnd * buyerQuantity)}...`);
+                        router.push("/shop/checkout");
+                      }}
                       className="h-11 flex-1 flex items-center justify-center gap-2 rounded-xl bg-[#C2410C] px-5 text-sm font-bold text-white shadow-xs hover:bg-[#9A3412] transition active:scale-[0.98] cursor-pointer w-full"
                     >
                       <span>Mua Ngay</span>
