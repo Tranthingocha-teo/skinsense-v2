@@ -52,7 +52,7 @@ export const DEMO_ACCOUNTS = [
     email: "bacsi.tuan@skinsense.vn",
     password: "password123",
     icon: Stethoscope,
-    desc: "Hồ sơ CCHN đang chờ Admin Ngọc Hà duyệt",
+    desc: "Hồ sơ CCHN đang chờ phê duyệt",
     status: "pending",
   },
   {
@@ -357,7 +357,7 @@ export function AuthModal({
       }
 
       if (regRole === "specialist") {
-        setSuccess("Đã gửi yêu cầu đăng ký Bác sĩ tới Admin Trần Thị Ngọc Hà để xét duyệt!");
+        setSuccess("Đã gửi hồ sơ đăng ký Bác sĩ thành công để xét duyệt!");
         setLoading(false);
         return;
       }
@@ -428,7 +428,7 @@ export function AuthModal({
       }
 
       setSuccess(
-        "✅ Hồ sơ Bác sĩ đã được gửi thành công! Admin Trần Thị Ngọc Hà (hattn.23itb@vku.udn.vn) sẽ xét duyệt Chứng chỉ hành nghề. Sau khi duyệt, bạn có thể đăng nhập vào cổng chuyên gia.",
+        "✅ Hồ sơ Bác sĩ đã được gửi thành công! Ban quản trị sẽ xét duyệt Chứng chỉ hành nghề. Sau khi duyệt, bạn có thể đăng nhập vào cổng chuyên gia.",
       );
       setLoading(false);
     } catch (err) {
@@ -528,22 +528,23 @@ export function AuthModal({
             {/* Scrollable Body */}
             <div className="overflow-y-auto px-6 py-5">
               {/* Google OAuth Login Card (Supabase Auth - 1 Click) */}
-              <div className="mb-4 flex flex-col gap-2 rounded-xl border border-primary/25 bg-primary/5 p-3.5">
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-1.5 text-xs font-semibold text-primary">
-                    <Sparkles className="size-3.5 text-primary" />
-                    Đăng nhập bằng Gmail (Google / Supabase)
-                  </span>
-                  <span className="rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-bold text-primary">
-                    Khuyên dùng
-                  </span>
+              {tab !== "doctor-approval" && (
+                <div className="mb-4 flex flex-col gap-2 rounded-xl border border-primary/25 bg-primary/5 p-3.5">
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1.5 text-xs font-semibold text-primary">
+                      <Sparkles className="size-3.5 text-primary" />
+                      Đăng nhập bằng Gmail (Google / Supabase)
+                    </span>
+                    <span className="rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-bold text-primary">
+                      Khuyên dùng
+                    </span>
+                  </div>
+                  <p className="text-[11.5px] text-muted-foreground">
+                    Tiếp tục qua Supabase OAuth — Đăng nhập an toàn, không cần nhớ mật khẩu.
+                  </p>
+                  <GoogleOAuthButton label="Tiếp tục bằng Gmail (Google OAuth)" />
                 </div>
-                <p className="text-[11.5px] text-muted-foreground">
-                  Tiếp tục qua Supabase OAuth — Không cần mật khẩu. Email{" "}
-                  <strong className="text-foreground">hattn.23itb@vku.udn.vn</strong> tự động nhận quyền Admin.
-                </p>
-                <GoogleOAuthButton label="Tiếp tục bằng Gmail (Google OAuth)" />
-              </div>
+              )}
 
               {/* Alert Feedback */}
               {error && (
@@ -853,8 +854,7 @@ export function AuthModal({
                       <span>Quy trình xét duyệt Bác sĩ Chuyên khoa Da liễu</span>
                     </div>
                     <p className="mt-1 text-[11.5px] leading-relaxed text-muted-foreground">
-                      Bác sĩ gửi thông tin Chứng chỉ hành nghề (CCHN). Yêu cầu sẽ được gửi trực tiếp tới Super Admin{" "}
-                      <strong className="text-foreground">Trần Thị Ngọc Hà (hattn.23itb@vku.udn.vn)</strong> để đối soát và kích hoạt quyền truy cập kê phác đồ da.
+                      Bác sĩ gửi thông tin Chứng chỉ hành nghề (CCHN) và đơn vị công tác để kích hoạt tài khoản chuyên môn và quyền kê phác đồ da y khoa.
                     </p>
                   </div>
 

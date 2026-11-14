@@ -20,11 +20,10 @@ function renderLanding() {
 }
 
 describe("Landing", () => {
-  it("offers 1-click entry and Xem thử in the hero", () => {
+  it("offers Supabase Gmail login and Doctor approval in the hero", () => {
     renderLanding();
-    const demo = screen.getAllByRole("link", { name: "Xem thử, không cần đăng nhập" });
-    expect(demo[0]).toHaveAttribute("href", "/demo");
-    expect(screen.getByText("🚀 NHẤP VÀO LÀ VÀO XEM NGAY (1 CHẠM)")).toBeInTheDocument();
+    expect(screen.getByText("Đăng nhập bằng Gmail (Google / Supabase)")).toBeInTheDocument();
+    expect(screen.getByText("🩺 Bác sĩ: Gửi hồ sơ duyệt")).toBeInTheDocument();
   });
 
   it("renders the three stage scenes and the data cards' final values before any motion loads", () => {

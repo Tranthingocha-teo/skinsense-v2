@@ -2,7 +2,6 @@ import { ZONES } from "@skinsense/domain";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { AuthModal } from "@/components/auth-modal";
-import { QuickAccessButtons } from "@/components/quick-access-buttons";
 import { GoogleOAuthButton } from "@/components/google-oauth-button";
 import { ParticleFaceSlot } from "@/components/face/particle-face-loader";
 import { LocaleSwitch } from "@/components/locale-switch";
@@ -84,15 +83,10 @@ export function Landing() {
               label="Đăng nhập Gmail"
               className="flex h-10 items-center justify-center gap-2 rounded-lg border border-border bg-card px-3 text-xs font-semibold text-foreground shadow-xs transition hover:border-foreground/40 hover:bg-muted/50 cursor-pointer whitespace-nowrap"
             />
-            <Link
-              href="/demo"
-              className={`${btn} h-10 px-4 text-xs font-semibold whitespace-nowrap shadow-sm hover:opacity-95`}
-            >
-              🚀 Vào xem ngay
-            </Link>
             <AuthModal
-              triggerLabel="Tài khoản / Vai trò"
-              triggerClassName={`${btnO} h-10 px-3 text-xs whitespace-nowrap text-muted-foreground hover:text-foreground cursor-pointer`}
+              defaultTab="doctor-approval"
+              triggerLabel="🩺 Bác sĩ gửi duyệt"
+              triggerClassName="flex h-10 items-center justify-center gap-1.5 rounded-lg border border-emerald-600/40 bg-emerald-500/10 px-3 text-xs font-semibold text-emerald-800 dark:text-emerald-300 transition hover:border-emerald-600 hover:bg-emerald-500/20 cursor-pointer whitespace-nowrap"
             />
           </div>
         </SiteHeader>
@@ -110,27 +104,12 @@ export function Landing() {
                 className="flex h-[54px] items-center justify-center gap-2.5 rounded-xl border border-foreground/30 bg-card/90 px-6 text-[15px] font-semibold text-foreground shadow-md backdrop-blur-xs transition hover:scale-[1.02] hover:border-foreground active:scale-[0.98] cursor-pointer"
                 label="Đăng nhập bằng Gmail (Google / Supabase)"
               />
-              <Link
-                href="/demo"
-                className="flex h-[54px] items-center justify-center gap-2.5 rounded-xl bg-primary px-7 text-[15px] font-bold text-primary-foreground shadow-xl transition hover:scale-[1.02] active:scale-[0.98]"
-              >
-                🚀 NHẤP VÀO LÀ VÀO XEM NGAY (1 CHẠM)
-              </Link>
               <AuthModal
                 defaultTab="doctor-approval"
                 triggerLabel="🩺 Bác sĩ: Gửi hồ sơ duyệt"
-                triggerClassName="flex h-[54px] items-center justify-center gap-2 rounded-xl border border-emerald-600/40 bg-emerald-500/10 px-5 text-[14px] font-semibold text-emerald-800 dark:text-emerald-300 transition hover:border-emerald-600 hover:bg-emerald-500/20 cursor-pointer"
-              />
-              <Link href="/demo" className={`${btnO} md:px-7`}>
-                {t("tryDemo")}
-              </Link>
-              <AuthModal
-                triggerLabel="Tài khoản / 4 Vai trò"
-                triggerClassName="flex h-[54px] items-center justify-center gap-2 rounded-xl border border-foreground/30 px-5 text-[14px] font-medium transition hover:border-foreground hover:bg-foreground/5 cursor-pointer"
+                triggerClassName="flex h-[54px] items-center justify-center gap-2 rounded-xl border border-emerald-600/40 bg-emerald-500/10 px-6 text-[15px] font-semibold text-emerald-800 dark:text-emerald-300 transition hover:border-emerald-600 hover:bg-emerald-500/20 cursor-pointer shadow-md"
               />
             </div>
-
-            <QuickAccessButtons />
           </div>
           <div className="flex flex-col gap-0.5 text-[11.5px] tracking-[0.06em] uppercase md:flex-row md:items-center md:gap-6 md:text-xs md:tracking-[0.08em]">
             <span>{t("finePrint")}</span>
