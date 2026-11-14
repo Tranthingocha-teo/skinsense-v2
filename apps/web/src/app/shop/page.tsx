@@ -7,8 +7,6 @@ import {
   ShoppingBag,
   Plus,
   Trash2,
-  Edit3,
-  CheckCircle2,
   Star,
   Truck,
   Tag,
@@ -19,22 +17,16 @@ import {
   ArrowRight,
   Package,
   Layers,
-  Clock,
   Sparkles,
-  Check,
   X,
-  Upload,
-  Image as ImageIcon,
-  ChevronRight,
-  SlidersHorizontal,
   Home,
   Percent,
-  Heart,
-  Share2,
   BadgeCheck,
-  AlertCircle,
-  HelpCircle,
-  RefreshCw,
+  FileText,
+  Grid3X3,
+  SlidersHorizontal,
+  ChevronRight,
+  Info,
 } from "lucide-react";
 import { toast } from "sonner";
 import { LogoMark } from "@/components/site-header";
@@ -305,6 +297,13 @@ export default function ShopProductPage() {
   const [buyerQuantity, setBuyerQuantity] = useState<number>(1);
   const [activeImageIndex, setActiveImageIndex] = useState<number>(0);
 
+  // Per-card sub-tab state for Seller Center ("sales" | "specs" | "variants")
+  // Allows each product block to split its fields cleanly without cluttering the frame!
+  const [cardActiveTab, setCardActiveTab] = useState<Record<string, "sales" | "specs" | "variants">>({});
+
+  // Inspector Modal for full detailed view of any product's Shopee specs
+  const [inspectingProduct, setInspectingProduct] = useState<ShopeeProduct | null>(null);
+
   // Search & Filter state for seller
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -320,7 +319,9 @@ export default function ShopProductPage() {
   const [formPrice, setFormPrice] = useState<number>(350000);
   const [formOriginalPrice, setFormOriginalPrice] = useState<number>(450000);
   const [formStock, setFormStock] = useState<number>(100);
-  const [formCoverImage, setFormCoverImage] = useState("https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=600&auto=format&fit=crop&q=80");
+  const [formCoverImage, setFormCoverImage] = useState(
+    "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=600&auto=format&fit=crop&q=80",
+  );
   const [formSkinType, setFormSkinType] = useState("Mọi loại da, da mụn nhạy cảm");
   const [formVolume, setFormVolume] = useState("50ml");
   const [formActives, setFormActives] = useState("Niacinamide, B5, Salicylic Acid");
@@ -347,6 +348,14 @@ export default function ShopProductPage() {
     e.preventDefault();
     if (!formName.trim()) {
       toast.error("Vui lòng nhập tên sản phẩm!");
+      return;
+    }
+    if (formPrice <= 0 || formOriginalPrice <= 0) {
+      toast.error("Giá sản phẩm phải lớn hơn 0!");
+      return;
+    }
+    if (formStock < 0) {
+      toast.error("Tồn kho không được âm!");
       return;
     }
     if (!formCoverImage.trim()) {
@@ -560,11 +569,14 @@ export default function ShopProductPage() {
             {/* Action Bar: Title, Search & "+ Thêm Sản Phẩm Mới" */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#D8D4CA] pb-6">
               <div>
-                <h2 className="text-xl sm:text-2xl font-bold font-serif text-[#191B19]">
-                  Tất cả Sản phẩm Shopee ({filteredProducts.length})
-                </h2>
+                <div className="flex items-center gap-2.5">
+                  <Grid3X3 className="size-6 text-[#C2410C]" />
+                  <h2 className="text-xl sm:text-2xl font-bold font-serif text-[#191B19]">
+                    Danh Mục Sản Phẩm Theo Khối ({filteredProducts.length})
+                  </h2>
+                </div>
                 <p className="text-sm text-[#5C605C] mt-1">
-                  Đầy đủ các trường chuẩn Shopee: SKU, phân loại dung tích, giá gốc, giá flash sale, tồn kho, vận chuyển và voucher.
+                  Hiển thị dạng Khối (Cards) chuẩn Shopee. Mỗi phần thông tin được tách riêng biệt rõ ràng, không bị dồn cục, đầy đủ mọi trường dữ liệu.
                 </p>
               </div>
 
@@ -621,158 +633,250 @@ export default function ShopProductPage() {
               </div>
             </div>
 
-            {/* SPACIOUS SHOPEE PRODUCT LIST - Các khung to rộng, giãn cách thoáng đãng */}
-            <div className="space-y-5">
-              {filteredProducts.map((prod) => (
-                <div
-                  key={prod.id}
-                  className="rounded-3xl border border-[#D8D4CA] bg-[#FAF8F5] p-6 sm:p-7 shadow-xs hover:border-[#C2410C]/60 transition-all flex flex-col xl:flex-row xl:items-center justify-between gap-6"
-                >
-                  {/* Cột 1: Ảnh bìa sản phẩm to bản 1:1 chuẩn Shopee + Tên + Badge Shopee Mall */}
-                  <div className="flex items-start gap-5 w-full xl:w-[420px] shrink-0">
-                    <div className="relative size-24 sm:size-28 shrink-0 overflow-hidden rounded-2xl border-2 border-[#D8D4CA] bg-white shadow-2xs">
-                      <img
-                        src={prod.coverImage}
-                        alt={prod.name}
-                        className="size-full object-cover"
-                      />
-                      {prod.isMall && (
-                        <span className="absolute top-1 left-1 rounded bg-rose-600 px-1.5 py-0.5 text-[9px] font-bold text-white shadow-xs">
-                          Shopee Mall
-                        </span>
-                      )}
-                      <span className="absolute bottom-1 right-1 rounded bg-amber-500 px-1.5 py-0.5 text-[9px] font-bold text-white">
-                        -{prod.discountPercent}%
-                      </span>
-                    </div>
+            {/* PRODUCT GRID - DẠNG KHỐI CHUẨN SHOPEE, TÁCH CÁC PHẦN RÕ RÀNG */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
+              {filteredProducts.map((prod) => {
+                const activeTab = cardActiveTab[prod.id] || "sales";
 
-                    <div className="space-y-1.5 flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="rounded-md bg-[#C2410C]/10 px-2 py-0.5 text-[11px] font-bold text-[#C2410C]">
-                          {prod.brand}
-                        </span>
-                        <span className="text-xs text-[#5C605C] font-mono">
-                          SKU: {prod.sku}
-                        </span>
-                      </div>
-
-                      <h4 className="font-bold text-base text-[#191B19] leading-snug line-clamp-2">
-                        {prod.name}
-                      </h4>
-
-                      <div className="text-xs text-[#5C605C]">
-                        Ngành hàng: <span className="text-[#191B19] font-medium">{prod.category}</span>
-                      </div>
-
-                      <div className="flex items-center gap-3 text-xs text-[#5C605C] pt-0.5">
-                        <span className="flex items-center gap-1 text-amber-800 font-bold">
-                          <Star className="size-3.5 fill-amber-700 text-amber-700" />
-                          {prod.rating}
-                        </span>
-                        <span>•</span>
-                        <span>Đã bán: <strong className="text-[#191B19]">{prod.soldCount.toLocaleString()}</strong></span>
-                        <span>•</span>
-                        <span>Kho: <strong className="text-[#2D5A43]">{prod.stock}</strong></span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Cột 2: Các trường giá Shopee, Phân loại biến thể & Vận chuyển (Giãn cách thoáng) */}
-                  <div className="flex-1 min-w-0 space-y-3">
-                    {/* Bảng giá Shopee & Tồn kho */}
-                    <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-white border border-[#D8D4CA] px-5 py-3.5">
-                      <div>
-                        <span className="text-xs text-[#5C605C] block">Giá bán Shopee (Flash Sale):</span>
-                        <div className="flex items-baseline gap-2.5 mt-0.5">
-                          <span className="text-xl sm:text-2xl font-bold font-serif text-[#C2410C]">
-                            {formatMoney(prod.priceVnd)}
+                return (
+                  <div
+                    key={prod.id}
+                    className="group rounded-3xl border border-[#D8D4CA] bg-[#FAF8F5] overflow-hidden shadow-xs hover:border-[#C2410C]/60 hover:shadow-md transition-all flex flex-col justify-between"
+                  >
+                    {/* KHỐI 1: HÌNH ẢNH & HUY HIỆU SÀN SHOPEE (Tách riêng thoáng đãng) */}
+                    <div>
+                      <div className="relative aspect-4/3 w-full bg-neutral-100 overflow-hidden border-b border-[#D8D4CA]">
+                        <img
+                          src={prod.coverImage}
+                          alt={prod.name}
+                          className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                        {/* Overlay Badges */}
+                        <div className="absolute top-3 left-3 flex flex-col gap-1.5 items-start">
+                          {prod.isMall && (
+                            <span className="rounded-md bg-rose-600 px-2 py-0.5 text-[10px] font-bold text-white shadow-xs flex items-center gap-1">
+                              <BadgeCheck className="size-3" />
+                              <span>Shopee Mall</span>
+                            </span>
+                          )}
+                          <span className="rounded-md bg-[#2D5A43] px-2 py-0.5 text-[10px] font-bold text-white shadow-xs flex items-center gap-1">
+                            <Truck className="size-3" />
+                            <span>Freeship Xtra</span>
                           </span>
-                          <span className="text-xs text-[#5C605C] line-through">
-                            {formatMoney(prod.originalPriceVnd)}
-                          </span>
-                          <span className="rounded bg-[#C2410C]/10 px-2 py-0.5 text-xs font-bold text-[#C2410C]">
-                            Giảm {prod.discountPercent}%
-                          </span>
+                        </div>
+
+                        <span className="absolute top-3 right-3 rounded-md bg-amber-500 px-2 py-0.5 text-xs font-bold text-white shadow-xs">
+                          -{prod.discountPercent}%
+                        </span>
+
+                        <div className="absolute bottom-2.5 left-3 right-3 flex items-center justify-between text-[11px] font-medium text-white/95 bg-black/60 backdrop-blur-xs rounded-xl px-3 py-1.5">
+                          <span className="truncate">{prod.brand}</span>
+                          <span className="font-mono text-amber-300 shrink-0">SKU: {prod.sku}</span>
                         </div>
                       </div>
 
-                      <span className="hidden md:inline-block h-8 w-px bg-[#D8D4CA]" />
+                      {/* KHỐI 2: TIÊU ĐỀ & ĐÁNH GIÁ (Khoảng cách rộng rãi) */}
+                      <div className="p-5 space-y-3.5">
+                        <div className="space-y-1">
+                          <span className="text-[11px] font-semibold uppercase tracking-wider text-[#C2410C]">
+                            {prod.category}
+                          </span>
+                          <h3
+                            className="font-bold text-base text-[#191B19] leading-snug line-clamp-2 min-h-[44px]"
+                            title={prod.name}
+                          >
+                            {prod.name}
+                          </h3>
+                        </div>
 
-                      <div>
-                        <span className="text-xs text-[#5C605C] block">Tồn kho khả dụng:</span>
-                        <span className="text-lg font-bold text-[#191B19] mt-0.5 block">
-                          {prod.stock} <span className="text-xs font-normal text-[#5C605C]">sản phẩm</span>
-                        </span>
-                      </div>
+                        {/* Điểm sao & Số lượng bán */}
+                        <div className="flex items-center justify-between text-xs text-[#5C605C] pt-0.5 border-b border-[#D8D4CA]/60 pb-3">
+                          <div className="flex items-center gap-1 text-amber-800 font-bold">
+                            <Star className="size-3.5 fill-amber-700 text-amber-700" />
+                            <span>{prod.rating}</span>
+                            <span className="text-[11px] font-normal text-[#5C605C]">({prod.reviewCount.toLocaleString()} đánh giá)</span>
+                          </div>
+                          <div>
+                            Đã bán: <strong className="text-[#191B19]">{prod.soldCount.toLocaleString()}</strong>
+                          </div>
+                        </div>
 
-                      <span className="hidden md:inline-block h-8 w-px bg-[#D8D4CA]" />
+                        {/* TAB BAR NỘI BỘ TRÊN KHỐI: Tách các phần thông tin ra để không bị dồn cục */}
+                        <div className="grid grid-cols-3 gap-1 rounded-xl bg-[#E8E5DE] p-1 text-[11px] font-bold">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setCardActiveTab((prev) => ({ ...prev, [prod.id]: "sales" }))
+                            }
+                            className={`rounded-lg py-1.5 transition text-center cursor-pointer ${
+                              activeTab === "sales"
+                                ? "bg-white text-[#C2410C] shadow-2xs"
+                                : "text-[#5C605C] hover:text-[#191B19]"
+                            }`}
+                          >
+                            Giá & Voucher
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setCardActiveTab((prev) => ({ ...prev, [prod.id]: "specs" }))
+                            }
+                            className={`rounded-lg py-1.5 transition text-center cursor-pointer ${
+                              activeTab === "specs"
+                                ? "bg-white text-[#C2410C] shadow-2xs"
+                                : "text-[#5C605C] hover:text-[#191B19]"
+                            }`}
+                          >
+                            Thông Số
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setCardActiveTab((prev) => ({ ...prev, [prod.id]: "variants" }))
+                            }
+                            className={`rounded-lg py-1.5 transition text-center cursor-pointer ${
+                              activeTab === "variants"
+                                ? "bg-white text-[#C2410C] shadow-2xs"
+                                : "text-[#5C605C] hover:text-[#191B19]"
+                            }`}
+                          >
+                            Biến Thể ({prod.variants.length})
+                          </button>
+                        </div>
 
-                      <div>
-                        <span className="text-xs text-[#5C605C] block">Giao hàng:</span>
-                        <span className="text-xs font-bold text-[#2D5A43] flex items-center gap-1 mt-1">
-                          <Truck className="size-3.5" />
-                          <span>Freeship Xtra (Miễn phí 0₫)</span>
-                        </span>
+                        {/* NỘI DUNG TỪNG PHẦN ĐƯỢC TÁCH RA THOÁNG ĐÃNG */}
+                        <div className="min-h-[148px]">
+                          {/* PHẦN A: GIÁ BÁN & VOUCHERS */}
+                          {activeTab === "sales" && (
+                            <div className="space-y-3">
+                              {/* Hộp Giá Shopee */}
+                              <div className="rounded-2xl bg-white border border-[#D8D4CA] p-3.5 flex items-baseline justify-between">
+                                <div>
+                                  <span className="text-[10px] text-[#5C605C] block uppercase font-semibold">
+                                    Giá Flash Sale:
+                                  </span>
+                                  <div className="text-xl font-bold font-serif text-[#C2410C] mt-0.5">
+                                    {formatMoney(prod.priceVnd)}
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <span className="text-xs text-[#5C605C] line-through block">
+                                    {formatMoney(prod.originalPriceVnd)}
+                                  </span>
+                                  <span className="text-[11px] font-bold text-[#2D5A43]">
+                                    Kho: {prod.stock} sp
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Vouchers của Shop */}
+                              <div className="space-y-1">
+                                <span className="text-[10px] font-bold text-[#5C605C] uppercase tracking-wider block">
+                                  Vouchers Shopee:
+                                </span>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {prod.vouchers.map((vc) => (
+                                    <span
+                                      key={vc.id}
+                                      className="rounded-lg border border-dashed border-[#C2410C]/40 bg-[#C2410C]/5 px-2 py-0.5 text-[10px] font-bold text-[#C2410C]"
+                                    >
+                                      {vc.discountLabel}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* PHẦN B: BẢNG THÔNG SỐ KỸ THUẬT Y TẾ (Tách riêng rõ ràng) */}
+                          {activeTab === "specs" && (
+                            <div className="rounded-2xl bg-white border border-[#D8D4CA] p-3 text-xs space-y-1.5 divide-y divide-[#D8D4CA]/50">
+                              <div className="flex justify-between items-center py-1">
+                                <span className="text-[#5C605C]">Loại da:</span>
+                                <span className="font-semibold text-[#191B19] truncate max-w-[170px]" title={prod.specifications.skinType}>
+                                  {prod.specifications.skinType}
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-center py-1">
+                                <span className="text-[#5C605C]">Dung tích:</span>
+                                <span className="font-semibold text-[#191B19]">{prod.specifications.volume}</span>
+                              </div>
+                              <div className="flex justify-between items-center py-1">
+                                <span className="text-[#5C605C]">Số công bố BYT:</span>
+                                <span className="font-mono font-semibold text-[#C2410C] text-[11px]">
+                                  {prod.specifications.healthMinistryLicense}
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-center py-1">
+                                <span className="text-[#5C605C]">Hạn dùng:</span>
+                                <span className="font-semibold text-[#191B19]">{prod.specifications.expiryMonths} tháng</span>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* PHẦN C: CÁC BIẾN THỂ DUNG TÍCH (Variants) */}
+                          {activeTab === "variants" && (
+                            <div className="space-y-1.5 max-h-[148px] overflow-y-auto pr-1">
+                              {prod.variants.map((v) => (
+                                <div
+                                  key={v.id}
+                                  className="rounded-xl border border-[#D8D4CA] bg-white p-2.5 flex items-center justify-between text-xs"
+                                >
+                                  <div>
+                                    <strong className="text-[#191B19] block">{v.name}</strong>
+                                    <span className="text-[10px] text-[#5C605C] font-mono">SKU: {v.sku}</span>
+                                  </div>
+                                  <div className="text-right">
+                                    <strong className="text-[#C2410C] font-mono block">{formatMoney(v.priceVnd)}</strong>
+                                    <span className="text-[10px] text-[#2D5A43]">Kho: {v.stock}</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
 
-                    {/* Phân loại biến thể Shopee (Variants) */}
-                    <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-[#F6F4EF] border border-[#D8D4CA] px-4 py-2.5 text-xs">
-                      <span className="font-bold text-[#191B19] shrink-0">Phân loại hàng:</span>
-                      {prod.variants.map((v) => (
-                        <span
-                          key={v.id}
-                          className="rounded-xl bg-white border border-[#D8D4CA] px-3 py-1 text-xs font-semibold text-[#191B19]"
-                        >
-                          {v.name} - <strong>{formatMoney(v.priceVnd)}</strong> (Kho: {v.stock})
-                        </span>
-                      ))}
-                    </div>
+                    {/* KHỐI 3: THANH NÚT THAO TÁC RỘNG RÃI & CHI TIẾT */}
+                    <div className="p-5 pt-0 border-t border-[#D8D4CA]/60 flex items-center gap-2 mt-2">
+                      <button
+                        type="button"
+                        onClick={() => setInspectingProduct(prod)}
+                        className="flex-1 h-10 flex items-center justify-center gap-1.5 rounded-xl border border-[#D8D4CA] bg-white text-xs font-bold text-[#191B19] hover:bg-[#E8E5DE] transition cursor-pointer"
+                        title="Xem đầy đủ mọi trường thông số Shopee"
+                      >
+                        <FileText className="size-3.5 text-[#5C605C]" />
+                        <span>Xem Thông Số</span>
+                      </button>
 
-                    {/* Vouchers của Shop */}
-                    <div className="flex flex-wrap items-center gap-2 text-xs">
-                      <span className="font-bold text-[#C2410C] flex items-center gap-1 shrink-0">
-                        <Tag className="size-3.5" />
-                        <span>Mã giảm giá Shop:</span>
-                      </span>
-                      {prod.vouchers.map((vc) => (
-                        <span
-                          key={vc.id}
-                          className="rounded-lg border border-[#C2410C]/30 bg-[#C2410C]/5 px-2.5 py-0.5 text-[11px] font-bold text-[#C2410C]"
-                        >
-                          {vc.discountLabel}
-                        </span>
-                      ))}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedProduct(prod);
+                          setSelectedVariantIndex(0);
+                          setActiveImageIndex(0);
+                          setViewMode("buyer");
+                        }}
+                        className="flex-1 h-10 flex items-center justify-center gap-1.5 rounded-xl bg-[#C2410C] text-xs font-bold text-white shadow-2xs hover:bg-[#9A3412] transition cursor-pointer"
+                        title="Xem giao diện mua hàng chuẩn sàn Shopee"
+                      >
+                        <Eye className="size-3.5" />
+                        <span>Xem Trên Sàn</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteProduct(prod.id)}
+                        className="size-10 flex items-center justify-center rounded-xl border border-rose-300 bg-white text-rose-700 hover:bg-rose-50 transition cursor-pointer shrink-0"
+                        title="Xóa khỏi gian hàng"
+                      >
+                        <Trash2 className="size-4" />
+                      </button>
                     </div>
                   </div>
-
-                  {/* Cột 3: Nút xem trước sàn Shopee & Thao tác */}
-                  <div className="flex sm:flex-row xl:flex-col items-center justify-center gap-3 shrink-0 w-full xl:w-[170px]">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedProduct(prod);
-                        setSelectedVariantIndex(0);
-                        setActiveImageIndex(0);
-                        setViewMode("buyer");
-                      }}
-                      className="h-11 flex items-center justify-center gap-2 rounded-2xl bg-[#C2410C] px-5 text-sm font-bold text-white shadow-xs hover:bg-[#9A3412] transition cursor-pointer w-full"
-                    >
-                      <Eye className="size-4" />
-                      <span>Xem Trên Sàn</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteProduct(prod.id)}
-                      className="h-11 flex items-center justify-center gap-2 rounded-2xl border border-rose-300 bg-white px-5 text-sm font-semibold text-rose-700 hover:bg-rose-50 transition cursor-pointer w-full"
-                    >
-                      <Trash2 className="size-4" />
-                      <span>Xóa khỏi kho</span>
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
@@ -796,7 +900,38 @@ export default function ShopProductPage() {
               </div>
             </div>
 
-            {/* SHOPEE MAIN PRODUCT CARD - Giãn cách rộng, layout chuẩn chỉ */}
+            {/* PRODUCT SELECTOR IN BUYER MODE - Xem các sản phẩm khác theo khối */}
+            <div className="rounded-3xl border border-[#D8D4CA] bg-[#FAF8F5] p-5 shadow-xs">
+              <span className="text-xs font-bold uppercase tracking-wider text-[#5C605C] block mb-3">
+                Các Sản Phẩm Đang Bán Khác Trong Gian Hàng Shopee Mall:
+              </span>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+                {products.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedProduct(p);
+                      setSelectedVariantIndex(0);
+                      setActiveImageIndex(0);
+                    }}
+                    className={`flex items-center gap-3 rounded-2xl p-2.5 border text-left transition cursor-pointer ${
+                      selectedProduct.id === p.id
+                        ? "border-[#C2410C] bg-white ring-2 ring-[#C2410C]/25"
+                        : "border-[#D8D4CA] bg-white/70 hover:bg-white"
+                    }`}
+                  >
+                    <img src={p.coverImage} alt={p.name} className="size-12 rounded-xl object-cover shrink-0 border border-[#D8D4CA]" />
+                    <div className="min-w-0">
+                      <strong className="text-xs text-[#191B19] truncate block">{p.name}</strong>
+                      <span className="text-xs font-bold text-[#C2410C] font-mono">{formatMoney(p.priceVnd)}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* SHOPEE MAIN PRODUCT CARD - TÁCH CÁC PHẦN RÕ RÀNG */}
             <div className="rounded-3xl border border-[#D8D4CA] bg-white p-6 sm:p-9 shadow-xs space-y-8">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10">
                 {/* Left: Product Gallery Images (5 cols) */}
@@ -1085,6 +1220,140 @@ export default function ShopProductPage() {
           </div>
         )}
       </main>
+
+      {/* MODAL: XEM ĐẦY ĐỦ THÔNG SỐ SHOPEE CỦA SẢN PHẨM (INSPECTOR MODAL) */}
+      {inspectingProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs overflow-y-auto">
+          <div className="w-full max-w-3xl rounded-3xl border border-[#D8D4CA] bg-[#FAF8F5] p-6 sm:p-8 shadow-2xl space-y-6 my-8 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-start justify-between border-b border-[#D8D4CA] pb-4">
+              <div className="flex items-center gap-3">
+                <img
+                  src={inspectingProduct.coverImage}
+                  alt={inspectingProduct.name}
+                  className="size-14 rounded-2xl object-cover border border-[#D8D4CA] shrink-0"
+                />
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="rounded bg-rose-600 px-2 py-0.5 text-[10px] font-bold text-white">
+                      Shopee Mall
+                    </span>
+                    <span className="text-xs font-mono text-[#5C605C]">SKU: {inspectingProduct.sku}</span>
+                  </div>
+                  <h3 className="font-bold text-base text-[#191B19] mt-0.5 line-clamp-1">
+                    {inspectingProduct.name}
+                  </h3>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setInspectingProduct(null)}
+                className="text-[#5C605C] hover:text-[#191B19] cursor-pointer"
+              >
+                <X className="size-6" />
+              </button>
+            </div>
+
+            {/* CÁC KHỐI THÔNG TIN TÁCH BIỆT RÕ RÀNG */}
+            <div className="space-y-5 text-sm">
+              {/* KHỐI 1: BẢNG THÔNG SỐ KỸ THUẬT & PHÁP LÝ Y TẾ */}
+              <div className="rounded-2xl border border-[#D8D4CA] bg-white p-5 space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-[#C2410C] flex items-center gap-1.5">
+                  <ShieldCheck className="size-4" />
+                  <span>1. Thông số kỹ thuật & Pháp lý Y tế (Shopee Standards)</span>
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div className="p-2.5 rounded-xl bg-[#FAF8F5]">
+                    <span className="text-[#5C605C] block">Thương hiệu & Xuất xứ:</span>
+                    <strong className="text-[#191B19]">{inspectingProduct.brand} • {inspectingProduct.origin}</strong>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-[#FAF8F5]">
+                    <span className="text-[#5C605C] block">Số công bố Mỹ phẩm (Bộ Y Tế):</span>
+                    <strong className="text-[#C2410C] font-mono">{inspectingProduct.specifications.healthMinistryLicense}</strong>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-[#FAF8F5]">
+                    <span className="text-[#5C605C] block">Dung tích & Trọng lượng:</span>
+                    <strong className="text-[#191B19]">{inspectingProduct.specifications.volume} ({inspectingProduct.specifications.packagingWeightGram}g)</strong>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-[#FAF8F5]">
+                    <span className="text-[#5C605C] block">Hạn sử dụng:</span>
+                    <strong className="text-[#191B19]">{inspectingProduct.specifications.expiryMonths} tháng kể từ NSX</strong>
+                  </div>
+                  <div className="sm:col-span-2 p-2.5 rounded-xl bg-[#FAF8F5]">
+                    <span className="text-[#5C605C] block">Loại da chỉ định:</span>
+                    <strong className="text-[#191B19]">{inspectingProduct.specifications.skinType}</strong>
+                  </div>
+                  <div className="sm:col-span-2 p-2.5 rounded-xl bg-[#FAF8F5]">
+                    <span className="text-[#5C605C] block">Thành phần hoạt chất chính:</span>
+                    <strong className="text-[#2D5A43]">{inspectingProduct.specifications.actives}</strong>
+                  </div>
+                </div>
+              </div>
+
+              {/* KHỐI 2: PHÂN LOẠI BIẾN THỂ (VARIANTS) */}
+              <div className="rounded-2xl border border-[#D8D4CA] bg-white p-5 space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-[#C2410C] flex items-center gap-1.5">
+                  <Layers className="size-4" />
+                  <span>2. Danh sách phân loại biến thể (Dung tích / SKU)</span>
+                </h4>
+                <div className="space-y-2">
+                  {inspectingProduct.variants.map((v) => (
+                    <div
+                      key={v.id}
+                      className="rounded-xl border border-[#D8D4CA] bg-[#FAF8F5] p-3 flex items-center justify-between text-xs"
+                    >
+                      <div>
+                        <strong className="text-sm text-[#191B19] block">{v.name}</strong>
+                        <span className="text-[11px] text-[#5C605C] font-mono">Mã SKU: {v.sku}</span>
+                      </div>
+                      <div className="text-right">
+                        <strong className="text-[#C2410C] text-sm font-serif block">{formatMoney(v.priceVnd)}</strong>
+                        <span className="text-xs text-[#2D5A43] font-medium">Tồn kho: {v.stock} sản phẩm</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* KHỐI 3: VẬN CHUYỂN & CHÍNH SÁCH SHOPEE */}
+              <div className="rounded-2xl border border-[#D8D4CA] bg-white p-5 space-y-2 text-xs">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-[#C2410C] flex items-center gap-1.5">
+                  <Truck className="size-4" />
+                  <span>3. Vận chuyển & Cam kết Shopee Mall</span>
+                </h4>
+                <div className="p-3 rounded-xl bg-[#FAF8F5] space-y-1">
+                  <div>Vận chuyển: <strong className="text-[#2D5A43]">Freeship Xtra (Miễn phí toàn quốc)</strong></div>
+                  <div>Gửi từ: <strong className="text-[#191B19]">{inspectingProduct.shippingInfo.shippingFrom}</strong></div>
+                  <div>Thời gian giao hàng: <strong className="text-[#191B19]">{inspectingProduct.shippingInfo.estimatedDelivery}</strong></div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#D8D4CA]">
+              <button
+                type="button"
+                onClick={() => setInspectingProduct(null)}
+                className="rounded-2xl border border-[#D8D4CA] bg-white px-5 py-2.5 text-xs font-semibold text-[#5C605C] hover:text-[#191B19] cursor-pointer"
+              >
+                Đóng
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedProduct(inspectingProduct);
+                  setSelectedVariantIndex(0);
+                  setActiveImageIndex(0);
+                  setInspectingProduct(null);
+                  setViewMode("buyer");
+                }}
+                className="rounded-2xl bg-[#C2410C] px-6 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#9A3412] cursor-pointer flex items-center gap-1.5"
+              >
+                <Eye className="size-3.5" />
+                <span>Xem Trên Sàn Shopee</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* MODAL: ĐĂNG BÁN SẢN PHẨM MỚI CHUẨN ĐẦY ĐỦ CÁC TRƯỜNG SHOPEE */}
       {isAddModalOpen && (
