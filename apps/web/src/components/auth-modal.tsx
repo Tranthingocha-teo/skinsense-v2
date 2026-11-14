@@ -105,6 +105,19 @@ export function AuthModal({
     setSignInPassword(acc.password);
     setError(null);
     setSuccess(`Đang vào với vai trò: ${acc.label}...`);
+
+    if (acc.role === "admin") {
+      setIsOpen(false);
+      router.push("/admin");
+      return;
+    }
+
+    if (acc.role === "specialist") {
+      setIsOpen(false);
+      router.push("/specialist");
+      return;
+    }
+
     setLoading(true);
     try {
       const supabase = createClient();

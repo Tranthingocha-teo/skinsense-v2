@@ -57,6 +57,12 @@ export function QuickAccessButtons() {
       return;
     }
 
+    // If Specialist (Bác sĩ Da liễu) role clicked, route directly to Specialist Portal
+    if (acc.role === "specialist") {
+      router.push("/specialist");
+      return;
+    }
+
     try {
       const supabase = createClient();
       const { error } = await supabase.auth.signInWithPassword({
