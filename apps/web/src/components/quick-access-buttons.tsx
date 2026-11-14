@@ -2,27 +2,18 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { User, Store, Stethoscope, ShieldCheck, ArrowRight, Loader2 } from "lucide-react";
+import { User, Store, Stethoscope, ShieldCheck, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 const QUICK_ROLES = [
   {
-    role: "customer",
-    label: "Khách hàng",
-    name: "Trần Thị Ngọc Hà",
-    email: "khachhang@gmail.com",
-    password: "password123",
-    icon: User,
-    badge: "Người dùng",
-  },
-  {
     role: "admin",
-    label: "Quản trị viên",
-    name: "Ban Quản Trị Hệ Thống",
-    email: "admin@skinsense.vn",
-    password: "admin123456",
+    label: "Admin (Ngọc Hà)",
+    name: "Trần Thị Ngọc Hà (Super Admin)",
+    email: "hattn.23itb@vku.udn.vn",
+    password: "adminPassword123@",
     icon: ShieldCheck,
-    badge: "Admin",
+    badge: "Super Admin",
   },
   {
     role: "specialist",
@@ -42,6 +33,15 @@ const QUICK_ROLES = [
     icon: Store,
     badge: "Cửa hàng",
   },
+  {
+    role: "customer",
+    label: "Khách hàng",
+    name: "Khách hàng Soi da",
+    email: "khachhang@gmail.com",
+    password: "password123",
+    icon: User,
+    badge: "Người dùng",
+  },
 ];
 
 export function QuickAccessButtons() {
@@ -50,6 +50,46 @@ export function QuickAccessButtons() {
 
   async function handleQuickEnter(acc: (typeof QUICK_ROLES)[0]) {
     setLoadingRole(acc.role);
+
+    // If Admin role clicked, route directly to the Admin Dashboard
+    if (acc.role === "admin") {
+      try {
+        const supabase = createClient();
+        await supabase.auth.signInWithPassword({
+          email: acc.email,
+          password: acc.password,
+        });
+      } catch {}
+      router.push("/admin");
+      return;
+    }
+
+    // If Specialist (Bác sĩ Da liễu) role clicked, route directly to Specialist Portal
+    if (acc.role === "specialist") {
+      try {
+        const supabase = createClient();
+        await supabase.auth.signInWithPassword({
+          email: acc.email,
+          password: acc.password,
+        });
+      } catch {}
+      router.push("/specialist");
+      return;
+    }
+
+    // If Shop (Chủ Cửa hàng) role clicked, route directly to Shopee Shop Portal
+    if (acc.role === "shop") {
+      try {
+        const supabase = createClient();
+        await supabase.auth.signInWithPassword({
+          email: acc.email,
+          password: acc.password,
+        });
+      } catch {}
+      router.push("/shop");
+      return;
+    }
+
     try {
       const supabase = createClient();
       const { error } = await supabase.auth.signInWithPassword({
@@ -83,6 +123,7 @@ export function QuickAccessButtons() {
         {QUICK_ROLES.map((acc) => {
           const IconC = acc.icon;
           const isLoading = loadingRole === acc.role;
+          const isAdmin = acc.role === "admin";
 
           return (
             <button
@@ -90,9 +131,19 @@ export function QuickAccessButtons() {
               type="button"
               disabled={loadingRole !== null}
               onClick={() => handleQuickEnter(acc)}
-              className="group relative flex flex-col items-center justify-center gap-1.5 rounded-xl border border-foreground/15 bg-card/80 p-3 text-center shadow-xs backdrop-blur-xs transition hover:scale-[1.03] hover:border-primary hover:bg-card hover:shadow-md active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+              className={`group relative flex flex-col items-center justify-center gap-1.5 rounded-xl border p-3 text-center shadow-xs backdrop-blur-xs transition hover:scale-[1.03] active:scale-[0.98] disabled:opacity-50 cursor-pointer ${
+                isAdmin
+                  ? "border-purple-600/40 bg-purple-500/10 hover:border-purple-600 hover:bg-purple-500/15"
+                  : "border-foreground/15 bg-card/80 hover:border-primary hover:bg-card hover:shadow-md"
+              }`}
             >
-              <div className="flex size-9 items-center justify-center rounded-full bg-primary/10 text-primary transition group-hover:bg-primary group-hover:text-primary-foreground">
+              <div
+                className={`flex size-9 items-center justify-center rounded-full transition ${
+                  isAdmin
+                    ? "bg-purple-600/20 text-purple-700 dark:text-purple-300 group-hover:bg-purple-600 group-hover:text-white"
+                    : "bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground"
+                }`}
+              >
                 {isLoading ? (
                   <Loader2 className="size-4 animate-spin" />
                 ) : (

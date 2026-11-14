@@ -9,6 +9,8 @@ import { LoadState } from "@/components/load-state";
 import { RoutineChecklist, type RoutineApi } from "@/components/routine-checklist";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FLAT_TOLERANCE, type loadTrends, type TrendData } from "@/lib/trends";
+import { ExportClinicalRecordModal } from "@/components/export-clinical-record-modal";
+import { Stethoscope } from "lucide-react";
 
 // The route binds these: Supabase-backed when signed in, generated sample data in the demo.
 export type TodayApi = { loadTrends: typeof loadTrends; routine: RoutineApi };
@@ -104,6 +106,19 @@ export function Today({ api }: { api: TodayApi }) {
   const [today, setToday] = useState<string>();
   const [data, setData] = useState<TrendData | null>(); // undefined loading, null failed
   const [attempt, retry] = useReducer((n: number) => n + 1, 0);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.authenticated && res.user?.role) {
+          setUserRole(res.user.role);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => setToday(localDay(new Date())), []);
   useEffect(() => {
@@ -147,6 +162,41 @@ export function Today({ api }: { api: TodayApi }) {
 
   return (
     <Frame photo={last !== undefined} date={date}>
+      {userRole === "specialist" && (
+        <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-emerald-600/30 bg-emerald-500/10 p-3.5 text-xs text-emerald-950 dark:text-emerald-100 shadow-2xs">
+          <div className="flex items-center gap-2">
+            <span className="flex size-2 rounded-full bg-emerald-600 animate-pulse shrink-0" />
+            <span>
+              Bác sĩ đang xem giao diện <strong>Soi Da AI (Trang chủ)</strong>. Bệnh án bệnh nhân gửi về được quản lý tại Cổng Bác sĩ.
+            </span>
+          </div>
+          <Link
+            href="/specialist"
+            className="inline-flex items-center gap-1.5 self-start sm:self-auto rounded-xl bg-[#2D5A43] px-3.5 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-[#234835] transition"
+          >
+            <Stethoscope className="size-3.5" />
+            <span>Mở Cổng Bác sĩ Chuyên khoa</span>
+          </Link>
+        </div>
+      )}
+
+      {userRole === "admin" && (
+        <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-purple-600/30 bg-purple-500/10 p-3.5 text-xs text-purple-950 dark:text-purple-100 shadow-2xs">
+          <div className="flex items-center gap-2">
+            <span className="flex size-2 rounded-full bg-purple-600 animate-pulse shrink-0" />
+            <span>
+              Super Admin đang xem giao diện <strong>Soi Da AI (Trang chủ)</strong>.
+            </span>
+          </div>
+          <Link
+            href="/admin"
+            className="inline-flex items-center gap-1.5 self-start sm:self-auto rounded-xl bg-purple-800 px-3.5 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-purple-900 transition"
+          >
+            👉 Mở Bảng Quản Trị
+          </Link>
+        </div>
+      )}
+
       <div className="flex flex-col gap-3 md:grid md:grid-cols-12 md:items-start md:gap-4">
         <section className={`flex flex-col gap-4 p-5 md:col-span-7 md:gap-[18px] md:p-6 ${last ? GLASS : CARD}`}>
           <div className="flex flex-col gap-1.5">
@@ -160,7 +210,7 @@ export function Today({ api }: { api: TodayApi }) {
                 : t("noPhoto")}
             </p>
           </div>
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:gap-7">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4 flex-wrap">
             <Link
               href={appHref("/capture")}
               className="flex h-[52px] items-center justify-center gap-2.5 rounded-lg bg-primary text-[15px] font-medium text-primary-foreground md:h-12 md:px-6"
@@ -172,8 +222,18 @@ export function Today({ api }: { api: TodayApi }) {
               </svg>
               {tonight ? t("captureAnother") : t("captureTonight")}
             </Link>
+
+            <button
+              type="button"
+              onClick={() => setIsExportModalOpen(true)}
+              className="flex h-[52px] items-center justify-center gap-2 rounded-lg border border-primary/40 bg-primary/10 px-4 text-[14px] font-semibold text-primary transition hover:bg-primary/20 md:h-12 cursor-pointer"
+            >
+              <Stethoscope className="size-4.5" />
+              <span>Xuất bệnh án gửi Bác sĩ</span>
+            </button>
+
             {last && (
-              <Link href={appHref(`/spots/${last.id}`)} className="-mt-2 flex min-h-11 items-center text-sm underline underline-offset-4 md:mt-0">
+              <Link href={appHref(`/spots/${last.id}`)} className="flex min-h-11 items-center text-sm underline underline-offset-4">
                 {t("markSpots")}
               </Link>
             )}
@@ -223,6 +283,12 @@ export function Today({ api }: { api: TodayApi }) {
           </section>
         )}
       </div>
+
+      <ExportClinicalRecordModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        defaultSkinPhotoUrl={last ? (last.storage_path.startsWith("http") ? last.storage_path : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80") : undefined}
+      />
     </Frame>
   );
 }

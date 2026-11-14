@@ -422,7 +422,7 @@ export function BuyerOrdersModal({
                       </View>
                       {order.reviewComment && (
                         <Text className="text-[12px] italic text-amber-800 dark:text-amber-200">
-                          "{order.reviewComment}"
+                          {`"${order.reviewComment}"`}
                         </Text>
                       )}
                     </View>

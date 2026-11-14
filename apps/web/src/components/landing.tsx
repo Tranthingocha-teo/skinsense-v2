@@ -2,7 +2,7 @@ import { ZONES } from "@skinsense/domain";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { AuthModal } from "@/components/auth-modal";
-import { QuickAccessButtons } from "@/components/quick-access-buttons";
+import { GoogleOAuthButton } from "@/components/google-oauth-button";
 import { ParticleFaceSlot } from "@/components/face/particle-face-loader";
 import { LocaleSwitch } from "@/components/locale-switch";
 import { CanvasIcon, SiteHeader } from "@/components/site-header";
@@ -74,20 +74,19 @@ export function Landing() {
             </nav>
           }
         >
-          <div className="flex items-center gap-3 md:justify-end md:gap-4">
+          <div className="flex items-center gap-2.5 md:justify-end md:gap-3">
             {/* PhoneLanding has no switch: the phone locale comes from Accept-Language (i18n/request.ts). */}
             <span className="hidden md:block">
               <LocaleSwitch />
             </span>
-            <Link
-              href="/demo"
-              className={`${btn} h-11 px-5 text-[14px] font-semibold whitespace-nowrap md:text-sm shadow-sm hover:opacity-95`}
-            >
-              🚀 Vào xem ngay
-            </Link>
+            <GoogleOAuthButton
+              label="Đăng nhập Gmail"
+              className="flex h-10 items-center justify-center gap-2 rounded-lg border border-border bg-card px-3 text-xs font-semibold text-foreground shadow-xs transition hover:border-foreground/40 hover:bg-muted/50 cursor-pointer whitespace-nowrap"
+            />
             <AuthModal
-              triggerLabel="Tài khoản / Vai trò"
-              triggerClassName={`${btnO} h-11 px-3 text-[13px] whitespace-nowrap text-muted-foreground hover:text-foreground cursor-pointer`}
+              defaultTab="doctor-approval"
+              triggerLabel="🩺 Bác sĩ gửi duyệt"
+              triggerClassName="flex h-10 items-center justify-center gap-1.5 rounded-lg border border-emerald-600/40 bg-emerald-500/10 px-3 text-xs font-semibold text-emerald-800 dark:text-emerald-300 transition hover:border-emerald-600 hover:bg-emerald-500/20 cursor-pointer whitespace-nowrap"
             />
           </div>
         </SiteHeader>
@@ -100,23 +99,17 @@ export function Landing() {
           <p className="text-base font-light leading-[1.6] text-pretty md:max-w-[560px] md:text-lg">{t("subtitle")}</p>
           
           <div id="cta" className="flex flex-col gap-4 w-full md:items-center">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center justify-center flex-wrap">
-              <Link
-                href="/demo"
-                className="flex h-[54px] items-center justify-center gap-2.5 rounded-xl bg-primary px-8 text-[16px] font-bold text-primary-foreground shadow-xl transition hover:scale-[1.02] active:scale-[0.98]"
-              >
-                🚀 NHẤP VÀO LÀ VÀO XEM NGAY (1 CHẠM)
-              </Link>
-              <Link href="/demo" className={`${btnO} md:px-7`}>
-                {t("tryDemo")}
-              </Link>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center justify-center flex-wrap w-full max-w-2xl">
+              <GoogleOAuthButton
+                className="flex h-[54px] w-full sm:w-auto items-center justify-center gap-2.5 rounded-xl border border-foreground/30 bg-card/90 px-6 text-[15px] font-semibold text-foreground shadow-md backdrop-blur-xs transition hover:scale-[1.02] hover:border-foreground active:scale-[0.98] cursor-pointer"
+                label={locale === "vi" ? "Đăng nhập bằng Gmail (Google / Supabase)" : "Sign in with Google"}
+              />
               <AuthModal
-                triggerLabel="Đăng nhập / Đăng ký"
-                triggerClassName="flex h-[54px] items-center justify-center gap-2 rounded-xl border border-foreground/30 px-5 text-[14px] font-medium transition hover:border-foreground hover:bg-foreground/5 cursor-pointer"
+                defaultTab="doctor-approval"
+                triggerLabel={locale === "vi" ? "🩺 Bác sĩ: Gửi hồ sơ duyệt" : "🩺 Doctor registration"}
+                triggerClassName="flex h-[54px] w-full sm:w-auto items-center justify-center gap-2 rounded-xl border border-emerald-600/40 bg-emerald-500/10 px-6 text-[15px] font-semibold text-emerald-800 dark:text-emerald-300 transition hover:border-emerald-600 hover:bg-emerald-500/20 cursor-pointer shadow-md"
               />
             </div>
-
-            <QuickAccessButtons />
           </div>
           <div className="flex flex-col gap-0.5 text-[11.5px] tracking-[0.06em] uppercase md:flex-row md:items-center md:gap-6 md:text-xs md:tracking-[0.08em]">
             <span>{t("finePrint")}</span>
@@ -264,13 +257,16 @@ export function Landing() {
         <span className="rounded-4xl border border-foreground/30 px-3.5 py-1.5 text-[12.5px] font-medium">{t("trustBadge")}</span>
         <h2 className="font-display text-[32px] leading-[1.2] font-light text-balance md:max-w-[760px] md:text-[44px]">{t("trustTitle")}</h2>
         <p className="text-[15px] font-light leading-[1.7] text-pretty md:max-w-[640px] md:text-base">{t("trustBody")}</p>
-        <div className="flex flex-col gap-3 self-stretch pt-2 md:flex-row md:self-auto md:gap-3.5 md:pt-2.5">
-          <Link href="/demo" className={btn}>
-            🚀 {locale === "vi" ? "Vào trải nghiệm ngay (1 chạm)" : "Try demo instantly (1 click)"}
-          </Link>
-          <a href="#quick-access" className={btnO}>
-            {locale === "vi" ? "Chọn vai trò mẫu" : "Choose demo role"}
-          </a>
+        <div className="flex flex-col gap-3 self-stretch pt-2 sm:flex-row sm:items-center sm:justify-center md:self-auto md:gap-3.5 md:pt-2.5">
+          <GoogleOAuthButton
+            className="flex h-[52px] items-center justify-center gap-2.5 rounded-lg border border-foreground/30 bg-card px-6 text-[15px] font-semibold text-foreground shadow-sm transition hover:border-foreground active:scale-[0.98] cursor-pointer"
+            label={locale === "vi" ? "Đăng nhập bằng Gmail (Google / Supabase)" : "Sign in with Google"}
+          />
+          <AuthModal
+            defaultTab="doctor-approval"
+            triggerLabel={locale === "vi" ? "🩺 Bác sĩ: Gửi hồ sơ duyệt" : "🩺 Doctor registration"}
+            triggerClassName="flex h-[52px] items-center justify-center gap-2 rounded-lg border border-emerald-600/40 bg-emerald-500/10 px-6 text-[15px] font-semibold text-emerald-800 dark:text-emerald-300 transition hover:border-emerald-600 hover:bg-emerald-500/20 cursor-pointer"
+          />
         </div>
       </section>
 

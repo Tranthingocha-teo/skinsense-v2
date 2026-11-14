@@ -39,7 +39,7 @@ export function SiteHeader({ nav, drawMark, children }: { nav?: ReactNode; drawM
     <header
       className={`relative flex h-[72px] items-center justify-between pr-3 pl-5 md:h-24 md:px-14 ${nav ? "md:grid md:grid-cols-3" : ""}`}
     >
-      <Link href="/" className="flex items-center gap-2.5 md:gap-3">
+      <Link href="/" className="flex items-center gap-2.5 md:gap-3" aria-label="SkinSense Home">
         <LogoMark className="size-[26px] md:size-[30px]" draw={drawMark} />
         <span className="font-display text-[15px] tracking-[0.2em] md:text-xl">SKINSENSE</span>
       </Link>
