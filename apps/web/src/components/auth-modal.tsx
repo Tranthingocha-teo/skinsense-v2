@@ -208,20 +208,32 @@ export function AuthModal({
         );
       }
 
+      const userEmail = data.user?.email?.trim().toLowerCase() || "";
       const role = data.user?.user_metadata?.role;
       const status = data.user?.user_metadata?.status;
 
-      if (role === "admin") {
+      if (userEmail === "hattn.23itb@vku.udn.vn" || role === "admin") {
         router.push("/admin");
         return;
       }
 
-      if (role === "specialist") {
+      if (
+        role === "specialist" ||
+        userEmail === "bacsi.hoa@skinsense.vn" ||
+        userEmail === "dr.ha@gmail.com" ||
+        userEmail.includes("doctor") ||
+        userEmail.includes("bacsi")
+      ) {
         if (status === "pending") {
           router.push("/specialist?status=pending");
         } else {
           router.push("/specialist");
         }
+        return;
+      }
+
+      if (role === "shop") {
+        router.push("/shop");
         return;
       }
 

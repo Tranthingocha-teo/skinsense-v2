@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { LogoMark } from "@/components/site-header";
+import { ExportClinicalRecordModal } from "@/components/export-clinical-record-modal";
 
 // Types
 export type CaseStatus = "pending_routine" | "in_treatment" | "completed";
@@ -411,21 +412,44 @@ function SpecialistContent() {
   const [editHours, setEditHours] = useState(INITIAL_DOCTOR_PROFILE.consultationHours);
   const [editAvatar, setEditAvatar] = useState(INITIAL_DOCTOR_PROFILE.avatarUrl);
 
+  // Sync logged-in doctor profile from Supabase
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.authenticated && data.user && data.user.role === "specialist") {
+          setDoctorProfile((prev) => ({
+            ...prev,
+            name: data.user.fullName || prev.name,
+            licenseNumber: data.user.licenseId || prev.licenseNumber,
+            hospital: data.user.hospital || prev.hospital,
+            email: data.user.email || prev.email,
+          }));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   // Patient Cases state (Initialized with rich clinical cases & syncs with real Supabase scan data)
   const [patientCases, setPatientCases] = useState<PatientCase[]>(INITIAL_PATIENT_CASES);
   const [selectedCase, setSelectedCase] = useState<PatientCase | null>(null);
   const [isCaseDetailOpen, setIsCaseDetailOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
-  // Sync with real Supabase database photos & zone readings
-  useEffect(() => {
+  const refreshCases = () => {
     fetch("/api/specialist/cases")
       .then((res) => res.json())
       .then((json) => {
         if (json.ok && Array.isArray(json.cases) && json.cases.length > 0) {
-          setPatientCases([...json.cases, ...INITIAL_PATIENT_CASES.slice(1)]);
+          setPatientCases(json.cases);
         }
       })
       .catch((err) => console.error("Failed to load real cases from Supabase:", err));
+  };
+
+  // Sync with real Supabase database photos & zone readings
+  useEffect(() => {
+    refreshCases();
   }, []);
 
   // Filter & Search state
@@ -582,13 +606,16 @@ function SpecialistContent() {
     setIsPrescribeModalOpen(false);
     toast.success(`Đã lưu phác đồ Routine cho ${prescribeTargetCase.patientName}!`);
 
-    // Persist to Supabase Postgres database
+    // Persist to Supabase Postgres & Storage
     fetch("/api/specialist/cases", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         userId: prescribeTargetCase.id,
+        caseId: prescribeTargetCase.id,
         routineTitle: updatedRoutine.routineTitle,
+        doctorNotes: updatedRoutine.doctorNotes,
+        revisitDate: updatedRoutine.revisitDate,
         products: modalProducts,
       }),
     }).catch(() => {});
@@ -762,14 +789,25 @@ function SpecialistContent() {
                 </button>
               </div>
 
-              <button
-                type="button"
-                onClick={() => handleOpenPrescribeModal(patientCases[0])}
-                className="flex items-center gap-2 rounded-2xl bg-[#2D5A43] px-5 py-3 text-sm font-bold text-white shadow-xs hover:bg-[#234835] transition active:scale-[0.98] cursor-pointer"
-              >
-                <Plus className="size-4.5" />
-                <span>+ Kê Phác đồ Routine</span>
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsExportModalOpen(true)}
+                  className="flex items-center gap-2 rounded-2xl border border-[#2D5A43] bg-white px-4 py-3 text-sm font-bold text-[#2D5A43] shadow-xs hover:bg-[#2D5A43]/10 transition active:scale-[0.98] cursor-pointer"
+                >
+                  <FileText className="size-4.5" />
+                  <span>+ Xuất bệnh án gửi Bác sĩ</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleOpenPrescribeModal(patientCases[0])}
+                  className="flex items-center gap-2 rounded-2xl bg-[#2D5A43] px-5 py-3 text-sm font-bold text-white shadow-xs hover:bg-[#234835] transition active:scale-[0.98] cursor-pointer"
+                >
+                  <Plus className="size-4.5" />
+                  <span>+ Kê Phác đồ Routine</span>
+                </button>
+              </div>
             </div>
 
             {/* TAB 1: BỆNH ÁN GỬI VỀ */}
@@ -1295,15 +1333,26 @@ function SpecialistContent() {
                   </h3>
                 </div>
 
-                <div className="flex items-center gap-3 rounded-2xl border border-[#D8D4CA] bg-[#F6F4EF] p-3 shadow-2xs">
-                  <img
-                    src={doctorProfile.avatarUrl}
-                    alt={doctorProfile.name}
-                    className="size-12 rounded-xl object-cover border-2 border-[#2D5A43]"
-                  />
-                  <div className="text-xs sm:text-sm">
-                    <span className="block text-[11px] text-[#5C605C]">Bác sĩ phụ trách:</span>
-                    <strong className="text-[#191B19] font-bold">{doctorProfile.name}</strong>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsExportModalOpen(true)}
+                    className="flex items-center gap-2 rounded-2xl bg-[#2D5A43] px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#234835] transition cursor-pointer"
+                  >
+                    <FileText className="size-4" />
+                    <span>+ Xuất bệnh án mới</span>
+                  </button>
+
+                  <div className="flex items-center gap-3 rounded-2xl border border-[#D8D4CA] bg-[#F6F4EF] p-3 shadow-2xs">
+                    <img
+                      src={doctorProfile.avatarUrl}
+                      alt={doctorProfile.name}
+                      className="size-12 rounded-xl object-cover border-2 border-[#2D5A43]"
+                    />
+                    <div className="text-xs sm:text-sm">
+                      <span className="block text-[11px] text-[#5C605C]">Bác sĩ phụ trách:</span>
+                      <strong className="text-[#191B19] font-bold">{doctorProfile.name}</strong>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1880,6 +1929,16 @@ function SpecialistContent() {
           </div>
         </div>
       )}
+
+      {/* MODAL: XUẤT BỆNH ÁN GỬI VỀ BÁC SĨ (LƯU LÊN SUPABASE THẬT) */}
+      <ExportClinicalRecordModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        onSuccess={() => {
+          refreshCases();
+          toast.success("Bệnh án mới đã được lưu vào Supabase và chuyển về Bác sĩ!");
+        }}
+      />
     </div>
   );
 }
