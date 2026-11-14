@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { getProductForStep } from "@/lib/role-routines";
+import { isPatientAliasOfHa, filterProductsByTimeOfDay } from "@/lib/prescription-sync";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -118,14 +119,7 @@ export async function GET(request: Request) {
     const registryCases = (await downloadJsonFromStorage<any[]>(supabaseAdmin, "clinical_records/cases_registry.json")) || [];
     
     // Check if user is Hà (support both her Google account and school email / names)
-    const isHaUser =
-      userEmail === "trandinhhai0936039127@gmail.com" ||
-      userEmail === "hattn.23itb@vku.udn.vn" ||
-      userEmail === "khachhang@gmail.com" ||
-      userId === "365d9ffb-0ee5-41d2-879c-37ef337fe262" ||
-      userId === "614ef0f9-1b4d-48f7-aa3e-29a8bd0b8c33" ||
-      userName.toLowerCase().includes("ngọc hà") ||
-      userName.toLowerCase().includes("ngoc ha");
+    const isHaUser = isPatientAliasOfHa({ userId, email: userEmail, name: userName });
 
     const matchedCase = registryCases.find((c) => {
       if (c.patientUserId === userId || c.alternateUserId === userId || c.id === userId || c.userId === userId) return true;
