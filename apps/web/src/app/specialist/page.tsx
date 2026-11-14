@@ -609,49 +609,127 @@ function SpecialistContent() {
           </div>
         </div>
 
-        {/* 1. THỐNG KÊ HÀNG NGANG */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 rounded-3xl border border-[#D8D4CA] bg-[#FAF8F5] p-5 sm:p-6 shadow-xs">
-          <div className="flex items-center gap-4 px-2">
-            <div className="rounded-2xl bg-[#2D5A43]/10 p-3 text-[#2D5A43] shrink-0">
-              <FileText className="size-6" />
-            </div>
-            <div>
-              <span className="text-xs font-semibold text-[#5C605C] uppercase tracking-wider block">
-                Tổng bệnh án tiếp nhận
-              </span>
-              <div className="text-2xl sm:text-3xl font-bold font-serif text-[#191B19] mt-0.5">
-                {patientCases.length} <span className="text-xs font-sans font-normal text-[#5C605C]">ca khám</span>
+        {/* 1. THỐNG KÊ HÀNG NGANG (CLICK ĐỂ LỌC DANH SÁCH BỆNH ÁN) */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Card 1: Tất cả */}
+          <button
+            type="button"
+            onClick={() => setStatusFilter("all")}
+            className={`flex items-center justify-between p-5 sm:p-6 rounded-3xl border transition-all text-left cursor-pointer shadow-xs ${
+              statusFilter === "all"
+                ? "border-[#2D5A43] bg-white ring-2 ring-[#2D5A43]/40 shadow-sm scale-[1.01]"
+                : "border-[#D8D4CA] bg-[#FAF8F5] hover:bg-white hover:border-[#2D5A43]/50"
+            }`}
+          >
+            <div className="flex items-center gap-4">
+              <div
+                className={`rounded-2xl p-3 shrink-0 transition ${
+                  statusFilter === "all"
+                    ? "bg-[#2D5A43] text-white"
+                    : "bg-[#2D5A43]/10 text-[#2D5A43]"
+                }`}
+              >
+                <FileText className="size-6" />
+              </div>
+              <div>
+                <span className="text-xs font-semibold text-[#5C605C] uppercase tracking-wider block">
+                  Tổng bệnh án tiếp nhận
+                </span>
+                <div className="text-2xl sm:text-3xl font-bold font-serif text-[#191B19] mt-0.5">
+                  {patientCases.length} <span className="text-xs font-sans font-normal text-[#5C605C]">ca khám</span>
+                </div>
               </div>
             </div>
-          </div>
+            {statusFilter === "all" ? (
+              <span className="rounded-full bg-[#2D5A43]/15 px-2.5 py-1 text-[11px] font-bold text-[#2D5A43]">
+                Đang xem ✓
+              </span>
+            ) : (
+              <span className="text-xs text-[#5C605C] font-medium hidden md:inline">
+                Nhấp để xem →
+              </span>
+            )}
+          </button>
 
-          <div className="flex items-center gap-4 px-2 border-t sm:border-t-0 sm:border-l border-[#D8D4CA]/70 pt-3 sm:pt-0">
-            <div className="rounded-2xl bg-[#78350F]/10 p-3 text-[#78350F] shrink-0">
-              <Clock className="size-6" />
-            </div>
-            <div>
-              <span className="text-xs font-semibold text-[#5C605C] uppercase tracking-wider block">
-                Chờ xuất phác đồ
-              </span>
-              <div className="text-2xl sm:text-3xl font-bold font-serif text-[#78350F] mt-0.5">
-                {pendingCount} <span className="text-xs font-sans font-normal text-[#5C605C]">ca chờ</span>
+          {/* Card 2: Chờ xuất phác đồ */}
+          <button
+            type="button"
+            onClick={() => setStatusFilter("pending_routine")}
+            className={`flex items-center justify-between p-5 sm:p-6 rounded-3xl border transition-all text-left cursor-pointer shadow-xs ${
+              statusFilter === "pending_routine"
+                ? "border-[#78350F] bg-white ring-2 ring-[#78350F]/40 shadow-sm scale-[1.01]"
+                : "border-[#D8D4CA] bg-[#FAF8F5] hover:bg-white hover:border-[#78350F]/50"
+            }`}
+          >
+            <div className="flex items-center gap-4">
+              <div
+                className={`rounded-2xl p-3 shrink-0 transition ${
+                  statusFilter === "pending_routine"
+                    ? "bg-[#78350F] text-white"
+                    : "bg-[#78350F]/10 text-[#78350F]"
+                }`}
+              >
+                <Clock className="size-6" />
+              </div>
+              <div>
+                <span className="text-xs font-semibold text-[#5C605C] uppercase tracking-wider block">
+                  Chờ xuất phác đồ
+                </span>
+                <div className="text-2xl sm:text-3xl font-bold font-serif text-[#78350F] mt-0.5">
+                  {pendingCount} <span className="text-xs font-sans font-normal text-[#5C605C]">ca chờ</span>
+                </div>
               </div>
             </div>
-          </div>
+            {statusFilter === "pending_routine" ? (
+              <span className="rounded-full bg-[#78350F]/15 px-2.5 py-1 text-[11px] font-bold text-[#78350F]">
+                Đang xem ✓
+              </span>
+            ) : (
+              <span className="text-xs text-[#5C605C] font-medium hidden md:inline">
+                Nhấp để xem →
+              </span>
+            )}
+          </button>
 
-          <div className="flex items-center gap-4 px-2 border-t sm:border-t-0 sm:border-l border-[#D8D4CA]/70 pt-3 sm:pt-0">
-            <div className="rounded-2xl bg-[#2D5A43]/10 p-3 text-[#2D5A43] shrink-0">
-              <Activity className="size-6" />
-            </div>
-            <div>
-              <span className="text-xs font-semibold text-[#5C605C] uppercase tracking-wider block">
-                Đang áp dụng liệu trình
-              </span>
-              <div className="text-2xl sm:text-3xl font-bold font-serif text-[#2D5A43] mt-0.5">
-                {inTreatmentCount} <span className="text-xs font-sans font-normal text-[#5C605C]">bệnh nhân</span>
+          {/* Card 3: Đang áp dụng liệu trình */}
+          <button
+            type="button"
+            onClick={() => setStatusFilter("in_treatment")}
+            className={`flex items-center justify-between p-5 sm:p-6 rounded-3xl border transition-all text-left cursor-pointer shadow-xs ${
+              statusFilter === "in_treatment"
+                ? "border-[#2D5A43] bg-white ring-2 ring-[#2D5A43]/40 shadow-sm scale-[1.01]"
+                : "border-[#D8D4CA] bg-[#FAF8F5] hover:bg-white hover:border-[#2D5A43]/50"
+            }`}
+          >
+            <div className="flex items-center gap-4">
+              <div
+                className={`rounded-2xl p-3 shrink-0 transition ${
+                  statusFilter === "in_treatment"
+                    ? "bg-[#2D5A43] text-white"
+                    : "bg-[#2D5A43]/10 text-[#2D5A43]"
+                }`}
+              >
+                <Activity className="size-6" />
+              </div>
+              <div>
+                <span className="text-xs font-semibold text-[#5C605C] uppercase tracking-wider block">
+                  Đang áp dụng liệu trình
+                </span>
+                <div className="text-2xl sm:text-3xl font-bold font-serif text-[#2D5A43] mt-0.5">
+                  {inTreatmentCount} <span className="text-xs font-sans font-normal text-[#5C605C]">bệnh nhân</span>
+                </div>
               </div>
             </div>
-          </div>
+            {statusFilter === "in_treatment" ? (
+              <span className="rounded-full bg-[#2D5A43]/15 px-2.5 py-1 text-[11px] font-bold text-[#2D5A43]">
+                Đang xem ✓
+              </span>
+            ) : (
+              <span className="text-xs text-[#5C605C] font-medium hidden md:inline">
+                Nhấp để xem →
+              </span>
+            )}
+          </button>
         </div>
 
         {/* 2. Filter and Search Bar */}
@@ -676,8 +754,8 @@ function SpecialistContent() {
                 className="bg-transparent text-sm font-medium text-[#191B19] focus:outline-none cursor-pointer"
               >
                 <option value="all">Tất cả trạng thái ({patientCases.length})</option>
-                <option value="pending_routine">Chờ xuất phác đồ</option>
-                <option value="in_treatment">Đang điều trị</option>
+                <option value="pending_routine">Chờ xuất phác đồ ({pendingCount})</option>
+                <option value="in_treatment">Đang điều trị ({inTreatmentCount})</option>
               </select>
             </div>
 
@@ -698,7 +776,29 @@ function SpecialistContent() {
 
         {/* 3. DANH SÁCH BỆNH ÁN: CHỌN HỒ SƠ ĐỂ XUẤT */}
         <div className="space-y-4">
-          {filteredCases.map((patientCase) => (
+          {filteredCases.length === 0 ? (
+            <div className="rounded-3xl border border-[#D8D4CA] bg-[#FAF8F5] p-12 text-center space-y-3">
+              <FileText className="size-10 text-[#5C605C] mx-auto opacity-50" />
+              <h4 className="font-bold text-base text-[#191B19]">
+                Không tìm thấy bệnh án phù hợp
+              </h4>
+              <p className="text-xs text-[#5C605C] max-w-sm mx-auto">
+                Không có hồ sơ nào thuộc bộ lọc hiện tại. Nhấn vào thẻ &quot;Tổng bệnh án tiếp nhận&quot; để xem lại toàn bộ danh sách.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setStatusFilter("all");
+                  setSeverityFilter("all");
+                  setSearchTerm("");
+                }}
+                className="mt-2 inline-flex items-center gap-1.5 rounded-xl bg-[#2D5A43] px-4 py-2 text-xs font-bold text-white hover:bg-[#234835] transition cursor-pointer"
+              >
+                Đặt lại bộ lọc
+              </button>
+            </div>
+          ) : (
+            filteredCases.map((patientCase) => (
             <div
               key={patientCase.id}
               className="rounded-3xl border border-[#D8D4CA] bg-[#FAF8F5] p-6 shadow-xs hover:border-[#2D5A43]/60 transition-all flex flex-col xl:flex-row xl:items-center justify-between gap-6 min-h-[224px]"
@@ -870,7 +970,7 @@ function SpecialistContent() {
                 </button>
               </div>
             </div>
-          ))}
+          )))}
         </div>
       </main>
 
