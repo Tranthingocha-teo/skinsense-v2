@@ -99,15 +99,15 @@ export function Landing() {
           <p className="text-base font-light leading-[1.6] text-pretty md:max-w-[560px] md:text-lg">{t("subtitle")}</p>
           
           <div id="cta" className="flex flex-col gap-4 w-full md:items-center">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center justify-center flex-wrap">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center justify-center flex-wrap w-full max-w-2xl">
               <GoogleOAuthButton
-                className="flex h-[54px] items-center justify-center gap-2.5 rounded-xl border border-foreground/30 bg-card/90 px-6 text-[15px] font-semibold text-foreground shadow-md backdrop-blur-xs transition hover:scale-[1.02] hover:border-foreground active:scale-[0.98] cursor-pointer"
-                label="Đăng nhập bằng Gmail (Google / Supabase)"
+                className="flex h-[54px] w-full sm:w-auto items-center justify-center gap-2.5 rounded-xl border border-foreground/30 bg-card/90 px-6 text-[15px] font-semibold text-foreground shadow-md backdrop-blur-xs transition hover:scale-[1.02] hover:border-foreground active:scale-[0.98] cursor-pointer"
+                label={locale === "vi" ? "Đăng nhập bằng Gmail (Google / Supabase)" : "Sign in with Google"}
               />
               <AuthModal
                 defaultTab="doctor-approval"
-                triggerLabel="🩺 Bác sĩ: Gửi hồ sơ duyệt"
-                triggerClassName="flex h-[54px] items-center justify-center gap-2 rounded-xl border border-emerald-600/40 bg-emerald-500/10 px-6 text-[15px] font-semibold text-emerald-800 dark:text-emerald-300 transition hover:border-emerald-600 hover:bg-emerald-500/20 cursor-pointer shadow-md"
+                triggerLabel={locale === "vi" ? "🩺 Bác sĩ: Gửi hồ sơ duyệt" : "🩺 Doctor registration"}
+                triggerClassName="flex h-[54px] w-full sm:w-auto items-center justify-center gap-2 rounded-xl border border-emerald-600/40 bg-emerald-500/10 px-6 text-[15px] font-semibold text-emerald-800 dark:text-emerald-300 transition hover:border-emerald-600 hover:bg-emerald-500/20 cursor-pointer shadow-md"
               />
             </div>
           </div>
