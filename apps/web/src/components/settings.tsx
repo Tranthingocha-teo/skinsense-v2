@@ -249,6 +249,21 @@ export function Settings({ account, api }: { account: Account; api: SettingsApi 
               </Item>
               <ExportRow />
             </Group>
+
+            <Group label="Kênh Người Bán" className="pr-3 pl-[18px] md:pr-3.5 md:pl-[22px]">
+              <Item asChild className={ROW}>
+                <Link href="/seller">
+                  <span className="flex items-center gap-2 font-medium text-emerald-600 dark:text-emerald-400">
+                    Kênh Người Bán (Seller Center)
+                  </span>
+                  <span className={HIT}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <path d="M9 5l7 7-7 7" />
+                    </svg>
+                  </span>
+                </Link>
+              </Item>
+            </Group>
           </div>
 
           <div className="flex flex-col gap-2.5">

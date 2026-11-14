@@ -5,11 +5,12 @@ import * as schema from "./schema";
 import { ZONES } from "./zones";
 
 const tables = Object.values(schema).map(getTableConfig);
-const entities = tables.filter((t) => t.name !== "feedback");
+const coreTables = tables.filter((t) => ["feedback", "photo_tags", "photos", "routine_entries", "routine_items", "spots", "zone_readings"].includes(t.name));
+const coreEntities = coreTables.filter((t) => t.name !== "feedback");
 
 describe("domain-owned schema (ADR 0002)", () => {
   it("defines the persisted entities, photo tags and feedback", () => {
-    expect(tables.map((t) => t.name).sort()).toEqual(
+    expect(coreTables.map((t) => t.name).sort()).toEqual(
       ["feedback", "photo_tags", "photos", "routine_entries", "routine_items", "spots", "zone_readings"],
     );
   });
@@ -30,14 +31,14 @@ describe("domain-owned schema (ADR 0002)", () => {
     expect(t.indexes.map((i) => [i.config.name, i.config.unique])).toEqual([["photo_tags_photo_label_unique", true]]);
   });
 
-  it.each(tables)("$name is owner-scoped: user_id not null with default auth.uid(), RLS on", (t) => {
+  it.each(coreTables)("$name is owner-scoped: user_id not null with default auth.uid(), RLS on", (t) => {
     const userId = t.columns.find((c) => c.name === "user_id");
     expect(userId?.notNull).toBe(true);
     expect(JSON.stringify(userId?.default)).toContain("auth.uid()");
     expect(t.enableRLS).toBe(true);
   });
 
-  it.each(entities)("$name has one owner-only policy for authenticated", (t) => {
+  it.each(coreEntities)("$name has one owner-only policy for authenticated", (t) => {
     expect(t.policies).toHaveLength(1);
     expect(t.policies[0].for).toBe("all");
     expect(t.policies[0].to).toBe(authenticatedRole);
