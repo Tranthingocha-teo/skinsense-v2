@@ -154,8 +154,9 @@ export async function POST(request: Request) {
     const targetCaseId = caseId || userId;
 
     // 1. Update cases_registry in Supabase Storage
+    let existingCases: any[] = [];
     try {
-      const existingCases = (await downloadJsonFromStorage<any[]>(supabase, "clinical_records/cases_registry.json")) || [];
+      existingCases = (await downloadJsonFromStorage<any[]>(supabase, "clinical_records/cases_registry.json")) || [];
       if (existingCases.length > 0) {
         const updatedCases = existingCases.map((c) => {
           if (c.id === targetCaseId || c.caseCode === targetCaseId || c.id === userId) {
@@ -197,10 +198,40 @@ export async function POST(request: Request) {
       console.warn("Lỗi cập nhật storage cases_registry:", e.message);
     }
 
-    // 2. Insert into Supabase Postgres routine_items if userId is valid UUID
-    const adminUserId = "614ef0f9-1b4d-48f7-aa3e-29a8bd0b8c33";
-    const patientUserId = (userId && userId.length === 36) ? userId : adminUserId;
+    // 2. Determine target patient's user_id
+    let patientUserId = (userId && userId.length === 36) ? userId : null;
+    let targetPatientEmail = "";
+    let targetPatientName = "";
 
+    const targetCase = existingCases.find(
+      (c: any) => c.id === targetCaseId || c.caseCode === targetCaseId || c.id === userId
+    );
+    if (targetCase) {
+      if (!patientUserId && targetCase.patientUserId && targetCase.patientUserId.length === 36) {
+        patientUserId = targetCase.patientUserId;
+      }
+      targetPatientEmail = targetCase.patientEmail || "";
+      targetPatientName = targetCase.patientName || "";
+    }
+
+    // If still not a UUID, find in Supabase Auth by patientEmail
+    if (!patientUserId && targetPatientEmail) {
+      try {
+        const { data: userList } = await supabase.auth.admin.listUsers();
+        const found = userList?.users.find(
+          (u) => u.email?.toLowerCase() === targetPatientEmail.toLowerCase()
+        );
+        if (found) {
+          patientUserId = found.id;
+        }
+      } catch {}
+    }
+
+    if (!patientUserId) {
+      patientUserId = "c28e1e5f-5813-461e-a3d2-2bc5be1b9470"; // Customer account fallback
+    }
+
+    // 3. Insert into Supabase Postgres routine_items strictly FOR THIS PATIENT
     try {
       await supabase.from("routine_items").delete().eq("user_id", patientUserId);
       for (let i = 0; i < products.length; i++) {
@@ -213,23 +244,24 @@ export async function POST(request: Request) {
       }
     } catch {}
 
-    // 3. Update real_routine_protocol.json in Supabase Storage with this newly prescribed protocol
+    // 4. Save protocol strictly for THIS PATIENT in Supabase Storage
     try {
-      const { data: protocolBlob } = await supabase.storage
-        .from("photos")
-        .download("real_routine_protocol.json");
-      if (protocolBlob) {
-        const protocol = JSON.parse(await protocolBlob.text());
-        protocol.allocatedBy = "BS. CKI Nguyễn Mai Hoa (CCHN-003419/BYT) & Super Admin Trần Thị Ngọc Hà";
-        protocol.title = routineTitle || protocol.title;
-        if (doctorNotes) protocol.description = doctorNotes;
+      const patientProtocol = {
+        userId: patientUserId,
+        patientEmail: targetPatientEmail,
+        patientName: targetPatientName,
+        allocatedBy: "BS. CKI Nguyễn Mai Hoa",
+        routineTitle: routineTitle || "Phác đồ Điều trị Chuyên khoa Da liễu",
+        doctorNotes: doctorNotes || "Tuân thủ đúng thứ tự thoa sáng và tối theo chỉ định.",
+        revisitDate: revisitDate || new Date(Date.now() + 14 * 86400000).toISOString().split("T")[0],
+        products,
+      };
 
-        await supabase.storage.from("photos").upload(
-          "real_routine_protocol.json",
-          Buffer.from(JSON.stringify(protocol, null, 2)),
-          { upsert: true, contentType: "application/json" }
-        );
-      }
+      await supabase.storage.from("photos").upload(
+        `routines/protocol_${patientUserId}.json`,
+        Buffer.from(JSON.stringify(patientProtocol, null, 2)),
+        { upsert: true, contentType: "application/json" }
+      );
     } catch {}
 
     return NextResponse.json({

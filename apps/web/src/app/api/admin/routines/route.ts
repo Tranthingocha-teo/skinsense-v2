@@ -126,19 +126,46 @@ export async function POST(request: Request) {
       allocatedBy: "Super Admin Trần Thị Ngọc Hà (hattn.23itb@vku.udn.vn)",
     };
 
-    // Sync to Supabase routine_items
+    // Sync to Supabase routine_items for target user
     if (Array.isArray(steps)) {
       try {
         const supabase = getSupabaseAdmin();
-        const adminUserId = "614ef0f9-1b4d-48f7-aa3e-29a8bd0b8c33";
-        await supabase.from("routine_items").delete().eq("user_id", adminUserId);
+        let targetUserId = "614ef0f9-1b4d-48f7-aa3e-29a8bd0b8c33"; // default to Super Admin
+        if (targetUser && targetUser.trim()) {
+          const trimmed = targetUser.trim();
+          if (trimmed.length === 36 && trimmed.includes("-")) {
+            targetUserId = trimmed;
+          } else {
+            const { data: userList } = await supabase.auth.admin.listUsers();
+            const found = userList?.users.find((u) => u.email?.toLowerCase() === trimmed.toLowerCase());
+            if (found) targetUserId = found.id;
+          }
+        }
+
+        await supabase.from("routine_items").delete().eq("user_id", targetUserId);
         for (let i = 0; i < steps.length; i++) {
           await supabase.from("routine_items").insert({
-            user_id: adminUserId,
+            user_id: targetUserId,
             label: steps[i].label || steps[i].productName,
             position: i,
           });
         }
+
+        // Also save user-specific protocol in Supabase Storage
+        const userProtocol = {
+          userId: targetUserId,
+          targetUser: targetUser || targetUserId,
+          allocatedBy: "Super Admin Trần Thị Ngọc Hà",
+          routineTitle: title || ROUTINES_STORE[role].title,
+          doctorNotes: description || ROUTINES_STORE[role].description,
+          products: steps,
+        };
+
+        await supabase.storage.from("photos").upload(
+          `routines/protocol_${targetUserId}.json`,
+          Buffer.from(JSON.stringify(userProtocol, null, 2)),
+          { upsert: true, contentType: "application/json" }
+        );
       } catch (e) {
         console.error("Failed to sync routine_items to Supabase:", e);
       }

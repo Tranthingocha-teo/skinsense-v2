@@ -440,18 +440,27 @@ export function RoutineChecklist({ api, embedded = false }: { api: RoutineApi; e
         <div className="rounded-xl border border-primary/25 bg-primary/5 p-3 flex flex-col gap-1.5">
           <div className="flex items-center justify-between flex-wrap gap-1 text-[11px]">
             <span className="inline-flex items-center gap-1 font-bold text-primary">
-              <ShieldCheck className="size-3.5" />
-              <span>Phác đồ Y khoa {timeOfDay === "morning" ? "Buổi Sáng" : "Buổi Tối"} (Dữ liệu thật Supabase)</span>
+              {supabaseProtocol?.isPrescribed ? (
+                <>
+                  <ShieldCheck className="size-3.5" />
+                  <span>Phác đồ Y khoa {timeOfDay === "morning" ? "Buổi Sáng" : "Buổi Tối"}</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="size-3.5 text-primary" />
+                  <span>Routine Cá Nhân {timeOfDay === "morning" ? "Buổi Sáng" : "Buổi Tối"}</span>
+                </>
+              )}
             </span>
             <span className="text-[10px] text-muted-foreground font-medium">
-              {supabaseProtocol?.allocatedBy || "BS. CKI Nguyễn Mai Hoa & Super Admin Trần Thị Ngọc Hà"}
+              {supabaseProtocol?.allocatedBy || "Dữ liệu riêng tư của bạn"}
             </span>
           </div>
           <h3 className="font-display text-xs sm:text-sm font-bold text-foreground">
-            {supabaseProtocol?.title || (timeOfDay === "morning" ? "Routine Sáng: Cấp Ẩm & Bảo Vệ Quang Phổ Rộng" : "Routine Tối: Làm Sạch Sâu & Điều Trị Phục Hồi")}
+            {supabaseProtocol?.title || (timeOfDay === "morning" ? "Routine Sáng: Cấp Ẩm & Bảo Vệ Da" : "Routine Tối: Làm Sạch Sâu & Phục Hồi")}
           </h3>
           <p className="text-[11px] text-muted-foreground leading-snug">
-            {supabaseProtocol?.description || (timeOfDay === "morning" ? "Phác đồ buổi sáng: Làm sạch dịu nhẹ pH 5.5, cấp nước phục hồi hàng rào màng đáy và chống nắng kiểm soát dầu Mexoryl 400." : "Phác đồ buổi tối: Hòa tan bụi mịn và dầu nhờn, kháng khuẩn ổ mụn C.acnes và tái tạo màng ẩm tự nhiên ban đêm.")}
+            {supabaseProtocol?.description || (timeOfDay === "morning" ? "Làm sạch dịu nhẹ pH 5.5, cấp nước phục hồi và chống nắng bảo vệ da." : "Hòa tan bụi bẩn dầu nhờn, kháng khuẩn ngừa mụn và tái tạo màng ẩm tự nhiên ban đêm.")}
           </p>
         </div>
 
@@ -511,18 +520,27 @@ export function RoutineChecklist({ api, embedded = false }: { api: RoutineApi; e
           <div className="rounded-xl border border-primary/25 bg-primary/5 p-3.5 flex flex-col gap-1.5">
             <div className="flex items-center justify-between flex-wrap gap-1 text-[11px]">
               <span className="inline-flex items-center gap-1 font-bold text-primary">
-                <ShieldCheck className="size-3.5" />
-                <span>Phác đồ Y khoa {timeOfDay === "morning" ? "Buổi Sáng" : "Buổi Tối"} (Dữ liệu thật Supabase)</span>
+                {supabaseProtocol?.isPrescribed ? (
+                  <>
+                    <ShieldCheck className="size-3.5" />
+                    <span>Phác đồ Y khoa {timeOfDay === "morning" ? "Buổi Sáng" : "Buổi Tối"}</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="size-3.5 text-primary" />
+                    <span>Routine Cá Nhân {timeOfDay === "morning" ? "Buổi Sáng" : "Buổi Tối"}</span>
+                  </>
+                )}
               </span>
               <span className="text-[10px] text-muted-foreground font-medium">
-                {supabaseProtocol?.allocatedBy || "BS. CKI Nguyễn Mai Hoa & Super Admin Trần Thị Ngọc Hà"}
+                {supabaseProtocol?.allocatedBy || "Dữ liệu riêng tư của bạn"}
               </span>
             </div>
             <h3 className="font-display text-sm sm:text-base font-bold text-foreground">
-              {supabaseProtocol?.title || (timeOfDay === "morning" ? "Routine Sáng: Cấp Ẩm & Bảo Vệ Quang Phổ Rộng" : "Routine Tối: Làm Sạch Sâu & Điều Trị Phục Hồi")}
+              {supabaseProtocol?.title || (timeOfDay === "morning" ? "Routine Sáng: Cấp Ẩm & Bảo Vệ Da" : "Routine Tối: Làm Sạch Sâu & Phục Hồi")}
             </h3>
             <p className="text-[11.5px] text-muted-foreground leading-snug">
-              {supabaseProtocol?.description || (timeOfDay === "morning" ? "Phác đồ buổi sáng: Làm sạch dịu nhẹ pH 5.5, cấp nước phục hồi hàng rào màng đáy và chống nắng kiểm soát dầu Mexoryl 400." : "Phác đồ buổi tối: Hòa tan bụi mịn và dầu nhờn, kháng khuẩn ổ mụn C.acnes và tái tạo màng ẩm tự nhiên ban đêm.")}
+              {supabaseProtocol?.description || (timeOfDay === "morning" ? "Làm sạch dịu nhẹ pH 5.5, cấp nước phục hồi và chống nắng bảo vệ da." : "Hòa tan bụi bẩn dầu nhờn, kháng khuẩn ngừa mụn và tái tạo màng ẩm tự nhiên ban đêm.")}
             </p>
           </div>
 

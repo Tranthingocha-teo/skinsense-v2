@@ -65,10 +65,17 @@ export async function swapPositions(a: RoutineItem, b: RoutineItem) {
 
 // One row per (user, night); labels are a snapshot at tick time (ADR 0004).
 export async function saveEntry(night: string, completedLabels: string[], itemCount: number) {
-  const { error } = await createClient()
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const { error } = await supabase
     .from("routine_entries")
     .upsert(
-      { night, completed_labels: completedLabels, item_count: itemCount },
+      {
+        ...(user?.id ? { user_id: user.id } : {}),
+        night,
+        completed_labels: completedLabels,
+        item_count: itemCount,
+      },
       { onConflict: "user_id,night" },
     );
   fail(error);

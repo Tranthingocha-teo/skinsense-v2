@@ -1,10 +1,32 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createClient as createServerClient } from "@/lib/supabase/server";
+import { createClient as createAdminClient } from "@supabase/supabase-js";
+import { getProductForStep } from "@/lib/role-routines";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-  return createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
+  return createAdminClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
+}
+
+async function downloadJsonFromStorage<T = any>(supabase: any, path: string): Promise<T | null> {
+  try {
+    const { data: signData } = await supabase.storage.from("photos").createSignedUrl(path, 60);
+    if (signData?.signedUrl) {
+      const res = await fetch(signData.signedUrl + `&_t=${Date.now()}`, { cache: "no-store" });
+      if (res.ok) {
+        return (await res.json()) as T;
+      }
+    }
+    const { data: fileBlob } = await supabase.storage.from("photos").download(path);
+    if (fileBlob) {
+      return JSON.parse(await fileBlob.text()) as T;
+    }
+  } catch {}
+  return null;
 }
 
 export async function GET(request: Request) {
@@ -13,61 +35,220 @@ export async function GET(request: Request) {
     const timeOfDay = searchParams.get("timeOfDay") || "evening"; // "morning" | "evening"
     const today = new Date().toISOString().split("T")[0];
 
-    const supabase = getSupabaseAdmin();
+    // 1. Get current authenticated user
+    const supabaseServer = await createServerClient();
+    let { data: { user } } = await supabaseServer.auth.getUser();
 
-    // 1. Download real protocol stored in Supabase Storage
-    let protocolData: any = null;
-    const { data: fileBlob, error: fileError } = await supabase.storage
-      .from("photos")
-      .download("real_routine_protocol.json");
+    const supabaseAdmin = getSupabaseAdmin();
 
-    if (fileBlob) {
-      const text = await fileBlob.text();
-      protocolData = JSON.parse(text);
+    // If not found in cookie, check Authorization header (e.g. Bearer token / mobile app)
+    if (!user) {
+      const authHeader = request.headers.get("authorization");
+      if (authHeader && authHeader.startsWith("Bearer ")) {
+        const token = authHeader.slice(7).trim();
+        const { data: tokenData } = await supabaseAdmin.auth.getUser(token);
+        if (tokenData?.user) {
+          user = tokenData.user;
+        }
+      }
     }
 
-    if (!protocolData) {
-      return NextResponse.json({ error: "Không tìm thấy dữ liệu routine trên Supabase." }, { status: 404 });
+    // Fallback if not authenticated (guest or demo)
+    if (!user) {
+      const demoSteps = (
+        timeOfDay === "morning"
+          ? [
+              { label: "Rửa mặt dịu nhẹ", time: "morning" },
+              { label: "Serum phục hồi B5", time: "morning" },
+              { label: "Kem khóa ẩm mỏng nhẹ", time: "morning" },
+              { label: "Kem chống nắng bảo vệ", time: "morning" },
+            ]
+          : [
+              { label: "Tẩy trang dịu nhẹ", time: "evening" },
+              { label: "Rửa mặt làm sạch sâu", time: "evening" },
+              { label: "Serum trị mụn BHA", time: "evening" },
+              { label: "Kem dưỡng phục hồi", time: "evening" },
+            ]
+      ).map((item, idx) => ({
+        ...getProductForStep(item.label, timeOfDay as "morning" | "evening", idx),
+        id: `demo-${timeOfDay}-${idx}`,
+        stepNumber: idx + 1,
+        label: item.label,
+        isCompleted: idx === 0,
+      }));
+
+      return NextResponse.json({
+        ok: true,
+        userId: "demo",
+        userEmail: "demo@skinsense.vn",
+        userName: "Người dùng Khách",
+        timeOfDay,
+        night: today,
+        title: timeOfDay === "morning" ? "Routine Sáng: Cấp Ẩm & Bảo Vệ Da" : "Routine Tối: Làm Sạch Sâu & Phục Hồi",
+        description: timeOfDay === "morning" ? "Làm sạch dịu nhẹ pH 5.5, cấp nước phục hồi màng ẩm và chống nắng quang phổ rộng." : "Hòa tan bụi bẩn dầu nhờn, kháng khuẩn mụn và tái tạo biểu bì qua đêm.",
+        allocatedBy: "Quy chuẩn Skincare SkinSense",
+        isPrescribed: false,
+        steps: demoSteps,
+        completedCount: 1,
+        totalCount: demoSteps.length,
+        percent: 25,
+      });
     }
 
-    // 2. Fetch today's completed ticks from Supabase Postgres routine_entries
-    const adminUserId = "614ef0f9-1b4d-48f7-aa3e-29a8bd0b8c33";
-    const { data: entry } = await supabase
+    const userId = user.id;
+    const userEmail = user.email?.trim().toLowerCase() || "";
+    const meta = (user.user_metadata || {}) as Record<string, any>;
+    const userName = meta.full_name || meta.name || userEmail.split("@")[0];
+
+    // 2. Fetch today's completed ticks strictly for THIS USER from routine_entries
+    const { data: userEntry } = await supabaseAdmin
       .from("routine_entries")
       .select("completed_labels, item_count")
+      .eq("user_id", userId)
       .eq("night", today)
-      .eq("user_id", adminUserId)
       .maybeSingle();
 
-    const completedSet = new Set<string>(entry?.completed_labels || []);
+    const completedSet = new Set<string>(userEntry?.completed_labels || []);
 
-    // 3. Filter steps according to timeOfDay (morning vs evening)
-    const activeSection = timeOfDay === "morning" ? protocolData.morning : protocolData.evening;
-    const stepsWithTicks = activeSection.steps.map((st: any) => ({
-      ...st,
-      isCompleted: completedSet.has(st.label) || Boolean(st.isCompleted),
-    }));
+    // 3. Find if this user has a personalized clinical prescription from specialist
+    let prescribedRoutine: any = null;
+    let prescriberName = "BS. CKI Nguyễn Mai Hoa";
 
-    const total = stepsWithTicks.length;
-    const completed = stepsWithTicks.filter((s: any) => s.isCompleted).length;
+    // Priority A: Check clinical records registry
+    const registryCases = (await downloadJsonFromStorage<any[]>(supabaseAdmin, "clinical_records/cases_registry.json")) || [];
+    const matchedCase = registryCases.find((c) =>
+      (c.patientEmail && c.patientEmail.trim().toLowerCase() === userEmail) ||
+      c.patientUserId === userId ||
+      c.id === userId ||
+      c.userId === userId
+    );
+
+    if (matchedCase?.currentRoutine && Array.isArray(matchedCase.currentRoutine.products) && matchedCase.currentRoutine.products.length > 0) {
+      prescribedRoutine = matchedCase.currentRoutine;
+      if (prescribedRoutine.prescribedBy) prescriberName = prescribedRoutine.prescribedBy;
+    }
+
+    // Priority B: Check user-specific protocol in storage
+    if (!prescribedRoutine) {
+      const userProtocol = await downloadJsonFromStorage<any>(supabaseAdmin, `routines/protocol_${userId}.json`);
+      if (userProtocol?.products && Array.isArray(userProtocol.products) && userProtocol.products.length > 0) {
+        prescribedRoutine = userProtocol;
+        if (userProtocol.prescribedBy) prescriberName = userProtocol.prescribedBy;
+      }
+    }
+
+    let finalSteps: any[] = [];
+    let routineTitle = "";
+    let routineDescription = "";
+    let isPrescribed = false;
+
+    if (prescribedRoutine) {
+      isPrescribed = true;
+      routineTitle = prescribedRoutine.routineTitle || (timeOfDay === "morning" ? "Phác đồ Điều trị Chuyên khoa (Buổi Sáng)" : "Phác đồ Điều trị Chuyên khoa (Buổi Tối)");
+      routineDescription = prescribedRoutine.doctorNotes || "Tuân thủ đều đặn theo phác đồ chỉ định của bác sĩ chuyên khoa da liễu.";
+
+      const allProducts: any[] = prescribedRoutine.products;
+      // Filter by time of day
+      const filtered = allProducts.filter((p) => {
+        const time = p.stepTime || "both";
+        return time === "both" || time === timeOfDay;
+      });
+      const selectedProducts = filtered.length > 0 ? filtered : allProducts;
+
+      finalSteps = selectedProducts.map((p, idx) => {
+        const label = p.name || p.productName || p.label;
+        const isCompleted = completedSet.has(label) || (p.productName && completedSet.has(p.productName));
+        return {
+          id: p.id || `step-${timeOfDay}-${idx}`,
+          stepNumber: idx + 1,
+          label,
+          productName: p.name || p.productName || label,
+          brand: p.brand || "Dược mỹ phẩm chỉ định",
+          category: p.category || "Đặc trị phục hồi",
+          imageUrl: p.imageUrl || "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&auto=format&fit=crop&q=80",
+          activeIngredients: p.activeIngredients || "Hoạt chất chuẩn y khoa",
+          stepTime: p.stepTime || timeOfDay,
+          dosage: p.dosage || "1 lượng vừa đủ",
+          usageGuide: p.usageGuide || "Thoa đều và vỗ nhẹ cho ngấm sâu.",
+          isCompleted: Boolean(isCompleted),
+        };
+      });
+    } else {
+      // Priority C: Load from Supabase Postgres routine_items for THIS USER
+      const { data: dbItems } = await supabaseAdmin
+        .from("routine_items")
+        .select("id,label,position")
+        .eq("user_id", userId)
+        .order("position");
+
+      let itemsToUse = dbItems || [];
+
+      // If user has no items yet, seed default 4 steps for this user
+      if (itemsToUse.length === 0) {
+        const defaultLabels = ["Tẩy trang", "Rửa mặt", "Serum trị mụn", "Kem dưỡng ẩm"];
+        try {
+          await supabaseAdmin.from("routine_items").upsert(
+            defaultLabels.map((label, pos) => ({ user_id: userId, label, position: pos })),
+            { onConflict: "user_id,label", ignoreDuplicates: true }
+          );
+          const { data: reread } = await supabaseAdmin
+            .from("routine_items")
+            .select("id,label,position")
+            .eq("user_id", userId)
+            .order("position");
+          itemsToUse = reread || [];
+        } catch {}
+      }
+
+      routineTitle = timeOfDay === "morning"
+        ? `Routine Sáng Cá Nhân · ${userName}`
+        : `Routine Tối Cá Nhân · ${userName}`;
+      routineDescription = timeOfDay === "morning"
+        ? "Làm sạch dịu nhẹ pH 5.5, cấp nước phục hồi và chống nắng bảo vệ quang phổ rộng."
+        : "Tẩy trang hòa tan bụi mịn và dầu nhờn, kháng khuẩn ngừa mụn và tái tạo màng ẩm ban đêm.";
+
+      finalSteps = itemsToUse.map((item, idx) => {
+        const prod = getProductForStep(item.label, timeOfDay as "morning" | "evening", idx);
+        const isCompleted = completedSet.has(item.label) || (prod.productName && completedSet.has(prod.productName));
+        return {
+          id: item.id || `user-step-${idx}`,
+          stepNumber: idx + 1,
+          label: item.label,
+          productName: prod.productName,
+          brand: prod.brand,
+          category: prod.category,
+          imageUrl: prod.imageUrl,
+          activeIngredients: prod.activeIngredients,
+          stepTime: prod.stepTime || timeOfDay,
+          dosage: prod.dosage,
+          usageGuide: prod.usageGuide,
+          isCompleted: Boolean(isCompleted),
+        };
+      });
+    }
+
+    const total = finalSteps.length;
+    const completed = finalSteps.filter((s) => s.isCompleted).length;
     const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
 
     return NextResponse.json({
       ok: true,
+      userId,
+      userEmail,
+      userName,
       timeOfDay,
       night: today,
-      allocatedBy: protocolData.allocatedBy,
-      targetUser: protocolData.targetUser,
-      treatmentDuration: protocolData.treatmentDuration,
-      skinConcern: protocolData.skinConcern,
-      title: activeSection.title,
-      description: activeSection.description,
-      steps: stepsWithTicks,
+      allocatedBy: isPrescribed ? prescriberName : `Cá nhân (${userName})`,
+      treatmentDuration: isPrescribed ? "Phác đồ chỉ định 14 ngày" : "Chăm sóc da hàng ngày",
+      skinConcern: isPrescribed ? "Theo dõi & Phục hồi chuyên sâu" : "Duy trì hàng rào bảo vệ da",
+      title: routineTitle,
+      description: routineDescription,
+      isPrescribed,
+      steps: finalSteps,
       completedCount: completed,
       totalCount: total,
       percent,
-      storageSource: "supabase://photos/real_routine_protocol.json",
-      postgresTable: "public.routine_entries",
+      postgresTable: "public.routine_entries (user_id scoped)",
     });
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : "Lỗi tải dữ liệu Supabase" }, { status: 500 });
@@ -76,6 +257,27 @@ export async function GET(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
+    const supabaseServer = await createServerClient();
+    let { data: { user } } = await supabaseServer.auth.getUser();
+
+    const supabaseAdmin = getSupabaseAdmin();
+
+    // If not found in cookie, check Authorization header (e.g. Bearer token / mobile app)
+    if (!user) {
+      const authHeader = request.headers.get("authorization");
+      if (authHeader && authHeader.startsWith("Bearer ")) {
+        const token = authHeader.slice(7).trim();
+        const { data: tokenData } = await supabaseAdmin.auth.getUser(token);
+        if (tokenData?.user) {
+          user = tokenData.user;
+        }
+      }
+    }
+
+    if (!user) {
+      return NextResponse.json({ error: "Vui lòng đăng nhập để lưu routine." }, { status: 401 });
+    }
+
     const body = await request.json();
     const { label, isCompleted, night } = body;
 
@@ -83,15 +285,14 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "Thiếu tên bước cần tích." }, { status: 400 });
     }
 
+    const userId = user.id;
     const targetNight = night || new Date().toISOString().split("T")[0];
-    const supabase = getSupabaseAdmin();
-    const adminUserId = "614ef0f9-1b4d-48f7-aa3e-29a8bd0b8c33";
 
-    // Read current entry from Supabase
-    const { data: currentEntry } = await supabase
+    // Read current entry strictly for THIS USER from routine_entries
+    const { data: currentEntry } = await supabaseAdmin
       .from("routine_entries")
       .select("completed_labels, item_count")
-      .eq("user_id", adminUserId)
+      .eq("user_id", userId)
       .eq("night", targetNight)
       .maybeSingle();
 
@@ -105,12 +306,12 @@ export async function PATCH(request: Request) {
       completedList = completedList.filter((l) => l !== label);
     }
 
-    // Upsert to Supabase Postgres routine_entries
-    const { error: upsertErr } = await supabase.from("routine_entries").upsert({
-      user_id: adminUserId,
+    // Upsert strictly for THIS USER
+    const { error: upsertErr } = await supabaseAdmin.from("routine_entries").upsert({
+      user_id: userId,
       night: targetNight,
       completed_labels: completedList,
-      item_count: 4,
+      item_count: currentEntry?.item_count || 4,
     }, { onConflict: "user_id,night" });
 
     if (upsertErr) {
@@ -120,6 +321,7 @@ export async function PATCH(request: Request) {
     return NextResponse.json({
       ok: true,
       message: isCompleted ? `Đã hoàn thành bước: ${label}` : `Đã bỏ tích: ${label}`,
+      userId,
       night: targetNight,
       completedLabels: completedList,
       completedCount: completedList.length,
