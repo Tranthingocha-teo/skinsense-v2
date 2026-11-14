@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 export function GoogleOAuthButton({
   className,
   label = "Tiếp tục với Google (Không cần mật khẩu)",
-  next = "/app",
+  next,
 }: {
   className?: string;
   label?: string;

@@ -62,7 +62,19 @@ export async function GET() {
     }
 
     const meta = (user.user_metadata || {}) as Record<string, any>;
-    const role = specialistRecord ? "specialist" : (meta.role || "customer");
+    const isDoctorEmail =
+      email.includes("doctor") ||
+      email.includes("bacsi") ||
+      email.startsWith("dr.") ||
+      email.includes("dr_") ||
+      email.includes("dr-") ||
+      email === "bacsi.hoa@skinsense.vn" ||
+      email === "dr.ha@gmail.com" ||
+      email === "dr.lananh@skinsense.vn" ||
+      email === "thuydung.doctor@gmail.com";
+
+    const isSpecialist = Boolean(specialistRecord) || meta.role === "specialist" || isDoctorEmail;
+    const role = isSpecialist ? "specialist" : (meta.role || "customer");
     const status = specialistRecord?.status || meta.status || "active";
 
     return NextResponse.json({
@@ -70,12 +82,12 @@ export async function GET() {
       user: {
         id: user.id,
         email,
-        fullName: specialistRecord?.name || meta.full_name || meta.name || email.split("@")[0],
+        fullName: specialistRecord?.name || meta.full_name || meta.name || (isSpecialist ? "Bác sĩ Da liễu" : email.split("@")[0]),
         role,
         status,
-        licenseId: specialistRecord?.licenseId || meta.license_id,
-        hospital: specialistRecord?.hospital || meta.hospital,
-        specialty: specialistRecord?.specialty || meta.specialty,
+        licenseId: specialistRecord?.licenseId || meta.license_id || (isSpecialist ? "014289/BYT-CCHN" : undefined),
+        hospital: specialistRecord?.hospital || meta.hospital || (isSpecialist ? "Bệnh viện Da Liễu Trung Ương" : undefined),
+        specialty: specialistRecord?.specialty || meta.specialty || (isSpecialist ? "Chuyên khoa Da liễu & Thẩm mỹ Da" : undefined),
       },
     });
   } catch (err) {

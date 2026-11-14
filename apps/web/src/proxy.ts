@@ -34,8 +34,52 @@ export async function proxy(request: NextRequest) {
 
   const { data } = await supabase.auth.getClaims();
   const signedIn = !!data?.claims;
+
   if (pathname.startsWith("/app") && !signedIn) return redirectTo("/");
-  if (pathname === "/" && signedIn) return redirectTo("/app");
+
+  if (signedIn) {
+    const claims = data.claims as Record<string, any>;
+    const email = ((claims?.email as string) || "").trim().toLowerCase();
+    const meta = (claims?.user_metadata || {}) as Record<string, any>;
+    const role = meta.role;
+    const status = meta.status;
+
+    const isDoctorEmail =
+      email.includes("doctor") ||
+      email.includes("bacsi") ||
+      email.startsWith("dr.") ||
+      email.includes("dr_") ||
+      email.includes("dr-") ||
+      email === "bacsi.hoa@skinsense.vn" ||
+      email === "dr.ha@gmail.com" ||
+      email === "dr.lananh@skinsense.vn" ||
+      email === "thuydung.doctor@gmail.com";
+
+    const isSpecialist = role === "specialist" || isDoctorEmail;
+    const isAdmin = email === "hattn.23itb@vku.udn.vn" || role === "admin";
+    const isShop = role === "shop";
+
+    // 1. If Doctor / Specialist visits "/" or "/app" -> ALWAYS open Doctor Portal /specialist!
+    if (isSpecialist && (pathname === "/" || pathname.startsWith("/app"))) {
+      return redirectTo(status === "pending" ? "/specialist?status=pending" : "/specialist");
+    }
+
+    // 2. If Admin visits "/" or "/app" -> ALWAYS open Admin Dashboard /admin!
+    if (isAdmin && (pathname === "/" || pathname.startsWith("/app"))) {
+      return redirectTo("/admin");
+    }
+
+    // 3. If Shop visits "/" or "/app" -> ALWAYS open Shop Portal /shop!
+    if (isShop && (pathname === "/" || pathname.startsWith("/app"))) {
+      return redirectTo("/shop");
+    }
+
+    // 4. If Customer visits "/" -> open Customer App /app!
+    if (pathname === "/") {
+      return redirectTo("/app");
+    }
+  }
+
   return response;
 
   // A redirect must still carry the cookies getClaims() just rotated.

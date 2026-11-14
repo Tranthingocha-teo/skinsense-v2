@@ -53,18 +53,39 @@ export function QuickAccessButtons() {
 
     // If Admin role clicked, route directly to the Admin Dashboard
     if (acc.role === "admin") {
+      try {
+        const supabase = createClient();
+        await supabase.auth.signInWithPassword({
+          email: acc.email,
+          password: acc.password,
+        });
+      } catch {}
       router.push("/admin");
       return;
     }
 
     // If Specialist (Bác sĩ Da liễu) role clicked, route directly to Specialist Portal
     if (acc.role === "specialist") {
+      try {
+        const supabase = createClient();
+        await supabase.auth.signInWithPassword({
+          email: acc.email,
+          password: acc.password,
+        });
+      } catch {}
       router.push("/specialist");
       return;
     }
 
     // If Shop (Chủ Cửa hàng) role clicked, route directly to Shopee Shop Portal
     if (acc.role === "shop") {
+      try {
+        const supabase = createClient();
+        await supabase.auth.signInWithPassword({
+          email: acc.email,
+          password: acc.password,
+        });
+      } catch {}
       router.push("/shop");
       return;
     }

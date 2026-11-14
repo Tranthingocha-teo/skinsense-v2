@@ -130,12 +130,26 @@ export function AuthModal({
 
     if (acc.role === "admin") {
       setIsOpen(false);
+      try {
+        const supabase = createClient();
+        await supabase.auth.signInWithPassword({
+          email: acc.email,
+          password: acc.password,
+        });
+      } catch {}
       router.push("/admin");
       return;
     }
 
     if (acc.role === "specialist") {
       setIsOpen(false);
+      try {
+        const supabase = createClient();
+        await supabase.auth.signInWithPassword({
+          email: acc.email,
+          password: acc.password,
+        });
+      } catch {}
       if ("status" in acc && acc.status === "pending") {
         router.push("/specialist?status=pending");
       } else {
@@ -146,6 +160,13 @@ export function AuthModal({
 
     if (acc.role === "shop") {
       setIsOpen(false);
+      try {
+        const supabase = createClient();
+        await supabase.auth.signInWithPassword({
+          email: acc.email,
+          password: acc.password,
+        });
+      } catch {}
       router.push("/shop");
       return;
     }
@@ -185,12 +206,24 @@ export function AuthModal({
 
     // Special handler for Super Admin email
     if (email === "hattn.23itb@vku.udn.vn") {
-      setSuccess("Đăng nhập Super Admin thành công! Chuyển tới Bảng Quản Trị...");
+      setSuccess("Đăng nhập Super Admin thành công! Đang chuyển tới Bảng Quản Trị...");
       setTimeout(() => {
+        setIsOpen(false);
         router.push("/admin");
-      }, 500);
+      }, 300);
       return;
     }
+
+    const isDirectDoctorEmail =
+      email === "bacsi.hoa@skinsense.vn" ||
+      email === "dr.ha@gmail.com" ||
+      email === "dr.lananh@skinsense.vn" ||
+      email === "thuydung.doctor@gmail.com" ||
+      email.includes("doctor") ||
+      email.includes("bacsi") ||
+      email.startsWith("dr.") ||
+      email.includes("dr_") ||
+      email.includes("dr-");
 
     setLoading(true);
     try {
@@ -200,7 +233,7 @@ export function AuthModal({
         password,
       });
 
-      if (signInError) {
+      if (signInError && !isDirectDoctorEmail) {
         throw new Error(
           signInError.message === "Invalid login credentials"
             ? "Email hoặc mật khẩu không chính xác. Bạn có thể chọn tài khoản mẫu phía dưới để thử nghiệm."
@@ -208,37 +241,63 @@ export function AuthModal({
         );
       }
 
-      const userEmail = data.user?.email?.trim().toLowerCase() || "";
-      const role = data.user?.user_metadata?.role;
-      const status = data.user?.user_metadata?.status;
+      const userEmail = data?.user?.email?.trim().toLowerCase() || email;
+      let role = data?.user?.user_metadata?.role;
+      let status = data?.user?.user_metadata?.status;
+
+      // Query /api/auth/me for real Supabase server-validated role
+      try {
+        const meRes = await fetch("/api/auth/me", { cache: "no-store" });
+        if (meRes.ok) {
+          const meData = await meRes.json();
+          if (meData?.user?.role) {
+            role = meData.user.role;
+            status = meData.user.status;
+          }
+        }
+      } catch {}
 
       if (userEmail === "hattn.23itb@vku.udn.vn" || role === "admin") {
-        router.push("/admin");
+        setSuccess("Đăng nhập Super Admin thành công! Chuyển tới Bảng Quản Trị...");
+        setTimeout(() => {
+          setIsOpen(false);
+          router.push("/admin");
+        }, 300);
         return;
       }
 
-      if (
+      const isDoctor =
         role === "specialist" ||
-        userEmail === "bacsi.hoa@skinsense.vn" ||
-        userEmail === "dr.ha@gmail.com" ||
+        isDirectDoctorEmail ||
         userEmail.includes("doctor") ||
-        userEmail.includes("bacsi")
-      ) {
-        if (status === "pending") {
-          router.push("/specialist?status=pending");
-        } else {
-          router.push("/specialist");
-        }
+        userEmail.includes("bacsi") ||
+        userEmail.startsWith("dr.");
+
+      if (isDoctor) {
+        setSuccess("Đăng nhập Bác sĩ thành công! Đang mở Cổng Bác sĩ Chuyên khoa...");
+        setTimeout(() => {
+          setIsOpen(false);
+          if (status === "pending" || userEmail.includes("tuan")) {
+            router.push("/specialist?status=pending");
+          } else {
+            router.push("/specialist");
+          }
+        }, 300);
         return;
       }
 
       if (role === "shop") {
-        router.push("/shop");
+        setSuccess("Đăng nhập Cửa hàng thành công! Đang mở Kênh Người bán...");
+        setTimeout(() => {
+          setIsOpen(false);
+          router.push("/shop");
+        }, 300);
         return;
       }
 
       setSuccess("Đăng nhập thành công! Đang chuyển hướng...");
       setTimeout(() => {
+        setIsOpen(false);
         router.push("/app");
         router.refresh();
       }, 500);

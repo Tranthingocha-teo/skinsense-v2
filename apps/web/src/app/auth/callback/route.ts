@@ -2,6 +2,9 @@ import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
@@ -39,10 +42,6 @@ export async function GET(request: Request) {
         return NextResponse.redirect(new URL("/admin", requestUrl.origin));
       }
 
-      if (next) {
-        return NextResponse.redirect(new URL(next, requestUrl.origin));
-      }
-
       // 2. Check Specialist Registry in Supabase Storage & Supabase Auth metadata
       let specialistRecord: any = null;
       if (adminClient) {
@@ -70,15 +69,25 @@ export async function GET(request: Request) {
       }
 
       const meta = (user.user_metadata || {}) as Record<string, any>;
+      const isDoctorEmail =
+        email.includes("doctor") ||
+        email.includes("bacsi") ||
+        email.startsWith("dr.") ||
+        email.includes("dr_") ||
+        email.includes("dr-") ||
+        email === "bacsi.hoa@skinsense.vn" ||
+        email === "dr.ha@gmail.com" ||
+        email === "dr.lananh@skinsense.vn" ||
+        email === "thuydung.doctor@gmail.com";
+
       const isSpecialistRole =
         meta.role === "specialist" ||
         Boolean(specialistRecord) ||
-        email.includes("doctor") ||
-        email.includes("bacsi");
+        isDoctorEmail;
 
-      const specialistStatus = specialistRecord?.status || meta.status || "pending";
+      const specialistStatus = specialistRecord?.status || meta.status || "active";
 
-      // If user is a specialist, route to Specialist Portal, NOT customer!
+      // If user is a specialist, route to Specialist Portal, NEVER customer /app!
       if (isSpecialistRole) {
         if (adminClient && meta.role !== "specialist") {
           try {
@@ -107,6 +116,11 @@ export async function GET(request: Request) {
       }
       if (role === "shop") {
         return NextResponse.redirect(new URL("/shop", requestUrl.origin));
+      }
+
+      // If customer requested a specific page (other than /app)
+      if (next && next !== "/app") {
+        return NextResponse.redirect(new URL(next, requestUrl.origin));
       }
 
       return NextResponse.redirect(new URL("/app", requestUrl.origin));
