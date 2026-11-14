@@ -610,12 +610,16 @@ function SpecialistContent() {
         </div>
 
         {/* 1. THỐNG KÊ HÀNG NGANG (CLICK ĐỂ LỌC DANH SÁCH BỆNH ÁN) */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div role="tablist" aria-label="Bộ lọc nhanh trạng thái bệnh án" className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {/* Card 1: Tất cả */}
           <button
             type="button"
+            role="tab"
+            aria-selected={statusFilter === "all"}
+            aria-controls="cases-list"
+            aria-label="Lọc tất cả bệnh án tiếp nhận"
             onClick={() => setStatusFilter("all")}
-            className={`flex items-center justify-between p-5 sm:p-6 rounded-3xl border transition-all text-left cursor-pointer shadow-xs ${
+            className={`flex items-center justify-between p-5 sm:p-6 rounded-3xl border transition-all text-left cursor-pointer shadow-xs focus:outline-none focus:ring-2 focus:ring-[#2D5A43] ${
               statusFilter === "all"
                 ? "border-[#2D5A43] bg-white ring-2 ring-[#2D5A43]/40 shadow-sm scale-[1.01]"
                 : "border-[#D8D4CA] bg-[#FAF8F5] hover:bg-white hover:border-[#2D5A43]/50"
@@ -654,8 +658,12 @@ function SpecialistContent() {
           {/* Card 2: Chờ xuất phác đồ */}
           <button
             type="button"
+            role="tab"
+            aria-selected={statusFilter === "pending_routine"}
+            aria-controls="cases-list"
+            aria-label="Lọc bệnh án chờ xuất phác đồ"
             onClick={() => setStatusFilter("pending_routine")}
-            className={`flex items-center justify-between p-5 sm:p-6 rounded-3xl border transition-all text-left cursor-pointer shadow-xs ${
+            className={`flex items-center justify-between p-5 sm:p-6 rounded-3xl border transition-all text-left cursor-pointer shadow-xs focus:outline-none focus:ring-2 focus:ring-[#78350F] ${
               statusFilter === "pending_routine"
                 ? "border-[#78350F] bg-white ring-2 ring-[#78350F]/40 shadow-sm scale-[1.01]"
                 : "border-[#D8D4CA] bg-[#FAF8F5] hover:bg-white hover:border-[#78350F]/50"
@@ -694,8 +702,12 @@ function SpecialistContent() {
           {/* Card 3: Đang áp dụng liệu trình */}
           <button
             type="button"
+            role="tab"
+            aria-selected={statusFilter === "in_treatment"}
+            aria-controls="cases-list"
+            aria-label="Lọc bệnh nhân đang áp dụng liệu trình"
             onClick={() => setStatusFilter("in_treatment")}
-            className={`flex items-center justify-between p-5 sm:p-6 rounded-3xl border transition-all text-left cursor-pointer shadow-xs ${
+            className={`flex items-center justify-between p-5 sm:p-6 rounded-3xl border transition-all text-left cursor-pointer shadow-xs focus:outline-none focus:ring-2 focus:ring-[#2D5A43] ${
               statusFilter === "in_treatment"
                 ? "border-[#2D5A43] bg-white ring-2 ring-[#2D5A43]/40 shadow-sm scale-[1.01]"
                 : "border-[#D8D4CA] bg-[#FAF8F5] hover:bg-white hover:border-[#2D5A43]/50"
@@ -775,7 +787,7 @@ function SpecialistContent() {
         </div>
 
         {/* 3. DANH SÁCH BỆNH ÁN: CHỌN HỒ SƠ ĐỂ XUẤT */}
-        <div className="space-y-4">
+        <div id="cases-list" className="space-y-4">
           {filteredCases.length === 0 ? (
             <div className="rounded-3xl border border-[#D8D4CA] bg-[#FAF8F5] p-12 text-center space-y-3">
               <FileText className="size-10 text-[#5C605C] mx-auto opacity-50" />
