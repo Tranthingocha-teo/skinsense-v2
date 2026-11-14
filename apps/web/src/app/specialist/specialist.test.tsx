@@ -38,4 +38,18 @@ describe("Specialist Portal Stats Interactive Filtering", () => {
     const allTab = screen.getByRole("tab", { name: /Lọc tất cả bệnh án tiếp nhận/i });
     expect(allTab).toHaveAttribute("aria-selected", "false");
   });
+
+  it("opens patient case detail modal and displays clinical allergy and Fitzpatrick info", () => {
+    render(<SpecialistPage />);
+    const detailButtons = screen.getAllByRole("button", { name: /Xem Bệnh án/i });
+    expect(detailButtons.length).toBeGreaterThan(0);
+
+    fireEvent.click(detailButtons[0]);
+    expect(screen.getByText(/Bệnh án Da liễu:/i)).toBeInTheDocument();
+    expect(screen.getByText(/Phân loại Fitzpatrick:/i)).toBeInTheDocument();
+
+    const closeButton = screen.getByRole("button", { name: "Đóng" });
+    fireEvent.click(closeButton);
+    expect(screen.queryByText(/Bệnh án Da liễu:/i)).not.toBeInTheDocument();
+  });
 });
