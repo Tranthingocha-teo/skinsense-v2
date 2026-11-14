@@ -105,6 +105,25 @@ export function AuthModal({
     setSignInPassword(acc.password);
     setError(null);
     setSuccess(`Đang vào với vai trò: ${acc.label}...`);
+
+    if (acc.role === "admin") {
+      setIsOpen(false);
+      router.push("/admin");
+      return;
+    }
+
+    if (acc.role === "specialist") {
+      setIsOpen(false);
+      router.push("/specialist");
+      return;
+    }
+
+    if (acc.role === "shop") {
+      setIsOpen(false);
+      router.push("/shop");
+      return;
+    }
+
     setLoading(true);
     try {
       const supabase = createClient();
@@ -441,7 +460,7 @@ export function AuthModal({
                                 {acc.label}
                               </span>
                             </div>
-                            <span className="mt-1 text-[11px] text-muted-foreground" numberOfLines={1}>
+                            <span className="mt-1 text-[11px] text-muted-foreground">
                               {acc.email}
                             </span>
                           </button>

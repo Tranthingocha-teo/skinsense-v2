@@ -50,6 +50,25 @@ export function QuickAccessButtons() {
 
   async function handleQuickEnter(acc: (typeof QUICK_ROLES)[0]) {
     setLoadingRole(acc.role);
+
+    // If Admin role clicked, route directly to the Admin Dashboard
+    if (acc.role === "admin") {
+      router.push("/admin");
+      return;
+    }
+
+    // If Specialist (Bác sĩ Da liễu) role clicked, route directly to Specialist Portal
+    if (acc.role === "specialist") {
+      router.push("/specialist");
+      return;
+    }
+
+    // If Shop (Chủ Cửa hàng) role clicked, route directly to Shopee Shop Portal
+    if (acc.role === "shop") {
+      router.push("/shop");
+      return;
+    }
+
     try {
       const supabase = createClient();
       const { error } = await supabase.auth.signInWithPassword({
