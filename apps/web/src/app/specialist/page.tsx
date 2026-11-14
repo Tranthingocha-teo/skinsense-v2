@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   Stethoscope,
   FileText,
@@ -392,7 +393,9 @@ const INITIAL_PATIENT_CASES: PatientCase[] = [
   },
 ];
 
-export default function SpecialistPage() {
+function SpecialistContent() {
+  const searchParams = useSearchParams();
+  const isPending = searchParams?.get("status") === "pending";
   const [activeTab, setActiveTab] = useState<"records" | "routines" | "profile" | "patient_view">("records");
   const [viewMode, setViewMode] = useState<"doctor" | "patient">("doctor");
 
@@ -408,10 +411,22 @@ export default function SpecialistPage() {
   const [editHours, setEditHours] = useState(INITIAL_DOCTOR_PROFILE.consultationHours);
   const [editAvatar, setEditAvatar] = useState(INITIAL_DOCTOR_PROFILE.avatarUrl);
 
-  // Patient Cases state
+  // Patient Cases state (Initialized with rich clinical cases & syncs with real Supabase scan data)
   const [patientCases, setPatientCases] = useState<PatientCase[]>(INITIAL_PATIENT_CASES);
   const [selectedCase, setSelectedCase] = useState<PatientCase | null>(null);
   const [isCaseDetailOpen, setIsCaseDetailOpen] = useState(false);
+
+  // Sync with real Supabase database photos & zone readings
+  useEffect(() => {
+    fetch("/api/specialist/cases")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.ok && Array.isArray(json.cases) && json.cases.length > 0) {
+          setPatientCases([...json.cases, ...INITIAL_PATIENT_CASES.slice(1)]);
+        }
+      })
+      .catch((err) => console.error("Failed to load real cases from Supabase:", err));
+  }, []);
 
   // Filter & Search state
   const [searchTerm, setSearchTerm] = useState("");
@@ -422,8 +437,8 @@ export default function SpecialistPage() {
   const [isPrescribeModalOpen, setIsPrescribeModalOpen] = useState(false);
   const [prescribeTargetCase, setPrescribeTargetCase] = useState<PatientCase | null>(null);
   const [routineTitleInput, setRoutineTitleInput] = useState("");
-  const [startDateInput, setStartDateInput] = useState(new Date().toISOString().split("T")[0]);
-  const [revisitDateInput, setRevisitDateInput] = useState(
+  const [startDateInput, setStartDateInput] = useState(() => new Date().toISOString().split("T")[0]);
+  const [revisitDateInput, setRevisitDateInput] = useState(() =>
     new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
   );
   const [doctorNotesInput, setDoctorNotesInput] = useState("");
@@ -566,6 +581,17 @@ export default function SpecialistPage() {
 
     setIsPrescribeModalOpen(false);
     toast.success(`Đã lưu phác đồ Routine cho ${prescribeTargetCase.patientName}!`);
+
+    // Persist to Supabase Postgres database
+    fetch("/api/specialist/cases", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId: prescribeTargetCase.id,
+        routineTitle: updatedRoutine.routineTitle,
+        products: modalProducts,
+      }),
+    }).catch(() => {});
   }
 
   function handleSaveProfileSubmit(e: React.FormEvent) {
@@ -667,6 +693,27 @@ export default function SpecialistPage() {
           </div>
         </div>
       </header>
+
+      {/* Pending Approval Alert Banner for Doctors */}
+      {isPending && (
+        <div className="border-b border-amber-600/30 bg-amber-500/15 px-4 py-3 text-amber-950 sm:px-8">
+          <div className="mx-auto flex max-w-[1440px] flex-col justify-between gap-3 text-xs sm:flex-row sm:items-center sm:text-sm">
+            <div className="flex items-center gap-2.5">
+              <span className="flex size-2.5 rounded-full bg-amber-600 animate-pulse shrink-0" />
+              <span>
+                <strong>Hồ sơ Bác sĩ đang chờ phê duyệt:</strong> Yêu cầu cấp phép Chứng chỉ hành nghề (CCHN) của bạn đang chờ Super Admin{" "}
+                <strong>Trần Thị Ngọc Hà (hattn.23itb@vku.udn.vn)</strong> xét duyệt và kích hoạt.
+              </span>
+            </div>
+            <Link
+              href="/admin"
+              className="inline-flex items-center gap-1.5 self-start rounded-lg bg-amber-800 px-3.5 py-1.5 text-xs font-semibold text-amber-50 transition hover:bg-amber-900 sm:self-auto whitespace-nowrap"
+            >
+              👉 Vào Admin để duyệt hồ sơ này
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Main Content - Full-width proportion, generous margins */}
       <main className="mx-auto max-w-[1440px] px-4 py-8 sm:px-8 space-y-7">
@@ -1662,7 +1709,7 @@ export default function SpecialistPage() {
                     <label className="block text-[#191B19] font-semibold mb-1">Thời điểm thoa</label>
                     <select
                       value={customProdTime}
-                      onChange={(e) => setCustomProdTime(e.target.value as any)}
+                      onChange={(e) => setCustomProdTime(e.target.value as "morning" | "evening" | "both")}
                       className="w-full rounded-xl border border-[#D8D4CA] bg-white px-3.5 py-2 text-sm text-[#191B19]"
                     >
                       <option value="both">Cả Sáng & Tối</option>
@@ -1834,5 +1881,19 @@ export default function SpecialistPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function SpecialistPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-[#E8E5DE] text-sm font-medium text-[#5C605C]">
+          Đang tải phân hệ Bác sĩ Da liễu...
+        </div>
+      }
+    >
+      <SpecialistContent />
+    </Suspense>
   );
 }
