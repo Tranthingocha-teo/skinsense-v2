@@ -63,6 +63,12 @@ export function QuickAccessButtons() {
       return;
     }
 
+    // If Shop (Chủ Cửa hàng) role clicked, route directly to Shopee Shop Portal
+    if (acc.role === "shop") {
+      router.push("/shop");
+      return;
+    }
+
     try {
       const supabase = createClient();
       const { error } = await supabase.auth.signInWithPassword({

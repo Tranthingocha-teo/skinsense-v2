@@ -118,6 +118,12 @@ export function AuthModal({
       return;
     }
 
+    if (acc.role === "shop") {
+      setIsOpen(false);
+      router.push("/shop");
+      return;
+    }
+
     setLoading(true);
     try {
       const supabase = createClient();
