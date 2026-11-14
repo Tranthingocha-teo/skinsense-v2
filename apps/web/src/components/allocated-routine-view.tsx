@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { CheckCircle2, Sparkles, Sun, Moon, Info, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
+import { SafeProductImage } from "@/components/safe-product-image";
 import {
   type RoleRoutine,
   type RoutineStep,
@@ -193,7 +194,7 @@ export function AllocatedRoutineView() {
 
                 {/* Step Body */}
                 <div className="flex flex-col sm:flex-row items-start gap-4 pt-3.5">
-                  <img
+                  <SafeProductImage
                     src={step.imageUrl}
                     alt={step.productName}
                     className="size-20 sm:size-24 object-cover rounded-xl border border-border shadow-xs shrink-0 self-center sm:self-start"

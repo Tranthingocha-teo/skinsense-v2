@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Sparkles, Sun, Moon, Info, ShieldCheck, CheckCircle2 } from "lucide-react";
+import { SafeProductImage } from "@/components/safe-product-image";
 import {
   getProductForStep,
 } from "@/lib/role-routines";
@@ -343,7 +344,7 @@ export function RoutineChecklist({ api, embedded = false }: { api: RoutineApi; e
         {/* Product Details & Usage Guide Box */}
         {showUsageTips && editing !== item.id && (
           <div className="ml-9.5 p-3 rounded-xl border border-border/80 bg-surface-2/40 flex flex-col sm:flex-row gap-3">
-            <img
+            <SafeProductImage
               src={product.imageUrl}
               alt={product.productName}
               className="size-14 sm:size-16 rounded-lg object-cover border border-border shrink-0 self-start"
