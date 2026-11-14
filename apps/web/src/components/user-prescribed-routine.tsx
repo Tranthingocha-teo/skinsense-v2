@@ -19,6 +19,7 @@ import {
   Info,
 } from "lucide-react";
 import { toast } from "sonner";
+import { SafeProductImage } from "@/components/safe-product-image";
 
 // Routine Item (Sản phẩm trong phác đồ của Bác sĩ)
 export interface RoutineProduct {
@@ -355,7 +356,7 @@ export function UserPrescribedRoutine({
             {/* Thân Thẻ: Ảnh to rõ + Tên sản phẩm + Hoạt chất + Cách dùng (Đầy đặn vừa vặn) */}
             <div className="flex items-start gap-4">
               <div className="relative size-24 sm:size-28 shrink-0 overflow-hidden rounded-2xl border border-[#D8D4CA] bg-neutral-100 shadow-2xs">
-                <img
+                <SafeProductImage
                   src={prod.image}
                   alt={prod.name}
                   className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
