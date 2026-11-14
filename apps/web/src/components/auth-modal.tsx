@@ -21,6 +21,10 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { LogoMark } from "@/components/site-header";
 import { GoogleOAuthButton } from "@/components/google-oauth-button";
+import {
+  validateDoctorApprovalInput,
+  sanitizeDoctorApprovalInput,
+} from "@/lib/doctor-approval-validation";
 
 export type UserRole = "customer" | "shop" | "specialist" | "admin";
 
@@ -264,28 +268,30 @@ export function AuthModal({
     setError(null);
     setSuccess(null);
 
-    const email = docEmail.trim().toLowerCase();
+    const validation = validateDoctorApprovalInput({
+      fullName: docName,
+      licenseId: docLicenseId,
+      hospital: docHospital,
+      email: docEmail,
+      password: docPassword,
+      phoneNumber: docPhone,
+      specialty: docSpecialty,
+    });
 
-    if (!docName.trim()) {
-      setError("Vui lòng nhập Họ và tên Bác sĩ.");
+    if (!validation.isValid) {
+      setError(validation.error || "Thông tin gửi duyệt không hợp lệ.");
       return;
     }
-    if (!docLicenseId.trim()) {
-      setError("Vui lòng nhập Số Chứng chỉ hành nghề (CCHN).");
-      return;
-    }
-    if (!docHospital.trim()) {
-      setError("Vui lòng nhập Bệnh viện / Cơ sở y tế công tác.");
-      return;
-    }
-    if (!email || !email.includes("@")) {
-      setError("Vui lòng nhập địa chỉ Email liên hệ.");
-      return;
-    }
-    if (docPassword.length < 6) {
-      setError("Mật khẩu bảo mật phải có ít nhất 6 ký tự.");
-      return;
-    }
+
+    const payload = sanitizeDoctorApprovalInput({
+      fullName: docName,
+      licenseId: docLicenseId,
+      hospital: docHospital,
+      email: docEmail,
+      password: docPassword,
+      phoneNumber: docPhone,
+      specialty: docSpecialty,
+    });
 
     setLoading(true);
     try {
@@ -293,14 +299,14 @@ export function AuthModal({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email,
-          password: docPassword,
-          fullName: docName.trim(),
+          email: payload.email,
+          password: payload.password,
+          fullName: payload.fullName,
           role: "specialist",
-          phoneNumber: docPhone.trim(),
-          specialty: docSpecialty.trim(),
-          licenseId: docLicenseId.trim(),
-          hospital: docHospital.trim(),
+          phoneNumber: payload.phoneNumber,
+          specialty: payload.specialty,
+          licenseId: payload.licenseId,
+          hospital: payload.hospital,
         }),
       });
 
