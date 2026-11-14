@@ -42,22 +42,32 @@ export {
   recommendProductsForZone,
 } from "./products";
 export type {
-  OrderStatus,
+  DateRangePreset,
   Order,
+  OrderStatus,
   OrderTrackingEvent,
   PaymentMethod,
+  ProductInput,
+  SellerRegistrationInput,
   Shop,
   ShopListing,
+  ShopProfileUpdateInput,
   ShopStatus,
   WithdrawalRequest,
 } from "./marketplace";
 export {
   calculateOrderFinancials,
+  filterOrdersByDateRange,
   formatVnd,
   generateTrackingTimeline,
   generateVietQrUrl,
   INITIAL_LISTINGS,
   INITIAL_SHOPS,
+  validateOrderStatusTransition,
+  validateProductInput,
+  validateSellerRegistration,
+  validateShopProfileUpdate,
 } from "./marketplace";
+
 
 

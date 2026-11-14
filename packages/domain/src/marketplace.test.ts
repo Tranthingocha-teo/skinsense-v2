@@ -7,6 +7,8 @@ import {
   getShopById,
   INITIAL_LISTINGS,
   INITIAL_SHOPS,
+  validateOrderStatusTransition,
+  validateSellerRegistration,
 } from "./marketplace";
 
 describe("Marketplace Domain Entity & VietQR generator", () => {
@@ -58,3 +60,39 @@ describe("Marketplace Domain Entity & VietQR generator", () => {
     expect(listings.some((l) => l.shopId === "shop-skinsense-official")).toBe(true);
   });
 });
+
+describe("Seller System Domain Rules", () => {
+  it("validates seller registration inputs accurately", () => {
+    const valid = validateSellerRegistration({
+      shopName: "Dược Mỹ Phẩm Chính Hãng",
+      ownerName: "Nguyễn Văn A",
+      phone: "0912345678",
+      email: "shop@skinsense.vn",
+      address: "123 Đường Cầu Giấy, Hà Nội",
+      category: "Dược mỹ phẩm",
+    });
+    expect(valid.valid).toBe(true);
+
+    const invalid = validateSellerRegistration({
+      shopName: "A",
+      ownerName: "",
+      phone: "12345",
+      email: "invalid-email",
+      address: "123",
+      category: "",
+    });
+    expect(invalid.valid).toBe(false);
+    expect(invalid.errors.shopName).toBeDefined();
+    expect(invalid.errors.phone).toBeDefined();
+    expect(invalid.errors.email).toBeDefined();
+  });
+
+  it("enforces order state machine transition rules", () => {
+    expect(validateOrderStatusTransition("pending", "processing").allowed).toBe(true);
+    expect(validateOrderStatusTransition("processing", "shipping").allowed).toBe(true);
+    expect(validateOrderStatusTransition("shipping", "completed").allowed).toBe(true);
+    expect(validateOrderStatusTransition("completed", "pending").allowed).toBe(false);
+    expect(validateOrderStatusTransition("cancelled", "shipping").allowed).toBe(false);
+  });
+});
+

@@ -152,3 +152,176 @@ export const feedback = pgTable(
     pgPolicy("feedback: owner read", { for: "select", to: authenticatedRole, using: sql`user_id = (select auth.uid())` }),
   ],
 ).enableRLS();
+
+// -------------------------------------------------------------
+// Seller / Supplier & Marketplace Tables (Modules 1 - 6)
+// -------------------------------------------------------------
+
+export const shops = pgTable(
+  "shops",
+  {
+    ...ownerColumns,
+    shopName: text("shop_name").notNull(),
+    ownerName: text("owner_name").notNull(),
+    contactName: text("contact_name"),
+    phone: text().notNull(),
+    email: text(),
+    address: text().notNull(),
+    category: text().notNull(),
+    description: text(),
+    avatarUrl: text("avatar_url"),
+    bannerUrl: text("banner_url"),
+    status: text({ enum: ["pending", "approved", "rejected"] }).notNull().default("pending"),
+    operatingStatus: text("operating_status", { enum: ["open", "temporarily_closed"] }).notNull().default("open"),
+    rating: real().notNull().default(5.0),
+    reviewCount: integer("review_count").notNull().default(0),
+    isOfficial: boolean("is_official").notNull().default(false),
+    walletBalanceVnd: integer("wallet_balance_vnd").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  () => [
+    pgPolicy("shops: owner insert", {
+      for: "insert",
+      to: authenticatedRole,
+      withCheck: sql`user_id = (select auth.uid()) and status = 'pending'`,
+    }),
+    pgPolicy("shops: owner select & update", {
+      for: "all",
+      to: authenticatedRole,
+      using: sql`user_id = (select auth.uid())`,
+      withCheck: sql`user_id = (select auth.uid())`,
+    }),
+    pgPolicy("shops: public select", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`status = 'approved'`,
+    }),
+  ],
+).enableRLS();
+
+export const sellerProducts = pgTable(
+  "seller_products",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    shopId: uuid("shop_id")
+      .notNull()
+      .references(() => shops.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .default(sql`auth.uid()`)
+      .references(() => authUsers.id, { onDelete: "cascade" }),
+    name: text().notNull(),
+    brand: text().notNull(),
+    category: text().notNull(),
+    priceVnd: integer("price_vnd").notNull(),
+    originalPriceVnd: integer("original_price_vnd"),
+    stock: integer().notNull().default(0),
+    status: text({ enum: ["draft", "active", "inactive", "out_of_stock"] }).notNull().default("active"),
+    images: text().array(),
+    primaryImageUrl: text("primary_image_url"),
+    summary: text(),
+    description: text(),
+    ingredients: text(),
+    skinTypeCompatibility: text("skin_type_compatibility").array(),
+    howToUse: text("how_to_use"),
+    caution: text(),
+    origin: text(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    check("price_vnd_non_negative", sql`${t.priceVnd} >= 0`),
+    check("stock_non_negative", sql`${t.stock} >= 0`),
+    pgPolicy("seller_products: owner access", {
+      for: "all",
+      to: authenticatedRole,
+      using: sql`user_id = (select auth.uid())`,
+      withCheck: sql`user_id = (select auth.uid())`,
+    }),
+    pgPolicy("seller_products: public select", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`status = 'active'`,
+    }),
+  ],
+).enableRLS();
+
+export const sellerOrders = pgTable(
+  "seller_orders",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    orderCode: text("order_code").notNull().unique(),
+    shopId: uuid("shop_id")
+      .notNull()
+      .references(() => shops.id, { onDelete: "cascade" }),
+    sellerUserId: uuid("seller_user_id")
+      .notNull()
+      .references(() => authUsers.id),
+    customerUserId: uuid("customer_user_id")
+      .notNull()
+      .references(() => authUsers.id),
+    customerName: text("customer_name").notNull(),
+    customerPhone: text("customer_phone").notNull(),
+    customerAddress: text("customer_address").notNull(),
+    productId: text("product_id").notNull(),
+    productName: text("product_name").notNull(),
+    productImage: text("product_image"),
+    priceVnd: integer("price_vnd").notNull(),
+    quantity: integer().notNull().default(1),
+    totalVnd: integer("total_vnd").notNull(),
+    shopEarningsVnd: integer("shop_earnings_vnd").notNull(),
+    platformFeeVnd: integer("platform_fee_vnd").notNull(),
+    note: text(),
+    paymentMethod: text("payment_method", { enum: ["cod", "vietqr"] }).notNull().default("cod"),
+    status: text({ enum: ["pending", "confirmed", "processing", "shipping", "completed", "cancelled", "refunded"] }).notNull().default("pending"),
+    trackingCode: text("tracking_code"),
+    shippingProvider: text("shipping_provider").default("SPX Express"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    check("order_quantity_positive", sql`${t.quantity} > 0`),
+    pgPolicy("seller_orders: seller select & update", {
+      for: "all",
+      to: authenticatedRole,
+      using: sql`seller_user_id = (select auth.uid())`,
+      withCheck: sql`seller_user_id = (select auth.uid())`,
+    }),
+    pgPolicy("seller_orders: customer select", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`customer_user_id = (select auth.uid())`,
+    }),
+  ],
+).enableRLS();
+
+export const sellerWithdrawals = pgTable(
+  "seller_withdrawals",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    shopId: uuid("shop_id")
+      .notNull()
+      .references(() => shops.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .default(sql`auth.uid()`)
+      .references(() => authUsers.id, { onDelete: "cascade" }),
+    amountVnd: integer("amount_vnd").notNull(),
+    bankName: text("bank_name").notNull(),
+    accountNumber: text("account_number").notNull(),
+    accountHolder: text("account_holder").notNull(),
+    status: text({ enum: ["pending", "approved", "rejected"] }).notNull().default("pending"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    processedAt: timestamp("processed_at", { withTimezone: true }),
+  },
+  (t) => [
+    check("withdrawal_amount_positive", sql`${t.amountVnd} > 0`),
+    pgPolicy("seller_withdrawals: owner access", {
+      for: "all",
+      to: authenticatedRole,
+      using: sql`user_id = (select auth.uid())`,
+      withCheck: sql`user_id = (select auth.uid())`,
+    }),
+  ],
+).enableRLS();
