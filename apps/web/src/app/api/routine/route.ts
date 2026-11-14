@@ -116,16 +116,48 @@ export async function GET(request: Request) {
 
     // Priority A: Check clinical records registry
     const registryCases = (await downloadJsonFromStorage<any[]>(supabaseAdmin, "clinical_records/cases_registry.json")) || [];
-    const matchedCase = registryCases.find((c) =>
-      (c.patientEmail && c.patientEmail.trim().toLowerCase() === userEmail) ||
-      c.patientUserId === userId ||
-      c.id === userId ||
-      c.userId === userId
-    );
+    
+    // Check if user is Hà (support both her Google account and school email / names)
+    const isHaUser =
+      userEmail === "trandinhhai0936039127@gmail.com" ||
+      userEmail === "hattn.23itb@vku.udn.vn" ||
+      userEmail === "khachhang@gmail.com" ||
+      userId === "365d9ffb-0ee5-41d2-879c-37ef337fe262" ||
+      userId === "614ef0f9-1b4d-48f7-aa3e-29a8bd0b8c33" ||
+      userName.toLowerCase().includes("ngọc hà") ||
+      userName.toLowerCase().includes("ngoc ha");
+
+    const matchedCase = registryCases.find((c) => {
+      if (c.patientUserId === userId || c.alternateUserId === userId || c.id === userId || c.userId === userId) return true;
+      if (c.patientEmail && c.patientEmail.trim().toLowerCase() === userEmail) return true;
+      if (c.alternateEmail && c.alternateEmail.trim().toLowerCase() === userEmail) return true;
+      if (isHaUser && (
+        c.patientName?.toLowerCase().includes("ngọc hà") ||
+        c.patientName?.toLowerCase().includes("ngoc ha") ||
+        c.patientEmail === "hattn.23itb@vku.udn.vn" ||
+        c.patientEmail === "trandinhhai0936039127@gmail.com"
+      )) {
+        return true;
+      }
+      return false;
+    });
 
     if (matchedCase?.currentRoutine && Array.isArray(matchedCase.currentRoutine.products) && matchedCase.currentRoutine.products.length > 0) {
       prescribedRoutine = matchedCase.currentRoutine;
       if (prescribedRoutine.prescribedBy) prescriberName = prescribedRoutine.prescribedBy;
+
+      // Sync Postgres routine_items for THIS USER so that direct client queries are also updated
+      try {
+        await supabaseAdmin.from("routine_items").delete().eq("user_id", userId);
+        for (let i = 0; i < prescribedRoutine.products.length; i++) {
+          const p = prescribedRoutine.products[i];
+          await supabaseAdmin.from("routine_items").insert({
+            user_id: userId,
+            label: p.name || p.label || p.productName,
+            position: i,
+          });
+        }
+      } catch {}
     }
 
     // Priority B: Check user-specific protocol in storage

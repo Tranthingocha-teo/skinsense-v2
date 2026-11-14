@@ -78,6 +78,7 @@ export async function POST(request: Request) {
     const newCase = {
       id: newCaseId,
       caseCode,
+      patientUserId: body.patientUserId || body.userId || (patientEmail === "trandinhhai0936039127@gmail.com" ? "365d9ffb-0ee5-41d2-879c-37ef337fe262" : undefined),
       patientName: patientName.trim(),
       patientEmail: patientEmail?.trim() || "khachhang@gmail.com",
       patientAge: Number(patientAge) || 21,

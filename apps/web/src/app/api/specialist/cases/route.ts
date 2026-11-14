@@ -231,38 +231,61 @@ export async function POST(request: Request) {
       patientUserId = "c28e1e5f-5813-461e-a3d2-2bc5be1b9470"; // Customer account fallback
     }
 
-    // 3. Insert into Supabase Postgres routine_items strictly FOR THIS PATIENT
-    try {
-      await supabase.from("routine_items").delete().eq("user_id", patientUserId);
-      for (let i = 0; i < products.length; i++) {
-        const p = products[i];
-        await supabase.from("routine_items").insert({
-          user_id: patientUserId,
-          label: p.name || p.label || p.productName,
-          position: i,
-        });
-      }
-    } catch {}
+    // 3. Determine target patient user IDs to update
+    const targetUserIds = new Set<string>();
+    if (patientUserId) targetUserIds.add(patientUserId);
 
-    // 4. Save protocol strictly for THIS PATIENT in Supabase Storage
-    try {
-      const patientProtocol = {
-        userId: patientUserId,
-        patientEmail: targetPatientEmail,
-        patientName: targetPatientName,
-        allocatedBy: "BS. CKI Nguyễn Mai Hoa",
-        routineTitle: routineTitle || "Phác đồ Điều trị Chuyên khoa Da liễu",
-        doctorNotes: doctorNotes || "Tuân thủ đúng thứ tự thoa sáng và tối theo chỉ định.",
-        revisitDate: revisitDate || new Date(Date.now() + 14 * 86400000).toISOString().split("T")[0],
-        products,
-      };
+    const isHaPatient =
+      targetPatientName.toLowerCase().includes("ngọc hà") ||
+      targetPatientName.toLowerCase().includes("ngoc ha") ||
+      targetPatientEmail === "hattn.23itb@vku.udn.vn" ||
+      targetPatientEmail === "trandinhhai0936039127@gmail.com" ||
+      targetPatientEmail === "khachhang@gmail.com";
 
-      await supabase.storage.from("photos").upload(
-        `routines/protocol_${patientUserId}.json`,
-        Buffer.from(JSON.stringify(patientProtocol, null, 2)),
-        { upsert: true, contentType: "application/json" }
-      );
-    } catch {}
+    if (isHaPatient) {
+      targetUserIds.add("365d9ffb-0ee5-41d2-879c-37ef337fe262"); // Thị Ngọc Hà Trần
+      targetUserIds.add("614ef0f9-1b4d-48f7-aa3e-29a8bd0b8c33"); // Super Admin Trần Thị Ngọc Hà
+      targetUserIds.add("c28e1e5f-5813-461e-a3d2-2bc5be1b9470"); // Customer Trần Thị Ngọc Hà
+    }
+
+    if (targetUserIds.size === 0) {
+      targetUserIds.add("c28e1e5f-5813-461e-a3d2-2bc5be1b9470"); // Fallback
+    }
+
+    // 4. Insert into Supabase Postgres routine_items strictly FOR THIS PATIENT (and aliases)
+    for (const uid of targetUserIds) {
+      try {
+        await supabase.from("routine_items").delete().eq("user_id", uid);
+        for (let i = 0; i < products.length; i++) {
+          const p = products[i];
+          await supabase.from("routine_items").insert({
+            user_id: uid,
+            label: p.name || p.label || p.productName,
+            position: i,
+          });
+        }
+      } catch {}
+
+      // 5. Save protocol strictly for THIS PATIENT in Supabase Storage
+      try {
+        const patientProtocol = {
+          userId: uid,
+          patientEmail: targetPatientEmail,
+          patientName: targetPatientName,
+          allocatedBy: "BS. CKI Nguyễn Mai Hoa",
+          routineTitle: routineTitle || "Phác đồ Điều trị Chuyên khoa Da liễu",
+          doctorNotes: doctorNotes || "Tuân thủ đúng thứ tự thoa sáng và tối theo chỉ định.",
+          revisitDate: revisitDate || new Date(Date.now() + 14 * 86400000).toISOString().split("T")[0],
+          products,
+        };
+
+        await supabase.storage.from("photos").upload(
+          `routines/protocol_${uid}.json`,
+          Buffer.from(JSON.stringify(patientProtocol, null, 2)),
+          { upsert: true, contentType: "application/json" }
+        );
+      } catch {}
+    }
 
     return NextResponse.json({
       ok: true,

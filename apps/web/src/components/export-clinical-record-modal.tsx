@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   FileText,
   Stethoscope,
@@ -49,10 +49,24 @@ export function ExportClinicalRecordModal({
   const [selectedDoctor, setSelectedDoctor] = useState("BS. CKI Nguyễn Mai Hoa");
 
   const [loading, setLoading] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [submittedCase, setSubmittedCase] = useState<{
     caseCode: string;
     message: string;
   } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.authenticated && res.user) {
+          setCurrentUser(res.user);
+          if (res.user.fullName) setPatientName(res.user.fullName);
+          if (res.user.email) setPatientEmail(res.user.email);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   if (!isOpen) return null;
 
@@ -73,6 +87,7 @@ export function ExportClinicalRecordModal({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          patientUserId: currentUser?.id,
           patientName: patientName.trim(),
           patientEmail: patientEmail.trim(),
           patientAge,
