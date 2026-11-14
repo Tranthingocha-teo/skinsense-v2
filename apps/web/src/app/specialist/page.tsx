@@ -235,7 +235,7 @@ const INITIAL_PATIENT_CASES: PatientCase[] = [
     treatmentDay: "Ngày 3/14",
     symptoms: "Bùng mụn bọc viêm đỏ má & cằm sau khi thử cushion mới; da châm chích rát nhẹ.",
     allergies: "Dị ứng hương liệu nhân tạo & cồn khô nồng độ cao",
-    skinPhotoUrl: "/demo-photos/portrait.jpg",
+    skinPhotoUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80",
     aiAnalysis: {
       skinHealthScore: 42,
       rednessIndex: 74,
@@ -829,16 +829,16 @@ export default function SpecialistPage() {
                   </div>
                 </div>
 
-                {/* 2. DANH SÁCH BỆNH ÁN DẠNG HÀNG NGANG TO RÕ, ĐẦY ĐẶN (KHÔNG BỊ CHI CHÍT) */}
+                {/* 2. DANH SÁCH BỆNH ÁN DẠNG HÀNG NGANG ĐỒNG ĐỀU (CÁC KHUNG BẰNG NHAU 100%) */}
                 <div className="space-y-4">
                   {filteredCases.map((patientCase) => (
                     <div
                       key={patientCase.id}
-                      className="rounded-3xl border border-[#D8D4CA] bg-[#FAF8F5] p-6 sm:p-7 shadow-xs hover:border-[#2D5A43]/60 transition-all flex flex-col xl:flex-row xl:items-center justify-between gap-6"
+                      className="rounded-3xl border border-[#D8D4CA] bg-[#FAF8F5] p-6 shadow-xs hover:border-[#2D5A43]/60 transition-all flex flex-col xl:flex-row xl:items-center justify-between gap-6 min-h-[224px]"
                     >
-                      {/* Cột 1: Thông tin bệnh nhân & Ảnh chân dung to rõ */}
-                      <div className="flex items-center gap-4.5 min-w-[280px]">
-                        <div className="relative size-20 sm:size-22 shrink-0 overflow-hidden rounded-2xl border-2 border-[#D8D4CA] bg-neutral-200 shadow-2xs">
+                      {/* Cột 1: Thông tin bệnh nhân & Ảnh chân dung to rõ (Độ rộng cố định 290px trên desktop) */}
+                      <div className="flex items-center gap-4 w-full xl:w-[290px] shrink-0">
+                        <div className="relative size-20 shrink-0 overflow-hidden rounded-2xl border-2 border-[#D8D4CA] bg-neutral-200 shadow-2xs">
                           <img
                             src={patientCase.skinPhotoUrl}
                             alt={patientCase.patientName}
@@ -846,13 +846,13 @@ export default function SpecialistPage() {
                           />
                         </div>
 
-                        <div className="space-y-1">
+                        <div className="space-y-1 min-w-0 flex-1">
                           <div className="flex items-center gap-2">
-                            <h4 className="font-bold text-base sm:text-lg text-[#191B19] leading-tight">
+                            <h4 className="font-bold text-base sm:text-lg text-[#191B19] truncate leading-tight">
                               {patientCase.patientName}
                             </h4>
-                            <span className="text-xs text-[#5C605C]">
-                              ({patientCase.patientAge} tuổi • {patientCase.patientGender})
+                            <span className="text-xs text-[#5C605C] shrink-0">
+                              ({patientCase.patientAge}t • {patientCase.patientGender})
                             </span>
                           </div>
 
@@ -864,11 +864,11 @@ export default function SpecialistPage() {
 
                           <div className="flex flex-wrap items-center gap-2 pt-1">
                             {patientCase.status === "in_treatment" ? (
-                              <span className="rounded-full bg-[#2D5A43]/15 px-3 py-1 text-xs font-bold text-[#2D5A43]">
+                              <span className="rounded-full bg-[#2D5A43]/15 px-3 py-0.5 text-xs font-bold text-[#2D5A43]">
                                 ● Đang điều trị ({patientCase.treatmentDay || "14 ngày"})
                               </span>
                             ) : (
-                              <span className="rounded-full bg-[#78350F]/15 px-3 py-1 text-xs font-bold text-[#78350F]">
+                              <span className="rounded-full bg-[#78350F]/15 px-3 py-0.5 text-xs font-bold text-[#78350F]">
                                 ⏳ Chờ kê Routine
                               </span>
                             )}
@@ -892,21 +892,21 @@ export default function SpecialistPage() {
                         </div>
                       </div>
 
-                      {/* Cột 2: Triệu chứng & Thanh chỉ số lâm sàng (Thoáng đãng, to rõ) */}
-                      <div className="flex-1 space-y-3">
-                        {/* Triệu chứng súc tích */}
-                        <div className="text-sm leading-relaxed text-[#191B19] bg-white/70 border border-[#D8D4CA] rounded-2xl p-3">
-                          <span className="font-bold text-[#2D5A43]">Triệu chứng ghi nhận: </span>
-                          <span className="text-[#4A4D4A]">{patientCase.symptoms}</span>
+                      {/* Cột 2: Triệu chứng & Thanh chỉ số & Phác đồ Routine (Chiều cao 3 hàng cố định chuẩn chỉnh trên mọi card) */}
+                      <div className="flex-1 min-w-0 space-y-2.5 flex flex-col justify-between">
+                        {/* Hàng 1: Triệu chứng súc tích (h-11 cố định) */}
+                        <div className="h-11 flex items-center px-4 rounded-2xl bg-white/80 border border-[#D8D4CA] text-sm text-[#191B19]">
+                          <span className="font-bold text-[#2D5A43] shrink-0 mr-2">Triệu chứng:</span>
+                          <span className="text-[#4A4D4A] truncate">{patientCase.symptoms}</span>
                         </div>
 
-                        {/* Thanh chỉ số lâm sàng ngang với Progress Bar trực quan */}
-                        <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-white border border-[#D8D4CA] px-4 py-3 text-xs sm:text-sm">
+                        {/* Hàng 2: Thanh chỉ số lâm sàng ngang 4 cột cân xứng (h-12 cố định không bị rớt dòng) */}
+                        <div className="h-12 grid grid-cols-2 sm:grid-cols-4 items-center gap-3 rounded-2xl bg-white border border-[#D8D4CA] px-4 text-xs sm:text-sm">
                           {/* Đỏ da Redness Index + Visual Mini Bar */}
-                          <div className="flex items-center gap-2.5">
-                            <span className="text-[#5C605C] font-medium">Độ đỏ (PIE):</span>
-                            <span className="font-bold text-rose-700 text-sm">{patientCase.aiAnalysis.rednessIndex}%</span>
-                            <div className="w-16 h-2 rounded-full bg-neutral-200 overflow-hidden hidden sm:block">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-[#5C605C] font-medium shrink-0">Đỏ (PIE):</span>
+                            <span className="font-bold text-rose-700">{patientCase.aiAnalysis.rednessIndex}%</span>
+                            <div className="w-12 h-2 rounded-full bg-neutral-200 overflow-hidden hidden md:block shrink-0">
                               <div
                                 className="h-full bg-rose-600 rounded-full"
                                 style={{ width: `${patientCase.aiAnalysis.rednessIndex}%` }}
@@ -914,49 +914,42 @@ export default function SpecialistPage() {
                             </div>
                           </div>
 
-                          <span className="hidden sm:inline-block h-4 w-px bg-[#D8D4CA]" />
-
                           {/* Điểm da */}
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[#5C605C] font-medium">Điểm da:</span>
-                            <span className="font-bold text-[#191B19] text-sm">
+                          <div className="flex items-center gap-1.5 border-l border-[#D8D4CA]/60 pl-3">
+                            <span className="text-[#5C605C] font-medium shrink-0">Điểm da:</span>
+                            <span className="font-bold text-[#191B19]">
                               {patientCase.aiAnalysis.skinHealthScore}/100
                             </span>
                           </div>
 
-                          <span className="hidden sm:inline-block h-4 w-px bg-[#D8D4CA]" />
-
                           {/* Nốt mụn */}
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[#5C605C] font-medium">Mụn viêm:</span>
-                            <span className="font-bold text-amber-800 text-sm">
+                          <div className="flex items-center gap-1.5 border-l border-[#D8D4CA]/60 pl-3">
+                            <span className="text-[#5C605C] font-medium shrink-0">Mụn viêm:</span>
+                            <span className="font-bold text-amber-800">
                               {patientCase.aiAnalysis.inflammatorySpots} nốt
                             </span>
                           </div>
 
-                          <span className="hidden sm:inline-block h-4 w-px bg-[#D8D4CA]" />
-
                           {/* Loại da */}
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[#5C605C] font-medium">Loại da:</span>
-                            <span className="font-bold text-[#191B19] text-xs sm:text-sm">
+                          <div className="flex items-center gap-1.5 border-l border-[#D8D4CA]/60 pl-3 min-w-0">
+                            <span className="text-[#5C605C] font-medium shrink-0">Loại da:</span>
+                            <span className="font-bold text-[#191B19] truncate">
                               {patientCase.skinType}
                             </span>
                           </div>
                         </div>
 
-                        {/* Phác đồ Routine đã kê (Hiển thị thumbnail ảnh các sản phẩm) */}
-                        {patientCase.currentRoutine && (
-                          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[#2D5A43]/5 border border-[#2D5A43]/20 px-4 py-2.5">
-                            <div className="flex items-center gap-2.5">
+                        {/* Hàng 3: Phác đồ Routine (h-[52px] CỐ ĐỊNH CHO TẤT CẢ 4 CARD - KHÔNG LỆCH NHAU) */}
+                        {patientCase.currentRoutine ? (
+                          <div className="h-[52px] flex items-center justify-between gap-3 rounded-2xl bg-[#2D5A43]/5 border border-[#2D5A43]/20 px-4">
+                            <div className="flex items-center gap-2.5 min-w-0">
                               <Sparkles className="size-4 text-[#2D5A43] shrink-0" />
-                              <span className="font-bold text-xs sm:text-sm text-[#2D5A43]">
+                              <span className="font-bold text-xs sm:text-sm text-[#2D5A43] truncate">
                                 {patientCase.currentRoutine.routineTitle}
                               </span>
                             </div>
 
-                            {/* Mini product thumbnails strip */}
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 shrink-0">
                               {patientCase.currentRoutine.products.map((p) => (
                                 <img
                                   key={p.id}
@@ -971,18 +964,32 @@ export default function SpecialistPage() {
                               </span>
                             </div>
                           </div>
+                        ) : (
+                          <div className="h-[52px] flex items-center justify-between gap-3 rounded-2xl bg-[#78350F]/5 border border-dashed border-[#78350F]/30 px-4">
+                            <div className="flex items-center gap-2 text-xs sm:text-sm text-[#78350F] font-semibold truncate">
+                              <Clock className="size-4 shrink-0" />
+                              <span>Chưa thiết lập phác đồ Routine (Đang chờ Bác sĩ khám & kê đơn)</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenPrescribeModal(patientCase)}
+                              className="text-xs font-bold text-[#2D5A43] hover:underline shrink-0 cursor-pointer"
+                            >
+                              + Kê Routine ngay
+                            </button>
+                          </div>
                         )}
                       </div>
 
-                      {/* Cột 3: Nút thao tác kích thước to rõ, dễ bấm */}
-                      <div className="flex sm:flex-row xl:flex-col items-center gap-2.5 shrink-0 min-w-[170px]">
+                      {/* Cột 3: Nút thao tác kích thước to rõ, đồng đều (Độ rộng cố định 160px trên desktop) */}
+                      <div className="flex sm:flex-row xl:flex-col items-center justify-center gap-2.5 shrink-0 w-full xl:w-[160px]">
                         <button
                           type="button"
                           onClick={() => {
                             setSelectedCase(patientCase);
                             setIsCaseDetailOpen(true);
                           }}
-                          className="flex items-center justify-center gap-2 rounded-2xl border border-[#D8D4CA] bg-white px-4 py-3 text-sm font-semibold text-[#191B19] hover:bg-[#E8E5DE] transition cursor-pointer w-full"
+                          className="h-11 flex items-center justify-center gap-2 rounded-2xl border border-[#D8D4CA] bg-white px-4 text-sm font-semibold text-[#191B19] hover:bg-[#E8E5DE] transition cursor-pointer w-full"
                         >
                           <Eye className="size-4" />
                           <span>Xem Bệnh án</span>
@@ -991,7 +998,7 @@ export default function SpecialistPage() {
                         <button
                           type="button"
                           onClick={() => handleOpenPrescribeModal(patientCase)}
-                          className="flex items-center justify-center gap-2 rounded-2xl bg-[#2D5A43] px-4 py-3 text-sm font-bold text-white shadow-xs hover:bg-[#234835] transition cursor-pointer w-full"
+                          className="h-11 flex items-center justify-center gap-2 rounded-2xl bg-[#2D5A43] px-4 text-sm font-bold text-white shadow-xs hover:bg-[#234835] transition cursor-pointer w-full"
                         >
                           <Plus className="size-4" />
                           <span>
