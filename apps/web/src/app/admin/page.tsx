@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import {
   Users,
@@ -30,9 +30,22 @@ import {
   RotateCcw,
   Server,
   Activity,
+  Sparkles,
+  CalendarCheck,
+  Sun,
+  Moon,
+  Send,
+  Info,
 } from "lucide-react";
 import { toast } from "sonner";
 import { LogoMark } from "@/components/site-header";
+import {
+  type RoutineStep,
+  type RoleRoutine,
+  DEFAULT_ROLE_ROUTINES,
+} from "@/lib/role-routines";
+
+export type { RoutineStep, RoleRoutine };
 
 export type RoleType = "customer" | "shop" | "specialist" | "admin";
 export type UserStatus = "active" | "pending" | "suspended";
@@ -45,6 +58,7 @@ export interface SystemUser {
   role: RoleType;
   status: UserStatus;
   createdAt: string;
+  avatarUrl?: string;
   shopDetails?: {
     shopName: string;
     license: string;
@@ -173,10 +187,24 @@ const INITIAL_USERS: SystemUser[] = [
     },
   },
   {
-    id: "usr_008",
-    name: "Dung (Super Admin)",
-    email: "dung.admin@skinsense.vn",
-    phone: "0901 000 001",
+    id: "usr_010",
+    name: "BS. Lê Thị Bích Thảo",
+    email: "dr.thao.derma@gmail.com",
+    phone: "0944 555 666",
+    role: "specialist",
+    status: "pending",
+    createdAt: "2026-11-13",
+    specialistDetails: {
+      hospital: "Bệnh viện Da Liễu TP. Đà Nẵng",
+      licenseId: "CCHN-005621/BYT",
+      specialty: "Điều trị mụn nội khoa & Dị ứng da tiếp xúc",
+    },
+  },
+  {
+    id: "usr_admin_ha",
+    name: "Trần Thị Ngọc Hà (Super Admin)",
+    email: "hattn.23itb@vku.udn.vn",
+    phone: "0905 123 456",
     role: "admin",
     status: "active",
     createdAt: "2026-09-01",
@@ -309,10 +337,17 @@ const ROLE_CONFIG: Record<
   },
 };
 
-type AdminNavTab = "users" | "products" | "orders" | "analytics" | "settings";
+type AdminNavTab = "users" | "specialists" | "routines" | "products" | "orders" | "analytics" | "settings";
 
 export default function AdminDashboardPage() {
   const [currentTab, setCurrentTab] = useState<AdminNavTab>("users");
+
+  // State for Routines by Role (Real Data from Supabase & Admin API)
+  const [routinesData, setRoutinesData] = useState<Record<string, RoleRoutine>>(DEFAULT_ROLE_ROUTINES);
+  const [activeRoutineRole, setActiveRoutineRole] = useState<RoleType>("customer");
+  const [isTickingStep, setIsTickingStep] = useState<string | null>(null);
+  const [assignRoutineEmail, setAssignRoutineEmail] = useState("hattn.23itb@vku.udn.vn");
+  const [isAllocatingRoutine, setIsAllocatingRoutine] = useState(false);
 
   // State for Users
   const [users, setUsers] = useState<SystemUser[]>(INITIAL_USERS);
@@ -322,6 +357,10 @@ export default function AdminDashboardPage() {
   // State for Products
   const [products, setProducts] = useState<ProductItem[]>(INITIAL_PRODUCTS);
   const [productFilter, setProductFilter] = useState<"all" | "pending" | "approved">("all");
+
+  // State for Specialists
+  const [specialistFilter, setSpecialistFilter] = useState<"all" | "pending" | "active">("all");
+  const [inspectingSpecialist, setInspectingSpecialist] = useState<SystemUser | null>(null);
 
   // State for Orders
   const [orders, setOrders] = useState<OrderItem[]>(INITIAL_ORDERS);
@@ -369,6 +408,24 @@ export default function AdminDashboardPage() {
     return products.filter((p) => p.status === productFilter);
   }, [products, productFilter]);
 
+  // Filtered Specialists
+  const filteredSpecialists = useMemo(() => {
+    return users.filter((u) => {
+      if (u.role !== "specialist") return false;
+      if (specialistFilter !== "all" && u.status !== specialistFilter) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        return (
+          u.name.toLowerCase().includes(q) ||
+          u.email.toLowerCase().includes(q) ||
+          (u.specialistDetails?.licenseId.toLowerCase().includes(q) ?? false) ||
+          (u.specialistDetails?.hospital.toLowerCase().includes(q) ?? false)
+        );
+      }
+      return true;
+    });
+  }, [users, specialistFilter, searchQuery]);
+
   // Summary Metrics
   const summaryMetrics = useMemo(() => {
     const totalRevenue = orders
@@ -380,6 +437,7 @@ export default function AdminDashboardPage() {
     const pendingProductsCount = products.filter((p) => p.status === "pending").length;
     const disputedOrdersCount = orders.filter((o) => o.status === "disputed").length;
     const pendingShopsCount = users.filter((u) => u.role === "shop" && u.status === "pending").length;
+    const pendingSpecialistsCount = users.filter((u) => u.role === "specialist" && u.status === "pending").length;
 
     return {
       totalRevenue,
@@ -387,9 +445,164 @@ export default function AdminDashboardPage() {
       pendingProductsCount,
       disputedOrdersCount,
       pendingShopsCount,
+      pendingSpecialistsCount,
       totalUsers: users.length,
     };
   }, [orders, products, users]);
+
+  // Load Real Data from Supabase Auth & Storage on mount
+  useEffect(() => {
+    // 1. Fetch real users from Supabase Auth
+    fetch("/api/admin/users")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.ok && Array.isArray(json.users) && json.users.length > 0) {
+          setUsers(json.users);
+        }
+      })
+      .catch((err) => console.error("Failed to load real users from Supabase:", err));
+
+    // 2. Fetch persistent products
+    fetch("/api/admin/products")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.ok && Array.isArray(json.products)) {
+          setProducts(json.products);
+        }
+      })
+      .catch((err) => console.error("Failed to load products:", err));
+
+    // 3. Fetch persistent orders
+    fetch("/api/admin/orders")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.ok && Array.isArray(json.orders)) {
+          setOrders(json.orders);
+        }
+      })
+      .catch((err) => console.error("Failed to load orders:", err));
+
+    // 4. Fetch persistent routines by role (Supabase backed)
+    fetch("/api/admin/routines")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.ok && json.routines) {
+          setRoutinesData(json.routines);
+        }
+      })
+      .catch((err) => console.error("Failed to load routines:", err));
+  }, []);
+
+  // Routine Actions: Ticking (Tích sau khi làm) & Allocating (Phân bổ)
+  async function handleToggleRoutineStep(role: RoleType, step: RoutineStep) {
+    setIsTickingStep(step.id);
+    const newStatus = !step.isCompleted;
+
+    // Optimistic state update
+    setRoutinesData((prev) => {
+      if (!prev[role]) return prev;
+      const updatedSteps = prev[role].steps.map((s) =>
+        s.id === step.id ? { ...s, isCompleted: newStatus } : s
+      );
+      return {
+        ...prev,
+        [role]: { ...prev[role], steps: updatedSteps },
+      };
+    });
+
+    try {
+      const res = await fetch("/api/admin/routines", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          role,
+          stepId: step.id,
+          isCompleted: newStatus,
+        }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        toast.success(data.message, {
+          description: `Đã cập nhật: ${data.completedCount}/${data.totalCount} bước (${data.percent}%)`,
+        });
+        if (data.routine) {
+          setRoutinesData((prev) => ({ ...prev, [role]: data.routine }));
+        }
+      } else {
+        toast.error("Không thể lưu trạng thái tick: " + (data.error || "Lỗi hệ thống"));
+      }
+    } catch {
+      toast.error("Lỗi kết nối khi lưu trạng thái tick");
+    } finally {
+      setIsTickingStep(null);
+    }
+  }
+
+  async function handleAllocateRoutine(role: RoleType) {
+    if (!assignRoutineEmail.trim()) {
+      toast.error("Vui lòng nhập email người nhận phác đồ");
+      return;
+    }
+    setIsAllocatingRoutine(true);
+    try {
+      const current = routinesData[role];
+      const res = await fetch("/api/admin/routines", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          role,
+          targetUser: assignRoutineEmail.trim(),
+          title: current?.title,
+          description: current?.description,
+          steps: current?.steps,
+        }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        toast.success(`Đã phân bổ Routine ${role.toUpperCase()} thành công!`, {
+          description: `Phác đồ đã được gán cho ${assignRoutineEmail} và đồng bộ bảng routine_items trên Supabase.`,
+        });
+        if (data.routine) {
+          setRoutinesData((prev) => ({ ...prev, [role]: data.routine }));
+        }
+      } else {
+        toast.error("Phân bổ thất bại: " + (data.error || "Lỗi không xác định"));
+      }
+    } catch {
+      toast.error("Lỗi kết nối khi phân bổ routine");
+    } finally {
+      setIsAllocatingRoutine(false);
+    }
+  }
+
+  // Actions
+  function handleApproveSpecialist(id: string, name: string) {
+    setUsers((prev) =>
+      prev.map((u) => (u.id === id ? { ...u, status: "active" } : u))
+    );
+    toast.success(`Đã phê duyệt CCHN & kích hoạt tài khoản Bác sĩ: "${name}"`);
+    setInspectingSpecialist(null);
+
+    fetch("/api/admin/specialists", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: id, action: "approve" }),
+    }).catch(() => {});
+  }
+
+  function handleRejectSpecialist(id: string, name: string) {
+    setUsers((prev) =>
+      prev.map((u) => (u.id === id ? { ...u, status: "suspended" } : u))
+    );
+    toast.error(`Đã từ chối cấp phép hồ sơ Bác sĩ: "${name}"`);
+    setInspectingSpecialist(null);
+
+    fetch("/api/admin/specialists", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: id, action: "reject" }),
+    }).catch(() => {});
+  }
 
   // Actions
   function handleApproveProduct(id: string, name: string) {
@@ -397,6 +610,11 @@ export default function AdminDashboardPage() {
       prev.map((p) => (p.id === id ? { ...p, status: "approved" } : p))
     );
     toast.success(`Đã phê duyệt sản phẩm: "${name}"`);
+    fetch("/api/admin/products", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ productId: id, status: "approved" }),
+    }).catch(() => {});
   }
 
   function handleRejectProduct(id: string, name: string) {
@@ -404,6 +622,11 @@ export default function AdminDashboardPage() {
       prev.map((p) => (p.id === id ? { ...p, status: "rejected" } : p))
     );
     toast.error(`Đã từ chối cấp phép cho sản phẩm: "${name}"`);
+    fetch("/api/admin/products", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ productId: id, status: "rejected" }),
+    }).catch(() => {});
   }
 
   function handleResolveDispute(id: string) {
@@ -411,6 +634,11 @@ export default function AdminDashboardPage() {
       prev.map((o) => (o.id === id ? { ...o, status: "completed", disputeReason: undefined } : o))
     );
     toast.success(`Đã xử lý khiếu nại đơn hàng ${id} và hoàn tất bồi hoàn cho khách.`);
+    fetch("/api/admin/orders", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderId: id, action: "resolve" }),
+    }).catch(() => {});
   }
 
   function handleApproveShop(id: string, name: string) {
@@ -419,6 +647,11 @@ export default function AdminDashboardPage() {
     );
     toast.success(`Đã phê duyệt Cửa hàng: "${name}"`);
     setInspectingShop(null);
+    fetch("/api/admin/users", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: id, status: "active" }),
+    }).catch(() => {});
   }
 
   function handleRejectShop(id: string, name: string) {
@@ -427,6 +660,11 @@ export default function AdminDashboardPage() {
     );
     toast.error(`Đã từ chối cấp phép Cửa hàng: "${name}".`);
     setInspectingShop(null);
+    fetch("/api/admin/users", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: id, status: "suspended" }),
+    }).catch(() => {});
   }
 
   function handleToggleStatus(user: SystemUser) {
@@ -439,6 +677,11 @@ export default function AdminDashboardPage() {
     } else {
       toast.warning(`Đã tạm khóa tài khoản của ${user.name}`);
     }
+    fetch("/api/admin/users", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: user.id, status: newStatus }),
+    }).catch(() => {});
   }
 
   function handleChangeRoleSubmit() {
@@ -447,39 +690,68 @@ export default function AdminDashboardPage() {
       prev.map((u) => (u.id === editingUserRole.id ? { ...u, role: targetRole } : u))
     );
     toast.success(`Đã chuyển vai trò của "${editingUserRole.name}" thành: ${ROLE_CONFIG[targetRole].label}`);
+    fetch("/api/admin/users", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: editingUserRole.id, role: targetRole }),
+    }).catch(() => {});
     setEditingUserRole(null);
   }
 
-  function handleAddUserSubmit(e: React.FormEvent) {
+  async function handleAddUserSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!newUserName.trim() || !newUserEmail.trim()) {
       toast.error("Vui lòng nhập họ tên và email hợp lệ.");
       return;
     }
 
-    const newUser: SystemUser = {
-      id: `usr_${Date.now()}`,
-      name: newUserName.trim(),
-      email: newUserEmail.trim(),
-      phone: newUserPhone.trim() || "0900 000 000",
-      role: newUserRole,
-      status: "active",
-      createdAt: new Date().toISOString().split("T")[0],
-    };
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: newUserEmail.trim(),
+          fullName: newUserName.trim(),
+          phone: newUserPhone.trim(),
+          role: newUserRole,
+        }),
+      });
 
-    setUsers([newUser, ...users]);
-    toast.success(`Đã thêm tài khoản: ${newUser.name} (${ROLE_CONFIG[newUser.role].label})`);
-    setIsAddUserOpen(false);
-    setNewUserName("");
-    setNewUserEmail("");
-    setNewUserPhone("");
-    setNewUserRole("customer");
+      const json = await res.json();
+      if (!res.ok || json.error) {
+        toast.error(json.error || "Tạo tài khoản thất bại.");
+        return;
+      }
+
+      const createdUser: SystemUser = {
+        id: json.user?.id || `usr_${Date.now()}`,
+        name: newUserName.trim(),
+        email: newUserEmail.trim(),
+        phone: newUserPhone.trim() || "0905 123 456",
+        role: newUserRole,
+        status: newUserRole === "specialist" ? "pending" : "active",
+        createdAt: new Date().toISOString().split("T")[0],
+      };
+
+      setUsers([createdUser, ...users]);
+      toast.success(`Đã thêm tài khoản thực tế vào Supabase: ${createdUser.name} (${ROLE_CONFIG[createdUser.role].label})`);
+      setIsAddUserOpen(false);
+      setNewUserName("");
+      setNewUserEmail("");
+      setNewUserPhone("");
+      setNewUserRole("customer");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Tạo tài khoản thất bại.");
+    }
   }
 
   function handleDeleteUser(id: string, name: string) {
-    if (confirm(`Bạn có chắc chắn muốn xóa tài khoản "${name}" khỏi hệ thống?`)) {
+    if (confirm(`Bạn có chắc chắn muốn xóa tài khoản "${name}" khỏi hệ thống Supabase?`)) {
       setUsers((prev) => prev.filter((u) => u.id !== id));
-      toast.success(`Đã xóa tài khoản "${name}"`);
+      toast.success(`Đã xóa tài khoản "${name}" khỏi Supabase`);
+      fetch(`/api/admin/users?userId=${id}`, {
+        method: "DELETE",
+      }).catch(() => {});
     }
   }
 
@@ -505,8 +777,8 @@ export default function AdminDashboardPage() {
 
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-purple-700/10 text-purple-950 dark:text-purple-200 border border-purple-800/25">
-                <ShieldCheck className="size-3.5" />
-                Dung (Super Admin)
+                <ShieldCheck className="size-3.5 text-purple-600 dark:text-purple-400" />
+                <span>Trần Thị Ngọc Hà (Admin: hattn.23itb@vku.udn.vn)</span>
               </span>
             </div>
           </div>
@@ -549,6 +821,35 @@ export default function AdminDashboardPage() {
                   {summaryMetrics.pendingShopsCount}
                 </span>
               )}
+            </button>
+
+            <button
+              onClick={() => setCurrentTab("specialists")}
+              className={`flex items-center gap-2 py-2 px-4 rounded-lg text-xs font-semibold transition cursor-pointer whitespace-nowrap ${
+                currentTab === "specialists"
+                  ? "bg-card text-foreground shadow-xs border border-border"
+                  : "text-muted-foreground hover:text-foreground hover:bg-surface-2"
+              }`}
+            >
+              <Stethoscope className="size-4" />
+              <span>Duyệt Bác sĩ Da liễu</span>
+              {summaryMetrics.pendingSpecialistsCount > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-800 text-emerald-50 font-bold animate-pulse">
+                  {summaryMetrics.pendingSpecialistsCount}
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={() => setCurrentTab("routines")}
+              className={`flex items-center gap-2 py-2 px-4 rounded-lg text-xs font-semibold transition cursor-pointer whitespace-nowrap ${
+                currentTab === "routines"
+                  ? "bg-card text-foreground shadow-xs border border-border"
+                  : "text-muted-foreground hover:text-foreground hover:bg-surface-2"
+              }`}
+            >
+              <Sparkles className="size-4 text-emerald-600 dark:text-emerald-400" />
+              <span>Phân Bổ Routine 4 Role</span>
             </button>
 
             <button
@@ -803,9 +1104,17 @@ export default function AdminDashboardPage() {
                         <tr key={user.id} className="hover:bg-surface-2/40 transition">
                           <td className="py-4.5 px-6">
                             <div className="flex items-center gap-3.5">
-                              <div className="size-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs uppercase shrink-0">
-                                {user.name.charAt(0)}
-                              </div>
+                              {user.avatarUrl ? (
+                                <img
+                                  src={user.avatarUrl}
+                                  alt={user.name}
+                                  className="size-9 rounded-full object-cover shrink-0 border border-border"
+                                />
+                              ) : (
+                                <div className="size-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs uppercase shrink-0">
+                                  {user.name.charAt(0)}
+                                </div>
+                              )}
                               <div className="flex flex-col">
                                 <span className="font-semibold text-foreground text-sm">
                                   {user.name}
@@ -879,6 +1188,22 @@ export default function AdminDashboardPage() {
                                     Duyệt
                                   </button>
                                 </>
+                              ) : user.role === "specialist" && user.status === "pending" ? (
+                                <>
+                                  <button
+                                    onClick={() => setInspectingSpecialist(user)}
+                                    className="px-3 py-1.5 rounded-md text-xs font-semibold bg-emerald-700/15 text-emerald-950 dark:text-emerald-200 hover:bg-emerald-700/25 border border-emerald-800/30 transition cursor-pointer"
+                                  >
+                                    Xem CCHN
+                                  </button>
+                                  <button
+                                    onClick={() => handleApproveSpecialist(user.id, user.name)}
+                                    className="px-3.5 py-1.5 rounded-md text-xs font-semibold bg-emerald-700 text-white hover:bg-emerald-600 transition cursor-pointer flex items-center gap-1"
+                                  >
+                                    <Check className="size-3.5" />
+                                    Duyệt Bác sĩ
+                                  </button>
+                                </>
                               ) : (
                                 <>
                                   <button
@@ -926,12 +1251,534 @@ export default function AdminDashboardPage() {
                   Hiển thị <strong>{filteredUsers.length}</strong> / {users.length} tài khoản trong hệ thống
                 </span>
                 <span className="italic">
-                  Hệ thống phân quyền thời gian thực · Cập nhật bởi Super Admin (Dung)
+                  Hệ thống phân quyền thời gian thực · Cập nhật bởi Super Admin Trần Thị Ngọc Hà (hattn.23itb@vku.udn.vn)
                 </span>
               </div>
             </div>
           </div>
         )}
+
+        {/* TAB SPECIALISTS: DUYỆT BÁC SĨ DA LIỄU */}
+        {currentTab === "specialists" && (
+          <div className="space-y-6 animate-in fade-in-50 duration-200">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h2 className="font-display text-base sm:text-lg font-bold text-foreground flex items-center gap-2">
+                  <Stethoscope className="size-5 text-emerald-600 dark:text-emerald-400" />
+                  <span>Kiểm Duyệt Hồ Sơ Bác Sĩ Da Liễu (CCHN & Bệnh Viện)</span>
+                </h2>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                  Super Admin Trần Thị Ngọc Hà đối soát Chứng chỉ hành nghề và đơn vị công tác trước khi kích hoạt quyền kê phác đồ da.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setSpecialistFilter("all")}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-medium cursor-pointer ${
+                    specialistFilter === "all"
+                      ? "bg-primary text-primary-foreground font-semibold"
+                      : "bg-card border border-border text-muted-foreground"
+                  }`}
+                >
+                  Tất cả ({users.filter((u) => u.role === "specialist").length})
+                </button>
+                <button
+                  onClick={() => setSpecialistFilter("pending")}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold cursor-pointer ${
+                    specialistFilter === "pending"
+                      ? "bg-amber-800 text-amber-50 font-bold"
+                      : "bg-amber-700/10 border border-amber-800/30 text-amber-950 dark:text-amber-200"
+                  }`}
+                >
+                  Chờ duyệt ({summaryMetrics.pendingSpecialistsCount})
+                </button>
+                <button
+                  onClick={() => setSpecialistFilter("active")}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-medium cursor-pointer ${
+                    specialistFilter === "active"
+                      ? "bg-emerald-700 text-white font-semibold"
+                      : "bg-card border border-border text-muted-foreground"
+                  }`}
+                >
+                  Đã phê duyệt ({users.filter((u) => u.role === "specialist" && u.status === "active").length})
+                </button>
+              </div>
+            </div>
+
+            {/* Alert info banner */}
+            <div className="rounded-xl border border-emerald-600/30 bg-emerald-500/10 p-4 text-xs sm:text-sm">
+              <div className="flex items-center gap-2 font-semibold text-emerald-900 dark:text-emerald-200">
+                <ShieldCheck className="size-4.5 text-emerald-600" />
+                <span>Quy trình đảm bảo chuyên môn Y tế SkinSense</span>
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+                Khi Bác sĩ đăng ký, tài khoản mặc định ở trạng thái <strong>Chờ duyệt (Pending)</strong>. Sau khi Super Admin Trần Thị Ngọc Hà kiểm tra số CCHN trên Cổng thông tin Bộ Y tế và bấm <strong>&quot;Phê duyệt&quot;</strong>, Bác sĩ mới có thể truy cập cổng <code>/specialist</code> để kê phác đồ da và tư vấn bệnh nhân.
+              </p>
+            </div>
+
+            {/* Specialists Table */}
+            <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-xs">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-[13px]">
+                  <thead className="bg-surface-2 text-muted-foreground uppercase tracking-wider text-[11px] border-b border-border font-semibold">
+                    <tr>
+                      <th className="py-4 px-6 min-w-[220px] whitespace-nowrap">Bác sĩ Chuyên khoa</th>
+                      <th className="py-4 px-6 min-w-[180px] whitespace-nowrap">Chứng chỉ CCHN</th>
+                      <th className="py-4 px-6 min-w-[220px] whitespace-nowrap">Bệnh viện / Đơn vị</th>
+                      <th className="py-4 px-6 min-w-[180px] whitespace-nowrap">Chuyên khoa</th>
+                      <th className="py-4 px-6 min-w-[140px] whitespace-nowrap">Trạng thái</th>
+                      <th className="py-4 px-6 min-w-[200px] text-right whitespace-nowrap">Thao tác Admin</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {filteredSpecialists.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="py-12 text-center text-muted-foreground">
+                          Không tìm thấy hồ sơ Bác sĩ nào phù hợp với bộ lọc.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredSpecialists.map((doc) => (
+                        <tr key={doc.id} className="hover:bg-surface-2/40 transition">
+                          <td className="py-4.5 px-6">
+                            <div className="flex items-center gap-3">
+                              <div className="flex size-9 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 font-bold shrink-0">
+                                <Stethoscope className="size-4.5" />
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="font-semibold text-foreground text-[13.5px]">
+                                  {doc.name}
+                                </span>
+                                <span className="text-xs text-muted-foreground font-mono">
+                                  {doc.email} · {doc.phone}
+                                </span>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-4.5 px-6 font-mono text-xs font-semibold text-primary">
+                            {doc.specialistDetails?.licenseId || "CCHN-PENDING"}
+                          </td>
+                          <td className="py-4.5 px-6 text-xs text-foreground font-medium">
+                            {doc.specialistDetails?.hospital || "Bệnh viện Da Liễu"}
+                          </td>
+                          <td className="py-4.5 px-6 text-xs text-muted-foreground">
+                            {doc.specialistDetails?.specialty || "Da liễu tổng quát"}
+                          </td>
+                          <td className="py-4.5 px-6 whitespace-nowrap">
+                            {doc.status === "active" && (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-700/10 text-emerald-950 dark:text-emerald-200 border border-emerald-800/25">
+                                <CheckCircle2 className="size-3.5 text-emerald-600" />
+                                Đã phê duyệt
+                              </span>
+                            )}
+                            {doc.status === "pending" && (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-700/15 text-amber-950 dark:text-amber-200 border border-amber-800/30 animate-pulse">
+                                <AlertTriangle className="size-3.5 text-amber-600" />
+                                Chờ xét duyệt
+                              </span>
+                            )}
+                            {doc.status === "suspended" && (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-700/10 text-rose-950 dark:text-rose-200 border border-rose-800/25">
+                                <XCircle className="size-3.5 text-rose-600" />
+                                Đã từ chối / Khóa
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-4.5 px-6 text-right whitespace-nowrap">
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                onClick={() => setInspectingSpecialist(doc)}
+                                className="px-3 py-1.5 rounded-md text-xs font-semibold bg-surface-2 hover:bg-surface-3 border border-border text-foreground transition cursor-pointer"
+                              >
+                                Chi tiết CCHN
+                              </button>
+                              {doc.status === "pending" ? (
+                                <>
+                                  <button
+                                    onClick={() => handleApproveSpecialist(doc.id, doc.name)}
+                                    className="px-3.5 py-1.5 rounded-md text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition cursor-pointer shadow-xs flex items-center gap-1"
+                                  >
+                                    <Check className="size-3.5" />
+                                    Phê duyệt
+                                  </button>
+                                  <button
+                                    onClick={() => handleRejectSpecialist(doc.id, doc.name)}
+                                    className="px-3.5 py-1.5 rounded-md text-xs font-semibold bg-rose-600/10 text-rose-700 hover:bg-rose-600/20 border border-rose-600/30 transition cursor-pointer"
+                                  >
+                                    Từ chối
+                                  </button>
+                                </>
+                              ) : doc.status === "active" ? (
+                                <button
+                                  onClick={() => handleRejectSpecialist(doc.id, doc.name)}
+                                  className="px-3 py-1.5 rounded-md text-xs font-medium text-rose-700 hover:bg-rose-600/10 transition cursor-pointer"
+                                >
+                                  Khóa quyền
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleApproveSpecialist(doc.id, doc.name)}
+                                  className="px-3.5 py-1.5 rounded-md text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 transition cursor-pointer"
+                                >
+                                  Kích hoạt lại
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              <div className="py-3 px-6 bg-surface-2/40 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
+                <span>
+                  Hiển thị <strong>{filteredSpecialists.length}</strong> Bác sĩ chuyên khoa Da liễu
+                </span>
+                <span className="italic">
+                  Hệ thống xét duyệt trực tiếp bởi Super Admin Trần Thị Ngọc Hà
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB ROUTINES: PHÂN BỔ ROUTINE 4 ROLE BẰNG DỮ LIỆU THẬT & CÓ TÍCH SAU KHI LÀM */}
+        {currentTab === "routines" && (() => {
+          const activeRoleRoutine = routinesData[activeRoutineRole] || DEFAULT_ROLE_ROUTINES[activeRoutineRole];
+          const steps = activeRoleRoutine?.steps || [];
+          const totalSteps = steps.length;
+          const completedSteps = steps.filter((s) => s.isCompleted).length;
+          const progressPercent = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
+
+          return (
+            <div className="space-y-6 animate-in fade-in-50 duration-200">
+              {/* Header */}
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-700/10 text-emerald-950 dark:text-emerald-200 border border-emerald-800/30">
+                      Dữ liệu thật Supabase (routine_items & routine_entries)
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-sky-600/10 text-sky-900 dark:text-sky-300 border border-sky-700/25">
+                      4 Nhóm Phân Hệ Role
+                    </span>
+                  </div>
+                  <h2 className="font-display text-base sm:text-xl font-bold text-foreground mt-2">
+                    Phân Bổ & Quản Trị Routine Skincare Theo 4 Vai Trò
+                  </h2>
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                    Super Admin Trần Thị Ngọc Hà trực tiếp điều phối phác đồ chuẩn y khoa. Mỗi bước tích hợp sản phẩm chính hãng, liều lượng, hướng dẫn thao tác chi tiết và cơ chế tích sau khi làm.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-card text-xs">
+                    <Server className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+                    <span>PostgreSQL: <strong>gzecjsqnehgrvkgnznec</strong></span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 4 Role Selector Tabs */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                {(["customer", "specialist", "shop", "admin"] as RoleType[]).map((roleKey) => {
+                  const cfg = ROLE_CONFIG[roleKey];
+                  const roleRoutine = routinesData[roleKey] || DEFAULT_ROLE_ROUTINES[roleKey];
+                  const isActive = activeRoutineRole === roleKey;
+                  const Icon = cfg.icon;
+                  const stepCount = roleRoutine?.steps?.length || 0;
+                  const doneCount = roleRoutine?.steps?.filter((s) => s.isCompleted)?.length || 0;
+
+                  return (
+                    <button
+                      key={roleKey}
+                      type="button"
+                      onClick={() => setActiveRoutineRole(roleKey)}
+                      className={`flex flex-col text-left p-4 rounded-xl border transition-all cursor-pointer ${
+                        isActive
+                          ? "bg-card border-primary ring-2 ring-primary/20 shadow-sm"
+                          : "bg-surface-2/40 border-border hover:bg-surface-2 hover:border-foreground/20"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className={`size-8 rounded-lg grid place-items-center ${cfg.iconWrap}`}>
+                          <Icon className="size-4" />
+                        </div>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${cfg.badgeClass}`}>
+                          {roleKey.toUpperCase()}
+                        </span>
+                      </div>
+                      <span className="font-display font-bold text-sm text-foreground">
+                        {cfg.label}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
+                        {roleRoutine?.title}
+                      </span>
+                      <div className="mt-3 pt-2 border-t border-border flex items-center justify-between text-[11px]">
+                        <span className="text-muted-foreground">Tiến độ hôm nay:</span>
+                        <span className="font-semibold text-foreground">
+                          {doneCount}/{stepCount} bước
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Active Routine Meta Banner & Allocation Tool */}
+              <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+                <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                  <div className="space-y-1.5 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="px-2 py-0.5 rounded-md text-xs font-bold bg-primary/10 text-primary border border-primary/20">
+                        {activeRoleRoutine.treatmentDuration}
+                      </span>
+                      <span className="px-2 py-0.5 rounded-md text-xs font-medium bg-surface-2 text-foreground border border-border">
+                        {activeRoleRoutine.skinConcern}
+                      </span>
+                    </div>
+                    <h3 className="font-display text-lg font-bold text-foreground">
+                      {activeRoleRoutine.title}
+                    </h3>
+                    <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                      {activeRoleRoutine.description}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0 bg-surface-2/50 p-2.5 rounded-xl border border-border">
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-muted-foreground font-semibold uppercase">Phân bổ cho tài khoản:</span>
+                      <input
+                        type="email"
+                        value={assignRoutineEmail}
+                        onChange={(e) => setAssignRoutineEmail(e.target.value)}
+                        placeholder="email@example.com"
+                        className="h-8 px-2.5 rounded-lg border border-border bg-card text-xs text-foreground outline-none focus:border-primary w-full sm:w-56"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleAllocateRoutine(activeRoutineRole)}
+                      disabled={isAllocatingRoutine}
+                      className="h-8 mt-auto px-3.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    >
+                      <Send className="size-3.5" />
+                      <span>{isAllocatingRoutine ? "Đang gán..." : "Phân bổ"}</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-border text-xs">
+                  <div>
+                    <span className="text-muted-foreground">Người thụ hưởng: </span>
+                    <strong className="text-foreground">{activeRoleRoutine.targetUser}</strong>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Phân bổ & Thẩm định bởi: </span>
+                    <strong className="text-foreground">{activeRoleRoutine.allocatedBy}</strong>
+                  </div>
+                </div>
+              </div>
+
+              {/* Real-time Progress Bar ("Tích sau khi làm") */}
+              <div className="rounded-xl border border-border bg-card p-4 sm:p-5 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <div className="size-7 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 grid place-items-center">
+                      <CheckCircle2 className="size-4" />
+                    </div>
+                    <div>
+                      <h4 className="font-display text-sm font-bold text-foreground">
+                        Tiến Độ Tích Sau Khi Làm (Daily Completion Checkmark)
+                      </h4>
+                      <p className="text-xs text-muted-foreground">
+                        Tích vào ô kiểm tra bên dưới mỗi khi hoàn thành từng bước skincare để cập nhật trực tiếp lên Supabase.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 self-start sm:self-auto">
+                    <span className="text-xs font-bold px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                      {completedSteps}/{totalSteps} bước ({progressPercent}%)
+                    </span>
+                    {progressPercent === 100 && (
+                      <span className="text-xs font-bold px-2.5 py-1 rounded-md bg-amber-500/10 text-amber-600 border border-amber-500/20 animate-pulse">
+                        Hoàn thành 100% 🎉
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Progress track */}
+                <div className="w-full bg-surface-2 rounded-full h-3.5 overflow-hidden p-0.5 border border-border">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-emerald-600 via-teal-500 to-sky-500 transition-all duration-500 shadow-xs"
+                    style={{ width: `${progressPercent}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Step Cards with Product, Dosage, Usage Guide & Checkmark */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-display text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
+                    <Sparkles className="size-4 text-emerald-600 dark:text-emerald-400" />
+                    <span>Danh Sách Sản Phẩm & Quy Chuẩn Hướng Dẫn Sử Dụng ({totalSteps} Bước)</span>
+                  </h4>
+                  <span className="text-xs text-muted-foreground">
+                    Nhấp vào <strong>"Tích sau khi làm"</strong> để đánh dấu
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4">
+                  {steps.map((step) => {
+                    const isTicked = Boolean(step.isCompleted);
+                    const isStepUpdating = isTickingStep === step.id;
+
+                    return (
+                      <div
+                        key={step.id}
+                        className={`rounded-xl border transition-all p-4 sm:p-5 ${
+                          isTicked
+                            ? "bg-card border-emerald-600/40 shadow-xs ring-1 ring-emerald-500/10"
+                            : "bg-card border-border hover:border-foreground/20"
+                        }`}
+                      >
+                        {/* Step Card Header */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border">
+                          <div className="flex items-center gap-2.5 flex-wrap">
+                            <span className="size-6 rounded-full bg-primary/10 text-primary font-bold text-xs grid place-items-center shrink-0">
+                              {step.stepNumber}
+                            </span>
+                            <span className="font-display font-bold text-sm sm:text-base text-foreground">
+                              {step.label}
+                            </span>
+                            <span className="text-xs font-semibold px-2 py-0.5 rounded-md border border-border bg-surface-2 text-muted-foreground">
+                              {step.category}
+                            </span>
+                            {/* Step Time Badge */}
+                            {step.stepTime === "morning" && (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 border border-amber-500/20">
+                                <Sun className="size-3" />
+                                <span>Buổi sáng</span>
+                              </span>
+                            )}
+                            {step.stepTime === "evening" && (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                                <Moon className="size-3" />
+                                <span>Buổi tối</span>
+                              </span>
+                            )}
+                            {step.stepTime === "both" && (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                                <Sun className="size-3" />
+                                <Moon className="size-3" />
+                                <span>Sáng & Tối</span>
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Interactive Tick Button ("Có tích sau khi làm") */}
+                          <button
+                            type="button"
+                            onClick={() => handleToggleRoutineStep(activeRoutineRole, step)}
+                            disabled={isStepUpdating}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer shrink-0 ${
+                              isTicked
+                                ? "bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-600/20 ring-1 ring-emerald-500"
+                                : "bg-surface-2 text-foreground border border-border hover:border-emerald-600/50 hover:bg-surface-3"
+                            } ${isStepUpdating ? "opacity-50 cursor-wait" : ""}`}
+                          >
+                            <CheckCircle2 className={`size-4 ${isTicked ? "text-white" : "text-muted-foreground"}`} />
+                            <span>
+                              {isStepUpdating
+                                ? "Đang đồng bộ..."
+                                : isTicked
+                                ? "Đã thực hiện ✓"
+                                : "Tích sau khi làm"}
+                            </span>
+                          </button>
+                        </div>
+
+                        {/* Step Card Content */}
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 pt-4">
+                          {/* Product Thumbnail */}
+                          <div className="md:col-span-3 flex flex-row md:flex-col items-center gap-3">
+                            <img
+                              src={step.imageUrl}
+                              alt={step.productName}
+                              className="w-20 h-20 sm:w-28 sm:h-28 object-cover rounded-xl border border-border shadow-xs shrink-0"
+                            />
+                            <div className="flex flex-col text-left md:text-center w-full">
+                              <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                                Thương hiệu
+                              </span>
+                              <span className="text-xs font-semibold text-foreground">
+                                {step.brand}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Product Details & Usage */}
+                          <div className="md:col-span-9 space-y-3">
+                            <div>
+                              <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground block">
+                                Sản phẩm chỉ định
+                              </span>
+                              <h5 className="font-display text-sm sm:text-base font-bold text-foreground mt-0.5">
+                                {step.productName}
+                              </h5>
+                            </div>
+
+                            {/* Active Ingredients */}
+                            <div className="flex items-start gap-2 bg-surface-2/60 p-2.5 rounded-lg border border-border text-xs">
+                              <Sparkles className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                              <div>
+                                <strong className="text-foreground">Hoạt chất chính: </strong>
+                                <span className="text-muted-foreground">{step.activeIngredients}</span>
+                              </div>
+                            </div>
+
+                            {/* Dosage & Usage Guide */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 text-xs">
+                              <div className="p-3 rounded-lg border border-border bg-card space-y-1">
+                                <span className="text-[11px] font-bold uppercase tracking-wider text-primary block">
+                                  Liều lượng quy chuẩn
+                                </span>
+                                <p className="text-foreground font-medium leading-relaxed">
+                                  {step.dosage}
+                                </p>
+                              </div>
+
+                              <div className="p-3 rounded-lg border border-border bg-card space-y-1">
+                                <span className="text-[11px] font-bold uppercase tracking-wider text-primary block flex items-center gap-1">
+                                  <Info className="size-3" />
+                                  <span>Cách sử dụng chi tiết</span>
+                                </span>
+                                <p className="text-foreground leading-relaxed">
+                                  {step.usageGuide}
+                                </p>
+                              </div>
+                            </div>
+
+                            {isTicked && (
+                              <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1.5 pt-1">
+                                <CheckCircle2 className="size-3.5" />
+                                <span>Bước này đã hoàn thành hôm nay và được đồng bộ lên Supabase!</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* TAB 2: DUYỆT SẢN PHẨM SHOP (PRODUCT MODERATION) - SỬA LỖI XUỐNG DÒNG GIÁ & CHỮ Đ */}
         {currentTab === "products" && (
@@ -1404,7 +2251,7 @@ export default function AdminDashboardPage() {
                   <div className="space-y-3 text-xs">
                     <div className="p-3 rounded-xl bg-surface-2/40 border border-border">
                       <span className="text-foreground font-semibold block">
-                        Super Admin (Dung) vừa duyệt Cửa hàng La Roche-Posay
+                        Super Admin Trần Thị Ngọc Hà vừa phê duyệt hồ sơ Bác sĩ Da liễu
                       </span>
                       <span className="text-muted-foreground text-[11px] mt-0.5 block">10 phút trước</span>
                     </div>
@@ -1577,6 +2424,100 @@ export default function AdminDashboardPage() {
               >
                 Lưu thay đổi quyền
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL SPECIALIST: XEM CHI TIẾT CCHN & DUYỆT BÁC SĨ */}
+      {inspectingSpecialist && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-in fade-in-50 duration-200">
+          <div className="w-full max-w-lg rounded-2xl border border-border bg-card p-6 shadow-2xl space-y-5">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <div className="flex items-center gap-2">
+                <Stethoscope className="size-5 text-emerald-600" />
+                <h3 className="font-display text-base font-bold text-foreground">
+                  Hồ Sơ Y Khoa Bác Sĩ Da Liễu
+                </h3>
+              </div>
+              <button
+                onClick={() => setInspectingSpecialist(null)}
+                className="text-muted-foreground hover:text-foreground text-sm cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div className="flex justify-between py-1.5 border-b border-border">
+                <span className="text-muted-foreground">Họ và tên Bác sĩ:</span>
+                <span className="font-bold text-foreground text-sm">{inspectingSpecialist.name}</span>
+              </div>
+              <div className="flex justify-between py-1.5 border-b border-border">
+                <span className="text-muted-foreground">Số Chứng chỉ hành nghề (CCHN):</span>
+                <span className="font-mono font-bold text-primary text-sm">
+                  {inspectingSpecialist.specialistDetails?.licenseId || "CCHN-008812/BYT"}
+                </span>
+              </div>
+              <div className="flex justify-between py-1.5 border-b border-border">
+                <span className="text-muted-foreground">Bệnh viện / Cơ sở y tế công tác:</span>
+                <span className="font-medium text-foreground">
+                  {inspectingSpecialist.specialistDetails?.hospital || "Bệnh viện Da Liễu Trung Ương"}
+                </span>
+              </div>
+              <div className="flex justify-between py-1.5 border-b border-border">
+                <span className="text-muted-foreground">Chuyên khoa điều trị:</span>
+                <span className="font-medium text-foreground">
+                  {inspectingSpecialist.specialistDetails?.specialty || "Trị mụn viêm & Thẩm mỹ da"}
+                </span>
+              </div>
+              <div className="flex justify-between py-1.5 border-b border-border">
+                <span className="text-muted-foreground">Email liên hệ:</span>
+                <span className="font-mono text-foreground">{inspectingSpecialist.email}</span>
+              </div>
+              <div className="flex justify-between py-1.5 border-b border-border">
+                <span className="text-muted-foreground">Số điện thoại:</span>
+                <span className="font-mono text-foreground">{inspectingSpecialist.phone}</span>
+              </div>
+              <div className="flex justify-between py-1.5 border-b border-border">
+                <span className="text-muted-foreground">Trạng thái hồ sơ:</span>
+                <span className="font-bold text-amber-600">
+                  {inspectingSpecialist.status === "pending"
+                    ? "Đang chờ Super Admin Trần Thị Ngọc Hà xét duyệt"
+                    : inspectingSpecialist.status === "active"
+                    ? "Đã được phê duyệt"
+                    : "Đã tạm dừng"}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setInspectingSpecialist(null)}
+                className="px-4 py-2 rounded-lg text-xs font-medium border border-border bg-card text-muted-foreground hover:text-foreground transition cursor-pointer"
+              >
+                Đóng
+              </button>
+              {inspectingSpecialist.status === "pending" && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => handleRejectSpecialist(inspectingSpecialist.id, inspectingSpecialist.name)}
+                    className="px-4 py-2 rounded-lg text-xs font-semibold bg-rose-600/10 text-rose-700 hover:bg-rose-600/20 border border-rose-600/30 transition cursor-pointer"
+                  >
+                    Từ chối
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleApproveSpecialist(inspectingSpecialist.id, inspectingSpecialist.name)}
+                    className="px-5 py-2 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition shadow-xs cursor-pointer flex items-center gap-1.5"
+                  >
+                    <Check className="size-3.5" />
+                    <span>Phê duyệt Bác sĩ</span>
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
