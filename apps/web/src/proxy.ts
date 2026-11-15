@@ -48,8 +48,7 @@ export async function proxy(request: NextRequest) {
   // The Seller Center is for approved shops (and admins); everyone else may only apply at
   // /seller/register. It used to open for any signed-in account, customers included.
   if ((pathname === "/seller" || pathname.startsWith("/seller/")) && pathname !== "/seller/register") {
-    const claims = data?.claims as { email?: string; app_metadata?: Record<string, unknown> } | undefined;
-    const role = claims ? resolveActorRole(claims.email ?? "", claims.app_metadata) : "customer";
+    const role = await currentRole();
     if (role !== "shop" && role !== "admin") {
       return redirectTo("/seller/register");
     }
@@ -57,13 +56,26 @@ export async function proxy(request: NextRequest) {
 
   // The admin console is for admins only (the API checks again on every call).
   if (pathname === "/admin" || pathname.startsWith("/admin/")) {
-    const claims = data?.claims as { email?: string; app_metadata?: Record<string, unknown> } | undefined;
-    if (!claims || resolveActorRole(claims.email ?? "", claims.app_metadata) !== "admin") {
+    if ((await currentRole()) !== "admin") {
       return redirectTo("/");
     }
   }
 
   return response;
+
+  // The role from the auth server, not from the JWT: the token keeps the app_metadata it was
+  // issued with for up to an hour, so a shop the admin had just approved was still sent to
+  // /seller/register (and a locked one still got in). Only the gated pages pay this round trip.
+  async function currentRole() {
+    if (!signedIn) return "customer";
+    const { data: fresh } = await supabase.auth.getUser();
+    const user = fresh?.user;
+    if (!user) return "customer";
+    const appMeta = (user.app_metadata ?? {}) as Record<string, unknown>;
+    const email = user.email ?? "";
+    if (appMeta.status === "suspended" && resolveActorRole(email, undefined) !== "admin") return "customer";
+    return resolveActorRole(email, appMeta);
+  }
 
   // A redirect must still carry the cookies getClaims() just rotated.
   function redirectTo(path: string) {

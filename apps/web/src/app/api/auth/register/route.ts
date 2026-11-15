@@ -3,7 +3,8 @@ import { createClient } from "@supabase/supabase-js";
 import { getAuthenticatedActor } from "@/lib/session-auth";
 import { authzClaims, SUPER_ADMIN_EMAIL } from "@/lib/actor-role";
 import { shopIdClaim } from "@/lib/shop-utils";
-import { downloadStorageJson } from "@/lib/supabase/storage-json";
+import { updateStorageJsonList } from "@/lib/supabase/storage-json";
+import { listAllUsers } from "@/lib/admin-approvals";
 
 export async function POST(request: Request) {
   try {
@@ -81,8 +82,9 @@ export async function POST(request: Request) {
     };
 
     // 1. Check if user already exists
-    const { data: userList } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
-    const existingUser = userList?.users.find((u) => u.email?.toLowerCase() === normalizedEmail);
+    // Every page: one listUsers call stops at 1000 accounts, and a returning applicant beyond that
+    // was treated as new and failed with "already registered".
+    const existingUser = (await listAllUsers(supabaseAdmin)).find((u) => u.email?.toLowerCase() === normalizedEmail);
 
     let savedUser = null;
 
@@ -127,14 +129,23 @@ export async function POST(request: Request) {
       savedUser = created.user;
     }
 
+    // The registry mirrors the status app_metadata really has (an approved account that resubmits
+    // its details stays approved), and is written under the store lock. A failed read used to be
+    // taken for an empty registry and written back with only this entry, wiping every application.
+    const savedApp = (savedUser?.app_metadata ?? {}) as Record<string, unknown>;
+    const registryStatus = typeof savedApp.status === "string" ? savedApp.status : status;
+    const replaceRegistryEntry = (path: string, entry: Record<string, unknown>) =>
+      updateStorageJsonList<Record<string, unknown>, void>(path, supabaseAdmin, (registry) => ({
+        next: [
+          ...registry.filter((s) => (typeof s.email === "string" ? s.email.toLowerCase() : "") !== normalizedEmail),
+          entry,
+        ],
+        result: undefined,
+      }));
+
     // 2. If specialist, also record in Supabase Storage specialists_registry.json
     if (effectiveRole === "specialist") {
       try {
-        // Through a cache-busted signed URL: storage .download() can serve a stale copy, and
-        // writing back a stale list dropped applications submitted moments earlier.
-        const registry =
-          (await downloadStorageJson<Array<Record<string, unknown>>>("specialists/specialists_registry.json", supabaseAdmin)) ?? [];
-
         const specialistEntry = {
           id: savedUser?.id || `spec_${Date.now()}`,
           email: normalizedEmail,
@@ -144,21 +155,12 @@ export async function POST(request: Request) {
           hospital: userMetadata.hospital,
           phone: userMetadata.phone_number,
           specialty: userMetadata.specialty,
-          status,
+          status: registryStatus,
           avatarUrl: "",
           submittedAt: userMetadata.submitted_at,
         };
 
-        const filtered = registry.filter(
-          (s) => (typeof s.email === "string" ? s.email.toLowerCase() : "") !== normalizedEmail
-        );
-        filtered.push(specialistEntry);
-
-        await supabaseAdmin.storage.from("photos").upload(
-          "specialists/specialists_registry.json",
-          Buffer.from(JSON.stringify(filtered, null, 2)),
-          { upsert: true, contentType: "application/json" }
-        );
+        await replaceRegistryEntry("specialists/specialists_registry.json", specialistEntry);
       } catch (e: unknown) {
         console.warn("Lỗi lưu specialists_registry:", e instanceof Error ? e.message : String(e));
       }
@@ -167,9 +169,6 @@ export async function POST(request: Request) {
     // 3. If shop, also record in Supabase Storage shops_registry.json
     if (effectiveRole === "shop") {
       try {
-        const registry =
-          (await downloadStorageJson<Array<Record<string, unknown>>>("shops/shops_registry.json", supabaseAdmin)) ?? [];
-
         const shopEntry = {
           id: savedUser?.id || `shop_${Date.now()}`,
           email: normalizedEmail,
@@ -179,21 +178,12 @@ export async function POST(request: Request) {
           category: userMetadata.category,
           address: userMetadata.address,
           phone: userMetadata.phone_number,
-          status,
+          status: registryStatus,
           avatarUrl: "",
           submittedAt: userMetadata.submitted_at,
         };
 
-        const filtered = registry.filter(
-          (s) => (typeof s.email === "string" ? s.email.toLowerCase() : "") !== normalizedEmail
-        );
-        filtered.push(shopEntry);
-
-        await supabaseAdmin.storage.from("photos").upload(
-          "shops/shops_registry.json",
-          Buffer.from(JSON.stringify(filtered, null, 2)),
-          { upsert: true, contentType: "application/json" }
-        );
+        await replaceRegistryEntry("shops/shops_registry.json", shopEntry);
       } catch (e: unknown) {
         console.warn("Lỗi lưu shops_registry:", e instanceof Error ? e.message : String(e));
       }

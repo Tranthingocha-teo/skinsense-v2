@@ -868,12 +868,8 @@ export default function ShopProductPage() {
       createdAt: new Date().toISOString().split("T")[0],
     };
 
-    setProducts((prev) => [newShopeeProduct, ...prev]);
-    setFormImages([]);
-    setFormCoverImage("");
-    setIsAddModalOpen(false);
-
-    // Sync to backend /api/admin/products so Admin can approve
+    // Saved first, shown after: the product used to appear with a success toast while the save
+    // was fired and forgotten, so a refused or failed save still looked submitted for approval.
     fetch("/api/admin/products", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -890,12 +886,20 @@ export default function ShopProductPage() {
         description: newShopeeProduct.description,
         origin: newShopeeProduct.origin,
       }),
-    }).catch(() => {});
-
-    toast.info(
-      `Sản phẩm "${newShopeeProduct.name}" đã được tạo thành công và đang CHỜ SUPER ADMIN TRẦN THỊ NGỌC HÀ PHÊ DUYỆT trước khi mở bán chính thức trên sàn Shopee!`,
-      { duration: 6000 }
-    );
+    })
+      .then(async (res) => {
+        const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string; product?: { id: string } } | null;
+        if (!res.ok || !data?.ok || !data.product) throw new Error(data?.error || "Lưu sản phẩm thất bại.");
+        const savedId = data.product.id;
+        setProducts((prev) => [{ ...newShopeeProduct, id: savedId }, ...prev]);
+        setFormImages([]);
+        setFormCoverImage("");
+        setIsAddModalOpen(false);
+        toast.info(`Sản phẩm "${newShopeeProduct.name}" đã được gửi và đang chờ Admin phê duyệt trước khi mở bán trên sàn.`, {
+          duration: 6000,
+        });
+      })
+      .catch((err: Error) => toast.error(`Không lưu được sản phẩm: ${err.message}`));
   }
 
   // Delete product

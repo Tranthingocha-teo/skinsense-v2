@@ -19,7 +19,7 @@ vi.mock("@supabase/supabase-js", () => ({
   })),
 }));
 
-const { createPersistentJsonStore } = await import("./storage-json");
+const { createPersistentJsonStore, updateStorageJsonList, getSupabaseAdminClient } = await import("./storage-json");
 
 function makeStore() {
   const dir = path.join(os.tmpdir(), `storage-json-test-${Math.random().toString(36).slice(2)}`);
@@ -62,5 +62,39 @@ describe("createPersistentJsonStore", () => {
     const store = makeStore();
     await expect(store.readAsync()).rejects.toThrow(/Không đọc được/);
     expect(upload).not.toHaveBeenCalled();
+  });
+});
+
+describe("updateStorageJsonList", () => {
+  beforeEach(() => {
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
+    vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "service-key");
+    upload.mockReset();
+  });
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("an existing registry that cannot be read is not overwritten with an empty list", async () => {
+    global.fetch = vi.fn(async () => ({ ok: false, json: async () => null }) as Response);
+    const client = getSupabaseAdminClient()!;
+    await expect(updateStorageJsonList<{ id: string }, null>("t/a.json", client, (l) => ({ next: [...l, { id: "x" }], result: null }))).rejects.toThrow(/Không đọc được/);
+    expect(upload).not.toHaveBeenCalled();
+  });
+
+  it("a failed upload throws instead of reporting success", async () => {
+    remote = [{ id: "a" }];
+    global.fetch = vi.fn(async () => ({ ok: true, json: async () => remote }) as Response);
+    upload.mockResolvedValue({ error: { message: "boom" } });
+    const client = getSupabaseAdminClient()!;
+    await expect(updateStorageJsonList<{ id: string }, null>("t/b.json", client, (l) => ({ next: l, result: null }))).rejects.toThrow(/Không lưu được/);
+  });
+
+  it("writes the mutated list and returns the result", async () => {
+    remote = [{ id: "a" }];
+    global.fetch = vi.fn(async () => ({ ok: true, json: async () => remote }) as Response);
+    upload.mockResolvedValue({ error: null });
+    const client = getSupabaseAdminClient()!;
+    const found = await updateStorageJsonList<{ id: string }, boolean>("t/c.json", client, (l) => ({ next: [...l, { id: "b" }], result: l.length === 1 }));
+    expect(found).toBe(true);
+    expect(JSON.parse(String(upload.mock.calls[0][1]))).toEqual([{ id: "a" }, { id: "b" }]);
   });
 });
