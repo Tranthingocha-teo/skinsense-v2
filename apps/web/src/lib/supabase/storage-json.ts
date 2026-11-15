@@ -114,6 +114,40 @@ export async function storageObjectExists(storagePath: string, client: SupabaseC
   }
 }
 
+/**
+ * Reads a JSON array store in Storage that must exist or be legitimately missing. A failed read of
+ * an existing file throws: callers used to treat it as an empty list and wrote that back, wiping
+ * every registry entry.
+ */
+export async function readStorageJsonList<T>(storagePath: string, client: SupabaseClient): Promise<T[]> {
+  const list = await downloadStorageJson<T[]>(storagePath, client);
+  if (Array.isArray(list)) return list;
+  if (await storageObjectExists(storagePath, client)) {
+    throw new Error(`Không đọc được ${storagePath}, vui lòng thử lại.`);
+  }
+  return [];
+}
+
+/**
+ * Locked read-modify-write of a JSON array store. `mutate` returns the next list, or `null` to
+ * leave the file untouched. Throws when the read or the upload fails, so a route never answers
+ * "saved" for data that was not (the admin approvals used to swallow these errors).
+ */
+export function updateStorageJsonList<T, R = T[]>(
+  storagePath: string,
+  client: SupabaseClient,
+  mutate: (list: T[]) => { next: T[] | null; result: R },
+): Promise<R> {
+  return withStoreLock(storagePath, async () => {
+    const list = await readStorageJsonList<T>(storagePath, client);
+    const { next, result } = mutate(list);
+    if (next !== null && !(await uploadStorageJson(storagePath, next, client))) {
+      throw new Error(`Không lưu được ${storagePath}, vui lòng thử lại.`);
+    }
+    return result;
+  });
+}
+
 export interface PersistentJsonStoreOptions<T> {
   storagePath: string;
   primaryFile: string;

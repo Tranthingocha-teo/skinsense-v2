@@ -1,75 +1,52 @@
 import { NextResponse } from "next/server";
 import { requireRoleActor } from "@/lib/session-auth";
-import { downloadStorageJson, uploadStorageJson } from "@/lib/supabase/storage-json";
+import { isValidOrderStatus, ordersStore, type OrderStatus } from "@/lib/orders-store";
 
-export interface OrderItem {
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+/** Platform commission on an order. */
+const COMMISSION_RATE = 0.08;
+
+export interface AdminOrderItem {
   id: string;
+  orderCode: string;
   customerName: string;
   shopName: string;
   totalAmount: number;
-  commission: number; // 8% fee
-  status: "completed" | "shipping" | "disputed" | "processing";
+  commission: number;
+  status: OrderStatus;
+  paymentStatus: "unpaid" | "paid";
+  paymentMethod: string;
   createdAt: string;
-  disputeReason?: string;
 }
 
-const ADMIN_ORDERS_STORAGE_PATH = "admin/admin_orders_registry.json";
-
-let ORDERS_STORE: OrderItem[] = [
-  {
-    id: "ORD-9821",
-    customerName: "Trần Thị Ngọc Hà",
-    shopName: "La Roche-Posay VN Flagship",
-    totalAmount: 990000,
-    commission: 79200,
-    status: "completed",
-    createdAt: "2026-11-06",
-  },
-  {
-    id: "ORD-9822",
-    customerName: "Nguyễn Văn Đinh",
-    shopName: "La Roche-Posay VN Flagship",
-    totalAmount: 495000,
-    commission: 39600,
-    status: "shipping",
-    createdAt: "2026-11-08",
-  },
-  {
-    id: "ORD-9823",
-    customerName: "Lê Thị Bích Thảo",
-    shopName: "CeraVe Skincare Official",
-    totalAmount: 760000,
-    commission: 60800,
-    status: "disputed",
-    disputeReason: "Giao sai dung tích chai (đặt 473ml giao 236ml)",
-    createdAt: "2026-11-07",
-  },
-  {
-    id: "ORD-9824",
-    customerName: "Hoàng Minh Tuấn",
-    shopName: "Innisfree Beauty Hub",
-    totalAmount: 580000,
-    commission: 46400,
-    status: "processing",
-    createdAt: "2026-11-09",
-  },
-];
-
-async function loadAdminOrders(): Promise<OrderItem[]> {
-  const remote = await downloadStorageJson<OrderItem[]>(ADMIN_ORDERS_STORAGE_PATH);
-  if (Array.isArray(remote) && remote.length > 0) {
-    ORDERS_STORE = remote;
-    return remote;
-  }
-  return ORDERS_STORE;
-}
-
+// The console used to read its own sample file (admin/admin_orders_registry.json, four made-up
+// orders) instead of the orders customers place, so the admin never saw a real order and a status
+// change there touched nothing. Both methods now work on the one orders store.
 export async function GET(request: Request) {
   const auth = await requireRoleActor(request, ["admin"]);
   if (!auth.ok) return auth.response;
 
-  const orders = await loadAdminOrders();
-  return NextResponse.json({ ok: true, orders });
+  try {
+    const orders: AdminOrderItem[] = (await ordersStore.getAllAsync())
+      .map((o) => ({
+        id: o.id,
+        orderCode: o.orderCode,
+        customerName: o.customerName,
+        shopName: o.shopName,
+        totalAmount: o.totalAmount,
+        commission: Math.round(o.totalAmount * COMMISSION_RATE),
+        status: o.status,
+        paymentStatus: o.paymentStatus,
+        paymentMethod: o.paymentMethod,
+        createdAt: o.createdAt,
+      }))
+      .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+    return NextResponse.json({ ok: true, orders });
+  } catch (err) {
+    return NextResponse.json({ ok: false, error: err instanceof Error ? err.message : "Không tải được đơn hàng." }, { status: 503 });
+  }
 }
 
 export async function PATCH(request: Request) {
@@ -77,33 +54,21 @@ export async function PATCH(request: Request) {
   if (!auth.ok) return auth.response;
 
   try {
-    const body = await request.json();
-    const { orderId, action } = body; // action: "resolve" | "ship" | "complete"
-
-    if (!orderId) {
-      return NextResponse.json({ error: "Thiếu orderId." }, { status: 400 });
+    const { orderCode, status } = await request.json();
+    if (!orderCode || typeof orderCode !== "string") {
+      return NextResponse.json({ ok: false, error: "Thiếu mã đơn hàng." }, { status: 400 });
+    }
+    if (!isValidOrderStatus(status)) {
+      return NextResponse.json({ ok: false, error: "Trạng thái đơn hàng không hợp lệ." }, { status: 400 });
     }
 
-    const current = await loadAdminOrders();
-    const updated = current.map((o) => {
-      if (o.id !== orderId) return o;
-      if (action === "resolve") {
-        return { ...o, status: "completed" as const, disputeReason: undefined };
-      }
-      if (action === "ship") {
-        return { ...o, status: "shipping" as const };
-      }
-      if (action === "complete") {
-        return { ...o, status: "completed" as const };
-      }
-      return o;
-    });
-
-    ORDERS_STORE = updated;
-    await uploadStorageJson(ADMIN_ORDERS_STORAGE_PATH, updated);
-
-    return NextResponse.json({ ok: true, message: "Đã cập nhật đơn hàng thành công" });
+    const result = await ordersStore.updateStatusSafeAsync(orderCode, status);
+    if (!result.ok) {
+      const httpStatus = result.code === "NOT_FOUND" ? 404 : result.code === "INVALID_STATUS" ? 400 : 409;
+      return NextResponse.json({ ok: false, error: result.error }, { status: httpStatus });
+    }
+    return NextResponse.json({ ok: true, order: result.order, message: "Đã cập nhật trạng thái đơn hàng." });
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Cập nhật đơn hàng thất bại" }, { status: 500 });
+    return NextResponse.json({ ok: false, error: err instanceof Error ? err.message : "Cập nhật đơn hàng thất bại" }, { status: 500 });
   }
 }

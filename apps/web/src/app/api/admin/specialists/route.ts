@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { requireRoleActor } from "@/lib/session-auth";
-import { authzClaims } from "@/lib/actor-role";
+import { getSupabaseAdminClient, readStorageJsonList } from "@/lib/supabase/storage-json";
+import {
+  ApprovalError,
+  REGISTRY_PATHS,
+  applyAccountDecision,
+  isAccountStatus,
+  listAllUsers,
+} from "@/lib/admin-approvals";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -20,75 +26,47 @@ interface SpecialistRegistryItem {
   approvedBy?: string;
 }
 
-function getSupabaseAdmin() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-  return createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
+function errorResponse(err: unknown, fallback: string) {
+  if (err instanceof ApprovalError) return NextResponse.json({ ok: false, error: err.message }, { status: err.httpStatus });
+  return NextResponse.json({ ok: false, error: err instanceof Error ? err.message : fallback }, { status: 500 });
 }
 
-async function downloadJsonFromStorage<T = unknown>(supabase: SupabaseClient, path: string): Promise<T | null> {
-  try {
-    const { data: signData } = await supabase.storage.from("photos").createSignedUrl(path, 60);
-    if (signData?.signedUrl) {
-      const res = await fetch(signData.signedUrl + `&_t=${Date.now()}`, { cache: "no-store" });
-      if (res.ok) {
-        return (await res.json()) as T;
-      }
-    }
-    const { data: fileBlob } = await supabase.storage.from("photos").download(path);
-    if (fileBlob) {
-      return JSON.parse(await fileBlob.text()) as T;
-    }
-  } catch {}
-  return null;
-}
-
+/** Doctor accounts with their application details. Status comes from app_metadata only. */
 export async function GET(request: Request) {
   const auth = await requireRoleActor(request, ["admin"]);
   if (!auth.ok) return auth.response;
 
   try {
-    const supabaseAdmin = getSupabaseAdmin();
+    const admin = getSupabaseAdminClient();
+    if (!admin) throw new ApprovalError("Máy chủ chưa cấu hình Supabase Service Key.", 500);
+    const [registry, users] = await Promise.all([
+      readStorageJsonList<SpecialistRegistryItem>(REGISTRY_PATHS.specialist, admin),
+      listAllUsers(admin),
+    ]);
 
-    // 1. Fetch from Supabase Storage registry
-    const storageSpecialists: SpecialistRegistryItem[] = (await downloadJsonFromStorage<SpecialistRegistryItem[]>(supabaseAdmin, "specialists/specialists_registry.json")) || [];
+    const specialists = users
+      .filter((u) => u.app_metadata?.role === "specialist")
+      .map((u) => {
+        const email = (u.email ?? "").toLowerCase();
+        const entry = registry.find((s) => s.id === u.id || s.email?.toLowerCase() === email) ?? {};
+        const meta = (u.user_metadata ?? {}) as Record<string, string | undefined>;
+        return {
+          ...entry,
+          id: u.id,
+          email,
+          name: entry.name || meta.full_name || email.split("@")[0],
+          phone: entry.phone || meta.phone_number || "",
+          specialty: entry.specialty || meta.specialty || "",
+          licenseId: entry.licenseId || meta.license_id || "",
+          hospital: entry.hospital || meta.hospital || "",
+          submittedAt: entry.submittedAt || meta.submitted_at || u.created_at,
+          status: isAccountStatus(u.app_metadata?.status) ? u.app_metadata.status : "pending",
+        };
+      });
 
-    // 2. Fetch from Supabase Auth
-    const { data, error } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    const authSpecialists = data.users
-      .filter((u) => u.app_metadata?.role === "specialist" || u.user_metadata?.role === "specialist")
-      .map((u) => ({
-        id: u.id,
-        email: u.email,
-        name: u.user_metadata?.full_name || u.email?.split("@")[0] || "Bác sĩ Da liễu",
-        phone: u.user_metadata?.phone_number || "",
-        status: u.user_metadata?.status || "pending",
-        specialty: u.user_metadata?.specialty || "Chuyên khoa Da liễu & Thẩm mỹ Da",
-        licenseId: u.user_metadata?.license_id || "014289/BYT-CCHN",
-        hospital: u.user_metadata?.hospital || "Bệnh viện Da Liễu Trung Ương",
-        submittedAt: u.user_metadata?.submitted_at || u.created_at,
-        approvedAt: u.user_metadata?.approved_at,
-        approvedBy: u.user_metadata?.approved_by,
-      }));
-
-    // Merge storage + auth specialists, storage priority
-    const combined = [...storageSpecialists];
-    for (const as of authSpecialists) {
-      if (!combined.some((s) => s.email?.toLowerCase() === as.email?.toLowerCase())) {
-        combined.push(as);
-      }
-    }
-
-    return NextResponse.json({ ok: true, specialists: combined });
+    return NextResponse.json({ ok: true, specialists });
   } catch (err) {
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Internal Server Error" },
-      { status: 500 },
-    );
+    return errorResponse(err, "Không tải được danh sách bác sĩ.");
   }
 }
 
@@ -97,78 +75,26 @@ export async function PATCH(request: Request) {
   if (!auth.ok) return auth.response;
 
   try {
-    const body = await request.json();
-    const { userId, action, email } = body;
-
-    if (!userId && !email) {
-      return NextResponse.json({ error: "Thiếu userId hoặc email bác sĩ" }, { status: 400 });
+    const { userId, action } = await request.json();
+    if (!userId || typeof userId !== "string") {
+      return NextResponse.json({ ok: false, error: "Thiếu userId của bác sĩ." }, { status: 400 });
     }
     if (action !== "approve" && action !== "reject") {
-      return NextResponse.json({ error: "Hành động không hợp lệ" }, { status: 400 });
+      return NextResponse.json({ ok: false, error: "Hành động không hợp lệ." }, { status: 400 });
     }
+    const admin = getSupabaseAdminClient();
+    if (!admin) throw new ApprovalError("Máy chủ chưa cấu hình Supabase Service Key.", 500);
 
-    const supabaseAdmin = getSupabaseAdmin();
-    const newStatus = action === "approve" ? "active" : "rejected";
-    const targetEmail = email?.toLowerCase();
-
-    // 1. Update Supabase Auth user metadata
-    try {
-      let targetUserId: string | undefined = userId && userId.length === 36 ? userId : undefined;
-      if (!targetUserId && targetEmail) {
-        const { data: list } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
-        targetUserId = list?.users.find((u) => u.email?.toLowerCase() === targetEmail)?.id;
-      }
-      if (targetUserId) {
-        const { data: userObj } = await supabaseAdmin.auth.admin.getUserById(targetUserId);
-        const updatedMetadata = {
-          ...(userObj?.user?.user_metadata || {}),
-          status: newStatus,
-          role: "specialist",
-          approved_by: "Trần Thị Ngọc Hà (Super Admin)",
-          approved_at: new Date().toISOString(),
-        };
-
-        // app_metadata is what grants specialist rights (see lib/actor-role.ts).
-        await supabaseAdmin.auth.admin.updateUserById(targetUserId, {
-          user_metadata: updatedMetadata,
-          app_metadata: authzClaims("specialist", newStatus),
-        });
-      }
-    } catch {}
-
-    // 2. Update Supabase Storage specialists_registry.json
-    try {
-      const list = (await downloadJsonFromStorage<SpecialistRegistryItem[]>(supabaseAdmin, "specialists/specialists_registry.json")) || [];
-      if (list.length > 0) {
-        const updatedList = list.map((s) => {
-          if (s.id === userId || (targetEmail && s.email?.toLowerCase() === targetEmail)) {
-            return {
-              ...s,
-              status: newStatus,
-              approvedBy: "Trần Thị Ngọc Hà (Super Admin)",
-              approvedAt: new Date().toISOString(),
-            };
-          }
-          return s;
-        });
-
-        await supabaseAdmin.storage.from("photos").upload(
-          "specialists/specialists_registry.json",
-          Buffer.from(JSON.stringify(updatedList, null, 2)),
-          { upsert: true, contentType: "application/json" }
-        );
-      }
-    } catch {}
+    const status = action === "approve" ? "active" : "rejected";
+    const user = await applyAccountDecision(admin, userId, { status, expectRole: "specialist", approvedBy: auth.actor.fullName });
 
     return NextResponse.json({
       ok: true,
-      status: newStatus,
-      message: action === "approve" ? "Đã phê duyệt hồ sơ Bác sĩ thành công!" : "Đã từ chối cấp phép bác sĩ.",
+      status: user.status,
+      user,
+      message: action === "approve" ? "Đã phê duyệt hồ sơ Bác sĩ." : "Đã từ chối hồ sơ Bác sĩ.",
     });
   } catch (err) {
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Cập nhật trạng thái thất bại." },
-      { status: 500 },
-    );
+    return errorResponse(err, "Cập nhật trạng thái thất bại.");
   }
 }

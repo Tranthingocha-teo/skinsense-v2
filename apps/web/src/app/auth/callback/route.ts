@@ -88,7 +88,9 @@ export async function GET(request: Request) {
       const appRole = (user.app_metadata as Record<string, unknown> | undefined)?.role;
       const isSpecialistRole = appRole === "specialist" || meta.role === "specialist" || Boolean(specialistRecord);
 
-      const specialistStatus = specialistRecord?.status || meta.status || "active";
+      // app_metadata holds the status the admin set; the registry and user_metadata only mirror it.
+      const appStatus = (user.app_metadata as Record<string, unknown> | undefined)?.status;
+      const specialistStatus = (typeof appStatus === "string" ? appStatus : undefined) || specialistRecord?.status || meta.status || "active";
 
       // If user is a specialist, route to Specialist Portal, NEVER customer /app!
       if (isSpecialistRole) {

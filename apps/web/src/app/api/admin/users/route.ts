@@ -1,75 +1,79 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import { requireRoleActor } from "@/lib/session-auth";
 import { randomUUID } from "node:crypto";
-import { authzClaims } from "@/lib/actor-role";
+import { authzClaims, SUPER_ADMIN_EMAIL } from "@/lib/actor-role";
 import { shopIdClaim } from "@/lib/shop-utils";
-import { downloadStorageJson } from "@/lib/supabase/storage-json";
+import { getSupabaseAdminClient } from "@/lib/supabase/storage-json";
+import {
+  ApprovalError,
+  applyAccountDecision,
+  isAccountStatus,
+  isGrantableRole,
+  listAllUsers,
+} from "@/lib/admin-approvals";
 
-function getSupabaseAdmin() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
-  if (!url || !serviceRoleKey) {
-    throw new Error("Missing Supabase credentials.");
-  }
-
-  return createClient(url, serviceRoleKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
+function adminClientOr500() {
+  const client = getSupabaseAdminClient();
+  if (!client) throw new ApprovalError("Máy chủ chưa cấu hình Supabase Service Key.", 500);
+  return client;
 }
+
+function errorResponse(err: unknown, fallback: string) {
+  if (err instanceof ApprovalError) return NextResponse.json({ ok: false, error: err.message }, { status: err.httpStatus });
+  return NextResponse.json({ ok: false, error: err instanceof Error ? err.message : fallback }, { status: 500 });
+}
+
+const text = (v: unknown) => (typeof v === "string" ? v.trim() : "");
 
 export async function GET(request: Request) {
   const auth = await requireRoleActor(request, ["admin"]);
   if (!auth.ok) return auth.response;
 
   try {
-    const supabaseAdmin = getSupabaseAdmin();
-    const { data, error } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    const users = data.users.map((u) => {
-      const meta = u.user_metadata || {};
-      const isSuperAdmin = u.email?.toLowerCase() === "hattn.23itb@vku.udn.vn";
-      const appMeta = u.app_metadata || {};
-      // app_metadata is the authoritative role; user_metadata is only a fallback label for old accounts.
-      const role = isSuperAdmin ? "admin" : (appMeta.role || meta.role || "customer");
-      const status = isSuperAdmin ? "active" : (appMeta.status || meta.status || "active");
+    const users = (await listAllUsers(adminClientOr500())).map((u) => {
+      const meta = (u.user_metadata || {}) as Record<string, unknown>;
+      const appMeta = (u.app_metadata || {}) as Record<string, unknown>;
+      const shopDetails = (meta.shop_details as Record<string, unknown> | undefined) ?? {};
+      const isSuperAdmin = u.email?.toLowerCase() === SUPER_ADMIN_EMAIL;
+      // app_metadata is the only source of role and status: it is what grants the rights, and
+      // user_metadata is writable by the user (it used to be the fallback, so the console could
+      // show a status the account did not have).
+      const role = isSuperAdmin || appMeta.role === "admin" ? "admin" : isGrantableRole(appMeta.role) ? appMeta.role : "customer";
+      const status = isSuperAdmin ? "active" : isAccountStatus(appMeta.status) ? appMeta.status : "active";
 
       return {
         id: u.id,
         name: isSuperAdmin
           ? "Trần Thị Ngọc Hà (Super Admin)"
-          : (meta.full_name || meta.name || u.email?.split("@")[0] || "Người dùng"),
+          : text(meta.full_name) || text(meta.name) || u.email?.split("@")[0] || "Người dùng",
         email: u.email || "",
-        phone: meta.phone_number || u.phone || "0905 123 456",
+        phone: text(meta.phone_number) || u.phone || "",
         role,
         status,
-        createdAt: u.created_at ? u.created_at.split("T")[0] : new Date().toISOString().split("T")[0],
-        avatarUrl: meta.avatar_url || meta.picture,
-        shopDetails: role === "shop" ? {
-          shopName: meta.shop_name || "Cửa Hàng Dược Mỹ Phẩm SkinSense",
-          license: meta.license || "GPKD-882910-HCM",
-          category: meta.category || "Dược mỹ phẩm chăm sóc & phục hồi da",
-          address: meta.address || "Quận 1, TP. Hồ Chí Minh",
-        } : undefined,
-        specialistDetails: role === "specialist" ? {
-          hospital: meta.hospital || "Bệnh viện Da Liễu Trung Ương",
-          licenseId: meta.license_id || "CCHN-003419/BYT",
-          specialty: meta.specialty || "Da liễu thẩm mỹ & Trị mụn",
-        } : undefined,
+        createdAt: u.created_at ? u.created_at.split("T")[0] : "",
+        avatarUrl: text(meta.avatar_url) || text(meta.picture) || undefined,
+        shopDetails:
+          role === "shop"
+            ? {
+                shopName: text(meta.shop_name) || text(shopDetails.shopName) || text(meta.full_name),
+                license: text(meta.license) || text(shopDetails.license),
+                category: text(meta.category) || text(shopDetails.category),
+                address: text(meta.address) || text(shopDetails.address),
+              }
+            : undefined,
+        specialistDetails:
+          role === "specialist"
+            ? { hospital: text(meta.hospital), licenseId: text(meta.license_id), specialty: text(meta.specialty) }
+            : undefined,
       };
     });
 
     return NextResponse.json({ ok: true, users });
   } catch (err) {
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Failed to load real users." },
-      { status: 500 },
-    );
+    return errorResponse(err, "Không tải được danh sách người dùng.");
   }
 }
 
@@ -83,49 +87,48 @@ export async function POST(request: Request) {
     // knows and signs in with Google or a magic link. ("password123@" let anyone into it.)
     const { email, password = `${randomUUID()}Aa1!`, fullName, role = "customer", phone, shopName, specialty, hospital, licenseId } = body;
 
-    if (!email || !email.includes("@")) {
-      return NextResponse.json({ error: "Email không hợp lệ." }, { status: 400 });
+    if (!email || typeof email !== "string" || !email.includes("@")) {
+      return NextResponse.json({ ok: false, error: "Email không hợp lệ." }, { status: 400 });
+    }
+    if (!isGrantableRole(role)) {
+      return NextResponse.json({ ok: false, error: "Vai trò không hợp lệ." }, { status: 400 });
     }
 
-    if (!["customer", "shop", "specialist"].includes(role)) {
-      return NextResponse.json({ error: "Vai trò không hợp lệ." }, { status: 400 });
-    }
-
-    const supabaseAdmin = getSupabaseAdmin();
+    const supabaseAdmin = adminClientOr500();
     const normalizedEmail = email.trim().toLowerCase();
-    const initialStatus = role === "specialist" ? "pending" : "active";
+    // An account the admin creates is approved by that act, whatever its role.
+    const initialStatus = "active";
+    const userMetadata = {
+      full_name: text(fullName) || normalizedEmail.split("@")[0],
+      role,
+      status: initialStatus,
+      phone_number: text(phone),
+      shop_name: text(shopName),
+      specialty: text(specialty),
+      hospital: text(hospital),
+      license_id: text(licenseId),
+      created_at_local: new Date().toISOString(),
+    };
 
     const { data, error } = await supabaseAdmin.auth.admin.createUser({
       email: normalizedEmail,
       password,
       email_confirm: true,
-      app_metadata: { ...authzClaims(role, initialStatus), ...shopIdClaim(role, {}, { shop_name: shopName }) },
-      user_metadata: {
-        full_name: fullName?.trim() || normalizedEmail.split("@")[0],
-        role,
-        status: initialStatus,
-        phone_number: phone?.trim() || "",
-        shop_name: shopName?.trim() || "",
-        specialty: specialty?.trim() || "",
-        hospital: hospital?.trim() || "",
-        license_id: licenseId?.trim() || "",
-        created_at_local: new Date().toISOString(),
-      },
+      app_metadata: { ...authzClaims(role, initialStatus), ...shopIdClaim(role, {}, userMetadata) },
+      user_metadata: userMetadata,
     });
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
     }
 
-    return NextResponse.json({ ok: true, user: data.user });
+    return NextResponse.json({ ok: true, user: { id: data.user.id, email: data.user.email, role, status: initialStatus } });
   } catch (err) {
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Tạo người dùng thất bại." },
-      { status: 500 },
-    );
+    return errorResponse(err, "Tạo người dùng thất bại.");
   }
 }
 
+/** Approve / reject an application, lock / unlock an account, or change its role. */
 export async function PATCH(request: Request) {
   const auth = await requireRoleActor(request, ["admin"]);
   if (!auth.ok) return auth.response;
@@ -134,71 +137,26 @@ export async function PATCH(request: Request) {
     const body = await request.json();
     const { userId, role, status } = body;
 
-    if (!userId) {
-      return NextResponse.json({ error: "Thiếu userId." }, { status: 400 });
+    if (!userId || typeof userId !== "string") {
+      return NextResponse.json({ ok: false, error: "Thiếu userId." }, { status: 400 });
+    }
+    if (role !== undefined && !isGrantableRole(role)) {
+      return NextResponse.json({ ok: false, error: "Vai trò không hợp lệ (không thể cấp quyền quản trị)." }, { status: 400 });
+    }
+    if (status !== undefined && !isAccountStatus(status)) {
+      return NextResponse.json({ ok: false, error: "Trạng thái không hợp lệ." }, { status: 400 });
+    }
+    if (role === undefined && status === undefined) {
+      return NextResponse.json({ ok: false, error: "Không có thay đổi nào." }, { status: 400 });
+    }
+    if (userId === auth.actor.userId) {
+      return NextResponse.json({ ok: false, error: "Không thể tự thay đổi tài khoản của chính mình." }, { status: 403 });
     }
 
-    const supabaseAdmin = getSupabaseAdmin();
-    const { data: userRes, error: fetchErr } = await supabaseAdmin.auth.admin.getUserById(userId);
-
-    if (fetchErr || !userRes.user) {
-      return NextResponse.json({ error: "Không tìm thấy người dùng." }, { status: 404 });
-    }
-
-    if (role !== undefined && !["customer", "shop", "specialist"].includes(role)) {
-      return NextResponse.json({ error: "Vai trò không hợp lệ." }, { status: 400 });
-    }
-
-    const currentApp = (userRes.user.app_metadata || {}) as Record<string, unknown>;
-    const currentMeta = (userRes.user.user_metadata || {}) as Record<string, unknown>;
-    const nextRole = (role || currentApp.role || currentMeta.role || "customer") as "customer" | "shop" | "specialist";
-    const nextStatus = String(status || currentApp.status || currentMeta.status || "active");
-
-    const updatedMetadata = {
-      ...userRes.user.user_metadata,
-      ...(role ? { role } : {}),
-      ...(status ? { status } : {}),
-      updated_at: new Date().toISOString(),
-    };
-
-    const { data, error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
-      user_metadata: updatedMetadata,
-      ...(role || status
-        ? { app_metadata: { ...authzClaims(nextRole, nextStatus), ...shopIdClaim(nextRole, currentApp, currentMeta) } }
-        : {}),
-    });
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    // Sync status change to shops/shops_registry.json if user is a shop
-    const userEffectiveRole = role || userRes.user.user_metadata?.role;
-    if (userEffectiveRole === "shop" && status) {
-      try {
-        const email = userRes.user.email?.toLowerCase();
-        // Cache-busted read (storage .download() can be stale; writing a stale list back lost entries).
-        let registry =
-          (await downloadStorageJson<Array<{ id?: string; email?: string; status?: string }>>("shops/shops_registry.json", supabaseAdmin)) ?? [];
-        registry = registry.map((s) =>
-          s.email?.toLowerCase() === email || s.id === userId ? { ...s, status } : s
-        );
-        await supabaseAdmin.storage.from("photos").upload(
-          "shops/shops_registry.json",
-          Buffer.from(JSON.stringify(registry, null, 2)),
-          { upsert: true, contentType: "application/json" }
-        );
-      } catch (syncErr) {
-        console.warn("Lỗi đồng bộ shops_registry.json:", syncErr);
-      }
-    }
-
-    return NextResponse.json({ ok: true, user: data.user });
+    const user = await applyAccountDecision(adminClientOr500(), userId, { role, status, approvedBy: auth.actor.fullName });
+    return NextResponse.json({ ok: true, user });
   } catch (err) {
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Cập nhật người dùng thất bại." },
-      { status: 500 },
-    );
+    return errorResponse(err, "Cập nhật người dùng thất bại.");
   }
 }
 
@@ -207,25 +165,30 @@ export async function DELETE(request: Request) {
   if (!auth.ok) return auth.response;
 
   try {
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
-
+    const userId = new URL(request.url).searchParams.get("userId");
     if (!userId) {
-      return NextResponse.json({ error: "Thiếu userId." }, { status: 400 });
+      return NextResponse.json({ ok: false, error: "Thiếu userId." }, { status: 400 });
+    }
+    if (userId === auth.actor.userId) {
+      return NextResponse.json({ ok: false, error: "Không thể tự xóa tài khoản của chính mình." }, { status: 403 });
     }
 
-    const supabaseAdmin = getSupabaseAdmin();
-    const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
+    const supabaseAdmin = adminClientOr500();
+    const { data: target } = await supabaseAdmin.auth.admin.getUserById(userId);
+    if (!target?.user) {
+      return NextResponse.json({ ok: false, error: "Không tìm thấy người dùng." }, { status: 404 });
+    }
+    if (target.user.email?.toLowerCase() === SUPER_ADMIN_EMAIL || target.user.app_metadata?.role === "admin") {
+      return NextResponse.json({ ok: false, error: "Không thể xóa tài khoản quản trị viên." }, { status: 403 });
+    }
 
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
     }
 
     return NextResponse.json({ ok: true, message: "Đã xóa người dùng thành công." });
   } catch (err) {
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Xóa người dùng thất bại." },
-      { status: 500 },
-    );
+    return errorResponse(err, "Xóa người dùng thất bại.");
   }
 }

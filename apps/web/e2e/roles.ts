@@ -8,7 +8,9 @@ import { normalizeShopId } from "../src/lib/shop-utils";
 // spec creates here and removes again in afterAll, together with whatever it wrote into the
 // JSON stores in Storage. Rights come only from app_metadata (lib/actor-role.ts).
 
-export type TestRole = "customer" | "shop" | "specialist";
+// "admin" exists for the approval specs only: the app itself never grants it (authzClaims refuses
+// it and the register/admin APIs reject it), so a test admin is minted here with the service role.
+export type TestRole = "customer" | "shop" | "specialist" | "admin";
 
 export interface TestUser {
   email: string;
@@ -24,7 +26,7 @@ export function runTag(): string {
 
 export async function createRoleUser(
   role: TestRole,
-  opts: { tag: string; fullName?: string; shopName?: string },
+  opts: { tag: string; fullName?: string; shopName?: string; status?: string },
 ): Promise<TestUser> {
   const email = `e2e-${role}-${opts.tag}@skinsense.test`;
   const fullName = opts.fullName ?? `E2E ${role} ${opts.tag}`;
@@ -33,7 +35,7 @@ export async function createRoleUser(
     email,
     email_confirm: true,
     // What /api/admin/users grants on approval (shop_id: lib/shop-utils.ts shopIdClaim).
-    app_metadata: { role, status: "active", ...(shopName ? { shop_id: normalizeShopId(shopName) } : {}) },
+    app_metadata: { role, status: opts.status ?? "active", ...(shopName ? { shop_id: normalizeShopId(shopName) } : {}) },
     user_metadata: { full_name: fullName, name: fullName, ...(shopName ? { shop_name: shopName } : {}) },
   });
   if (created.error) throw created.error;
@@ -47,7 +49,7 @@ export async function createRoleUser(
  */
 export function userPool(users: TestUser[]) {
   const made = new Map<string, Promise<TestUser>>();
-  return (role: TestRole, key: string = role, opts: { fullName?: string; shopName?: string } = {}): Promise<TestUser> => {
+  return (role: TestRole, key: string = role, opts: { fullName?: string; shopName?: string; status?: string } = {}): Promise<TestUser> => {
     let user = made.get(key);
     if (!user) {
       user = createRoleUser(role, { tag: runTag(), ...opts }).then((u) => {
@@ -119,6 +121,7 @@ export const STORES = {
   shops: "shops/shops_registry.json",
   specialists: "specialists/specialists_registry.json",
   cases: "clinical_records/cases_registry.json",
+  products: "products/products_registry.json",
 } as const;
 
 /** Deletes the test users and every store entry, routine row and protocol file that points at them. */
@@ -136,6 +139,7 @@ export async function cleanupUsers(users: TestUser[], extra?: { orderCodes?: str
   await pruneJsonStore(STORES.chat, (t) => ids.has(String(t.userId ?? "")) || names.has(lower(t.shopName)) || names.has(lower(t.userName)));
   await pruneJsonStore(STORES.shops, (s) => emails.has(lower(s.email)) || ids.has(String(s.id ?? "")));
   await pruneJsonStore(STORES.specialists, (s) => emails.has(lower(s.email)) || ids.has(String(s.id ?? "")));
+  await pruneJsonStore(STORES.products, (p) => names.has(lower(p.shopName)));
   await pruneJsonStore(STORES.cases, (c) => ids.has(String(c.patientUserId ?? "")) || emails.has(lower(c.patientEmail)));
 
   for (const user of users) {

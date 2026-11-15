@@ -7,6 +7,7 @@ import {
 } from "@/lib/role-routines";
 import { requireRoleActor } from "@/lib/session-auth";
 import { downloadStorageJson, uploadStorageJson } from "@/lib/supabase/storage-json";
+import { listAllUsers } from "@/lib/admin-approvals";
 
 export type { RoutineStep, RoleRoutine };
 
@@ -142,71 +143,70 @@ export async function POST(request: Request) {
     await loadRoleRoutines();
 
     if (!ROUTINES_STORE[role]) {
-      return NextResponse.json({ error: "Vai trò không hợp lệ." }, { status: 400 });
+      return NextResponse.json({ ok: false, error: "Vai trò không hợp lệ." }, { status: 400 });
     }
+    const target = typeof targetUser === "string" ? targetUser.trim().toLowerCase() : "";
+    if (!target) {
+      return NextResponse.json({ ok: false, error: "Vui lòng nhập email tài khoản nhận phác đồ." }, { status: 400 });
+    }
+
+    // The recipient must be a real account. An unknown email used to fall back to the super
+    // admin's own account (a hard-coded id), overwriting her routine and still answering "ok".
+    const supabase = getSupabaseAdmin();
+    const recipient = (await listAllUsers(supabase)).find(
+      (u) => u.id === target || u.email?.toLowerCase() === target,
+    );
+    if (!recipient) {
+      return NextResponse.json({ ok: false, error: `Không tìm thấy tài khoản ${targetUser.trim()}.` }, { status: 404 });
+    }
+    const targetUserId = recipient.id;
 
     ROUTINES_STORE[role] = {
       ...ROUTINES_STORE[role],
       ...(title ? { title: title.trim() } : {}),
       ...(description ? { description: description.trim() } : {}),
-      ...(targetUser ? { targetUser: targetUser.trim() } : {}),
+      targetUser: recipient.email ?? targetUserId,
       ...(Array.isArray(steps) ? { steps } : {}),
-      allocatedBy: "Super Admin Trần Thị Ngọc Hà (hattn.23itb@vku.udn.vn)",
+      allocatedBy: auth.actor.fullName,
     };
 
-    // Sync to Supabase routine_items for target user
+    // Sync to Supabase routine_items for the recipient; every failure is reported, not logged.
     if (Array.isArray(steps)) {
-      try {
-        const supabase = getSupabaseAdmin();
-        let targetUserId = "614ef0f9-1b4d-48f7-aa3e-29a8bd0b8c33"; // default to Super Admin
-        if (targetUser && targetUser.trim()) {
-          const trimmed = targetUser.trim();
-          if (trimmed.length === 36 && trimmed.includes("-")) {
-            targetUserId = trimmed;
-          } else {
-            const { data: userList } = await supabase.auth.admin.listUsers({ perPage: 1000 });
-            const found = userList?.users.find((u) => u.email?.toLowerCase() === trimmed.toLowerCase());
-            if (found) targetUserId = found.id;
-          }
-        }
+      const { error: deleteError } = await supabase.from("routine_items").delete().eq("user_id", targetUserId);
+      if (deleteError) throw new Error(`Không cập nhật được routine_items: ${deleteError.message}`);
+      const rows = steps.map((step: { label?: string; productName?: string }, i: number) => ({
+        user_id: targetUserId,
+        label: step.label || step.productName || `Bước ${i + 1}`,
+        position: i,
+      }));
+      if (rows.length > 0) {
+        const { error: insertError } = await supabase.from("routine_items").insert(rows);
+        if (insertError) throw new Error(`Không lưu được routine_items: ${insertError.message}`);
+      }
 
-        await supabase.from("routine_items").delete().eq("user_id", targetUserId);
-        for (let i = 0; i < steps.length; i++) {
-          await supabase.from("routine_items").insert({
-            user_id: targetUserId,
-            label: steps[i].label || steps[i].productName,
-            position: i,
-          });
-        }
-
-        // Also save user-specific protocol in Supabase Storage
-        const userProtocol = {
-          userId: targetUserId,
-          targetUser: targetUser || targetUserId,
-          allocatedBy: "Super Admin Trần Thị Ngọc Hà",
-          routineTitle: title || ROUTINES_STORE[role].title,
-          doctorNotes: description || ROUTINES_STORE[role].description,
-          products: steps,
-        };
-
-        await supabase.storage.from("photos").upload(
-          `routines/protocol_${targetUserId}.json`,
-          Buffer.from(JSON.stringify(userProtocol, null, 2)),
-          { upsert: true, contentType: "application/json" }
-        );
-      } catch (e) {
-        console.error("Failed to sync routine_items to Supabase:", e);
+      const userProtocol = {
+        userId: targetUserId,
+        targetUser: recipient.email ?? targetUserId,
+        allocatedBy: auth.actor.fullName,
+        routineTitle: title || ROUTINES_STORE[role].title,
+        doctorNotes: description || ROUTINES_STORE[role].description,
+        products: steps,
+      };
+      if (!(await uploadStorageJson(`routines/protocol_${targetUserId}.json`, userProtocol, supabase))) {
+        throw new Error("Không lưu được phác đồ của tài khoản, vui lòng thử lại.");
       }
     }
 
-    await uploadStorageJson(ROLE_ROUTINES_STORAGE_PATH, ROUTINES_STORE);
+    if (!(await uploadStorageJson(ROLE_ROUTINES_STORAGE_PATH, ROUTINES_STORE, supabase))) {
+      throw new Error("Không lưu được routine theo vai trò, vui lòng thử lại.");
+    }
 
     return NextResponse.json({
       ok: true,
-      message: `Đã phân bổ Routine thành công cho vai trò ${role}!`,
+      message: `Đã phân bổ Routine cho ${recipient.email ?? targetUserId}.`,
       routine: ROUTINES_STORE[role],
     });
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Phân bổ routine thất bại" }, { status: 500 });
+    return NextResponse.json({ ok: false, error: err instanceof Error ? err.message : "Phân bổ routine thất bại" }, { status: 500 });
   }
 }
