@@ -197,6 +197,21 @@ function main() {
     process.exit(1);
   }
 
+  let projectMeta = {};
+  try {
+    projectMeta = JSON.parse(fs.readFileSync(linkedProjectPath, "utf-8"));
+  } catch (err) {
+    console.error(`Invalid ${path.relative(REPO_ROOT, linkedProjectPath)}: ${err instanceof Error ? err.message : String(err)}`);
+    process.exit(1);
+  }
+
+  const linkedProjectDir = path.dirname(path.dirname(linkedProjectPath));
+  const vercelEnvContext = {
+    ...process.env,
+    ...(projectMeta.projectId ? { VERCEL_PROJECT_ID: projectMeta.projectId } : {}),
+    ...(projectMeta.orgId ? { VERCEL_ORG_ID: projectMeta.orgId } : {}),
+  };
+
   console.log("");
   for (const item of resolvedItems) {
     const args = [
@@ -209,10 +224,12 @@ function main() {
       "--force",
       "--yes",
       item.sensitive ? "--sensitive" : "--no-sensitive",
+      ...(projectMeta.projectId ? ["-p", projectMeta.projectId] : []),
     ];
 
     const res = spawnSync("bunx", args, {
-      cwd: WEB_DIR,
+      cwd: linkedProjectDir,
+      env: vercelEnvContext,
       input: item.value,
       encoding: "utf-8",
       stdio: ["pipe", "pipe", "pipe"],
@@ -229,10 +246,17 @@ function main() {
   }
 
   if (options.deploy) {
-    console.log("\nTriggering production deployment via Vercel CLI...");
-    const deployArgs = options.environment === "production" ? ["vercel", "--prod", "--yes"] : ["vercel", "--yes"];
+    console.log("\nTriggering Vercel deployment from monorepo root (Root Directory: apps/web)...");
+    const deployArgs = [
+      "vercel",
+      ...(options.environment === "production" ? ["--prod"] : []),
+      "--yes",
+      ...(projectMeta.projectId ? ["-p", projectMeta.projectId] : []),
+    ];
+    // Deploy from REPO_ROOT so monorepo workspaces & Vercel's apps/web Root Directory resolve cleanly.
     const deployRes = spawnSync("bunx", deployArgs, {
-      cwd: WEB_DIR,
+      cwd: REPO_ROOT,
+      env: vercelEnvContext,
       stdio: "inherit",
     });
     if (deployRes.status !== 0) {
