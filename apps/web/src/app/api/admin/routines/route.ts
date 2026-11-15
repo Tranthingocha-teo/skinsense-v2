@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import {
   type RoutineStep,
   type RoleRoutine,
-  DEFAULT_ROLE_ROUTINES,
+  EMPTY_ROLE_ROUTINES,
 } from "@/lib/role-routines";
 
 export type { RoutineStep, RoleRoutine };
@@ -14,9 +14,9 @@ function getSupabaseAdmin() {
   return createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
 }
 
-// Persistent master store for routines categorized by 4 roles
+// Persistent master store for routines categorized by 4 roles (Strict Multi-tenant, No Mock Data)
 let ROUTINES_STORE: Record<string, RoleRoutine> = JSON.parse(
-  JSON.stringify(DEFAULT_ROLE_ROUTINES)
+  JSON.stringify(EMPTY_ROLE_ROUTINES)
 );
 
 export async function GET(request: Request) {

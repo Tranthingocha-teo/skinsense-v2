@@ -52,4 +52,16 @@ describe("Specialist Portal Stats Interactive Filtering", () => {
     fireEvent.click(closeButton);
     expect(screen.queryByText(/Bệnh án Da liễu:/i)).not.toBeInTheDocument();
   });
+
+  it("displays empty state in prescribe modal when prescribing for a pending case with no routine", () => {
+    render(<SpecialistPage />);
+    const prescribeButtons = screen.getAllByRole("button", { name: /Chọn hồ sơ để xuất/i });
+    expect(prescribeButtons.length).toBeGreaterThan(0);
+
+    fireEvent.click(prescribeButtons[0]);
+    expect(screen.getByText(/Chưa có sản phẩm nào trong phác đồ/i)).toBeInTheDocument();
+
+    const cancelButton = screen.getByRole("button", { name: "Hủy" });
+    fireEvent.click(cancelButton);
+  });
 });
