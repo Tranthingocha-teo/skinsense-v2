@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { requireRoleActor } from "@/lib/session-auth";
+import { authzClaims } from "@/lib/actor-role";
 
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -30,8 +31,10 @@ export async function GET(request: Request) {
     const users = data.users.map((u) => {
       const meta = u.user_metadata || {};
       const isSuperAdmin = u.email?.toLowerCase() === "hattn.23itb@vku.udn.vn";
-      const role = isSuperAdmin ? "admin" : (meta.role || "customer");
-      const status = isSuperAdmin ? "active" : (meta.status || "active");
+      const appMeta = u.app_metadata || {};
+      // app_metadata is the authoritative role; user_metadata is only a fallback label for old accounts.
+      const role = isSuperAdmin ? "admin" : (appMeta.role || meta.role || "customer");
+      const status = isSuperAdmin ? "active" : (appMeta.status || meta.status || "active");
 
       return {
         id: u.id,
@@ -79,17 +82,23 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Email không hợp lệ." }, { status: 400 });
     }
 
+    if (!["customer", "shop", "specialist"].includes(role)) {
+      return NextResponse.json({ error: "Vai trò không hợp lệ." }, { status: 400 });
+    }
+
     const supabaseAdmin = getSupabaseAdmin();
     const normalizedEmail = email.trim().toLowerCase();
+    const initialStatus = role === "specialist" ? "pending" : "active";
 
     const { data, error } = await supabaseAdmin.auth.admin.createUser({
       email: normalizedEmail,
       password,
       email_confirm: true,
+      app_metadata: authzClaims(role, initialStatus),
       user_metadata: {
         full_name: fullName?.trim() || normalizedEmail.split("@")[0],
         role,
-        status: role === "specialist" ? "pending" : "active",
+        status: initialStatus,
         phone_number: phone?.trim() || "",
         shop_name: shopName?.trim() || "",
         specialty: specialty?.trim() || "",
@@ -131,6 +140,15 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "Không tìm thấy người dùng." }, { status: 404 });
     }
 
+    if (role !== undefined && !["customer", "shop", "specialist"].includes(role)) {
+      return NextResponse.json({ error: "Vai trò không hợp lệ." }, { status: 400 });
+    }
+
+    const currentApp = (userRes.user.app_metadata || {}) as Record<string, unknown>;
+    const currentMeta = (userRes.user.user_metadata || {}) as Record<string, unknown>;
+    const nextRole = (role || currentApp.role || currentMeta.role || "customer") as "customer" | "shop" | "specialist";
+    const nextStatus = String(status || currentApp.status || currentMeta.status || "active");
+
     const updatedMetadata = {
       ...userRes.user.user_metadata,
       ...(role ? { role } : {}),
@@ -140,6 +158,7 @@ export async function PATCH(request: Request) {
 
     const { data, error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
       user_metadata: updatedMetadata,
+      ...(role || status ? { app_metadata: authzClaims(nextRole, nextStatus) } : {}),
     });
 
     if (error) {

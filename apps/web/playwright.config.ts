@@ -17,11 +17,13 @@ export default defineConfig({
   use: {
     baseURL: deployed ?? "http://localhost:3000",
     viewport: { width: 390, height: 844 }, // the phone-first layout the artboards were drawn for
-    channel: "chrome",
+    // PW_CHROME_PATH=/usr/bin/chromium for machines without Google Chrome at the default path.
+    channel: process.env.PW_CHROME_PATH ? undefined : "chrome",
     permissions: ["camera"],
     screenshot: "only-on-failure",
     trace: "retain-on-failure",
     launchOptions: {
+      executablePath: process.env.PW_CHROME_PATH || undefined,
       args: [
         "--use-fake-ui-for-media-stream",
         "--use-fake-device-for-media-stream",
