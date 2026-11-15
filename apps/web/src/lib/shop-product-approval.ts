@@ -119,3 +119,50 @@ export function getProductApprovalBadge(status: ProductApprovalStatus | string):
       };
   }
 }
+
+/**
+ * Normalizes and checks if two shop names match (case-insensitive & whitespace trimmed).
+ */
+export function matchesShop(shopA?: string, shopB?: string): boolean {
+  if (!shopA || !shopB) return false;
+  const a = shopA.trim().toLowerCase();
+  const b = shopB.trim().toLowerCase();
+  if (a === b) return true;
+  if (a.includes(b) || b.includes(a)) return true;
+
+  // Check if primary brand keyword matches
+  const brandKeywords = [
+    "la roche-posay",
+    "cerave",
+    "innisfree",
+    "bioderma",
+    "anessa",
+    "ordinary",
+    "sakura",
+  ];
+  for (const kw of brandKeywords) {
+    if (a.includes(kw) && b.includes(kw)) return true;
+  }
+  return false;
+}
+
+/**
+ * Filters a product list to only include real products belonging to the specified shop.
+ * Super Admin can see all products if shopName is omitted or "all".
+ * Individual shops ONLY see products strictly matching their shop identity.
+ */
+export function filterProductsByShop<T extends { shopName?: string }>(
+  products: T[],
+  currentShopName?: string,
+  isSuperAdmin = false
+): T[] {
+  if (!Array.isArray(products)) return [];
+  if (isSuperAdmin && (!currentShopName || currentShopName === "all")) {
+    return products;
+  }
+  if (!currentShopName || !currentShopName.trim()) {
+    return [];
+  }
+  return products.filter((p) => matchesShop(p.shopName, currentShopName));
+}
+

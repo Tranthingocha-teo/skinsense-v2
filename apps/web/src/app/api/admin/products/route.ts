@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { createClient as createAdminClient } from "@supabase/supabase-js";
+import { matchesShop } from "@/lib/shop-product-approval";
 
 export interface ProductItem {
   id: string;
@@ -16,13 +18,52 @@ export interface ProductItem {
   origin?: string;
 }
 
-// In-memory persistent state (shared across requests in dev/prod runtime)
+function getSupabaseAdmin() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !serviceKey) return null;
+  return createAdminClient(url, serviceKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+}
+
+async function loadStorageProducts(): Promise<ProductItem[]> {
+  try {
+    const admin = getSupabaseAdmin();
+    if (!admin) return [];
+    const { data: fileBlob } = await admin.storage
+      .from("photos")
+      .download("products/products_registry.json");
+    if (fileBlob) {
+      const list = JSON.parse(await fileBlob.text());
+      if (Array.isArray(list)) return list;
+    }
+  } catch {}
+  return [];
+}
+
+async function saveStorageProducts(list: ProductItem[]): Promise<void> {
+  try {
+    const admin = getSupabaseAdmin();
+    if (!admin) return;
+    await admin.storage.from("photos").upload(
+      "products/products_registry.json",
+      Buffer.from(JSON.stringify(list, null, 2)),
+      { upsert: true, contentType: "application/json" }
+    );
+  } catch (err) {
+    console.warn("Lỗi lưu products_registry:", err);
+  }
+}
+
+// Initial verified products for core authentic flagship shops
 let PRODUCTS_STORE: ProductItem[] = [
   {
     id: "prod_01",
     name: "Kem dưỡng giảm mụn phục hồi La Roche-Posay Effaclar Duo+M 40ml",
-    shopName: "La Roche-Posay VN Flagship",
-    price: 495000,
+    shopName: "La Roche-Posay Official Store",
+    brand: "La Roche-Posay",
+    price: 395000,
     category: "Trị mụn & Phục hồi",
     status: "approved",
     submittedAt: "2026-11-01",
@@ -32,6 +73,7 @@ let PRODUCTS_STORE: ProductItem[] = [
     id: "prod_02",
     name: "Sữa rửa mặt dưỡng ẩm chuyên sâu CeraVe Hydrating Cleanser 473ml",
     shopName: "CeraVe Skincare Official",
+    brand: "CeraVe",
     price: 380000,
     category: "Làm sạch & Cân bằng pH",
     status: "pending",
@@ -42,6 +84,7 @@ let PRODUCTS_STORE: ProductItem[] = [
     id: "prod_03",
     name: "Mặt nạ đất sét tro núi lửa Innisfree Super Volcanic Pore Clay 100ml",
     shopName: "Innisfree Beauty Hub",
+    brand: "Innisfree",
     price: 290000,
     category: "Mặt nạ hút dầu & Se khít lỗ chân lông",
     status: "pending",
@@ -50,28 +93,52 @@ let PRODUCTS_STORE: ProductItem[] = [
   },
   {
     id: "prod_04",
-    name: "Serum chống oxy hóa phục hồi Vitamin C 15% Pure Active 30ml",
-    shopName: "La Roche-Posay VN Flagship",
-    price: 920000,
-    category: "Chống lão hóa & Sáng da mờ thâm",
+    name: "Serum phục hồi da La Roche-Posay Hyalu B5 30ml",
+    shopName: "La Roche-Posay Official Store",
+    brand: "La Roche-Posay",
+    price: 790000,
+    category: "Chống lão hóa & Cấp ẩm phục hồi",
     status: "approved",
     submittedAt: "2026-10-25",
     stock: 65,
   },
   {
     id: "prod_05",
-    name: "Gel dưỡng ẩm kiểm soát dầu Bioderma Sébium Mat Control 30ml",
+    name: "Nước tẩy trang làm sạch Bioderma Sébium H2O 500ml",
     shopName: "Bioderma Vietnam Official",
-    price: 425000,
-    category: "Kiểm soát dầu & Mờ bóng nhờn",
+    brand: "Bioderma",
+    price: 395000,
+    category: "Tẩy trang & Cân bằng bã nhờn",
     status: "approved",
     submittedAt: "2026-11-05",
     stock: 120,
   },
 ];
 
-export async function GET() {
-  return NextResponse.json({ ok: true, products: PRODUCTS_STORE });
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const targetShop = searchParams.get("shopName")?.trim();
+  const targetStatus = searchParams.get("status")?.trim();
+
+  // Combine storage and in-memory store
+  const storageList = await loadStorageProducts();
+  const mergedMap = new Map<string, ProductItem>();
+  PRODUCTS_STORE.forEach((p) => mergedMap.set(p.id, p));
+  storageList.forEach((sp) => mergedMap.set(sp.id, sp));
+
+  let products = Array.from(mergedMap.values());
+
+  // Filter strictly to the specified shop if requested
+  if (targetShop && targetShop !== "all") {
+    products = products.filter((p) => matchesShop(p.shopName, targetShop));
+  }
+
+  // Filter by approval status if requested
+  if (targetStatus && targetStatus !== "all") {
+    products = products.filter((p) => p.status === targetStatus);
+  }
+
+  return NextResponse.json({ ok: true, products });
 }
 
 export async function POST(request: Request) {
@@ -88,7 +155,7 @@ export async function POST(request: Request) {
       status: "pending",
       submittedAt: new Date().toISOString().split("T")[0],
       stock: Number(stock) || 100,
-      brand: brand?.trim() || "SkinSense Flagship",
+      brand: brand?.trim() || shopName?.trim() || "SkinSense Flagship",
       sku: sku?.trim() || `SKU-${Date.now().toString().slice(-6)}`,
       coverImage: coverImage?.trim() || "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=800&auto=format&fit=crop&q=80",
       description: description?.trim() || "Sản phẩm chính hãng đã qua kiểm định.",
@@ -96,6 +163,12 @@ export async function POST(request: Request) {
     };
 
     PRODUCTS_STORE = [newProd, ...PRODUCTS_STORE];
+
+    // Sync to Supabase Storage
+    const storageList = await loadStorageProducts();
+    const updatedStorage = [newProd, ...storageList.filter((p) => p.id !== newProd.id)];
+    await saveStorageProducts(updatedStorage);
+
     return NextResponse.json({ ok: true, product: newProd });
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : "Thêm sản phẩm thất bại" }, { status: 500 });
@@ -112,8 +185,15 @@ export async function PATCH(request: Request) {
     }
 
     PRODUCTS_STORE = PRODUCTS_STORE.map((p) => (p.id === productId ? { ...p, status } : p));
+
+    // Sync to Supabase Storage
+    const storageList = await loadStorageProducts();
+    const updatedStorage = storageList.map((p) => (p.id === productId ? { ...p, status } : p));
+    await saveStorageProducts(updatedStorage);
+
     return NextResponse.json({ ok: true, message: `Đã cập nhật trạng thái sản phẩm thành ${status}` });
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : "Cập nhật thất bại" }, { status: 500 });
   }
 }
+

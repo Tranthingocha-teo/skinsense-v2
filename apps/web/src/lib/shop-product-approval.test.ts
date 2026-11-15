@@ -4,6 +4,8 @@ import {
   canShopPostProduct,
   isProductVisibleToBuyer,
   getProductApprovalBadge,
+  matchesShop,
+  filterProductsByShop,
 } from "./shop-product-approval";
 
 describe("Shop Approval Enforcement (canShopSignIn & canShopPostProduct)", () => {
@@ -97,5 +99,46 @@ describe("Product Approval Badge Helper (getProductApprovalBadge)", () => {
     const badge = getProductApprovalBadge("rejected");
     expect(badge.label).toBe("Bị từ chối");
     expect(badge.variant).toBe("rejected");
+  });
+});
+
+describe("Shop Isolation & Accurate Product Matching (matchesShop & filterProductsByShop)", () => {
+  const sampleProducts = [
+    { id: "1", name: "La Roche-Posay Duo+", shopName: "La Roche-Posay Official Store" },
+    { id: "2", name: "La Roche-Posay B5", shopName: "La Roche-Posay VN Flagship" },
+    { id: "3", name: "CeraVe Cleanser", shopName: "CeraVe Skincare Official" },
+    { id: "4", name: "Innisfree Clay Mask", shopName: "Innisfree Beauty Hub" },
+    { id: "5", name: "Sakura Acne Cream", shopName: "Dược Mỹ Phẩm Sakura Đà Nẵng" },
+  ];
+
+  it("accurately matches shop names with case and whitespace insensitivity", () => {
+    expect(matchesShop("La Roche-Posay Official Store", "la roche-posay")).toBe(true);
+    expect(matchesShop("CeraVe Skincare Official", "cerave")).toBe(true);
+    expect(matchesShop("Dược Mỹ Phẩm Sakura Đà Nẵng", "Sakura Đà Nẵng")).toBe(true);
+    expect(matchesShop("La Roche-Posay", "Innisfree")).toBe(false);
+  });
+
+  it("filters products strictly to the shop's own real products", () => {
+    const laRocheProducts = filterProductsByShop(sampleProducts, "La Roche-Posay Official Store");
+    expect(laRocheProducts.length).toBe(2);
+    expect(laRocheProducts.every((p) => p.shopName.includes("La Roche-Posay"))).toBe(true);
+
+    const ceraveProducts = filterProductsByShop(sampleProducts, "CeraVe Skincare Official");
+    expect(ceraveProducts.length).toBe(1);
+    expect(ceraveProducts[0].name).toBe("CeraVe Cleanser");
+
+    const sakuraProducts = filterProductsByShop(sampleProducts, "Dược Mỹ Phẩm Sakura Đà Nẵng");
+    expect(sakuraProducts.length).toBe(1);
+    expect(sakuraProducts[0].name).toBe("Sakura Acne Cream");
+  });
+
+  it("returns empty array for newly registered shops without real products instead of showing mock products", () => {
+    const emptyShopProducts = filterProductsByShop(sampleProducts, "New Unregistered Brand XYZ");
+    expect(emptyShopProducts).toEqual([]);
+  });
+
+  it("allows Super Admin to view all products across all shops", () => {
+    const adminProducts = filterProductsByShop(sampleProducts, undefined, true);
+    expect(adminProducts.length).toBe(5);
   });
 });
