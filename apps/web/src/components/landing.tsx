@@ -15,7 +15,6 @@ type Item = { title: string; body: string };
 // Canvas classes (design-2/build.mjs) as token utilities.
 const lbl = "text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground";
 const h2 = "font-display text-4xl leading-[1.18] font-light md:text-[48px] md:leading-[1.15]";
-const ph = "rounded-4xl border border-dashed border-foreground/45 px-2.5 py-1 text-[11px]";
 const btn = "flex h-[52px] items-center justify-center gap-2.5 rounded-lg bg-primary px-6 text-[15px] font-medium text-primary-foreground";
 const btnO = "flex h-[52px] items-center justify-center gap-2.5 rounded-lg border border-foreground/55 px-6 text-[15px]";
 const card = "rounded-xl border border-foreground/10 bg-card";
@@ -65,7 +64,7 @@ export function Landing() {
         <SiteHeader
           drawMark
           nav={
-            <nav className="hidden items-center justify-center gap-7 text-sm font-light md:flex">
+            <nav className="hidden items-center justify-center gap-7 text-sm font-light lg:flex">
               {navLinks.map(([href, label]) => (
                 <a key={href} href={href} className="flex min-h-11 items-center hover:text-muted-foreground">
                   {label}
@@ -74,34 +73,18 @@ export function Landing() {
             </nav>
           }
         >
-          <div className="flex items-center gap-2.5 md:justify-end md:gap-3">
+          <div className="flex items-center gap-2.5 justify-self-end md:gap-3">
             {/* PhoneLanding has no switch: the phone locale comes from Accept-Language (i18n/request.ts). */}
             <span className="hidden md:block">
               <LocaleSwitch />
             </span>
+            {/* Doctor and store applications live in the hero CTA just below, not in the header. */}
             <GoogleOAuthButton
-              label="Đăng nhập Gmail"
+              label={t("navSignIn")}
               className="flex h-10 items-center justify-center gap-2 rounded-lg border border-border bg-card px-3 text-xs font-semibold text-foreground shadow-xs transition hover:border-foreground/40 hover:bg-muted/50 cursor-pointer whitespace-nowrap"
             />
-            <AuthModal
-              defaultTab="doctor-approval"
-              triggerLabel="🩺 Bác sĩ gửi duyệt"
-              triggerClassName="flex h-10 items-center justify-center gap-1.5 rounded-lg border border-emerald-600/40 bg-emerald-500/10 px-3 text-xs font-semibold text-emerald-800 dark:text-emerald-300 transition hover:border-emerald-600 hover:bg-emerald-500/20 cursor-pointer whitespace-nowrap"
-            />
-            <AuthModal
-              defaultTab="shop-approval"
-              triggerLabel="🏪 Đăng ký Gian hàng"
-              triggerClassName="flex h-10 items-center justify-center gap-1.5 rounded-lg border border-amber-600/40 bg-amber-500/10 px-3 text-xs font-semibold text-amber-800 dark:text-amber-300 transition hover:border-amber-600 hover:bg-amber-500/20 cursor-pointer whitespace-nowrap"
-            />
-            <Link
-              href="/products"
-              className="flex h-10 items-center justify-center gap-1.5 rounded-lg border border-[#C2410C]/40 bg-[#C2410C]/10 px-3 text-xs font-bold text-[#C2410C] transition hover:border-[#C2410C] hover:bg-[#C2410C] hover:text-white cursor-pointer whitespace-nowrap"
-            >
-              🛍️ Mua Sắm Mall
-            </Link>
           </div>
         </SiteHeader>
-        <span className={`relative mx-4 mt-2 self-end md:hidden ${ph}`}>Ảnh · placeholder</span>
 
         <div className="relative mt-auto flex flex-col gap-[22px] px-6 pb-9 md:mt-0 md:items-center md:gap-[26px] md:px-24 md:pt-[130px] md:pb-0 md:text-center">
           <h1 className="font-display text-[40px] leading-[1.14] font-light tracking-[0.01em] uppercase text-balance md:max-w-[1080px] md:text-[clamp(36px,5.2vw,74px)]">
@@ -113,7 +96,7 @@ export function Landing() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center justify-center flex-wrap w-full max-w-2xl">
               <GoogleOAuthButton
                 className="flex h-[54px] w-full sm:w-auto items-center justify-center gap-2.5 rounded-xl border border-foreground/30 bg-card/90 px-6 text-[15px] font-semibold text-foreground shadow-md backdrop-blur-xs transition hover:scale-[1.02] hover:border-foreground active:scale-[0.98] cursor-pointer"
-                label={locale === "vi" ? "Đăng nhập bằng Gmail (Google / Supabase)" : "Sign in with Google"}
+                label={t("signInGoogle")}
               />
               <AuthModal
                 defaultTab="doctor-approval"
@@ -129,7 +112,7 @@ export function Landing() {
                 href="/products"
                 className="flex h-[54px] w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[#C2410C] px-6 text-[15px] font-bold text-white shadow-md hover:bg-[#9A3412] transition hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
               >
-                <span>🛍️ Sàn Dược Mỹ Phẩm (Shopee Mall)</span>
+                <span>{locale === "vi" ? "🛍️ Sàn Dược Mỹ Phẩm" : "🛍️ Skincare store"}</span>
               </Link>
             </div>
           </div>
@@ -140,7 +123,6 @@ export function Landing() {
             </a>
           </div>
         </div>
-        <span className={`absolute right-14 bottom-10 hidden md:block ${ph}`}>Ảnh full-bleed · placeholder</span>
       </section>
 
       <ScrollStage />
@@ -282,7 +264,7 @@ export function Landing() {
         <div className="flex flex-col gap-3 self-stretch pt-2 sm:flex-row sm:items-center sm:justify-center md:self-auto md:gap-3.5 md:pt-2.5">
           <GoogleOAuthButton
             className="flex h-[52px] items-center justify-center gap-2.5 rounded-lg border border-foreground/30 bg-card px-6 text-[15px] font-semibold text-foreground shadow-sm transition hover:border-foreground active:scale-[0.98] cursor-pointer"
-            label={locale === "vi" ? "Đăng nhập bằng Gmail (Google / Supabase)" : "Sign in with Google"}
+            label={t("signInGoogle")}
           />
           <AuthModal
             defaultTab="doctor-approval"

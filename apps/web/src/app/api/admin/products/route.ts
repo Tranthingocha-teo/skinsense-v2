@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
+import { getAuthenticatedActor, requireRoleActor } from "@/lib/session-auth";
 import { matchesShop } from "@/lib/shop-product-approval";
+import { downloadStorageJson } from "@/lib/supabase/storage-json";
 
 export interface ProductItem {
   id: string;
@@ -32,13 +34,9 @@ async function loadStorageProducts(): Promise<ProductItem[]> {
   try {
     const admin = getSupabaseAdmin();
     if (!admin) return [];
-    const { data: fileBlob } = await admin.storage
-      .from("photos")
-      .download("products/products_registry.json");
-    if (fileBlob) {
-      const list = JSON.parse(await fileBlob.text());
-      if (Array.isArray(list)) return list;
-    }
+    // Cache-busted read: storage .download() can be stale, and saving a stale list lost products.
+    const list = await downloadStorageJson<ProductItem[]>("products/products_registry.json", admin);
+    if (Array.isArray(list)) return list;
   } catch {}
   return [];
 }
@@ -140,6 +138,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const targetShop = searchParams.get("shopName")?.trim();
   const targetStatus = searchParams.get("status")?.trim();
+  const actor = await getAuthenticatedActor(request);
 
   // Combine storage and in-memory store
   const storageList = await loadStorageProducts();
@@ -148,6 +147,19 @@ export async function GET(request: Request) {
   storageList.forEach((sp) => mergedMap.set(sp.id, sp));
 
   let products = Array.from(mergedMap.values());
+
+  // Enforce draft visibility: unauthenticated / customer visitors only browse approved products;
+  // shop owners also see their own pending/rejected submissions; admin sees everything.
+  if (actor?.role === "admin") {
+    // Full visibility
+  } else if (actor?.role === "shop") {
+    const ownShop = actor.shopName || actor.shopId || "";
+    products = products.filter(
+      (p) => p.status === "approved" || (ownShop && matchesShop(p.shopName, ownShop)),
+    );
+  } else {
+    products = products.filter((p) => p.status === "approved");
+  }
 
   // Filter strictly to the specified shop if requested
   if (targetShop && targetShop !== "all") {
@@ -163,9 +175,18 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const auth = await requireRoleActor(request, ["shop", "admin"]);
+  if (!auth.ok) return auth.response;
+  const { actor } = auth;
+
   try {
     const body = await request.json();
     const { name, shopName, price, category, stock, brand, sku, coverImage, images, description, origin } = body;
+
+    const effectiveShopName =
+      actor.role === "shop" && actor.shopName
+        ? actor.shopName
+        : shopName?.trim() || "Cửa Hàng Đối Tác SkinSense";
 
     const normalizedImages: string[] = Array.isArray(images)
       ? images
@@ -183,13 +204,13 @@ export async function POST(request: Request) {
     const newProd: ProductItem = {
       id: `prod_${Date.now()}`,
       name: name?.trim() || "Sản phẩm dược mỹ phẩm mới",
-      shopName: shopName?.trim() || "Cửa Hàng Đối Tác SkinSense",
+      shopName: effectiveShopName,
       price: Number(price) || 350000,
       category: category?.trim() || "Chăm sóc da chuyên sâu",
       status: "pending",
       submittedAt: new Date().toISOString().split("T")[0],
       stock: Number(stock) || 100,
-      brand: brand?.trim() || shopName?.trim() || "SkinSense Flagship",
+      brand: brand?.trim() || effectiveShopName || "SkinSense Flagship",
       sku: sku?.trim() || `SKU-${Date.now().toString().slice(-6)}`,
       coverImage: resolvedCover,
       images: resolvedImages,
@@ -211,6 +232,9 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
+  const auth = await requireRoleActor(request, ["admin"]);
+  if (!auth.ok) return auth.response;
+
   try {
     const body = await request.json();
     const { productId, status } = body; // "approved" | "rejected" | "pending"

@@ -1,5 +1,21 @@
-import fs from "fs";
+import os from "os";
 import path from "path";
+import { normalizeShopId } from "@/lib/shop-utils";
+import { createPersistentJsonStore } from "@/lib/supabase/storage-json";
+
+export const ORDER_STATUSES = [
+  "pending",
+  "processing",
+  "delivering",
+  "delivered",
+  "cancelled",
+] as const;
+
+export type OrderStatus = (typeof ORDER_STATUSES)[number];
+
+export function isValidOrderStatus(value: unknown): value is OrderStatus {
+  return typeof value === "string" && (ORDER_STATUSES as readonly string[]).includes(value);
+}
 
 export interface OrderReview {
   rating: number; // 1-5 sao
@@ -15,7 +31,7 @@ export interface BackendOrder {
   customerPhone: string;
   shippingAddress: string;
   totalAmount: number;
-  status: "pending" | "processing" | "delivering" | "delivered" | "cancelled";
+  status: OrderStatus;
   paymentMethod: "momo" | "cod" | "vietqr" | "card";
   paymentStatus: "unpaid" | "paid";
   shopName: string;
@@ -32,9 +48,45 @@ export interface BackendOrder {
   review?: OrderReview;
   paidAt?: string;
   createdAt: string;
+  /** The signed-in buyer's auth user id. Orders without it predate the field (see isOrderOwnedByActor). */
+  customerId?: string;
+}
+
+/**
+ * Whether a signed-in actor may see and act on an order. A customer owns the orders bound to their
+ * user id. Matching by recipient name or phone is only for legacy orders without `customerId`:
+ * names are not unique, and checkout used to prefill one fixed recipient for every buyer.
+ */
+export function isOrderOwnedByActor(
+  order: BackendOrder,
+  actor: { role: string; userId: string; fullName: string; phone: string; shopId?: string },
+): boolean {
+  if (actor.role === "admin") return true;
+  if (actor.role === "shop") {
+    return Boolean(actor.shopId) && normalizeShopId(order.shopName) === actor.shopId;
+  }
+  if (actor.role !== "customer") return false;
+  if (order.customerId) return order.customerId === actor.userId;
+
+  const orderName = normalizePersonName(order.customerName);
+  const actorName = normalizePersonName(actor.fullName);
+  if (orderName && actorName && orderName === actorName) return true;
+  const orderPhone = (order.customerPhone || "").replace(/[^0-9]/g, "");
+  return Boolean(orderPhone && actor.phone && orderPhone === actor.phone);
+}
+
+function normalizePersonName(value?: string | null): string {
+  return (value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[đĐ]/g, "d")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 const DB_FILE = path.join(process.cwd(), ".orders-db.json");
+const FALLBACK_DB_FILE = path.join(os.tmpdir(), ".skinsense-orders-db.json");
 const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
 
 export const PRODUCT_IMAGES: Record<string, string> = {
@@ -57,195 +109,360 @@ export function resolveProductImage(name: string, fallback?: string): string {
   return "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=600&auto=format&fit=crop&q=80";
 }
 
-function readFromDisk(): BackendOrder[] {
-  try {
-    if (!fs.existsSync(DB_FILE)) {
-      const initial: BackendOrder[] = [
+function getInitialOrders(): BackendOrder[] {
+  return [
+    {
+      id: "ORD-9821",
+      orderCode: "SHOPEE-SS-982101",
+      customerName: "Trần Thị Ngọc Hà",
+      customerPhone: "0987654321",
+      shippingAddress: "Số 123 Đường Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh",
+      totalAmount: 395000,
+      status: "processing",
+      paymentMethod: "momo",
+      paymentStatus: "paid",
+      shopName: "La Roche-Posay Flagship Store",
+      brand: "La Roche-Posay",
+      carrier: "SPX Express",
+      items: [
         {
-          id: "ORD-9821",
-          orderCode: "SHOPEE-SS-982101",
-          customerName: "Trần Thị Ngọc Hà",
-          customerPhone: "0987654321",
-          shippingAddress: "Số 123 Đường Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh",
-          totalAmount: 395000,
-          status: "processing",
-          paymentMethod: "momo",
-          paymentStatus: "paid",
-          shopName: "La Roche-Posay Flagship Store",
-          brand: "La Roche-Posay",
-          carrier: "SPX Express",
-          items: [
-            {
-              id: "item_sp_01",
-              name: "Kem Dưỡng Giảm Mụn & Ngừa Thâm La Roche-Posay Effaclar Duo+M 40ml",
-              price: 395000,
-              quantity: 1,
-              variant: "Tuýp 40ml",
-              image: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=600&auto=format&fit=crop&q=80",
-            },
-          ],
-          paidAt: new Date().toISOString(),
-          createdAt: new Date().toISOString(),
+          id: "item_sp_01",
+          name: "Kem Dưỡng Giảm Mụn & Ngừa Thâm La Roche-Posay Effaclar Duo+M 40ml",
+          price: 395000,
+          quantity: 1,
+          variant: "Tuýp 40ml",
+          image: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=600&auto=format&fit=crop&q=80",
         },
-      ];
-      fs.writeFileSync(DB_FILE, JSON.stringify(initial, null, 2), "utf-8");
-      return initial;
-    }
-    const content = fs.readFileSync(DB_FILE, "utf-8");
-    const list = JSON.parse(content) as BackendOrder[];
-
-    // QUY TẮC TỰ ĐỘNG HỦY: Nếu đơn hàng chưa thanh toán sau 3 ngày thì tự động hủy luôn
-    let hasExpired = false;
-    let needUpdate = false;
-    const now = Date.now();
-    for (const order of list) {
-      if ((order.status === "pending" || order.paymentStatus === "unpaid") && order.status !== "cancelled") {
-        const createdMs = new Date(order.createdAt).getTime();
-        if (!isNaN(createdMs) && now - createdMs > THREE_DAYS_MS) {
-          order.status = "cancelled";
-          hasExpired = true;
-        }
-      }
-
-      // Đảm bảo mọi item đều có link ảnh sắc nét
-      if (Array.isArray(order.items)) {
-        for (const it of order.items) {
-          if (!it.image) {
-            it.image = resolveProductImage(it.name);
-            needUpdate = true;
-          }
-        }
-      }
-    }
-
-    if (hasExpired || needUpdate) {
-      writeToDisk(list);
-    }
-
-    return list;
-  } catch {
-    return [];
-  }
+      ],
+      paidAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+    },
+  ];
 }
 
-function writeToDisk(orders: BackendOrder[]) {
-  try {
-    fs.writeFileSync(DB_FILE, JSON.stringify(orders, null, 2), "utf-8");
-  } catch {}
+function normalizeOrders(list: BackendOrder[]): { value: BackendOrder[]; changed: boolean } {
+  if (!Array.isArray(list)) {
+    return { value: [], changed: false };
+  }
+
+  // QUY TẮC TỰ ĐỘNG HỦY: Nếu đơn hàng chưa thanh toán sau 3 ngày thì tự động hủy luôn
+  let changed = false;
+  const now = Date.now();
+  for (const order of list) {
+    if ((order.status === "pending" || order.paymentStatus === "unpaid") && order.status !== "cancelled") {
+      const createdMs = new Date(order.createdAt).getTime();
+      if (!isNaN(createdMs) && now - createdMs > THREE_DAYS_MS) {
+        order.status = "cancelled";
+        changed = true;
+      }
+    }
+
+    if (Array.isArray(order.items)) {
+      for (const it of order.items) {
+        if (!it.image) {
+          it.image = resolveProductImage(it.name);
+          changed = true;
+        }
+      }
+    }
+  }
+
+  return { value: list, changed };
+}
+
+const persistence = createPersistentJsonStore<BackendOrder[]>({
+  storagePath: "orders/orders_registry.json",
+  primaryFile: DB_FILE,
+  fallbackFile: FALLBACK_DB_FILE,
+  overrideEnvVar: "SKINSENSE_ORDERS_DB_PATH",
+  getInitial: getInitialOrders,
+  normalize: normalizeOrders,
+});
+
+function findOrderInList(list: BackendOrder[], codeOrId: string): BackendOrder | undefined {
+  const clean = codeOrId.trim().toLowerCase();
+  return list.find(
+    (o) => o.orderCode.toLowerCase() === clean || o.id.toLowerCase() === clean,
+  );
+}
+
+function applyCreate(
+  list: BackendOrder[],
+  order: Omit<BackendOrder, "id" | "createdAt">,
+): { nextList: BackendOrder[]; order: BackendOrder } {
+  const newOrder: BackendOrder = {
+    ...order,
+    id: `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
+    createdAt: new Date().toISOString(),
+  };
+  const nextList = [
+    newOrder,
+    ...list.filter((o) => o.orderCode.toLowerCase() !== order.orderCode.toLowerCase()),
+  ];
+  return { nextList, order: newOrder };
+}
+
+export type MarkAsPaidResult =
+  | { ok: true; order: BackendOrder; mutated: boolean; nextList: BackendOrder[] }
+  | { ok: false; code: "NOT_FOUND" | "CANCELLED"; error: string };
+
+/**
+ * Pays exactly the order with this code. The pay endpoints are unauthenticated (the phone that
+ * scans the QR is not signed in), so this must never guess: "latest" or an empty code used to pay
+ * whichever customer's order was pending first, and an unknown code created a fake paid order.
+ */
+export function applyMarkAsPaid(list: BackendOrder[], code: string): MarkAsPaidResult {
+  const clean = code.trim().toLowerCase();
+  const index = clean
+    ? list.findIndex((o) => o.orderCode.toLowerCase() === clean || o.id.toLowerCase() === clean)
+    : -1;
+  if (index === -1) {
+    return { ok: false, code: "NOT_FOUND", error: "Không tìm thấy đơn hàng" };
+  }
+
+  const order = list[index];
+  if (order.status === "cancelled") {
+    return { ok: false, code: "CANCELLED", error: "Đơn hàng đã bị hủy, không thể thanh toán." };
+  }
+  if (order.paymentStatus === "paid") {
+    return { ok: true, order, mutated: false, nextList: list };
+  }
+
+  order.paymentStatus = "paid";
+  if (order.status === "pending") order.status = "processing";
+  order.paidAt = new Date().toISOString();
+  return { ok: true, order, mutated: true, nextList: list };
+}
+
+type UpdateStatusResult =
+  | { ok: true; order: BackendOrder; mutated: boolean; nextList: BackendOrder[] }
+  | {
+      ok: false;
+      code: "INVALID_STATUS" | "NOT_FOUND" | "INVALID_TRANSITION" | "PAYMENT_REQUIRED";
+      error: string;
+    };
+
+function applyUpdateStatusSafe(
+  list: BackendOrder[],
+  codeOrId: string,
+  status: unknown,
+): UpdateStatusResult {
+  if (!isValidOrderStatus(status)) {
+    return {
+      ok: false,
+      code: "INVALID_STATUS",
+      error: "Trạng thái đơn hàng không hợp lệ.",
+    };
+  }
+
+  const clean = codeOrId.trim().toLowerCase();
+  const index = list.findIndex(
+    (o) => o.orderCode.toLowerCase() === clean || o.id.toLowerCase() === clean,
+  );
+  if (index === -1) {
+    return { ok: false, code: "NOT_FOUND", error: "Không tìm thấy đơn hàng" };
+  }
+
+  const current = list[index];
+  if (current.status === status) {
+    return { ok: true, order: current, mutated: false, nextList: list };
+  }
+
+  const allowedTransitions: Record<OrderStatus, readonly OrderStatus[]> = {
+    pending: ["processing", "cancelled"],
+    processing: ["delivering", "cancelled"],
+    delivering: ["delivered"],
+    delivered: [],
+    cancelled: [],
+  };
+
+  if (!allowedTransitions[current.status].includes(status)) {
+    return {
+      ok: false,
+      code: "INVALID_TRANSITION",
+      error: `Không thể chuyển đơn hàng từ trạng thái "${current.status}" sang "${status}".`,
+    };
+  }
+
+  // Chặn bỏ qua thanh toán: đơn chưa thanh toán không COD không thể duyệt xử lý hoặc hoàn thành
+  if (
+    status !== "cancelled" &&
+    current.paymentStatus === "unpaid" &&
+    current.paymentMethod !== "cod"
+  ) {
+    return {
+      ok: false,
+      code: "PAYMENT_REQUIRED",
+      error: "Đơn hàng chưa thanh toán không thể duyệt xử lý hoặc xác nhận giao hàng.",
+    };
+  }
+
+  current.status = status;
+  if (status === "delivered" && current.paymentMethod === "cod" && current.paymentStatus === "unpaid") {
+    current.paymentStatus = "paid";
+    if (!current.paidAt) current.paidAt = new Date().toISOString();
+  }
+
+  return { ok: true, order: current, mutated: true, nextList: list };
+}
+
+type AddReviewResult =
+  | { ok: true; order: BackendOrder; nextList: BackendOrder[] }
+  | { ok: false; code: "NOT_FOUND" | "NOT_DELIVERED"; error: string };
+
+function applyAddReviewSafe(
+  list: BackendOrder[],
+  codeOrId: string,
+  review: OrderReview,
+): AddReviewResult {
+  const clean = codeOrId.trim().toLowerCase();
+  const index = list.findIndex(
+    (o) => o.orderCode.toLowerCase() === clean || o.id.toLowerCase() === clean,
+  );
+  if (index === -1) {
+    return { ok: false, code: "NOT_FOUND", error: "Không tìm thấy đơn hàng" };
+  }
+  if (list[index].status !== "delivered") {
+    return {
+      ok: false,
+      code: "NOT_DELIVERED",
+      error: "Chỉ có thể đánh giá đơn hàng đã giao thành công.",
+    };
+  }
+  list[index].review = review;
+  return { ok: true, order: list[index], nextList: list };
 }
 
 export const ordersStore = {
   getAll(): BackendOrder[] {
-    return readFromDisk();
+    return persistence.readSync();
+  },
+
+  async getAllAsync(): Promise<BackendOrder[]> {
+    return persistence.readAsync();
   },
 
   findByCode(code: string): BackendOrder | undefined {
-    const list = readFromDisk();
-    const clean = code.trim().toLowerCase();
-    return list.find(
-      (o) => o.orderCode.toLowerCase() === clean || o.id.toLowerCase() === clean,
-    );
+    return findOrderInList(persistence.readSync(), code);
+  },
+
+  async findByCodeAsync(code: string): Promise<BackendOrder | undefined> {
+    const list = await persistence.readAsync();
+    return findOrderInList(list, code);
   },
 
   create(order: Omit<BackendOrder, "id" | "createdAt">): BackendOrder {
-    const list = readFromDisk();
-    const newOrder: BackendOrder = {
-      ...order,
-      id: `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
-      createdAt: new Date().toISOString(),
-    };
-    const updated = [newOrder, ...list.filter((o) => o.orderCode.toLowerCase() !== order.orderCode.toLowerCase())];
-    writeToDisk(updated);
+    const { nextList, order: newOrder } = applyCreate(persistence.readSync(), order);
+    persistence.writeSync(nextList);
     return newOrder;
   },
 
-  markAsPaid(code: string): BackendOrder {
-    const list = readFromDisk();
-    const clean = code.trim().toLowerCase();
+  async createAsync(order: Omit<BackendOrder, "id" | "createdAt">): Promise<BackendOrder> {
+    return persistence.withLock(async () => {
+      const list = await persistence.readAsync();
+      const { nextList, order: newOrder } = applyCreate(list, order);
+      await persistence.writeAsync(nextList);
+      return newOrder;
+    });
+  },
 
-    // Hỗ trợ tự động thanh toán đơn mới nhất nếu mã là latest hoặc rỗng
-    if (clean === "latest" || !clean) {
-      const pendingIndex = list.findIndex(
-        (o) => o.status === "pending" || o.paymentStatus === "unpaid",
-      );
-      if (pendingIndex !== -1) {
-        list[pendingIndex].paymentStatus = "paid";
-        list[pendingIndex].status = "processing";
-        list[pendingIndex].paidAt = new Date().toISOString();
-        writeToDisk(list);
-        return list[pendingIndex];
+  /** Creates the order unless its code is taken; the check and the write share the store lock. */
+  async createIfAbsentAsync(order: Omit<BackendOrder, "id" | "createdAt">): Promise<BackendOrder | null> {
+    return persistence.withLock(async () => {
+      const list = await persistence.readAsync();
+      if (findOrderInList(list, order.orderCode)) return null;
+      const { nextList, order: newOrder } = applyCreate(list, order);
+      await persistence.writeAsync(nextList);
+      return newOrder;
+    });
+  },
+
+  async markAsPaidAsync(
+    code: string,
+  ): Promise<{ ok: true; order: BackendOrder } | { ok: false; code: "NOT_FOUND" | "CANCELLED"; error: string }> {
+    return persistence.withLock(async () => {
+      const list = await persistence.readAsync();
+      const res = applyMarkAsPaid(list, code);
+      if (!res.ok) return res;
+      if (res.mutated) await persistence.writeAsync(res.nextList);
+      return { ok: true as const, order: res.order };
+    });
+  },
+
+  updateStatusSafe(
+    codeOrId: string,
+    status: unknown,
+  ):
+    | { ok: true; order: BackendOrder }
+    | {
+        ok: false;
+        code: "INVALID_STATUS" | "NOT_FOUND" | "INVALID_TRANSITION" | "PAYMENT_REQUIRED";
+        error: string;
+      } {
+    const res = applyUpdateStatusSafe(persistence.readSync(), codeOrId, status);
+    if (!res.ok) return res;
+    if (res.mutated) persistence.writeSync(res.nextList);
+    return { ok: true, order: res.order };
+  },
+
+  async updateStatusSafeAsync(
+    codeOrId: string,
+    status: unknown,
+  ): Promise<
+    | { ok: true; order: BackendOrder }
+    | {
+        ok: false;
+        code: "INVALID_STATUS" | "NOT_FOUND" | "INVALID_TRANSITION" | "PAYMENT_REQUIRED";
+        error: string;
       }
-      if (list.length > 0) {
-        list[0].paymentStatus = "paid";
-        list[0].status = "processing";
-        list[0].paidAt = new Date().toISOString();
-        writeToDisk(list);
-        return list[0];
-      }
-    }
-
-    const index = list.findIndex(
-      (o) => o.orderCode.toLowerCase() === clean || o.id.toLowerCase() === clean,
-    );
-
-    if (index === -1) {
-      // Tự động tạo đơn hàng đã thanh toán nếu mã chưa có trong file
-      const autoCreated: BackendOrder = {
-        id: `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
-        orderCode: code,
-        customerName: "Khách hàng MoMo",
-        customerPhone: "0901234567",
-        shippingAddress: "Địa chỉ giao hàng mặc định",
-        totalAmount: 395000,
-        status: "processing",
-        paymentMethod: "momo",
-        paymentStatus: "paid",
-        shopName: "Shopee Mall Flagship",
-        brand: "Dược Mỹ Phẩm",
-        carrier: "SPX Express",
-        items: [],
-        paidAt: new Date().toISOString(),
-        createdAt: new Date().toISOString(),
-      };
-      writeToDisk([autoCreated, ...list]);
-      return autoCreated;
-    }
-
-    list[index].paymentStatus = "paid";
-    list[index].status = "processing";
-    list[index].paidAt = new Date().toISOString();
-    writeToDisk(list);
-    return list[index];
+  > {
+    return persistence.withLock(async () => {
+      const list = await persistence.readAsync();
+      const res = applyUpdateStatusSafe(list, codeOrId, status);
+      if (!res.ok) return res;
+      if (res.mutated) await persistence.writeAsync(res.nextList);
+      return { ok: true, order: res.order };
+    });
   },
 
   updateStatus(
     codeOrId: string,
-    status: "pending" | "processing" | "delivering" | "delivered" | "cancelled",
+    status: OrderStatus,
   ): BackendOrder | undefined {
-    const list = readFromDisk();
-    const clean = codeOrId.trim().toLowerCase();
-    const index = list.findIndex(
-      (o) => o.orderCode.toLowerCase() === clean || o.id.toLowerCase() === clean,
-    );
-    if (index === -1) return undefined;
-    list[index].status = status;
-    if (status === "delivered" && list[index].paymentStatus === "unpaid") {
-      list[index].paymentStatus = "paid";
-      if (!list[index].paidAt) list[index].paidAt = new Date().toISOString();
-    }
-    writeToDisk(list);
-    return list[index];
+    const result = this.updateStatusSafe(codeOrId, status);
+    return result.ok ? result.order : undefined;
+  },
+
+  addReviewSafe(
+    codeOrId: string,
+    review: OrderReview,
+  ):
+    | { ok: true; order: BackendOrder }
+    | { ok: false; code: "NOT_FOUND" | "NOT_DELIVERED"; error: string } {
+    const res = applyAddReviewSafe(persistence.readSync(), codeOrId, review);
+    if (!res.ok) return res;
+    persistence.writeSync(res.nextList);
+    return { ok: true, order: res.order };
+  },
+
+  async addReviewSafeAsync(
+    codeOrId: string,
+    review: OrderReview,
+  ): Promise<
+    | { ok: true; order: BackendOrder }
+    | { ok: false; code: "NOT_FOUND" | "NOT_DELIVERED"; error: string }
+  > {
+    return persistence.withLock(async () => {
+      const list = await persistence.readAsync();
+      const res = applyAddReviewSafe(list, codeOrId, review);
+      if (!res.ok) return res;
+      await persistence.writeAsync(res.nextList);
+      return { ok: true, order: res.order };
+    });
   },
 
   addReview(codeOrId: string, review: OrderReview): BackendOrder | undefined {
-    const list = readFromDisk();
-    const clean = codeOrId.trim().toLowerCase();
-    const index = list.findIndex(
-      (o) => o.orderCode.toLowerCase() === clean || o.id.toLowerCase() === clean,
-    );
-    if (index === -1) return undefined;
-    list[index].review = review;
-    writeToDisk(list);
-    return list[index];
+    const result = this.addReviewSafe(codeOrId, review);
+    return result.ok ? result.order : undefined;
   },
 };

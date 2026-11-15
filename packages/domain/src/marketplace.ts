@@ -8,6 +8,7 @@ export interface Shop {
   shopName: string;
   ownerName: string;
   phone: string;
+  email?: string;
   address: string;
   status: ShopStatus;
   rating: number;
@@ -32,15 +33,19 @@ export interface ShopListing {
 }
 
 export type PaymentMethod = "cod" | "vietqr";
-export type OrderStatus =
-  | "pending"
-  | "confirmed"
-  | "processing"
-  | "shipping"
-  | "delivered"
-  | "completed"
-  | "cancelled"
-  | "refunded";
+// Single source for the seller_orders.status check constraint (schema.ts) and the transition table below.
+export const ORDER_STATUSES = [
+  "pending",
+  "confirmed",
+  "processing",
+  "shipping",
+  "delivered",
+  "completed",
+  "cancelled",
+  "refunded",
+] as const;
+
+export type OrderStatus = (typeof ORDER_STATUSES)[number];
 
 export interface OrderTrackingEvent {
   time: string;
@@ -360,3 +365,210 @@ export function generateVietQrUrl(params: {
     params.memo
   )}&accountName=SKINSENSE%20VIETNAM`;
 }
+
+// -------------------------------------------------------------
+// Validation & State Machine Domain Rules (Modules 1 - 6)
+// -------------------------------------------------------------
+
+export interface SellerRegistrationInput {
+  shopName: string;
+  ownerName: string;
+  phone: string;
+  email: string;
+  address: string;
+  category: string;
+  description?: string;
+  avatarUrl?: string;
+}
+
+export function validateSellerRegistration(input: SellerRegistrationInput): { valid: boolean; errors: Record<string, string> } {
+  const errors: Record<string, string> = {};
+
+  if (!input.shopName || input.shopName.trim().length < 2) {
+    errors.shopName = "Tên gian hàng phải có ít nhất 2 ký tự.";
+  } else if (input.shopName.trim().length > 100) {
+    errors.shopName = "Tên gian hàng không vượt quá 100 ký tự.";
+  }
+
+  if (!input.ownerName || input.ownerName.trim().length < 2) {
+    errors.ownerName = "Tên người đại diện không được để trống.";
+  }
+
+  const phoneClean = input.phone ? input.phone.trim() : "";
+  if (!phoneClean || !/^(0|\+84)[0-9]{9,10}$/.test(phoneClean)) {
+    errors.phone = "Số điện thoại liên hệ không hợp lệ (ví dụ: 0912345678).";
+  }
+
+  const emailClean = input.email ? input.email.trim() : "";
+  if (!emailClean || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailClean)) {
+    errors.email = "Địa chỉ email không hợp lệ.";
+  }
+
+  if (!input.address || input.address.trim().length < 5) {
+    errors.address = "Địa chỉ kinh doanh phải đầy đủ (tối thiểu 5 ký tự).";
+  }
+
+  if (!input.category || !input.category.trim()) {
+    errors.category = "Vui lòng chọn ngành hàng kinh doanh.";
+  }
+
+  return { valid: Object.keys(errors).length === 0, errors };
+}
+
+export interface ShopProfileUpdateInput {
+  shopName: string;
+  phone: string;
+  email: string;
+  address: string;
+  category: string;
+  description?: string;
+  avatarUrl?: string;
+  bannerUrl?: string;
+  operatingStatus?: "open" | "temporarily_closed";
+}
+
+export function validateShopProfileUpdate(input: ShopProfileUpdateInput): { valid: boolean; errors: Record<string, string> } {
+  const errors: Record<string, string> = {};
+
+  if (!input.shopName || input.shopName.trim().length < 2) {
+    errors.shopName = "Tên gian hàng phải có ít nhất 2 ký tự.";
+  }
+  if (!input.phone || !/^(0|\+84)[0-9]{9,10}$/.test(input.phone.trim())) {
+    errors.phone = "Số điện thoại không hợp lệ.";
+  }
+  if (!input.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.email.trim())) {
+    errors.email = "Email không hợp lệ.";
+  }
+  if (!input.address || input.address.trim().length < 5) {
+    errors.address = "Địa chỉ kinh doanh không đủ chi tiết.";
+  }
+
+  return { valid: Object.keys(errors).length === 0, errors };
+}
+
+export interface ProductInput {
+  name: string;
+  brand: string;
+  category: string;
+  priceVnd: number;
+  originalPriceVnd?: number;
+  stock: number;
+  summary?: string;
+  description?: string;
+  ingredients?: string;
+  skinTypeCompatibility?: string[];
+  howToUse?: string;
+  caution?: string;
+  origin?: string;
+  images?: string[];
+}
+
+function isNonNegativeInteger(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
+}
+
+export function validateProductInput(input: ProductInput): { valid: boolean; errors: Record<string, string> } {
+  const errors: Record<string, string> = {};
+
+  if (!input.name || input.name.trim().length < 3) {
+    errors.name = "Tên sản phẩm phải từ 3 ký tự trở lên.";
+  }
+  if (!input.brand || !input.brand.trim()) {
+    errors.brand = "Vui lòng nhập tên thương hiệu sản phẩm.";
+  }
+  if (!input.category || !input.category.trim()) {
+    errors.category = "Vui lòng chọn danh mục sản phẩm.";
+  }
+  if (!isNonNegativeInteger(input.priceVnd)) {
+    errors.priceVnd = "Giá bán phải là số nguyên lớn hơn hoặc bằng 0.";
+  }
+  if (input.originalPriceVnd !== undefined) {
+    if (!isNonNegativeInteger(input.originalPriceVnd)) {
+      errors.originalPriceVnd = "Giá gốc phải là số nguyên lớn hơn hoặc bằng 0.";
+    } else if (input.originalPriceVnd < input.priceVnd) {
+      errors.originalPriceVnd = "Giá gốc không được nhỏ hơn giá niêm yết.";
+    }
+  }
+  if (!isNonNegativeInteger(input.stock)) {
+    errors.stock = "Số lượng tồn kho phải là số nguyên không âm.";
+  }
+
+  return { valid: Object.keys(errors).length === 0, errors };
+}
+
+export function validateOrderStatusTransition(
+  currentStatus: OrderStatus,
+  nextStatus: OrderStatus
+): { allowed: boolean; reason?: string } {
+  if (currentStatus === nextStatus) return { allowed: true };
+
+  const validTransitions: Record<OrderStatus, OrderStatus[]> = {
+    pending: ["confirmed", "processing", "cancelled"],
+    confirmed: ["processing", "cancelled"],
+    processing: ["shipping", "cancelled"],
+    shipping: ["delivered", "completed", "refunded"],
+    delivered: ["completed", "refunded"],
+    completed: ["refunded"],
+    cancelled: [],
+    refunded: [],
+  };
+
+  const allowed = validTransitions[currentStatus]?.includes(nextStatus) ?? false;
+  if (!allowed) {
+    return {
+      allowed: false,
+      reason: `Không thể chuyển trạng thái đơn hàng từ '${currentStatus}' sang '${nextStatus}'.`,
+    };
+  }
+  return { allowed: true };
+}
+
+export type DateRangePreset = "today" | "yesterday" | "last7days" | "last30days" | "thisMonth" | "custom";
+
+export function filterOrdersByDateRange(orders: Order[], range: DateRangePreset, customStart?: Date, customEnd?: Date): Order[] {
+  const now = new Date();
+
+  return orders.filter((order) => {
+    const created = new Date(order.createdAt);
+    if (isNaN(created.getTime())) return false;
+
+    if (range === "today") {
+      return (
+        created.getDate() === now.getDate() &&
+        created.getMonth() === now.getMonth() &&
+        created.getFullYear() === now.getFullYear()
+      );
+    }
+
+    if (range === "yesterday") {
+      const yest = new Date(now);
+      yest.setDate(now.getDate() - 1);
+      return (
+        created.getDate() === yest.getDate() &&
+        created.getMonth() === yest.getMonth() &&
+        created.getFullYear() === yest.getFullYear()
+      );
+    }
+
+    if (range === "last7days") {
+      const cutoff = new Date(now.getTime() - 7 * 24 * 3600 * 1000);
+      return created >= cutoff && created <= now;
+    }
+
+    if (range === "last30days") {
+      const cutoff = new Date(now.getTime() - 30 * 24 * 3600 * 1000);
+      return created >= cutoff && created <= now;
+    }
+
+    if (range === "thisMonth") {
+      return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear();
+    }
+
+    if (range === "custom" && customStart && customEnd) {
+      return created >= customStart && created <= customEnd;
+    }
+
+    return true;
+  });
+}
+

@@ -35,14 +35,68 @@ import {
   MessageSquare,
   Send,
   ThumbsUp,
-  Smile,
-  RotateCcw,
-  ChevronRight,
-  Check,
 } from "lucide-react";
 import { toast } from "sonner";
+import { normalizeShopId } from "@/lib/shop-utils";
+import { pingChatSync, useChatSync, useStickToBottom } from "@/hooks/use-chat-sync";
 
 export type RoleType = "customer" | "specialist" | "shop" | "admin";
+
+export interface ChatMessageItem {
+  id: string;
+  sender: "shop" | "user";
+  senderName?: string;
+  text: string;
+  time: string;
+  createdAt?: string;
+}
+
+export interface ChatThreadItem {
+  id: string;
+  shopId: string;
+  shopName: string;
+  userId: string;
+  userName: string;
+  orderCode?: string;
+  messages: ChatMessageItem[];
+  updatedAt?: string;
+}
+
+const CHAT_POLL_INTERVAL_MS = 2000;
+
+/** Server messages win; local optimistic temp_* messages not yet acknowledged are kept at the end. */
+function mergeServerMessages(
+  prev: ChatMessageItem[],
+  server: ChatMessageItem[],
+): ChatMessageItem[] {
+  const pending = prev.filter((m) => m.id.startsWith("temp_"));
+  const next = pending.length > 0 ? [...server, ...pending] : server;
+  const sameAsPrev =
+    next.length === prev.length &&
+    next.every((m, i) => m.id === prev[i].id && m.text === prev[i].text);
+  return sameAsPrev ? prev : next;
+}
+
+/** Cheap change signature for the shop inbox: thread ids + last message id + updatedAt. */
+function shopThreadsSignature(threads: ChatThreadItem[]): string {
+  return threads
+    .map((t) => {
+      const last = t.messages?.[t.messages.length - 1];
+      return `${t.id}:${t.updatedAt ?? ""}:${last?.id ?? ""}:${t.messages?.length ?? 0}`;
+    })
+    .join("|");
+}
+
+function createLocalMessageId(prefix: string): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return `${prefix}_${crypto.randomUUID()}`;
+  }
+  return `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function formatCurrentTimeHHMM(): string {
+  return new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Ho_Chi_Minh" });
+}
 
 interface RoleConfig {
   role: RoleType;
@@ -148,7 +202,7 @@ function formatMoney(amount: number) {
 function formatDate(iso: string) {
   try {
     const d = new Date(iso);
-    return `${d.toLocaleDateString("vi-VN")} ${d.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}`;
+    return `${d.toLocaleDateString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" })} ${d.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Ho_Chi_Minh" })}`;
   } catch {
     return iso;
   }
@@ -265,12 +319,13 @@ export function RoleProfileView({ role }: { role: RoleType }) {
   const [orders, setOrders] = useState<UserOrder[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [orderFilter, setOrderFilter] = useState<string>("all");
+  const [nowMs, setNowMs] = useState<number>(0);
 
   // Load Profile từ API
   async function loadData() {
     try {
       setLoading(true);
-      const res = await fetch(`/api/profile?role=${role}&_t=${Date.now()}`);
+      const res = await fetch(`/api/profile?role=${role}`, { cache: "no-store" });
       const data = await res.json();
       if (data.ok && data.user) {
         const u = data.user;
@@ -299,9 +354,12 @@ export function RoleProfileView({ role }: { role: RoleType }) {
 
         // Nếu là Customer hoặc Shop thì tải luôn danh sách đơn hàng cho đúng user này
         if (role === "customer" || role === "shop") {
-          loadUserOrders(u.fullName || "Thùy Dung", u.phone || "0987654321");
+          loadUserOrders(
+            role === "shop" ? u.shop?.shopName || u.fullName || "" : u.fullName || "",
+            u.phone || "",
+          );
           if (role === "shop") {
-            loadShopThreads();
+            void loadShopThreads();
           }
         }
       }
@@ -312,11 +370,15 @@ export function RoleProfileView({ role }: { role: RoleType }) {
     }
   }
 
-  // Tải danh sách đơn hàng dành riêng cho user này
-  async function loadUserOrders(name: string, userPhone: string) {
+  // Tải danh sách đơn hàng dành riêng cho user hoặc gian hàng này
+  async function loadUserOrders(targetName: string, userPhone: string) {
     try {
       setOrdersLoading(true);
-      const res = await fetch(`/api/user/orders?name=${encodeURIComponent(name)}&phone=${encodeURIComponent(userPhone)}&_t=${Date.now()}`);
+      const query =
+        role === "shop"
+          ? `role=shop&shopName=${encodeURIComponent(targetName)}`
+          : `role=customer&name=${encodeURIComponent(targetName)}&phone=${encodeURIComponent(userPhone)}`;
+      const res = await fetch(`/api/user/orders?${query}`, { cache: "no-store" });
       const json = await res.json();
       if (json.ok && Array.isArray(json.orders)) {
         setOrders(json.orders);
@@ -344,155 +406,81 @@ export function RoleProfileView({ role }: { role: RoleType }) {
   const [chatOrder, setChatOrder] = useState<UserOrder | null>(null);
   const [activeChatShopId, setActiveChatShopId] = useState<string>("skinsense_mall");
   const [activeChatShopName, setActiveChatShopName] = useState<string>("Gian Hàng Mall");
-  const [chatMessages, setChatMessages] = useState<
-    Array<{ id: string; sender: "shop" | "user"; text: string; time: string }>
-  >([]);
+  const [chatMessages, setChatMessages] = useState<ChatMessageItem[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [isShopTyping, setIsShopTyping] = useState(false);
+  const [chatAuthRequired, setChatAuthRequired] = useState(false);
 
   // Shop Owner Messages Management State (Dành cho Role Shop)
-  const [shopThreads, setShopThreads] = useState<any[]>([]);
+  const [shopThreads, setShopThreads] = useState<ChatThreadItem[]>([]);
   const [selectedThreadId, setSelectedThreadId] = useState<string>("");
   const [shopReplyInput, setShopReplyInput] = useState<string>("");
   const [shopReplySending, setShopReplySending] = useState(false);
+  const [shopChatAuthRequired, setShopChatAuthRequired] = useState(false);
+
+  // Mỗi lần gửi/tải lại tăng version: kết quả poll bắt đầu trước đó bị bỏ qua (tránh ghi đè dữ liệu mới)
+  const shopSyncVersionRef = useRef(0);
+  const shopReplyInFlightRef = useRef(false);
+
+  // Shop chỉ đọc hộp thư của chính gian hàng mình: server suy ra shop từ phiên đăng nhập
+  async function fetchShopThreads(signal?: AbortSignal): Promise<ChatThreadItem[] | null> {
+    const res = await fetch("/api/chat?forShop=true", { cache: "no-store", signal });
+    if (res.status === 401 || res.status === 403) {
+      if (!signal?.aborted) {
+        setShopChatAuthRequired(true);
+        setShopThreads([]);
+      }
+      return null;
+    }
+    const data = await res.json();
+    if (signal?.aborted) return null;
+    setShopChatAuthRequired(false);
+    return data.ok && Array.isArray(data.threads) ? (data.threads as ChatThreadItem[]) : null;
+  }
+
+  function applyShopThreads(threads: ChatThreadItem[]) {
+    setShopThreads((prev) =>
+      shopThreadsSignature(prev) === shopThreadsSignature(threads) ? prev : threads,
+    );
+    setSelectedThreadId((prev) =>
+      prev && threads.some((t) => t.id === prev) ? prev : threads[0]?.id ?? "",
+    );
+  }
 
   // Tải các cuộc hội thoại dành cho Shop
   async function loadShopThreads() {
+    const version = ++shopSyncVersionRef.current;
     try {
-      const res = await fetch(`/api/chat?forShop=true&_t=${Date.now()}`);
-      const data = await res.json();
-      if (data.ok && Array.isArray(data.threads)) {
-        setShopThreads(data.threads);
-        if (data.threads.length > 0) {
-          setSelectedThreadId((prev) => prev || data.threads[0].id);
-        }
-      }
+      const threads = await fetchShopThreads();
+      if (threads && version === shopSyncVersionRef.current) applyShopThreads(threads);
     } catch {}
   }
 
-  // Cross-tab & Realtime sync trigger
-  function triggerChatRealtimeSync(data?: { shopId?: string; userId?: string }) {
-    try {
-      if (typeof window !== "undefined") {
-        const payload = { ...data, timestamp: Date.now() };
-        if ("BroadcastChannel" in window) {
-          const bc = new BroadcastChannel("skinsense_realtime_chat");
-          bc.postMessage(payload);
-          bc.close();
-        }
-        localStorage.setItem("skinsense_realtime_chat_ping", JSON.stringify(payload));
-      }
-    } catch {}
-  }
+  // Realtime Live Chat cho Chủ Shop: poll + đồng bộ chéo tab, không cần F5
+  useChatSync<{ version: number; threads: ChatThreadItem[] }>({
+    enabled: role === "shop" && activeTab === "messages" && !shopChatAuthRequired,
+    intervalMs: CHAT_POLL_INTERVAL_MS,
+    fetcher: async (signal) => {
+      const version = shopSyncVersionRef.current;
+      const threads = await fetchShopThreads(signal);
+      return threads ? { version, threads } : null;
+    },
+    onData: ({ version, threads }) => {
+      if (shopReplyInFlightRef.current || version !== shopSyncVersionRef.current) return;
+      applyShopThreads(threads);
+    },
+  });
 
-  const customerChatEndRef = useRef<HTMLDivElement | null>(null);
-  const shopChatEndRef = useRef<HTMLDivElement | null>(null);
-
-  // Tự động cuộn xuống cuối khi có tin nhắn mới phía Khách hàng
-  useEffect(() => {
-    if (isChatOpen) {
-      customerChatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [chatMessages, isChatOpen]);
-
-  // Tự động cuộn xuống cuối khi có tin nhắn mới phía Shop
-  useEffect(() => {
-    if (role === "shop" && activeTab === "messages") {
-      shopChatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [shopThreads, selectedThreadId, activeTab, role]);
-
-  // Realtime Live Chat Listener cho Khách Hàng (Customer) - không cần F5
-  useEffect(() => {
-    if (!isChatOpen) return;
-
-    const syncCustomer = async () => {
-      try {
-        const res = await fetch(`/api/chat?shopId=${activeChatShopId}&userId=thuy_dung&_t=${Date.now()}`);
-        const data = await res.json();
-        if (data.ok && data.thread && Array.isArray(data.thread.messages)) {
-          setChatMessages((prev) => {
-            if (prev.length !== data.thread.messages.length) return data.thread.messages;
-            const lastP = prev[prev.length - 1];
-            const lastN = data.thread.messages[data.thread.messages.length - 1];
-            if (lastP?.id !== lastN?.id || lastP?.text !== lastN?.text) {
-              return data.thread.messages;
-            }
-            return prev;
-          });
-        }
-      } catch {}
-    };
-
-    let bc: BroadcastChannel | null = null;
-    if (typeof window !== "undefined" && "BroadcastChannel" in window) {
-      bc = new BroadcastChannel("skinsense_realtime_chat");
-      bc.onmessage = () => syncCustomer();
-    }
-
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key === "skinsense_realtime_chat_ping") {
-        syncCustomer();
-      }
-    };
-    window.addEventListener("storage", handleStorage);
-
-    const timer = setInterval(syncCustomer, 1000);
-
-    return () => {
-      if (bc) bc.close();
-      window.removeEventListener("storage", handleStorage);
-      clearInterval(timer);
-    };
-  }, [isChatOpen, activeChatShopId]);
-
-  // Realtime Live Chat Listener cho Chủ Shop (Shop Owner) - không cần F5
-  useEffect(() => {
-    if (role !== "shop" || activeTab !== "messages") return;
-
-    loadShopThreads();
-
-    const syncShop = async () => {
-      try {
-        const res = await fetch(`/api/chat?forShop=true&_t=${Date.now()}`);
-        const data = await res.json();
-        if (data.ok && Array.isArray(data.threads)) {
-          setShopThreads((prev) => {
-            const prevTotal = prev.reduce((acc, t) => acc + (t.messages?.length || 0), 0);
-            const newTotal = data.threads.reduce((acc: number, t: any) => acc + (t.messages?.length || 0), 0);
-            if (prevTotal !== newTotal || prev.length !== data.threads.length) {
-              return data.threads;
-            }
-            return prev;
-          });
-          if (data.threads.length > 0) {
-            setSelectedThreadId((prev) => prev || data.threads[0].id);
-          }
-        }
-      } catch {}
-    };
-
-    let bc: BroadcastChannel | null = null;
-    if (typeof window !== "undefined" && "BroadcastChannel" in window) {
-      bc = new BroadcastChannel("skinsense_realtime_chat");
-      bc.onmessage = () => syncShop();
-    }
-
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key === "skinsense_realtime_chat_ping") {
-        syncShop();
-      }
-    };
-    window.addEventListener("storage", handleStorage);
-
-    const timer = setInterval(syncShop, 1000);
-
-    return () => {
-      if (bc) bc.close();
-      window.removeEventListener("storage", handleStorage);
-      clearInterval(timer);
-    };
-  }, [role, activeTab]);
+  const activeShopThread =
+    shopThreads.find((t) => t.id === selectedThreadId) || shopThreads[0];
+  const activeShopThreadLast = activeShopThread?.messages?.[activeShopThread.messages.length - 1];
+  const shopChatListRef = useRef<HTMLDivElement | null>(null);
+  const handleShopChatScroll = useStickToBottom(
+    shopChatListRef,
+    activeTab === "messages" ? activeShopThread?.id ?? "" : "",
+    activeShopThreadLast?.id ?? "",
+    activeShopThreadLast?.sender === "shop",
+  );
 
   // Shop gửi phản hồi trực tiếp cho khách hàng
   async function handleSendShopReply() {
@@ -500,6 +488,8 @@ export function RoleProfileView({ role }: { role: RoleType }) {
     const activeThread = shopThreads.find((t) => t.id === selectedThreadId);
     if (!activeThread) return;
 
+    shopReplyInFlightRef.current = true;
+    shopSyncVersionRef.current++;
     try {
       setShopReplySending(true);
       const res = await fetch("/api/chat", {
@@ -516,17 +506,22 @@ export function RoleProfileView({ role }: { role: RoleType }) {
         }),
       });
       const data = await res.json();
-      if (data.ok && data.thread) {
+      if (res.ok && data.ok && data.thread) {
         toast.success("Đã gửi phản hồi thành công đến khách hàng!");
         setShopReplyInput("");
         setShopThreads((prev) =>
-          prev.map((t) => (t.id === activeThread.id ? data.thread : t))
+          prev.map((t) => (t.id === activeThread.id ? (data.thread as ChatThreadItem) : t))
         );
-        triggerChatRealtimeSync({ shopId: activeThread.shopId, userId: activeThread.userId });
+        // Ping các tab khác sau khi server đã lưu tin nhắn
+        pingChatSync();
+      } else {
+        toast.error(data.error || "Không thể gửi phản hồi.");
       }
     } catch {
       toast.error("Lỗi khi gửi phản hồi.");
     } finally {
+      shopReplyInFlightRef.current = false;
+      shopSyncVersionRef.current++;
       setShopReplySending(false);
     }
   }
@@ -560,10 +555,13 @@ export function RoleProfileView({ role }: { role: RoleType }) {
       });
       const data = await res.json();
       if (data.ok) {
+        const serverOrder = data.order as UserOrder | undefined;
         setOrders((prev) =>
           prev.map((o) =>
             o.orderCode.toLowerCase() === orderCode.toLowerCase()
-              ? { ...o, status: newStatus }
+              ? serverOrder
+                ? { ...o, ...serverOrder }
+                : { ...o, status: newStatus }
               : o,
           ),
         );
@@ -622,19 +620,22 @@ export function RoleProfileView({ role }: { role: RoleType }) {
       });
       const data = await res.json();
       if (data.ok) {
+        const serverOrder = data.order as UserOrder | undefined;
         toast.success("Cảm ơn bạn đã gửi đánh giá sản phẩm!");
         setOrders((prev) =>
           prev.map((o) =>
             o.orderCode.toLowerCase() === reviewOrder.orderCode.toLowerCase()
-              ? {
-                  ...o,
-                  review: {
-                    rating: reviewRating,
-                    comment: reviewComment,
-                    tags: reviewSelectedTags,
-                    createdAt: new Date().toISOString(),
-                  },
-                }
+              ? serverOrder
+                ? { ...o, ...serverOrder }
+                : {
+                    ...o,
+                    review: {
+                      rating: reviewRating,
+                      comment: reviewComment,
+                      tags: reviewSelectedTags,
+                      createdAt: new Date().toISOString(),
+                    },
+                  }
               : o,
           ),
         );
@@ -649,41 +650,113 @@ export function RoleProfileView({ role }: { role: RoleType }) {
     }
   }
 
+  // Shop đang mở trong khung chat (ref để bỏ qua phản hồi của shop cũ khi khách đổi shop)
+  const chatShopRef = useRef(activeChatShopId);
+  const chatSyncVersionRef = useRef(0);
+  const chatSendInFlightRef = useRef(false);
+
+  // Realtime Live Chat cho Khách Hàng: server suy ra khách từ phiên đăng nhập, không gửi userId
+  useChatSync<{ version: number; shopId: string; messages: ChatMessageItem[] }>({
+    enabled: isChatOpen && !chatAuthRequired,
+    key: activeChatShopId,
+    intervalMs: CHAT_POLL_INTERVAL_MS,
+    // loadChatThreadForShop already fetches when the chat opens or the shop changes
+    immediate: false,
+    fetcher: async (signal) => {
+      const version = chatSyncVersionRef.current;
+      const shopId = activeChatShopId;
+      const res = await fetch(`/api/chat?shopId=${encodeURIComponent(shopId)}`, {
+        cache: "no-store",
+        signal,
+      });
+      if (res.status === 401) {
+        if (!signal.aborted) setChatAuthRequired(true);
+        return null;
+      }
+      const data = await res.json();
+      if (!data.ok || !Array.isArray(data.thread?.messages)) return null;
+      return { version, shopId, messages: data.thread.messages as ChatMessageItem[] };
+    },
+    onData: ({ version, shopId, messages }) => {
+      // Trong lúc gửi (đang hiện "Shop đang soạn tin") không áp dụng kết quả poll,
+      // để tin trả lời tự động chỉ hiện khi POST đã xong.
+      if (
+        chatSendInFlightRef.current ||
+        version !== chatSyncVersionRef.current ||
+        shopId !== chatShopRef.current
+      ) {
+        return;
+      }
+      setChatMessages((prev) => mergeServerMessages(prev, messages));
+    },
+  });
+
+  const customerChatLast = chatMessages[chatMessages.length - 1];
+  const customerChatListRef = useRef<HTMLDivElement | null>(null);
+  const handleCustomerChatScroll = useStickToBottom(
+    customerChatListRef,
+    isChatOpen ? activeChatShopId : "",
+    customerChatLast?.id ?? "",
+    customerChatLast?.sender === "user",
+  );
+
+  // Tải lịch sử hội thoại cho đúng Shop đang chọn (tách biệt theo từng Shop)
+  async function loadChatThreadForShop(
+    shopId: string,
+    shopDisplayName: string,
+    order?: UserOrder | null,
+  ) {
+    chatShopRef.current = shopId;
+    chatSyncVersionRef.current++;
+    setActiveChatShopId(shopId);
+    setActiveChatShopName(shopDisplayName);
+
+    const buildWelcomeMessages = (): ChatMessageItem[] => {
+      const welcomeText = order
+        ? `Xin chào bạn! Cảm ơn bạn đã mua sắm tại ${shopDisplayName}. Shop có thể hỗ trợ gì cho đơn hàng ${order.orderCode} của bạn ạ?`
+        : `Xin chào bạn! Cảm ơn bạn đã liên hệ gian hàng chính hãng ${shopDisplayName}. Shop có thể hỗ trợ tư vấn dược mỹ phẩm gì cho bạn ạ?`;
+      return [
+        {
+          id: createLocalMessageId("init"),
+          sender: "shop",
+          text: welcomeText,
+          time: formatCurrentTimeHHMM(),
+        },
+      ];
+    };
+    // Bỏ qua phản hồi đến muộn nếu khách đã chuyển sang shop khác
+    const isStale = () => chatShopRef.current !== shopId;
+
+    try {
+      const res = await fetch(`/api/chat?shopId=${encodeURIComponent(shopId)}`, {
+        cache: "no-store",
+      });
+      if (isStale()) return;
+      if (res.status === 401) {
+        setChatAuthRequired(true);
+        setChatMessages(buildWelcomeMessages());
+        return;
+      }
+      const data = await res.json();
+      if (isStale()) return;
+      setChatAuthRequired(false);
+      if (data.ok && data.thread && Array.isArray(data.thread.messages)) {
+        setChatMessages(data.thread.messages as ChatMessageItem[]);
+      } else {
+        setChatMessages(buildWelcomeMessages());
+      }
+    } catch {
+      if (!isStale()) setChatMessages(buildWelcomeMessages());
+    }
+  }
+
   // Mở chat với Shop (TÁCH BIỆT THEO TỪNG SHOP)
   async function openChatWithShop(order?: UserOrder) {
     const sName = order?.shopName || "Mall Flagship";
-    let sId = "skinsense_mall";
-    const lower = sName.toLowerCase();
-    if (lower.includes("roche") || lower.includes("laroche")) sId = "larocheposay";
-    else if (lower.includes("bioderma")) sId = "bioderma";
-    else if (lower.includes("cerave")) sId = "cerave";
-
-    setActiveChatShopId(sId);
-    setActiveChatShopName(sName);
+    const sId = normalizeShopId(sName);
     setChatOrder(order || null);
     setIsChatOpen(true);
-
-    try {
-      const res = await fetch(`/api/chat?shopId=${sId}&userId=thuy_dung&_t=${Date.now()}`);
-      const data = await res.json();
-      if (data.ok && data.thread && Array.isArray(data.thread.messages)) {
-        setChatMessages(data.thread.messages);
-      } else {
-        const welcomeText = order
-          ? `Xin chào bạn! Cảm ơn bạn đã mua sắm tại ${sName}. Shop có thể hỗ trợ gì cho đơn hàng ${order.orderCode} của bạn ạ?`
-          : `Xin chào bạn! Cảm ơn bạn đã liên hệ gian hàng chính hãng SkinSense. Shop có thể hỗ trợ tư vấn dược mỹ phẩm gì cho bạn ạ?`;
-        setChatMessages([
-          {
-            id: `init_${Date.now()}`,
-            sender: "shop",
-            text: welcomeText,
-            time: new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
-          },
-        ]);
-      }
-    } catch {
-      // Fallback
-    }
+    await loadChatThreadForShop(sId, sName, order || null);
   }
 
   // Khách hàng gửi tin nhắn chat đến đúng Shop
@@ -691,47 +764,68 @@ export function RoleProfileView({ role }: { role: RoleType }) {
     const text = (customText || chatInput).trim();
     if (!text) return;
 
-    const tempUserMsg = {
-      id: `temp_${Date.now()}`,
-      sender: "user" as const,
+    const shopId = activeChatShopId;
+    const tempId = createLocalMessageId("temp");
+    const tempUserMsg: ChatMessageItem = {
+      id: tempId,
+      sender: "user",
       text,
-      time: new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
+      time: formatCurrentTimeHHMM(),
     };
     setChatMessages((prev) => [...prev, tempUserMsg]);
     setChatInput("");
     setIsShopTyping(true);
+    chatSendInFlightRef.current = true;
+    chatSyncVersionRef.current++;
 
     try {
-      triggerChatRealtimeSync({ shopId: activeChatShopId, userId: "thuy_dung" });
+      // Không gửi userId: server lấy khách hàng từ phiên đăng nhập
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          shopId: activeChatShopId,
+          shopId,
           shopName: activeChatShopName,
-          userId: "thuy_dung",
-          userName: fullName || "Thùy Dung",
           orderCode: chatOrder?.orderCode,
           sender: "user",
-          senderName: fullName || "Thùy Dung",
           text,
         }),
       });
       const data = await res.json();
-      setTimeout(() => {
-        setIsShopTyping(false);
-        if (data.ok && data.thread && Array.isArray(data.thread.messages)) {
-          setChatMessages(data.thread.messages);
-        }
-        triggerChatRealtimeSync({ shopId: activeChatShopId, userId: "thuy_dung" });
-      }, 700);
+      if (!res.ok || !data.ok) {
+        setChatMessages((prev) => prev.filter((m) => m.id !== tempId));
+        if (!customText) setChatInput(text);
+        if (res.status === 401) setChatAuthRequired(true);
+        toast.error(data.error || "Không thể gửi tin nhắn.");
+        return;
+      }
+      setChatAuthRequired(false);
+      if (chatShopRef.current === shopId && data.thread && Array.isArray(data.thread.messages)) {
+        const serverMessages = data.thread.messages as ChatMessageItem[];
+        setChatMessages((prev) =>
+          mergeServerMessages(prev.filter((m) => m.id !== tempId), serverMessages),
+        );
+      }
+      // Ping các tab khác sau khi server đã lưu tin nhắn
+      pingChatSync();
     } catch {
+      setChatMessages((prev) => prev.filter((m) => m.id !== tempId));
+      toast.error("Lỗi kết nối khi gửi tin nhắn.");
+    } finally {
+      chatSendInFlightRef.current = false;
+      chatSyncVersionRef.current++;
       setIsShopTyping(false);
     }
   }
 
   useEffect(() => {
     loadData();
+    const rafId = window.requestAnimationFrame(() => setNowMs(Date.now()));
+    const intervalId = window.setInterval(() => setNowMs(Date.now()), 60_000);
+    return () => {
+      window.cancelAnimationFrame(rafId);
+      window.clearInterval(intervalId);
+    };
   }, [role]);
 
   // Lưu thông tin trực tiếp vào CSDL Supabase
@@ -744,7 +838,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
 
     try {
       setSaving(true);
-      const payload: any = {
+      const payload: Record<string, unknown> = {
         id: userId,
         email,
         role,
@@ -804,6 +898,25 @@ export function RoleProfileView({ role }: { role: RoleType }) {
     if (orderFilter === "delivering") return o.status === "delivering";
     if (orderFilter === "delivered") return o.status === "delivered";
     if (orderFilter === "cancelled") return o.status === "cancelled";
+    return true;
+  });
+
+  // Lọc & thống kê chính xác theo COMMUNITY_REVIEWS hiện có
+  const totalCommunityReviews = COMMUNITY_REVIEWS.length;
+  const avgCommunityRating =
+    totalCommunityReviews > 0
+      ? (
+          COMMUNITY_REVIEWS.reduce((sum, r) => sum + r.rating, 0) /
+          totalCommunityReviews
+        ).toFixed(1)
+      : "5.0";
+  const fiveStarCount = COMMUNITY_REVIEWS.filter((r) => r.rating === 5).length;
+  const fourStarCount = COMMUNITY_REVIEWS.filter((r) => r.rating === 4).length;
+  const withCommentCount = COMMUNITY_REVIEWS.filter((r) => Boolean(r.comment?.trim())).length;
+  const filteredCommunityReviews = COMMUNITY_REVIEWS.filter((rev) => {
+    if (reviewFilterStars === "5") return rev.rating === 5;
+    if (reviewFilterStars === "4") return rev.rating === 4;
+    if (reviewFilterStars === "comment") return Boolean(rev.comment?.trim());
     return true;
   });
 
@@ -930,10 +1043,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
               {role === "shop" && (
                 <button
                   type="button"
-                  onClick={() => {
-                    setActiveTab("messages");
-                    loadShopThreads();
-                  }}
+                  onClick={() => setActiveTab("messages")}
                   className={`flex items-center gap-2 h-9 px-4 rounded-xl text-xs font-bold transition cursor-pointer ${
                     activeTab === "messages"
                       ? "bg-[#2D5A43] text-white shadow-xs"
@@ -1151,7 +1261,10 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                         // Tính thời gian còn lại trước khi đơn hàng hết hạn 3 ngày
                         const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
                         const createdMs = new Date(order.createdAt).getTime();
-                        const elapsedMs = Date.now() - createdMs;
+                        const elapsedMs =
+                          nowMs > 0 && !Number.isNaN(createdMs)
+                            ? Math.max(0, nowMs - createdMs)
+                            : 0;
                         const remainingHours = Math.max(1, Math.floor((THREE_DAYS_MS - elapsedMs) / (1000 * 60 * 60)));
 
                         return (
@@ -1406,7 +1519,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                                 {/* NẾU LÀ SHOP VIEW: NÚT THAO TÁC DUYỆT & GIAO CỦA NGƯỜI BÁN */}
                                 {role === "shop" && !isCancelled && (
                                   <>
-                                    {order.status === "pending" && (
+                                    {order.status === "pending" && (isPaid || order.paymentMethod === "cod") && (
                                       <button
                                         type="button"
                                         onClick={() => handleUpdateOrderStatus(order.orderCode, "processing")}
@@ -1415,6 +1528,11 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                                         <Store className="size-3.5" />
                                         <span>Duyệt & Chuẩn Bị Hàng</span>
                                       </button>
+                                    )}
+                                    {order.status === "pending" && !isPaid && order.paymentMethod !== "cod" && (
+                                      <span className="inline-flex items-center gap-1 h-8.5 px-3 rounded-xl border border-amber-200 bg-amber-50 text-[11px] font-semibold text-amber-800">
+                                        Chờ khách thanh toán
+                                      </span>
                                     )}
                                     {order.status === "processing" && (
                                       <button
@@ -1557,7 +1675,9 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                       </div>
                       {shopThreads.length === 0 ? (
                         <div className="p-6 text-center text-xs text-[#5C605C]">
-                          Chưa có tin nhắn nào từ khách hàng
+                          {shopChatAuthRequired
+                            ? "Vui lòng đăng nhập bằng tài khoản Shop để xem và trả lời tin nhắn khách hàng."
+                            : "Chưa có tin nhắn nào từ khách hàng"}
                         </div>
                       ) : (
                         shopThreads.map((thread) => {
@@ -1634,8 +1754,12 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                             </div>
 
                             {/* Danh sách tin nhắn */}
-                            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#F8F7F4]/40">
-                              {activeThread.messages?.map((msg: any) => {
+                            <div
+                              ref={shopChatListRef}
+                              onScroll={handleShopChatScroll}
+                              className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#F8F7F4]/40"
+                            >
+                              {activeThread.messages?.map((msg: ChatMessageItem) => {
                                 const isShopSender = msg.sender === "shop";
                                 return (
                                   <div
@@ -1671,7 +1795,6 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                                   </div>
                                 );
                               })}
-                              <div ref={shopChatEndRef} />
                             </div>
 
                             {/* Khung Shop gõ phản hồi */}
@@ -1797,7 +1920,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                               <span className="text-[11px] font-semibold text-[#5C605C] block">Địa chỉ nhận hàng mặc định</span>
                               <p className="text-sm font-bold text-[#191B19] mt-1 flex items-center gap-2">
                                 <MapPin className="size-4 text-[#C2410C] shrink-0" />
-                                <span>{custAddress || "Số 123 Đường Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh"}</span>
+                                <span>{custAddress || "Chưa cập nhật"}</span>
                               </p>
                             </div>
 
@@ -1805,13 +1928,13 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                               <div className="rounded-xl border border-[#D8D4CA] bg-white p-3.5">
                                 <span className="text-[11px] font-semibold text-[#5C605C] block">Tình trạng / Loại da</span>
                                 <p className="text-sm font-bold text-[#191B19] mt-1">
-                                  {custSkinType || "Da hỗn hợp thiên dầu, nhạy cảm vùng chữ T (Fitzpatrick III)"}
+                                  {custSkinType || "Chưa cập nhật"}
                                 </p>
                               </div>
                               <div className="rounded-xl border border-[#D8D4CA] bg-white p-3.5">
                                 <span className="text-[11px] font-semibold text-[#5C605C] block">Tiền sử dị ứng mỹ phẩm</span>
                                 <p className="text-sm font-bold text-[#191B19] mt-1">
-                                  {custAllergies || "Dị ứng cồn khô nồng độ cao và hương liệu (Fragrance)"}
+                                  {custAllergies || "Chưa cập nhật"}
                                 </p>
                               </div>
                             </div>
@@ -1826,7 +1949,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                                 <span className="text-[11px] font-semibold text-[#5C605C] block">Bệnh viện / Cơ sở y tế công tác</span>
                                 <p className="text-sm font-bold text-[#191B19] mt-1 flex items-center gap-2">
                                   <Building className="size-4 text-[#2D5A43]" />
-                                  <span>{specHospital || "Bệnh viện Da Liễu Trung Ương"}</span>
+                                  <span>{specHospital || "Chưa cập nhật"}</span>
                                 </p>
                               </div>
 
@@ -1834,14 +1957,14 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                                 <span className="text-[11px] font-semibold text-[#5C605C] block">Số Chứng chỉ hành nghề (CCHN)</span>
                                 <p className="text-sm font-bold text-[#191B19] mt-1 flex items-center gap-2">
                                   <Award className="size-4 text-[#2D5A43]" />
-                                  <span>{specLicense || "014289/BYT-CCHN"}</span>
+                                  <span>{specLicense || "Chưa cập nhật"}</span>
                                 </p>
                               </div>
 
                               <div className="rounded-xl border border-[#D8D4CA] bg-white p-3.5">
                                 <span className="text-[11px] font-semibold text-[#5C605C] block">Chuyên khoa phụ trách</span>
                                 <p className="text-sm font-bold text-[#191B19] mt-1">
-                                  {specSpecialty || "Chuyên khoa Da liễu & Thẩm mỹ Da"}
+                                  {specSpecialty || "Chưa cập nhật"}
                                 </p>
                               </div>
 
@@ -1856,7 +1979,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                             <div className="rounded-xl border border-[#D8D4CA] bg-white p-3.5">
                               <span className="text-[11px] font-semibold text-[#5C605C] block">Tiểu sử chuyên môn (Bio)</span>
                               <p className="text-xs font-medium text-[#191B19] mt-1.5 leading-relaxed">
-                                {specBio || "Hơn 10 năm kinh nghiệm điều trị mụn trứng cá chuyên sâu, phục hồi hàng rào màng đáy da nhạy cảm và điều trị tăng sắc tố sau viêm."}
+                                {specBio || "Chưa cập nhật"}
                               </p>
                             </div>
                           </div>
@@ -1870,7 +1993,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                                 <span className="text-[11px] font-semibold text-[#5C605C] block">Tên gian hàng chính thức</span>
                                 <p className="text-sm font-bold text-[#191B19] mt-1 flex items-center gap-2">
                                   <Store className="size-4 text-[#C2410C]" />
-                                  <span>{shopName || "La Roche-Posay Official Flagship Store"}</span>
+                                  <span>{shopName || "Chưa cập nhật"}</span>
                                 </p>
                               </div>
 
@@ -1878,7 +2001,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                                 <span className="text-[11px] font-semibold text-[#5C605C] block">Mã số GPKD / CBMP</span>
                                 <p className="text-sm font-bold text-[#191B19] mt-1 flex items-center gap-2">
                                   <FileText className="size-4 text-[#5C605C]" />
-                                  <span>{shopLicense || "GPKD-882910-HCM / CBMP-54321/22/CBMP-QLD"}</span>
+                                  <span>{shopLicense || "Chưa cập nhật"}</span>
                                 </p>
                               </div>
                             </div>
@@ -1887,14 +2010,14 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                               <span className="text-[11px] font-semibold text-[#5C605C] block">Địa chỉ kho hàng & Trụ sở đăng ký</span>
                               <p className="text-sm font-bold text-[#191B19] mt-1 flex items-center gap-2">
                                 <MapPin className="size-4 text-[#C2410C] shrink-0" />
-                                <span>{shopAddress || "Tầng 12, Tòa nhà Bitexco, Số 2 Hải Triều, P. Bến Nghé, Quận 1, TP. HCM"}</span>
+                                <span>{shopAddress || "Chưa cập nhật"}</span>
                               </p>
                             </div>
 
                             <div className="rounded-xl border border-[#D8D4CA] bg-white p-3.5">
                               <span className="text-[11px] font-semibold text-[#5C605C] block">Ngành hàng dược mỹ phẩm</span>
                               <p className="text-sm font-bold text-[#191B19] mt-1">
-                                {shopCategory || "Dược mỹ phẩm chăm sóc & phục hồi da chuẩn y khoa"}
+                                {shopCategory || "Chưa cập nhật"}
                               </p>
                             </div>
                           </div>
@@ -2233,7 +2356,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
               {/* Điểm số to */}
               <div className="text-center sm:text-left shrink-0">
                 <div className="flex items-baseline justify-center sm:justify-start gap-1">
-                  <span className="text-3xl font-extrabold text-[#C2410C]">4.9</span>
+                  <span className="text-3xl font-extrabold text-[#C2410C]">{avgCommunityRating}</span>
                   <span className="text-xs text-[#5C605C]">trên 5</span>
                 </div>
                 <div className="flex items-center justify-center sm:justify-start gap-0.5 mt-1">
@@ -2241,17 +2364,18 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                     <Star key={s} className="size-4 text-amber-500 fill-amber-500" />
                   ))}
                 </div>
-                <p className="text-[11px] text-[#5C605C] mt-1">128 đánh giá thực tế</p>
+                <p className="text-[11px] text-[#5C605C] mt-1">
+                  {totalCommunityReviews} đánh giá thực tế
+                </p>
               </div>
 
               {/* Bộ lọc sao chuẩn Shopee */}
               <div className="flex-1 flex flex-wrap gap-2">
                 {[
-                  { key: "all", label: "Tất Cả (128)" },
-                  { key: "5", label: "5 Sao (115)" },
-                  { key: "4", label: "4 Sao (10)" },
-                  { key: "comment", label: "Có Bình Luận (94)" },
-                  { key: "photo", label: "Có Hình Ảnh (62)" },
+                  { key: "all", label: `Tất Cả (${totalCommunityReviews})` },
+                  { key: "5", label: `5 Sao (${fiveStarCount})` },
+                  { key: "4", label: `4 Sao (${fourStarCount})` },
+                  { key: "comment", label: `Có Bình Luận (${withCommentCount})` },
                 ].map((f) => (
                   <button
                     key={f.key}
@@ -2451,11 +2575,18 @@ export function RoleProfileView({ role }: { role: RoleType }) {
             <div className="space-y-3 pt-2">
               <h4 className="text-xs font-bold uppercase tracking-wider text-[#191B19] flex items-center justify-between">
                 <span>Đánh giá từ người mua khác (Đã mua tại Shopee Mall)</span>
-                <span className="text-[11px] text-[#5C605C] font-normal">Hiển thị {COMMUNITY_REVIEWS.length} đánh giá tiêu biểu</span>
+                <span className="text-[11px] text-[#5C605C] font-normal">
+                  Hiển thị {filteredCommunityReviews.length} / {totalCommunityReviews} đánh giá tiêu biểu
+                </span>
               </h4>
 
               <div className="divide-y divide-[#D8D4CA]/50 border-t border-[#D8D4CA]/60">
-                {COMMUNITY_REVIEWS.map((rev) => {
+                {filteredCommunityReviews.length === 0 ? (
+                  <div className="py-6 text-center text-xs text-[#5C605C]">
+                    Chưa có đánh giá nào phù hợp bộ lọc này.
+                  </div>
+                ) : (
+                  filteredCommunityReviews.map((rev) => {
                   const currentLikes = reviewLikes[rev.id] ?? rev.initialLikes;
                   const isLiked = currentLikes > rev.initialLikes;
 
@@ -2526,7 +2657,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                       </p>
                     </div>
                   );
-                })}
+                }))}
               </div>
             </div>
 
@@ -2597,14 +2728,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                       : s.id === "cerave"
                       ? "CeraVe Official Mall"
                       : "SkinSense Official Medical Mall";
-                  setActiveChatShopId(s.id);
-                  setActiveChatShopName(sName);
-                  fetch(`/api/chat?shopId=${s.id}&userId=thuy_dung&_t=${Date.now()}`)
-                    .then((r) => r.json())
-                    .then((d) => {
-                      if (d.ok && d.thread) setChatMessages(d.thread.messages || []);
-                    })
-                    .catch(() => {});
+                  void loadChatThreadForShop(s.id, sName, chatOrder);
                 }}
                 className={`px-2.5 py-0.5 rounded-md text-[10px] font-bold transition shrink-0 cursor-pointer ${
                   activeChatShopId === s.id
@@ -2636,8 +2760,19 @@ export function RoleProfileView({ role }: { role: RoleType }) {
             </div>
           )}
 
+          {/* Auth notice when browsing without active session */}
+          {chatAuthRequired && (
+            <div className="border-b border-amber-200 bg-amber-50 px-3.5 py-2 text-[11px] text-amber-900 shrink-0">
+              Đăng nhập tài khoản để lưu và đồng bộ hội thoại thực tế với gian hàng.
+            </div>
+          )}
+
           {/* Message Area */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#F8F7F4]/60">
+          <div
+            ref={customerChatListRef}
+            onScroll={handleCustomerChatScroll}
+            className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#F8F7F4]/60"
+          >
             {chatMessages.map((msg) => {
               const isShop = msg.sender === "shop";
               return (
@@ -2683,7 +2818,6 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                 </div>
               </div>
             )}
-            <div ref={customerChatEndRef} />
           </div>
 
           {/* Quick Questions (Gợi ý câu hỏi nhanh) */}
@@ -2722,6 +2856,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
             <button
               type="submit"
               disabled={!chatInput.trim()}
+              aria-label="Gửi tin nhắn"
               className="size-9 rounded-xl bg-[#2D5A43] text-white flex items-center justify-center hover:bg-[#214332] transition disabled:opacity-40 cursor-pointer shrink-0 shadow-2xs"
             >
               <Send className="size-4" />
@@ -2733,7 +2868,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
       {/* ================================================================= */}
       {/* 3. NÚT CHAT NỔI VỚI SHOP (FLOATING CHAT BUTTON)                    */}
       {/* ================================================================= */}
-      {!isChatOpen && (role === "customer" || role === "shop") && (
+      {!isChatOpen && role === "customer" && (
         <button
           type="button"
           onClick={() => openChatWithShop()}

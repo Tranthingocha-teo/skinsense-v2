@@ -1,8 +1,24 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { requireRoleActor } from "@/lib/session-auth";
+import { authzClaims } from "@/lib/actor-role";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+
+interface SpecialistRegistryItem {
+  id?: string;
+  email?: string;
+  name?: string;
+  phone?: string;
+  status?: string;
+  specialty?: string;
+  licenseId?: string;
+  hospital?: string;
+  submittedAt?: string;
+  approvedAt?: string;
+  approvedBy?: string;
+}
 
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -10,7 +26,7 @@ function getSupabaseAdmin() {
   return createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
 }
 
-async function downloadJsonFromStorage<T = any>(supabase: any, path: string): Promise<T | null> {
+async function downloadJsonFromStorage<T = unknown>(supabase: SupabaseClient, path: string): Promise<T | null> {
   try {
     const { data: signData } = await supabase.storage.from("photos").createSignedUrl(path, 60);
     if (signData?.signedUrl) {
@@ -27,21 +43,24 @@ async function downloadJsonFromStorage<T = any>(supabase: any, path: string): Pr
   return null;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const auth = await requireRoleActor(request, ["admin"]);
+  if (!auth.ok) return auth.response;
+
   try {
     const supabaseAdmin = getSupabaseAdmin();
 
     // 1. Fetch from Supabase Storage registry
-    const storageSpecialists: any[] = (await downloadJsonFromStorage<any[]>(supabaseAdmin, "specialists/specialists_registry.json")) || [];
+    const storageSpecialists: SpecialistRegistryItem[] = (await downloadJsonFromStorage<SpecialistRegistryItem[]>(supabaseAdmin, "specialists/specialists_registry.json")) || [];
 
     // 2. Fetch from Supabase Auth
-    const { data, error } = await supabaseAdmin.auth.admin.listUsers();
+    const { data, error } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
     const authSpecialists = data.users
-      .filter((u) => u.user_metadata?.role === "specialist")
+      .filter((u) => u.app_metadata?.role === "specialist" || u.user_metadata?.role === "specialist")
       .map((u) => ({
         id: u.id,
         email: u.email,
@@ -74,6 +93,9 @@ export async function GET() {
 }
 
 export async function PATCH(request: Request) {
+  const auth = await requireRoleActor(request, ["admin"]);
+  if (!auth.ok) return auth.response;
+
   try {
     const body = await request.json();
     const { userId, action, email } = body;
@@ -91,8 +113,13 @@ export async function PATCH(request: Request) {
 
     // 1. Update Supabase Auth user metadata
     try {
-      if (userId && userId.length === 36) {
-        const { data: userObj } = await supabaseAdmin.auth.admin.getUserById(userId);
+      let targetUserId: string | undefined = userId && userId.length === 36 ? userId : undefined;
+      if (!targetUserId && targetEmail) {
+        const { data: list } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
+        targetUserId = list?.users.find((u) => u.email?.toLowerCase() === targetEmail)?.id;
+      }
+      if (targetUserId) {
+        const { data: userObj } = await supabaseAdmin.auth.admin.getUserById(targetUserId);
         const updatedMetadata = {
           ...(userObj?.user?.user_metadata || {}),
           status: newStatus,
@@ -101,15 +128,17 @@ export async function PATCH(request: Request) {
           approved_at: new Date().toISOString(),
         };
 
-        await supabaseAdmin.auth.admin.updateUserById(userId, {
+        // app_metadata is what grants specialist rights (see lib/actor-role.ts).
+        await supabaseAdmin.auth.admin.updateUserById(targetUserId, {
           user_metadata: updatedMetadata,
+          app_metadata: authzClaims("specialist", newStatus),
         });
       }
     } catch {}
 
     // 2. Update Supabase Storage specialists_registry.json
     try {
-      const list = (await downloadJsonFromStorage<any[]>(supabaseAdmin, "specialists/specialists_registry.json")) || [];
+      const list = (await downloadJsonFromStorage<SpecialistRegistryItem[]>(supabaseAdmin, "specialists/specialists_registry.json")) || [];
       if (list.length > 0) {
         const updatedList = list.map((s) => {
           if (s.id === userId || (targetEmail && s.email?.toLowerCase() === targetEmail)) {

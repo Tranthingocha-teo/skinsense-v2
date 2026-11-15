@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { requireRoleActor } from "@/lib/session-auth";
+import { randomUUID } from "node:crypto";
+import { authzClaims } from "@/lib/actor-role";
+import { shopIdClaim } from "@/lib/shop-utils";
+import { downloadStorageJson } from "@/lib/supabase/storage-json";
 
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -14,10 +19,13 @@ function getSupabaseAdmin() {
   });
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const auth = await requireRoleActor(request, ["admin"]);
+  if (!auth.ok) return auth.response;
+
   try {
     const supabaseAdmin = getSupabaseAdmin();
-    const { data, error } = await supabaseAdmin.auth.admin.listUsers();
+    const { data, error } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
@@ -26,8 +34,10 @@ export async function GET() {
     const users = data.users.map((u) => {
       const meta = u.user_metadata || {};
       const isSuperAdmin = u.email?.toLowerCase() === "hattn.23itb@vku.udn.vn";
-      const role = isSuperAdmin ? "admin" : (meta.role || "customer");
-      const status = isSuperAdmin ? "active" : (meta.status || "active");
+      const appMeta = u.app_metadata || {};
+      // app_metadata is the authoritative role; user_metadata is only a fallback label for old accounts.
+      const role = isSuperAdmin ? "admin" : (appMeta.role || meta.role || "customer");
+      const status = isSuperAdmin ? "active" : (appMeta.status || meta.status || "active");
 
       return {
         id: u.id,
@@ -64,25 +74,36 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const auth = await requireRoleActor(request, ["admin"]);
+  if (!auth.ok) return auth.response;
+
   try {
     const body = await request.json();
-    const { email, password = "password123@", fullName, role = "customer", phone, shopName, specialty, hospital, licenseId } = body;
+    // No shared default password: an account created without one gets a random password nobody
+    // knows and signs in with Google or a magic link. ("password123@" let anyone into it.)
+    const { email, password = `${randomUUID()}Aa1!`, fullName, role = "customer", phone, shopName, specialty, hospital, licenseId } = body;
 
     if (!email || !email.includes("@")) {
       return NextResponse.json({ error: "Email không hợp lệ." }, { status: 400 });
     }
 
+    if (!["customer", "shop", "specialist"].includes(role)) {
+      return NextResponse.json({ error: "Vai trò không hợp lệ." }, { status: 400 });
+    }
+
     const supabaseAdmin = getSupabaseAdmin();
     const normalizedEmail = email.trim().toLowerCase();
+    const initialStatus = role === "specialist" ? "pending" : "active";
 
     const { data, error } = await supabaseAdmin.auth.admin.createUser({
       email: normalizedEmail,
       password,
       email_confirm: true,
+      app_metadata: { ...authzClaims(role, initialStatus), ...shopIdClaim(role, {}, { shop_name: shopName }) },
       user_metadata: {
         full_name: fullName?.trim() || normalizedEmail.split("@")[0],
         role,
-        status: role === "specialist" ? "pending" : "active",
+        status: initialStatus,
         phone_number: phone?.trim() || "",
         shop_name: shopName?.trim() || "",
         specialty: specialty?.trim() || "",
@@ -106,6 +127,9 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
+  const auth = await requireRoleActor(request, ["admin"]);
+  if (!auth.ok) return auth.response;
+
   try {
     const body = await request.json();
     const { userId, role, status } = body;
@@ -121,6 +145,15 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "Không tìm thấy người dùng." }, { status: 404 });
     }
 
+    if (role !== undefined && !["customer", "shop", "specialist"].includes(role)) {
+      return NextResponse.json({ error: "Vai trò không hợp lệ." }, { status: 400 });
+    }
+
+    const currentApp = (userRes.user.app_metadata || {}) as Record<string, unknown>;
+    const currentMeta = (userRes.user.user_metadata || {}) as Record<string, unknown>;
+    const nextRole = (role || currentApp.role || currentMeta.role || "customer") as "customer" | "shop" | "specialist";
+    const nextStatus = String(status || currentApp.status || currentMeta.status || "active");
+
     const updatedMetadata = {
       ...userRes.user.user_metadata,
       ...(role ? { role } : {}),
@@ -130,6 +163,9 @@ export async function PATCH(request: Request) {
 
     const { data, error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
       user_metadata: updatedMetadata,
+      ...(role || status
+        ? { app_metadata: { ...authzClaims(nextRole, nextStatus), ...shopIdClaim(nextRole, currentApp, currentMeta) } }
+        : {}),
     });
 
     if (error) {
@@ -141,13 +177,9 @@ export async function PATCH(request: Request) {
     if (userEffectiveRole === "shop" && status) {
       try {
         const email = userRes.user.email?.toLowerCase();
-        let registry: any[] = [];
-        const { data: fileBlob } = await supabaseAdmin.storage
-          .from("photos")
-          .download("shops/shops_registry.json");
-        if (fileBlob) {
-          registry = JSON.parse(await fileBlob.text());
-        }
+        // Cache-busted read (storage .download() can be stale; writing a stale list back lost entries).
+        let registry =
+          (await downloadStorageJson<Array<{ id?: string; email?: string; status?: string }>>("shops/shops_registry.json", supabaseAdmin)) ?? [];
         registry = registry.map((s) =>
           s.email?.toLowerCase() === email || s.id === userId ? { ...s, status } : s
         );
@@ -171,6 +203,9 @@ export async function PATCH(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  const auth = await requireRoleActor(request, ["admin"]);
+  if (!auth.ok) return auth.response;
+
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get("userId");

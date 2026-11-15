@@ -42,13 +42,14 @@ test("capture → save persists the photo and five zone readings for the signed-
   // Mark spots on the photo just saved: the stored JPEG is re-analysed for
   // landmarks, so a tap lands in a real zone. The fixture face sits high in the
   // frame; tap down the vertical centre line (forehead → nose → chin) until one
-  // tap is inside a zone.
+  // tap is inside a zone. On the centre line the forehead and chin span only a few
+  // hundredths of the frame (the nose seed set sits just off it), so step finely.
   await page.getByRole("link", { name: "Mark spots" }).click();
   await expect(page).toHaveURL(`/app/spots/${photo.id}`);
   const canvas = page.getByRole("img", { name: "Tap the photo to mark a spot" });
   await expect(canvas).toBeVisible({ timeout: 60_000 });
   const box = (await canvas.boundingBox())!;
-  for (let y = 0.05; y <= 0.6; y += 0.05) {
+  for (let y = 0.05; y <= 0.6; y += 0.01) {
     await canvas.click({ position: { x: box.width / 2, y: box.height * y } });
     if (await page.getByRole("button", { name: "Remove spot" }).count()) break;
   }
@@ -68,10 +69,11 @@ test("capture → save persists the photo and five zone readings for the signed-
   // redness line, and the spot card counts the spot just saved.
   await page.goto("/app/trends");
   await expect(page.getByRole("img", { name: /^Redness index for Forehead, \d+ days with data$/ })).toBeVisible();
-  await expect(page.getByText(/^Latest: -?\d+\.\d$/)).toBeVisible();
+  // The pill renders twice (beside the heading from md, under the chart below md); one is CSS-hidden.
+  await expect(page.getByText(/^Latest: -?\d+\.\d$/).filter({ visible: true })).toBeVisible();
   await expect(page.getByText("Not a medical diagnosis")).toBeVisible();
   const zoneName = { forehead: "Forehead", nose: "Nose", chin: "Chin" }[spots.data![0].zone as "forehead" | "nose" | "chin"];
-  await page.getByRole("button", { name: zoneName }).click();
+  await page.getByRole("radio", { name: zoneName }).click(); // the zone picker is a radio group
   await expect(page.getByText(new RegExp(`^[1-9]\\d* / ${zoneName}$`))).toBeVisible();
   if ((before.count ?? 0) + 1 >= 2) {
     const slider = page.getByRole("slider", { name: "Drag to compare" });

@@ -60,7 +60,7 @@ const ROW = 'min-h-14 flex-row items-center justify-between gap-3';
 const LINE = 'border-t border-border';
 const BUTTON = 'h-[52px] flex-1 flex-row items-center justify-center gap-2.5 rounded-control px-3';
 // The web app's public privacy page (also linked from sign-in.tsx).
-const PRIVACY_URL = 'https://skinsense-v2.vercel.app/privacy';
+const PRIVACY_URL = 'https://skinsense-v2-topaz.vercel.app/privacy';
 const LANGUAGES = [
   ['vi', 'Tiếng Việt'],
   ['en', 'English'],

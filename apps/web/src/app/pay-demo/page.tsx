@@ -72,12 +72,11 @@ function PayDemoInner() {
     if (amt > 0) setAmount(amt);
     if (shop) setShopName(shop);
 
-    const targetCode = code;
-    const endpoint = targetCode
-      ? `/api/orders/${encodeURIComponent(targetCode)}/status?t=${Date.now()}`
-      : `/api/orders/latest?t=${Date.now()}`;
+    // Only the order in the QR: without a code there is nothing to pay (it used to load
+    // whichever customer's order was pending first).
+    if (!code) return;
 
-    fetch(endpoint, { cache: "no-store" })
+    fetch(`/api/orders/${encodeURIComponent(code)}/status?t=${Date.now()}`, { cache: "no-store" })
       .then((r) => r.json())
       .then((data) => {
         if (data && data.ok) {
@@ -106,16 +105,28 @@ function PayDemoInner() {
       const sp = new URLSearchParams(window.location.search);
       activeCode = sp.get("orderCode") || sp.get("code") || "";
     }
-    if (!activeCode) activeCode = "LATEST";
+    if (!activeCode) {
+      setErrorMsg("Thiếu mã đơn hàng. Vui lòng quét lại mã QR trên trang thanh toán.");
+      setLoading(false);
+      return;
+    }
 
     // 1. Thử gọi API GET /api/orders/[id]/pay (Simple request: Không bị chặn CORS trên mọi trình duyệt điện thoại)
+    // A definite answer from the server (unknown or cancelled order) is shown as is; the fallbacks
+    // below are only for requests that never reached it.
+    let serverError = "";
     try {
       const getRes1 = await fetch(`/api/orders/${encodeURIComponent(activeCode)}/pay?t=${Date.now()}`);
-      if (getRes1.ok) {
-        const data = await getRes1.json();
-        if (data.ok) confirmed = true;
-      }
+      const data = await getRes1.json().catch(() => null);
+      if (getRes1.ok && data?.ok) confirmed = true;
+      else if (getRes1.status === 404 || getRes1.status === 409) serverError = data?.error || "Không thể thanh toán đơn hàng này.";
     } catch {}
+
+    if (serverError) {
+      setErrorMsg(serverError);
+      setLoading(false);
+      return;
+    }
 
     // 2. Thử gọi API POST /api/orders/[id]/pay
     if (!confirmed) {
@@ -196,7 +207,7 @@ function PayDemoInner() {
                   {amount > 0 ? formatMoney(amount) : "..."}
                 </div>
                 <div className="text-[11px] text-[#5C605C] font-mono">
-                  Mã đơn: <strong>{orderCode || "SHOPEE-SS-ACTIVE"}</strong>
+                  Mã đơn: <strong>{orderCode || "(thiếu mã đơn)"}</strong>
                 </div>
               </div>
 

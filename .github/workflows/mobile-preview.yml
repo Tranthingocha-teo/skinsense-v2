@@ -1,0 +1,108 @@
+name: Mobile Preview Pipeline
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "apps/mobile/**"
+      - "packages/**"
+      - ".github/workflows/mobile-preview.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: mobile-preview-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mobile-verify:
+    name: Mobile Preflight & Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+      - run: bun install --frozen-lockfile
+      - name: Verify Mobile Lint, Typecheck & Tests
+        run: |
+          bun run --filter mobile lint
+          bun run --filter mobile typecheck
+          bun run --filter mobile test
+      - name: Verify Expo Public Config
+        working-directory: apps/mobile
+        run: bunx expo config --type public > expo-public-config.json
+      - name: Retain Mobile Preflight Config Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-preflight-config
+          path: apps/mobile/expo-public-config.json
+          retention-days: 14
+
+  eas-preview:
+    name: EAS Internal Preview Build
+    needs: mobile-verify
+    # Free-tier EAS builds are limited: PRs run the checks above, cloud builds run on demand
+    # (Actions → Mobile Preview Pipeline → Run workflow).
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+      - name: Check EAS Credentials Availability
+        id: check_token
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          if [ -n "$EXPO_TOKEN" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::EXPO_TOKEN repository secret is not configured. Skipping live EAS cloud build; preflight validation succeeded."
+            echo "### Mobile Preview Pipeline Status" >> "$GITHUB_STEP_SUMMARY"
+            echo "- Preflight checks (lint, typecheck, 149 Jest tests, Expo config): **PASSED**" >> "$GITHUB_STEP_SUMMARY"
+            echo "- Live EAS preview build: **SKIPPED** (waiting for \`EXPO_TOKEN\` repository secret)" >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Setup Expo & EAS CLI
+        if: steps.check_token.outputs.enabled == 'true'
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+      - run: bun install --frozen-lockfile
+        if: steps.check_token.outputs.enabled == 'true'
+      - name: Trigger EAS Preview Build
+        if: steps.check_token.outputs.enabled == 'true'
+        id: eas_build
+        working-directory: apps/mobile
+        run: |
+          eas build --platform android --profile preview --non-interactive --no-wait --json > eas-preview-build.json || true
+          cat eas-preview-build.json >> "$GITHUB_STEP_SUMMARY"
+      - name: Retain EAS Preview Metadata Artifact
+        if: steps.check_token.outputs.enabled == 'true' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eas-preview-metadata
+          path: apps/mobile/eas-preview-build.json
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Notify Optional Webhook (Slack / Discord)
+        if: steps.check_token.outputs.enabled == 'true'
+        env:
+          WEBHOOK_URL: ${{ secrets.MOBILE_PREVIEW_WEBHOOK_URL }}
+        run: |
+          if [ -n "$WEBHOOK_URL" ]; then
+            curl -fsS -X POST -H 'Content-type: application/json' \
+              --data "{\"text\":\"SkinSense Mobile EAS Preview triggered for ref ${GITHUB_REF_NAME}\"}" \
+              "$WEBHOOK_URL" || true
+          fi

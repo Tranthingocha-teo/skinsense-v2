@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
+import { downloadStorageJson } from "@/lib/supabase/storage-json";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -34,61 +35,63 @@ export async function GET() {
     // 2. Check Specialist registry from Supabase Storage
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    let specialistRecord: any = null;
-
+    interface SpecialistRecord {
+      email?: string;
+      status?: string;
+      name?: string;
+      licenseId?: string;
+      hospital?: string;
+      specialty?: string;
+    }
+    interface ShopRecord {
+      email?: string;
+      status?: string;
+      shopName?: string;
+      ownerName?: string;
+      license?: string;
+      category?: string;
+      address?: string;
+      phone?: string;
+    }
+    // Both registries are read in parallel: each read is a round trip to Supabase Storage.
+    let specialistRecord: SpecialistRecord | null = null;
+    let shopRecord: ShopRecord | null = null;
     if (url && serviceKey) {
-      try {
-        const adminClient = createAdminClient(url, serviceKey);
-        const { data: signData } = await adminClient.storage
-          .from("photos")
-          .createSignedUrl("specialists/specialists_registry.json", 60);
-        if (signData?.signedUrl) {
-          const res = await fetch(signData.signedUrl + `&_t=${Date.now()}`, { cache: "no-store" });
-          if (res.ok) {
-            const list: any[] = await res.json();
-            specialistRecord = list.find((s) => s.email?.toLowerCase() === email);
-          }
-        }
-        if (!specialistRecord) {
-          const { data: fileBlob } = await adminClient.storage
-            .from("photos")
-            .download("specialists/specialists_registry.json");
-          if (fileBlob) {
-            const list: any[] = JSON.parse(await fileBlob.text());
-            specialistRecord = list.find((s) => s.email?.toLowerCase() === email);
-          }
-        }
-      } catch {}
+      const adminClient = createAdminClient(url, serviceKey);
+      const [specialists, shops] = await Promise.all([
+        downloadStorageJson<SpecialistRecord[]>("specialists/specialists_registry.json", adminClient).catch(() => null),
+        downloadStorageJson<ShopRecord[]>("shops/shops_registry.json", adminClient).catch(() => null),
+      ]);
+      if (Array.isArray(specialists)) specialistRecord = specialists.find((s) => s.email?.toLowerCase() === email) ?? null;
+      if (Array.isArray(shops)) shopRecord = shops.find((s) => s.email?.toLowerCase() === email) ?? null;
     }
 
-    // 3. Check Shop registry from Supabase Storage
-    let shopRecord: any = null;
-    if (url && serviceKey) {
-      try {
-        const adminClient = createAdminClient(url, serviceKey);
-        const { data: fileBlob } = await adminClient.storage
-          .from("photos")
-          .download("shops/shops_registry.json");
-        if (fileBlob) {
-          const list: any[] = JSON.parse(await fileBlob.text());
-          shopRecord = list.find((s) => s.email?.toLowerCase() === email);
-        }
-      } catch {}
+    interface AuthUserMetadata {
+      role?: string;
+      status?: string;
+      full_name?: string;
+      name?: string;
+      phone_number?: string;
+      shop_name?: string;
+      license?: string;
+      category?: string;
+      address?: string;
+      license_id?: string;
+      hospital?: string;
+      specialty?: string;
+      shop_details?: {
+        shopName?: string;
+        license?: string;
+        category?: string;
+        address?: string;
+      };
     }
 
-    const meta = (user.user_metadata || {}) as Record<string, any>;
-    const isDoctorEmail =
-      email.includes("doctor") ||
-      email.includes("bacsi") ||
-      email.startsWith("dr.") ||
-      email.includes("dr_") ||
-      email.includes("dr-") ||
-      email === "bacsi.hoa@skinsense.vn" ||
-      email === "dr.ha@gmail.com" ||
-      email === "dr.lananh@skinsense.vn" ||
-      email === "thuydung.doctor@gmail.com";
+    const meta = (user.user_metadata || {}) as AuthUserMetadata;
 
-    const isSpecialist = Boolean(specialistRecord) || meta.role === "specialist" || isDoctorEmail;
+    const appMeta = (user.app_metadata || {}) as Record<string, unknown>;
+    // Display only; API rights come from app_metadata (lib/actor-role.ts).
+    const isSpecialist = Boolean(specialistRecord) || appMeta.role === "specialist" || meta.role === "specialist";
     const isShop = Boolean(shopRecord) || meta.role === "shop";
 
     const role = isSpecialist ? "specialist" : isShop ? "shop" : (meta.role || "customer");
@@ -98,6 +101,7 @@ export async function GET() {
         : isShop
         ? shopRecord?.status
         : undefined) ||
+      (typeof appMeta.status === "string" ? appMeta.status : undefined) ||
       meta.status ||
       "active";
 

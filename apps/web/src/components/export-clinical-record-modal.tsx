@@ -34,22 +34,26 @@ export function ExportClinicalRecordModal({
   defaultSpotsCount = 8,
   onSuccess,
 }: ExportClinicalRecordModalProps) {
-  const [patientName, setPatientName] = useState("Trần Thị Ngọc Hà");
-  const [patientEmail, setPatientEmail] = useState("hattn.23itb@vku.udn.vn");
+  // The patient's own details, filled from their session below. These used to default to one real
+  // person's name, email and phone, plus ready-made symptoms and allergies, so a record sent before
+  // the session loaded (or without editing) was filed under that person — and the specialist API
+  // copies prescriptions for that name to her accounts.
+  const [patientName, setPatientName] = useState("");
+  const [patientEmail, setPatientEmail] = useState("");
   const [patientAge, setPatientAge] = useState(21);
   const [patientGender, setPatientGender] = useState<"Nữ" | "Nam">("Nữ");
-  const [phone, setPhone] = useState("0905 888 999");
+  const [phone, setPhone] = useState("");
   const [skinType, setSkinType] = useState("Hỗn hợp thiên dầu");
-  const [symptoms, setSymptoms] = useState(
-    "Mụn bọc viêm đỏ má & cằm; da châm chích rát nhẹ sau khi tiếp xúc bụi nắng, tiết dầu nhờn vùng chữ T.",
-  );
-  const [allergies, setAllergies] = useState(
-    "Dị ứng hương liệu nhân tạo & cồn khô nồng độ cao. Từng kích ứng corticoid nhẹ.",
-  );
+  const [symptoms, setSymptoms] = useState("");
+  const [allergies, setAllergies] = useState("");
   const [selectedDoctor, setSelectedDoctor] = useState("BS. CKI Nguyễn Mai Hoa");
 
   const [loading, setLoading] = useState(false);
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<{
+    id?: string;
+    fullName?: string;
+    email?: string;
+  } | null>(null);
   const [submittedCase, setSubmittedCase] = useState<{
     caseCode: string;
     message: string;
@@ -246,6 +250,7 @@ export function ExportClinicalRecordModal({
                 <label className="font-semibold text-foreground/90">Số điện thoại liên hệ *</label>
                 <input
                   type="tel"
+                  placeholder="09xx xxx xxx"
                   required
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}

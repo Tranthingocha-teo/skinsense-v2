@@ -1,25 +1,44 @@
 import { NextResponse } from "next/server";
-import { ordersStore } from "@/lib/orders-store";
-import { createClient } from "@/lib/supabase/client";
+import { isOrderOwnedByActor, ordersStore } from "@/lib/orders-store";
+import { requireRoleActor } from "@/lib/session-auth";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+const PAYMENT_METHODS = ["momo", "cod", "vietqr", "card"];
 
 // GET /api/orders?code=...
 export async function GET(request: Request) {
+  const auth = await requireRoleActor(request, ["admin", "shop", "customer"]);
+  if (!auth.ok) return auth.response;
+  const { actor } = auth;
+
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
 
   if (code) {
-    const order = ordersStore.findByCode(code);
+    const order = await ordersStore.findByCodeAsync(code);
     if (!order) {
       return NextResponse.json({ ok: false, error: "Không tìm thấy đơn hàng." }, { status: 404 });
+    }
+    if (!isOrderOwnedByActor(order, actor)) {
+      return NextResponse.json({ ok: false, error: "Không có quyền xem đơn hàng này." }, { status: 403 });
     }
     return NextResponse.json({ ok: true, order });
   }
 
-  return NextResponse.json({ ok: true, orders: ordersStore.getAll() });
+  const allOrders = await ordersStore.getAllAsync();
+  return NextResponse.json({ ok: true, orders: allOrders.filter((o) => isOrderOwnedByActor(o, actor)) });
 }
 
 // POST /api/orders (Tạo đơn hàng mới - trạng thái pending)
+// Signed-in buyers only, and the order is bound to the buyer's user id: it used to be anonymous,
+// so anyone could write orders into the store and buyers found their orders only by name.
 export async function POST(request: Request) {
+  const auth = await requireRoleActor(request);
+  if (!auth.ok) return auth.response;
+  const { actor } = auth;
+
   try {
     const body = await request.json();
     const {
@@ -40,13 +59,17 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
-
-    // 1. Lưu vào in-memory store
-    const newOrder = ordersStore.create({
-      orderCode,
-      customerName: customerName || "Khách Hàng Shopee",
-      customerPhone: customerPhone || "0987654321",
-      shippingAddress: shippingAddress || "TP. Hồ Chí Minh",
+    if (!PAYMENT_METHODS.includes(paymentMethod)) {
+      return NextResponse.json({ ok: false, error: "Phương thức thanh toán không hợp lệ." }, { status: 400 });
+    }
+    // A code that already exists (a random 6-digit collision, a double submit, or someone else's
+    // code) must not replace that order: the create used to overwrite it.
+    const newOrder = await ordersStore.createIfAbsentAsync({
+      orderCode: String(orderCode),
+      customerId: actor.userId,
+      customerName: String(customerName || actor.fullName),
+      customerPhone: String(customerPhone || actor.phone || ""),
+      shippingAddress: String(shippingAddress || ""),
       totalAmount: Number(totalAmount),
       status: "pending",
       paymentMethod,
@@ -56,25 +79,8 @@ export async function POST(request: Request) {
       carrier: "SPX Express (Freeship Xtra)",
       items,
     });
-
-    // 2. Thử đồng bộ sang Supabase table "orders" nếu có kết nối
-    try {
-      const supabase = createClient();
-      await supabase.from("orders").insert([
-        {
-          id: newOrder.id,
-          order_code: newOrder.orderCode,
-          customer_name: newOrder.customerName,
-          customer_phone: newOrder.customerPhone,
-          shipping_address: newOrder.shippingAddress,
-          total_amount: newOrder.totalAmount,
-          status: "pending",
-          carrier: newOrder.carrier,
-          items: newOrder.items,
-        },
-      ]);
-    } catch {
-      // Bỏ qua lỗi Supabase nếu bảng chưa tạo, in-memory store đã đảm bảo 100% hoạt động
+    if (!newOrder) {
+      return NextResponse.json({ ok: false, error: "Mã đơn hàng đã tồn tại, vui lòng thử lại." }, { status: 409 });
     }
 
     return NextResponse.json({

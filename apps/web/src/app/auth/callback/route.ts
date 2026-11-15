@@ -43,7 +43,14 @@ export async function GET(request: Request) {
       }
 
       // 2. Check Specialist Registry in Supabase Storage & Supabase Auth metadata
-      let specialistRecord: any = null;
+      interface SpecialistRegistryEntry {
+        email?: string;
+        status?: string;
+        name?: string;
+        licenseId?: string;
+        hospital?: string;
+      }
+      let specialistRecord: SpecialistRegistryEntry | null = null;
       if (adminClient) {
         try {
           const { data: signData } = await adminClient.storage
@@ -52,8 +59,8 @@ export async function GET(request: Request) {
           if (signData?.signedUrl) {
             const res = await fetch(signData.signedUrl + `&_t=${Date.now()}`, { cache: "no-store" });
             if (res.ok) {
-              const registry: any[] = await res.json();
-              specialistRecord = registry.find((s) => s.email?.toLowerCase() === email);
+              const registry = (await res.json()) as SpecialistRegistryEntry[];
+              specialistRecord = registry.find((s) => s.email?.toLowerCase() === email) ?? null;
             }
           }
           if (!specialistRecord) {
@@ -61,29 +68,18 @@ export async function GET(request: Request) {
               .from("photos")
               .download("specialists/specialists_registry.json");
             if (fileBlob) {
-              const registry: any[] = JSON.parse(await fileBlob.text());
-              specialistRecord = registry.find((s) => s.email?.toLowerCase() === email);
+              const registry = JSON.parse(await fileBlob.text()) as SpecialistRegistryEntry[];
+              specialistRecord = registry.find((s) => s.email?.toLowerCase() === email) ?? null;
             }
           }
         } catch {}
       }
 
-      const meta = (user.user_metadata || {}) as Record<string, any>;
-      const isDoctorEmail =
-        email.includes("doctor") ||
-        email.includes("bacsi") ||
-        email.startsWith("dr.") ||
-        email.includes("dr_") ||
-        email.includes("dr-") ||
-        email === "bacsi.hoa@skinsense.vn" ||
-        email === "dr.ha@gmail.com" ||
-        email === "dr.lananh@skinsense.vn" ||
-        email === "thuydung.doctor@gmail.com";
+      const meta = (user.user_metadata || {}) as Record<string, string | undefined>;
 
-      const isSpecialistRole =
-        meta.role === "specialist" ||
-        Boolean(specialistRecord) ||
-        isDoctorEmail;
+      // Display routing only; API rights come from app_metadata (lib/actor-role.ts).
+      const appRole = (user.app_metadata as Record<string, unknown> | undefined)?.role;
+      const isSpecialistRole = appRole === "specialist" || meta.role === "specialist" || Boolean(specialistRecord);
 
       const specialistStatus = specialistRecord?.status || meta.status || "active";
 

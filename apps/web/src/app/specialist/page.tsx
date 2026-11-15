@@ -24,6 +24,10 @@ import { toast } from "sonner";
 import { LogoMark } from "@/components/site-header";
 import { SafeProductImage } from "@/components/safe-product-image";
 
+function computeFutureDateIso(daysAhead: number): string {
+  return new Date(Date.now() + daysAhead * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+}
+
 export type CaseStatus = "pending_routine" | "in_treatment" | "completed";
 export type SeverityLevel = "mild" | "moderate" | "severe";
 
@@ -362,15 +366,22 @@ function SpecialistContent() {
       .catch(() => {});
   }, []);
 
-  const [patientCases, setPatientCases] = useState<PatientCase[]>(INITIAL_PATIENT_CASES);
+  // Only the cases patients really sent. The sample cases (INITIAL_PATIENT_CASES) used to fill the
+  // list whenever the API returned nothing, so a signed-out visitor or a customer saw a "portal" full
+  // of patients, and a real specialist prescribed to patients who did not exist.
+  const [patientCases, setPatientCases] = useState<PatientCase[]>([]);
+  const [access, setAccess] = useState<"loading" | "granted" | "signed-out" | "denied">("loading");
   const [selectedCase, setSelectedCase] = useState<PatientCase | null>(null);
   const [isCaseDetailOpen, setIsCaseDetailOpen] = useState(false);
 
   const refreshCases = () => {
-    fetch("/api/specialist/cases")
-      .then((res) => res.json())
-      .then((json) => {
-        if (json.ok && Array.isArray(json.cases) && json.cases.length > 0) {
+    fetch("/api/specialist/cases", { cache: "no-store" })
+      .then(async (res) => {
+        if (res.status === 401) return setAccess("signed-out");
+        if (res.status === 403) return setAccess("denied");
+        const json = await res.json();
+        if (json.ok && Array.isArray(json.cases)) {
+          setAccess("granted");
           setPatientCases(json.cases);
         }
       })
@@ -432,7 +443,7 @@ function SpecialistContent() {
     } else {
       setRoutineTitleInput(`Phác đồ điều trị da liễu cho ${patientCase.patientName} (14 ngày)`);
       setStartDateInput(new Date().toISOString().split("T")[0]);
-      setRevisitDateInput(new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]);
+      setRevisitDateInput(computeFutureDateIso(14));
       setDoctorNotesInput("Tuân thủ đúng thứ tự bước thoa sáng và tối. Liên hệ bác sĩ nếu có dấu hiệu rát đỏ bất thường.");
       // Để trống khi bệnh nhân chưa có phác đồ (Không dùng dữ liệu mẫu)
       setModalProducts([]);
@@ -490,47 +501,60 @@ function SpecialistContent() {
     toast.info("Đã xóa sản phẩm khỏi phác đồ.");
   }
 
-  function handleSaveRoutineSubmit(e: React.FormEvent) {
+  const [isSavingRoutine, setIsSavingRoutine] = useState(false);
+
+  // Success is shown only once the server saved the routine for the patient: it used to toast
+  // "sent" before the request and swallow every failure.
+  async function handleSaveRoutineSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!prescribeTargetCase) return;
+    if (!prescribeTargetCase || isSavingRoutine) return;
 
     if (modalProducts.length === 0) {
       toast.error("Vui lòng thêm ít nhất 1 sản phẩm kèm ảnh vào phác đồ!");
       return;
     }
 
+    const target = prescribeTargetCase;
     const updatedRoutine = {
-      routineTitle: routineTitleInput.trim() || `Phác đồ điều trị ${prescribeTargetCase.patientName}`,
+      routineTitle: routineTitleInput.trim() || `Phác đồ điều trị ${target.patientName}`,
       startDate: startDateInput,
       revisitDate: revisitDateInput,
       doctorNotes: doctorNotesInput.trim(),
       products: modalProducts,
     };
 
+    setIsSavingRoutine(true);
+    try {
+      const res = await fetch("/api/specialist/cases", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          caseId: target.id,
+          routineTitle: updatedRoutine.routineTitle,
+          doctorNotes: updatedRoutine.doctorNotes,
+          revisitDate: updatedRoutine.revisitDate,
+          products: modalProducts,
+        }),
+      });
+      const json = (await res.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
+      if (!res.ok || !json?.ok) {
+        toast.error(json?.error || "Gửi phác đồ thất bại, vui lòng thử lại.");
+        return;
+      }
+    } catch {
+      toast.error("Lỗi kết nối khi gửi phác đồ, vui lòng thử lại.");
+      return;
+    } finally {
+      setIsSavingRoutine(false);
+    }
+
     setPatientCases((prev) =>
       prev.map((c) =>
-        c.id === prescribeTargetCase.id
-          ? { ...c, status: "in_treatment", currentRoutine: updatedRoutine }
-          : c,
+        c.id === target.id ? { ...c, status: "in_treatment", currentRoutine: updatedRoutine } : c,
       ),
     );
-
     setIsPrescribeModalOpen(false);
-    toast.success(`Đã xuất và gửi phác đồ Routine thành công cho bệnh nhân ${prescribeTargetCase.patientName}!`);
-
-    // Persist to Supabase Postgres & Storage
-    fetch("/api/specialist/cases", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        userId: prescribeTargetCase.id,
-        caseId: prescribeTargetCase.id,
-        routineTitle: updatedRoutine.routineTitle,
-        doctorNotes: updatedRoutine.doctorNotes,
-        revisitDate: updatedRoutine.revisitDate,
-        products: modalProducts,
-      }),
-    }).catch(() => {});
+    toast.success(`Đã xuất và gửi phác đồ Routine thành công cho bệnh nhân ${target.patientName}!`);
   }
 
   function formatDateVi(dateStr: string) {
@@ -543,6 +567,31 @@ function SpecialistContent() {
 
   const pendingCount = patientCases.filter((c) => c.status === "pending_routine").length;
   const inTreatmentCount = patientCases.filter((c) => c.status === "in_treatment").length;
+
+  if (access === "signed-out" || access === "denied") {
+    return (
+      <div className="min-h-screen bg-[#E8E5DE] text-[#191B19] antialiased flex items-center justify-center p-6">
+        <div className="max-w-md w-full rounded-3xl border border-[#D8D4CA] bg-white p-8 text-center space-y-4 shadow-xs">
+          <div className="mx-auto size-14 rounded-2xl bg-[#2D5A43]/10 text-[#2D5A43] flex items-center justify-center">
+            <Stethoscope className="size-7" />
+          </div>
+          <h1 className="font-serif text-2xl font-bold">Cổng dành cho Bác sĩ</h1>
+          <p className="text-sm text-[#5C605C]">
+            {access === "signed-out"
+              ? "Vui lòng đăng nhập bằng tài khoản Bác sĩ đã được duyệt để xem bệnh án."
+              : "Tài khoản của bạn chưa được cấp quyền Bác sĩ. Hồ sơ đăng ký Bác sĩ cần được Ban quản trị duyệt trước."}
+          </p>
+          <Link
+            href={access === "signed-out" ? "/" : "/app"}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#2D5A43] px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90 transition"
+          >
+            <Home className="size-4" />
+            <span>{access === "signed-out" ? "Về trang chủ để đăng nhập" : "Về trang soi da"}</span>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#E8E5DE] text-[#191B19] antialiased">
@@ -1278,7 +1327,8 @@ function SpecialistContent() {
                 </button>
                 <button
                   type="submit"
-                  className="rounded-2xl bg-[#2D5A43] px-6 py-2.5 text-sm font-bold text-white shadow-xs hover:bg-[#234835] cursor-pointer"
+                  disabled={isSavingRoutine}
+                  className="rounded-2xl bg-[#2D5A43] px-6 py-2.5 text-sm font-bold text-white shadow-xs hover:bg-[#234835] cursor-pointer disabled:opacity-60 disabled:cursor-wait"
                 >
                   📤 Xuất & Gửi phác đồ về Bệnh nhân
                 </button>

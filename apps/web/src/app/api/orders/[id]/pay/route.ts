@@ -15,27 +15,23 @@ export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: corsHeaders });
 }
 
-// POST /api/orders/[id]/pay
-export async function POST(
-  request: Request,
-  props: { params: Promise<{ id: string }> },
-) {
+// Simulated MoMo confirmation from the phone that scanned the checkout QR (not signed in, hence
+// CORS *). It pays exactly the order in the URL: unknown -> 404, cancelled -> 409.
+async function pay(props: { params: Promise<{ id: string }> }) {
   const { id } = await props.params;
   const cleanId = decodeURIComponent(id || "").trim();
 
   try {
-    const updated = ordersStore.markAsPaid(cleanId);
-
+    const result = await ordersStore.markAsPaidAsync(cleanId);
+    if (!result.ok) {
+      return NextResponse.json(
+        { ok: false, error: result.error },
+        { status: result.code === "NOT_FOUND" ? 404 : 409, headers: corsHeaders },
+      );
+    }
     return NextResponse.json(
-      {
-        ok: true,
-        message: "Thanh toán đơn hàng thành công!",
-        order: updated,
-      },
-      {
-        status: 200,
-        headers: corsHeaders,
-      },
+      { ok: true, message: "Thanh toán đơn hàng thành công!", order: result.order },
+      { status: 200, headers: corsHeaders },
     );
   } catch (error) {
     return NextResponse.json(
@@ -45,24 +41,12 @@ export async function POST(
   }
 }
 
-// GET /api/orders/[id]/pay (Hỗ trợ trình duyệt điện thoại gửi request đơn giản không bị chặn CORS)
-export async function GET(
-  request: Request,
-  props: { params: Promise<{ id: string }> },
-) {
-  const { id } = await props.params;
-  const cleanId = decodeURIComponent(id || "").trim();
-  const updated = ordersStore.markAsPaid(cleanId);
+// POST /api/orders/[id]/pay
+export async function POST(_request: Request, props: { params: Promise<{ id: string }> }) {
+  return pay(props);
+}
 
-  return NextResponse.json(
-    {
-      ok: true,
-      message: "Thanh toán đơn hàng thành công!",
-      order: updated,
-    },
-    {
-      status: 200,
-      headers: corsHeaders,
-    },
-  );
+// GET /api/orders/[id]/pay (a simple request phone browsers never block on CORS)
+export async function GET(_request: Request, props: { params: Promise<{ id: string }> }) {
+  return pay(props);
 }

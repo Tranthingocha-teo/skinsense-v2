@@ -66,7 +66,8 @@
     "note": "Changes are saved only in this browser.",
     "persona": "Sample profile: oily skin, cheek breakouts · 90 days",
     "reset": "Reset",
-    "signIn": "Sign in with Google"
+    "signIn": "Sign in with Google",
+    "home": "Home"
   },
   "Today": {
     "title": "Today",
@@ -76,13 +77,14 @@
     "tonightSaved": "Tonight's photo is saved",
     "last": "Last: {when} · {count, plural, one {# spot marked} other {# spots marked}}",
     "noPhoto": "No photos yet. Take your first one to start the diary.",
-    "photoPlaceholder": "Photo · placeholder",
+    "photoPlaceholder": "Sample photo",
     "markSpots": "Mark spots →",
     "captureStreak": "Capture streak",
     "routineStreak": "Routine streak",
     "nights": "{count, plural, one {night in a row} other {nights in a row}}",
     "redness7": "Redness index, last 7 days",
-    "trends": "Trends →"
+    "trends": "Trends →",
+    "exportRecord": "Export record for a doctor"
   },
   "Shell": {
     "signOut": "Sign out"
@@ -106,7 +108,22 @@
     ],
     "edit": "Edit routine",
     "back": "Back",
-    "duplicate": "This step already exists"
+    "duplicate": "This step already exists",
+    "titleMorning": "This morning's routine",
+    "morning": "Morning",
+    "evening": "Evening",
+    "periodMorning": "Morning",
+    "periodEvening": "Evening",
+    "protocolPrescribed": "Prescribed plan · {period}",
+    "protocolPersonal": "Personal routine · {period}",
+    "privateData": "Your private data",
+    "defaultTitleMorning": "Morning: hydrate and protect",
+    "defaultTitleEvening": "Evening: deep cleanse and repair",
+    "defaultDescMorning": "A gentle pH 5.5 cleanse, hydration and sunscreen.",
+    "defaultDescEvening": "Dissolve oil and grime, calm breakouts and restore the skin barrier overnight.",
+    "emptyTitle": "No routine steps yet",
+    "emptyEmbedded": "No steps yet. Tap \"Edit routine\" to add one.",
+    "emptyFull": "No skincare steps yet. Add your first one below."
   },
   "Landing": {
     "title": "SkinSense",

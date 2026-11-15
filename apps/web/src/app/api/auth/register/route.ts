@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { getAuthenticatedActor } from "@/lib/session-auth";
+import { authzClaims, SUPER_ADMIN_EMAIL } from "@/lib/actor-role";
+import { shopIdClaim } from "@/lib/shop-utils";
+import { downloadStorageJson } from "@/lib/supabase/storage-json";
 
 export async function POST(request: Request) {
   try {
@@ -41,19 +45,18 @@ export async function POST(request: Request) {
     });
 
     const normalizedEmail = email.trim().toLowerCase();
-    const isAdminEmail = normalizedEmail === "hattn.23itb@vku.udn.vn";
-    const effectiveRole = isAdminEmail ? "admin" : role;
+    if (!["customer", "shop", "specialist"].includes(role)) {
+      return NextResponse.json({ error: "Vai trò không hợp lệ." }, { status: 400 });
+    }
+    if (normalizedEmail === SUPER_ADMIN_EMAIL) {
+      return NextResponse.json({ error: "Email này không thể đăng ký qua biểu mẫu." }, { status: 409 });
+    }
+    const effectiveRole = role as "customer" | "shop" | "specialist";
 
-    // Specialists & Shops start as "pending" approval unless it is the super admin
-    const status = isAdminEmail
-      ? "active"
-      : effectiveRole === "specialist" || effectiveRole === "shop"
-      ? "pending"
-      : "active";
+    // Specialists & Shops start as "pending" until an admin approves them.
+    const status = effectiveRole === "specialist" || effectiveRole === "shop" ? "pending" : "active";
 
-    const effectiveFullName = isAdminEmail
-      ? "Trần Thị Ngọc Hà (Super Admin)"
-      : (fullName || ownerName || doctorName || shopName || normalizedEmail.split("@")[0]).trim();
+    const effectiveFullName = (fullName || ownerName || doctorName || shopName || normalizedEmail.split("@")[0]).trim();
 
     const userMetadata = {
       full_name: effectiveFullName,
@@ -74,23 +77,36 @@ export async function POST(request: Request) {
         category: category?.trim() || specialty?.trim() || "Dược mỹ phẩm & Chăm sóc da",
         address: address?.trim() || hospital?.trim() || "Việt Nam",
       } : undefined,
-      is_super_admin: isAdminEmail,
       submitted_at: new Date().toISOString(),
     };
 
     // 1. Check if user already exists
-    const { data: userList } = await supabaseAdmin.auth.admin.listUsers();
+    const { data: userList } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
     const existingUser = userList?.users.find((u) => u.email?.toLowerCase() === normalizedEmail);
 
     let savedUser = null;
 
     if (existingUser) {
-      // Update existing user's role and metadata
+      // Only the signed-in owner of this email may change its application. Without this check
+      // anyone could rewrite another account's role and profile by posting its email.
+      const actor = await getAuthenticatedActor(request);
+      if (!actor || actor.email !== normalizedEmail) {
+        return NextResponse.json(
+          { error: "Email đã được đăng ký. Vui lòng đăng nhập bằng email này rồi gửi lại hồ sơ." },
+          { status: 409 },
+        );
+      }
+      const currentApp = (existingUser.app_metadata || {}) as Record<string, unknown>;
+      const alreadyApproved = currentApp.role === effectiveRole && currentApp.status === "active";
       const { data: updated, error: updateErr } = await supabaseAdmin.auth.admin.updateUserById(existingUser.id, {
         user_metadata: {
           ...existingUser.user_metadata,
           ...userMetadata,
+          ...(alreadyApproved ? { status: "active" } : {}),
         },
+        ...(alreadyApproved
+          ? {}
+          : { app_metadata: { ...authzClaims(effectiveRole, status), ...shopIdClaim(effectiveRole, currentApp, userMetadata) } }),
       });
       if (updateErr) throw new Error(updateErr.message);
       savedUser = updated.user;
@@ -103,6 +119,7 @@ export async function POST(request: Request) {
         email: normalizedEmail,
         password,
         email_confirm: true,
+        app_metadata: { ...authzClaims(effectiveRole, status), ...shopIdClaim(effectiveRole, {}, userMetadata) },
         user_metadata: userMetadata,
       });
 
@@ -113,13 +130,10 @@ export async function POST(request: Request) {
     // 2. If specialist, also record in Supabase Storage specialists_registry.json
     if (effectiveRole === "specialist") {
       try {
-        let registry: any[] = [];
-        const { data: fileBlob } = await supabaseAdmin.storage
-          .from("photos")
-          .download("specialists/specialists_registry.json");
-        if (fileBlob) {
-          registry = JSON.parse(await fileBlob.text());
-        }
+        // Through a cache-busted signed URL: storage .download() can serve a stale copy, and
+        // writing back a stale list dropped applications submitted moments earlier.
+        const registry =
+          (await downloadStorageJson<Array<Record<string, unknown>>>("specialists/specialists_registry.json", supabaseAdmin)) ?? [];
 
         const specialistEntry = {
           id: savedUser?.id || `spec_${Date.now()}`,
@@ -135,7 +149,9 @@ export async function POST(request: Request) {
           submittedAt: userMetadata.submitted_at,
         };
 
-        const filtered = registry.filter((s) => s.email?.toLowerCase() !== normalizedEmail);
+        const filtered = registry.filter(
+          (s) => (typeof s.email === "string" ? s.email.toLowerCase() : "") !== normalizedEmail
+        );
         filtered.push(specialistEntry);
 
         await supabaseAdmin.storage.from("photos").upload(
@@ -143,21 +159,16 @@ export async function POST(request: Request) {
           Buffer.from(JSON.stringify(filtered, null, 2)),
           { upsert: true, contentType: "application/json" }
         );
-      } catch (e: any) {
-        console.warn("Lỗi lưu specialists_registry:", e.message);
+      } catch (e: unknown) {
+        console.warn("Lỗi lưu specialists_registry:", e instanceof Error ? e.message : String(e));
       }
     }
 
     // 3. If shop, also record in Supabase Storage shops_registry.json
     if (effectiveRole === "shop") {
       try {
-        let registry: any[] = [];
-        const { data: fileBlob } = await supabaseAdmin.storage
-          .from("photos")
-          .download("shops/shops_registry.json");
-        if (fileBlob) {
-          registry = JSON.parse(await fileBlob.text());
-        }
+        const registry =
+          (await downloadStorageJson<Array<Record<string, unknown>>>("shops/shops_registry.json", supabaseAdmin)) ?? [];
 
         const shopEntry = {
           id: savedUser?.id || `shop_${Date.now()}`,
@@ -173,7 +184,9 @@ export async function POST(request: Request) {
           submittedAt: userMetadata.submitted_at,
         };
 
-        const filtered = registry.filter((s) => s.email?.toLowerCase() !== normalizedEmail);
+        const filtered = registry.filter(
+          (s) => (typeof s.email === "string" ? s.email.toLowerCase() : "") !== normalizedEmail
+        );
         filtered.push(shopEntry);
 
         await supabaseAdmin.storage.from("photos").upload(
@@ -181,14 +194,14 @@ export async function POST(request: Request) {
           Buffer.from(JSON.stringify(filtered, null, 2)),
           { upsert: true, contentType: "application/json" }
         );
-      } catch (e: any) {
-        console.warn("Lỗi lưu shops_registry:", e.message);
+      } catch (e: unknown) {
+        console.warn("Lỗi lưu shops_registry:", e instanceof Error ? e.message : String(e));
       }
     }
 
     return NextResponse.json({
       ok: true,
-      user: savedUser,
+      user: savedUser ? { id: savedUser.id, email: savedUser.email } : null,
       status,
       message:
         effectiveRole === "specialist"

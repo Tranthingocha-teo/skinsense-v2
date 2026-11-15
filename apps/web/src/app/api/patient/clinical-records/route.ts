@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { requireRoleActor } from "@/lib/session-auth";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -10,7 +11,7 @@ function getSupabaseAdmin() {
   return createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
 }
 
-async function downloadJsonFromStorage<T = any>(supabase: any, path: string): Promise<T | null> {
+async function downloadJsonFromStorage<T = unknown>(supabase: SupabaseClient, path: string): Promise<T | null> {
   try {
     const { data: signData } = await supabase.storage.from("photos").createSignedUrl(path, 60);
     if (signData?.signedUrl) {
@@ -27,10 +28,40 @@ async function downloadJsonFromStorage<T = any>(supabase: any, path: string): Pr
   return null;
 }
 
-export async function GET() {
+interface ClinicalRecordEntry extends Record<string, unknown> {
+  id?: string;
+  userId?: string;
+  patientUserId?: string;
+  patientEmail?: string;
+}
+
+export async function GET(request: Request) {
+  const auth = await requireRoleActor(request, ["customer", "specialist", "admin"]);
+  if (!auth.ok) return auth.response;
+  const { actor } = auth;
+
   try {
     const supabase = getSupabaseAdmin();
-    const cases = (await downloadJsonFromStorage(supabase, "clinical_records/cases_registry.json")) || [];
+    const allCases =
+      (await downloadJsonFromStorage<ClinicalRecordEntry[]>(
+        supabase,
+        "clinical_records/cases_registry.json",
+      )) || [];
+
+    // ?mine=1: only the caller's own records whatever the role (the patient routine page), so a
+    // specialist opening /user/routine does not get another patient's prescription.
+    const mineOnly = new URL(request.url).searchParams.get("mine") === "1";
+    const cases =
+      actor.role === "customer" || mineOnly
+        ? allCases.filter(
+            (c) =>
+              c.patientUserId === actor.userId ||
+              c.userId === actor.userId ||
+              (typeof c.patientEmail === "string" &&
+                c.patientEmail.trim().toLowerCase() === actor.email),
+          )
+        : allCases;
+
     return NextResponse.json({ ok: true, cases });
   } catch (err) {
     return NextResponse.json(
@@ -41,6 +72,10 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const auth = await requireRoleActor(request, ["customer", "specialist", "admin"]);
+  if (!auth.ok) return auth.response;
+  const { actor } = auth;
+
   try {
     const body = await request.json();
     const {
@@ -69,24 +104,34 @@ export async function POST(request: Request) {
     const supabase = getSupabaseAdmin();
 
     // 1. Download existing cases registry from Supabase Storage with cache busting
-    const existingCases = (await downloadJsonFromStorage<any[]>(supabase, "clinical_records/cases_registry.json")) || [];
+    const existingCases = (await downloadJsonFromStorage<Array<Record<string, unknown>>>(supabase, "clinical_records/cases_registry.json")) || [];
 
     const newCaseId = `case_${Date.now()}`;
     const caseIndex = existingCases.length + 1;
     const caseCode = `BA-2026-${String(caseIndex).padStart(4, "0")}`;
 
+    const resolvedPatientUserId =
+      actor.role === "customer"
+        ? actor.userId
+        : body.patientUserId || body.userId || (patientEmail === "trandinhhai0936039127@gmail.com" ? "365d9ffb-0ee5-41d2-879c-37ef337fe262" : undefined);
+
+    const resolvedPatientEmail =
+      actor.role === "customer"
+        ? actor.email
+        : patientEmail?.trim() || "khachhang@gmail.com";
+
     const newCase = {
       id: newCaseId,
       caseCode,
-      patientUserId: body.patientUserId || body.userId || (patientEmail === "trandinhhai0936039127@gmail.com" ? "365d9ffb-0ee5-41d2-879c-37ef337fe262" : undefined),
+      patientUserId: resolvedPatientUserId,
       patientName: patientName.trim(),
-      patientEmail: patientEmail?.trim() || "khachhang@gmail.com",
+      patientEmail: resolvedPatientEmail,
       patientAge: Number(patientAge) || 21,
       patientGender: patientGender || "Nữ",
       phone: phone?.trim() || "0905 123 456",
       skinType: skinType || "Hỗn hợp thiên dầu",
       fitzpatrickScale: "Loại III (Châu Á)",
-      submittedDate: new Date().toLocaleDateString("vi-VN"),
+      submittedDate: new Date().toLocaleDateString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" }),
       severity: (Number(rednessIndex) > 55 ? "severe" : Number(rednessIndex) > 30 ? "moderate" : "mild"),
       status: "pending_routine",
       treatmentDay: "Ngày 1/14",

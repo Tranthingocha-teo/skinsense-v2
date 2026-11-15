@@ -93,6 +93,7 @@ export function demoApi(routineLabels: string[]) {
       write((s) => void (s.tags = Object.fromEntries(Object.entries(s.tags ?? {}).map(([id, list]) => [id, list.filter((t) => t.id !== tagId)])))),
     deletePhoto: async ({ id }: { id: string }) => write((s) => void (s.deleted = [...(s.deleted ?? []), id])),
     routine: {
+      remote: false,
       loadRoutine: async (night: string) => ({ items: items(), entry: entries().find((e) => e.night === night) ?? null }),
       async addItem(label: string, position: number) {
         const item = { id: crypto.randomUUID(), label, position };
