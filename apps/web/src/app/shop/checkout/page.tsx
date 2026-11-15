@@ -140,8 +140,14 @@ export const SHOP_MOMO_PROFILES: Record<string, ShopMoMoProfile> = {
 };
 
 /** "16 Tháng 11 - 18 Tháng 11": today to two days out (this used to be a fixed date in the copy). */
+// Vietnam time on purpose: the server renders in UTC, so getDate() there and in the browser gave
+// different days for 7 hours each night (React hydration error #418).
 function deliveryWindowLabel(now: Date): string {
-  const label = (d: Date) => `${d.getDate()} Tháng ${d.getMonth() + 1}`;
+  const label = (d: Date) => {
+    const parts = new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Ho_Chi_Minh", day: "numeric", month: "numeric" }).formatToParts(d);
+    const get = (type: string) => parts.find((p) => p.type === type)?.value;
+    return `${get("day")} Tháng ${get("month")}`;
+  };
   return `${label(now)} - ${label(new Date(now.getTime() + 2 * 86_400_000))}`;
 }
 
@@ -307,7 +313,12 @@ function CheckoutInner() {
   const shippingDiscountVnd = 40000; // Freeship Xtra
 
   // Mã đơn hàng được sinh ra khi thanh toán (Khởi tạo sẵn để mã QR luôn luôn có mã chuẩn xác, không bao giờ rỗng)
-  const [orderCode, setOrderCode] = useState(() => `SHOPEE-SS-${Math.floor(100000 + Math.random() * 900000)}`);
+  // Generated in the browser only: a random value in the initial state differs between the
+  // server render and hydration. Every submit makes its own fresh code anyway.
+  const [orderCode, setOrderCode] = useState("");
+  useEffect(() => {
+    setOrderCode((code) => code || `SHOPEE-SS-${Math.floor(100000 + Math.random() * 900000)}`);
+  }, []);
   const [modalOpenedAt, setModalOpenedAt] = useState<number>(0);
 
   // ==========================================================================
