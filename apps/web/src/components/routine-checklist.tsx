@@ -26,6 +26,35 @@ const TINT =
   "pointer-events-none absolute inset-x-0 top-0 h-[240px] bg-[radial-gradient(60%_60%_at_75%_10%,color-mix(in_oklab,var(--photo-c)_30%,transparent),transparent_70%),linear-gradient(180deg,var(--photo-b),var(--background))] md:h-[300px] md:bg-[radial-gradient(40%_60%_at_80%_10%,color-mix(in_oklab,var(--photo-c)_30%,transparent),transparent_70%),linear-gradient(180deg,var(--photo-b),var(--background))]";
 const FIELD = "h-10 w-full rounded-lg border bg-transparent px-2.5 text-[15.5px] outline-none";
 
+interface SupabaseRoutineStep {
+  id?: string;
+  stepNumber?: number;
+  label: string;
+  productName?: string | null;
+  brand?: string | null;
+  category?: string | null;
+  imageUrl?: string | null;
+  activeIngredients?: string | null;
+  stepTime?: "morning" | "evening" | "both";
+  dosage?: string | null;
+  usageGuide?: string | null;
+  isCompleted?: boolean;
+}
+
+interface SupabaseRoutineProtocol {
+  ok?: boolean;
+  isPrescribed?: boolean;
+  allocatedBy?: string;
+  title?: string;
+  description?: string;
+  treatmentDuration?: string;
+  skinConcern?: string;
+  steps?: SupabaseRoutineStep[];
+  completedCount?: number;
+  totalCount?: number;
+  percent?: number;
+}
+
 // embedded: the tick-only card inside Hôm nay; editing stays on the routine screen.
 export function RoutineChecklist({ api, embedded = false }: { api: RoutineApi; embedded?: boolean }) {
   const t = useTranslations("Routine");
@@ -48,7 +77,7 @@ export function RoutineChecklist({ api, embedded = false }: { api: RoutineApi; e
     const hour = new Date().getHours();
     return hour >= 5 && hour < 17 ? "morning" : "evening";
   });
-  const [supabaseProtocol, setSupabaseProtocol] = useState<any>(null);
+  const [supabaseProtocol, setSupabaseProtocol] = useState<SupabaseRoutineProtocol | null>(null);
   const [showUsageTips, setShowUsageTips] = useState<boolean>(true);
   const defaults = t.raw("defaults") as string[];
 
@@ -58,22 +87,22 @@ export function RoutineChecklist({ api, embedded = false }: { api: RoutineApi; e
     fetch(`/api/routine?timeOfDay=${timeOfDay}`)
       .then((res) => {
         if (!res.ok) return null;
-        return res.json();
+        return res.json() as Promise<SupabaseRoutineProtocol>;
       })
       .then((data) => {
         if (data && data.ok) {
           setSupabaseProtocol(data);
           if (Array.isArray(data.steps) && data.steps.length > 0) {
             // Set real items from Supabase protocol for morning or evening
-            const realItems: RoutineItem[] = data.steps.map((s: any, idx: number) => ({
+            const realItems: RoutineItem[] = data.steps.map((s, idx: number) => ({
               id: s.id || `step-${timeOfDay}-${idx}`,
               label: s.label,
               position: idx,
             }));
             setItems(realItems);
             const realCompletedLabels = data.steps
-              .filter((s: any) => s.isCompleted)
-              .map((s: any) => s.label);
+              .filter((s) => s.isCompleted)
+              .map((s) => s.label);
             setEntry((prev) => ({
               night: prev?.night || night || new Date().toISOString().split("T")[0],
               completed_labels: realCompletedLabels,
@@ -131,12 +160,12 @@ export function RoutineChecklist({ api, embedded = false }: { api: RoutineApi; e
 
     // Optimistically update supabaseProtocol steps state
     if (supabaseProtocol?.steps) {
-      setSupabaseProtocol((prev: any) => {
-        if (!prev) return prev;
-        const updatedSteps = prev.steps.map((s: any) =>
+      setSupabaseProtocol((prev) => {
+        if (!prev?.steps) return prev;
+        const updatedSteps = prev.steps.map((s) =>
           s.label === item.label ? { ...s, isCompleted: isNowTicked } : s
         );
-        const completedCount = updatedSteps.filter((s: any) => s.isCompleted).length;
+        const completedCount = updatedSteps.filter((s) => s.isCompleted).length;
         return {
           ...prev,
           steps: updatedSteps,
@@ -224,7 +253,7 @@ export function RoutineChecklist({ api, embedded = false }: { api: RoutineApi; e
   const rows = items.map((item, index) => {
     const isTicked = ticked.has(item.label);
     const supabaseStep = supabaseProtocol?.steps?.find(
-      (s: any) => s.label?.toLowerCase() === item.label?.toLowerCase()
+      (s) => s.label?.toLowerCase() === item.label?.toLowerCase()
     ) || supabaseProtocol?.steps?.[index];
     // CHỈ hiển thị thông tin sản phẩm và liều lượng khi là phác đồ kê đơn y khoa thật sự
     const product = (supabaseProtocol?.isPrescribed && supabaseStep && supabaseStep.productName) ? {

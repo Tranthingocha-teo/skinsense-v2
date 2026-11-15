@@ -38,6 +38,7 @@ import { LogoMark } from "@/components/site-header";
 import { AuthModal } from "@/components/auth-modal";
 import { CloudinaryProductUploader } from "@/components/cloudinary-product-uploader";
 import {
+  type ShopUserSession,
   canShopSignIn,
   isProductVisibleToBuyer,
   getProductApprovalBadge,
@@ -568,13 +569,43 @@ export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
   },
 ];
 
+interface ShopCurrentUser extends ShopUserSession {
+  id?: string;
+  isSuperAdmin?: boolean;
+  shopDetails?: {
+    shopName?: string;
+    ownerName?: string;
+    license?: string;
+    category?: string;
+    address?: string;
+    phone?: string;
+  };
+}
+
+interface AdminProductApiRecord {
+  id: string;
+  shopName?: string;
+  sku?: string;
+  name: string;
+  category?: string;
+  brand?: string;
+  origin?: string;
+  images?: unknown[];
+  coverImage?: string;
+  price: number;
+  stock?: number;
+  description?: string;
+  status: string;
+  submittedAt?: string;
+}
+
 export default function ShopProductPage() {
   const router = useRouter();
   // Page mode: "seller" (Shopee Seller Center) vs "buyer" (Shopee Marketplace Storefront)
   const [viewMode, setViewMode] = useState<"seller" | "buyer">("seller");
 
   // User session & approval state
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<ShopCurrentUser | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
   // Products state - Exactly 9 authentic products
@@ -607,8 +638,8 @@ export default function ShopProductPage() {
         if (data?.ok && Array.isArray(data.products)) {
           setProducts((prev) => {
             const updated = prev.map((p) => {
-              const match = data.products.find(
-                (ap: any) =>
+              const match = (data.products as AdminProductApiRecord[]).find(
+                (ap) =>
                   ap.id === p.id ||
                   ap.name.toLowerCase() === p.name.toLowerCase() ||
                   (ap.sku && ap.sku === p.sku)
@@ -625,7 +656,7 @@ export default function ShopProductPage() {
             // Append any new products added by shops from admin products
             const existingNames = new Set(updated.map((p) => p.name.toLowerCase()));
             const newAdminItems: ShopeeProduct[] = [];
-            data.products.forEach((ap: any) => {
+            (data.products as AdminProductApiRecord[]).forEach((ap) => {
               if (!existingNames.has(ap.name.toLowerCase())) {
                 const apiImages = Array.isArray(ap.images)
                   ? ap.images.filter((img: unknown): img is string => typeof img === "string" && img.trim().length > 0)

@@ -471,7 +471,7 @@ function CheckoutInner() {
           },
         );
 
-        let data: any = null;
+        let data: { ok?: boolean; paid?: boolean } | null = null;
         if (res.ok) {
           data = await res.json();
         } else {
@@ -981,7 +981,7 @@ function CheckoutInner() {
               </div>
 
               <div className="text-[11px] text-pink-700 bg-pink-100/70 border border-pink-300 rounded-xl px-3 py-1 font-medium">
-                ⚡ Khi bấm "Thanh Toán", quét bằng điện thoại và bấm xác nhận để màn hình tự động tắt mã.
+                ⚡ Khi bấm &quot;Thanh Toán&quot;, quét bằng điện thoại và bấm xác nhận để màn hình tự động tắt mã.
               </div>
             </div>
           )}

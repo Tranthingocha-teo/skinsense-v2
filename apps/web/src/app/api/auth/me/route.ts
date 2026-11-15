@@ -34,7 +34,25 @@ export async function GET() {
     // 2. Check Specialist registry from Supabase Storage
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    let specialistRecord: any = null;
+    interface SpecialistRecord {
+      email?: string;
+      status?: string;
+      name?: string;
+      licenseId?: string;
+      hospital?: string;
+      specialty?: string;
+    }
+    interface ShopRecord {
+      email?: string;
+      status?: string;
+      shopName?: string;
+      ownerName?: string;
+      license?: string;
+      category?: string;
+      address?: string;
+      phone?: string;
+    }
+    let specialistRecord: SpecialistRecord | null = null;
 
     if (url && serviceKey) {
       try {
@@ -45,8 +63,8 @@ export async function GET() {
         if (signData?.signedUrl) {
           const res = await fetch(signData.signedUrl + `&_t=${Date.now()}`, { cache: "no-store" });
           if (res.ok) {
-            const list: any[] = await res.json();
-            specialistRecord = list.find((s) => s.email?.toLowerCase() === email);
+            const list = (await res.json()) as SpecialistRecord[];
+            specialistRecord = list.find((s) => s.email?.toLowerCase() === email) ?? null;
           }
         }
         if (!specialistRecord) {
@@ -54,15 +72,15 @@ export async function GET() {
             .from("photos")
             .download("specialists/specialists_registry.json");
           if (fileBlob) {
-            const list: any[] = JSON.parse(await fileBlob.text());
-            specialistRecord = list.find((s) => s.email?.toLowerCase() === email);
+            const list = JSON.parse(await fileBlob.text()) as SpecialistRecord[];
+            specialistRecord = list.find((s) => s.email?.toLowerCase() === email) ?? null;
           }
         }
       } catch {}
     }
 
     // 3. Check Shop registry from Supabase Storage
-    let shopRecord: any = null;
+    let shopRecord: ShopRecord | null = null;
     if (url && serviceKey) {
       try {
         const adminClient = createAdminClient(url, serviceKey);
@@ -70,13 +88,34 @@ export async function GET() {
           .from("photos")
           .download("shops/shops_registry.json");
         if (fileBlob) {
-          const list: any[] = JSON.parse(await fileBlob.text());
-          shopRecord = list.find((s) => s.email?.toLowerCase() === email);
+          const list = JSON.parse(await fileBlob.text()) as ShopRecord[];
+          shopRecord = list.find((s) => s.email?.toLowerCase() === email) ?? null;
         }
       } catch {}
     }
 
-    const meta = (user.user_metadata || {}) as Record<string, any>;
+    interface AuthUserMetadata {
+      role?: string;
+      status?: string;
+      full_name?: string;
+      name?: string;
+      phone_number?: string;
+      shop_name?: string;
+      license?: string;
+      category?: string;
+      address?: string;
+      license_id?: string;
+      hospital?: string;
+      specialty?: string;
+      shop_details?: {
+        shopName?: string;
+        license?: string;
+        category?: string;
+        address?: string;
+      };
+    }
+
+    const meta = (user.user_metadata || {}) as AuthUserMetadata;
     const isDoctorEmail =
       email.includes("doctor") ||
       email.includes("bacsi") ||

@@ -113,12 +113,12 @@ export async function POST(request: Request) {
     // 2. If specialist, also record in Supabase Storage specialists_registry.json
     if (effectiveRole === "specialist") {
       try {
-        let registry: any[] = [];
+        let registry: Array<Record<string, unknown>> = [];
         const { data: fileBlob } = await supabaseAdmin.storage
           .from("photos")
           .download("specialists/specialists_registry.json");
         if (fileBlob) {
-          registry = JSON.parse(await fileBlob.text());
+          registry = JSON.parse(await fileBlob.text()) as Array<Record<string, unknown>>;
         }
 
         const specialistEntry = {
@@ -135,7 +135,9 @@ export async function POST(request: Request) {
           submittedAt: userMetadata.submitted_at,
         };
 
-        const filtered = registry.filter((s) => s.email?.toLowerCase() !== normalizedEmail);
+        const filtered = registry.filter(
+          (s) => (typeof s.email === "string" ? s.email.toLowerCase() : "") !== normalizedEmail
+        );
         filtered.push(specialistEntry);
 
         await supabaseAdmin.storage.from("photos").upload(
@@ -143,20 +145,20 @@ export async function POST(request: Request) {
           Buffer.from(JSON.stringify(filtered, null, 2)),
           { upsert: true, contentType: "application/json" }
         );
-      } catch (e: any) {
-        console.warn("Lỗi lưu specialists_registry:", e.message);
+      } catch (e: unknown) {
+        console.warn("Lỗi lưu specialists_registry:", e instanceof Error ? e.message : String(e));
       }
     }
 
     // 3. If shop, also record in Supabase Storage shops_registry.json
     if (effectiveRole === "shop") {
       try {
-        let registry: any[] = [];
+        let registry: Array<Record<string, unknown>> = [];
         const { data: fileBlob } = await supabaseAdmin.storage
           .from("photos")
           .download("shops/shops_registry.json");
         if (fileBlob) {
-          registry = JSON.parse(await fileBlob.text());
+          registry = JSON.parse(await fileBlob.text()) as Array<Record<string, unknown>>;
         }
 
         const shopEntry = {
@@ -173,7 +175,9 @@ export async function POST(request: Request) {
           submittedAt: userMetadata.submitted_at,
         };
 
-        const filtered = registry.filter((s) => s.email?.toLowerCase() !== normalizedEmail);
+        const filtered = registry.filter(
+          (s) => (typeof s.email === "string" ? s.email.toLowerCase() : "") !== normalizedEmail
+        );
         filtered.push(shopEntry);
 
         await supabaseAdmin.storage.from("photos").upload(
@@ -181,8 +185,8 @@ export async function POST(request: Request) {
           Buffer.from(JSON.stringify(filtered, null, 2)),
           { upsert: true, contentType: "application/json" }
         );
-      } catch (e: any) {
-        console.warn("Lỗi lưu shops_registry:", e.message);
+      } catch (e: unknown) {
+        console.warn("Lỗi lưu shops_registry:", e instanceof Error ? e.message : String(e));
       }
     }
 
