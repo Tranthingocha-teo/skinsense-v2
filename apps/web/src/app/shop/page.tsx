@@ -25,6 +25,7 @@ import {
   BadgeCheck,
   FileText,
   Grid3X3,
+  User,
 } from "lucide-react";
 import { toast } from "sonner";
 import { LogoMark } from "@/components/site-header";
@@ -729,6 +730,17 @@ export default function ShopProductPage() {
             >
               <ShoppingBag className="size-3.5" />
               <span>Thanh Toán</span>
+            </Link>
+
+            <Link
+              href={viewMode === "seller" ? "/shop/profile" : "/user/profile"}
+              className="flex items-center gap-1.5 rounded-xl border border-[#D8D4CA] bg-white px-3 py-1.5 text-xs font-bold text-[#191B19] hover:border-[#191B19] transition shadow-2xs"
+              title={viewMode === "seller" ? "Xem hồ sơ Cửa hàng (Shop)" : "Xem hồ sơ Người mua (Khách hàng)"}
+            >
+              <User className="size-3.5 text-[#C2410C]" />
+              <span className="hidden sm:inline">
+                {viewMode === "seller" ? "Hồ Sơ Shop" : "Hồ Sơ"}
+              </span>
             </Link>
 
             <Link

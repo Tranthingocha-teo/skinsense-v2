@@ -27,3 +27,5 @@ supabase/.temp/
 .idea/
 .orders-db.json
 *.orders-db.json
+.profiles-cache.json
+*.profiles-cache.json

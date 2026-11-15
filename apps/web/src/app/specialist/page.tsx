@@ -18,6 +18,7 @@ import {
   Activity,
   Check,
   AlertTriangle,
+  User,
 } from "lucide-react";
 import { toast } from "sonner";
 import { LogoMark } from "@/components/site-header";
@@ -573,6 +574,15 @@ function SpecialistContent() {
           </div>
 
           <div className="flex items-center gap-3">
+            <Link
+              href="/specialist/profile"
+              className="flex items-center gap-1.5 rounded-xl border border-[#D8D4CA] bg-white px-3.5 py-2 text-xs font-bold text-[#191B19] shadow-2xs hover:border-[#191B19] transition"
+              title="Hồ sơ Bác sĩ"
+            >
+              <User className="size-4 text-[#2D5A43]" />
+              <span>Hồ Sơ Bác Sĩ</span>
+            </Link>
+
             <Link
               href="/app"
               className="flex items-center gap-1.5 rounded-xl border border-[#D8D4CA] bg-[#F6F4EF] px-3.5 py-2 text-xs font-semibold text-[#5C605C] transition hover:text-[#191B19]"
