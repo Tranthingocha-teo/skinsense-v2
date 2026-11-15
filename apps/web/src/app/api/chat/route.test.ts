@@ -228,6 +228,7 @@ describe("/api/chat security, isolation, and messaging", () => {
     currentUser = {
       id: "shop_new",
       email: "new@shop.vn",
+      app_metadata: { role: "shop", status: "active" },
       user_metadata: { role: "shop", shop_name: "Brand New Store" },
     };
     for (const url of [
