@@ -9,6 +9,11 @@ export interface ProductItem {
   status: "approved" | "pending" | "rejected";
   submittedAt: string;
   stock: number;
+  brand?: string;
+  sku?: string;
+  coverImage?: string;
+  description?: string;
+  origin?: string;
 }
 
 // In-memory persistent state (shared across requests in dev/prod runtime)
@@ -72,7 +77,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, shopName, price, category, stock } = body;
+    const { name, shopName, price, category, stock, brand, sku, coverImage, description, origin } = body;
 
     const newProd: ProductItem = {
       id: `prod_${Date.now()}`,
@@ -83,6 +88,11 @@ export async function POST(request: Request) {
       status: "pending",
       submittedAt: new Date().toISOString().split("T")[0],
       stock: Number(stock) || 100,
+      brand: brand?.trim() || "SkinSense Flagship",
+      sku: sku?.trim() || `SKU-${Date.now().toString().slice(-6)}`,
+      coverImage: coverImage?.trim() || "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=800&auto=format&fit=crop&q=80",
+      description: description?.trim() || "Sản phẩm chính hãng đã qua kiểm định.",
+      origin: origin?.trim() || "Pháp",
     };
 
     PRODUCTS_STORE = [newProd, ...PRODUCTS_STORE];

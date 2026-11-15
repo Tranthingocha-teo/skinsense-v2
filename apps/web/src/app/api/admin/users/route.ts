@@ -136,6 +136,31 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
+    // Sync status change to shops/shops_registry.json if user is a shop
+    const userEffectiveRole = role || userRes.user.user_metadata?.role;
+    if (userEffectiveRole === "shop" && status) {
+      try {
+        const email = userRes.user.email?.toLowerCase();
+        let registry: any[] = [];
+        const { data: fileBlob } = await supabaseAdmin.storage
+          .from("photos")
+          .download("shops/shops_registry.json");
+        if (fileBlob) {
+          registry = JSON.parse(await fileBlob.text());
+        }
+        registry = registry.map((s) =>
+          s.email?.toLowerCase() === email || s.id === userId ? { ...s, status } : s
+        );
+        await supabaseAdmin.storage.from("photos").upload(
+          "shops/shops_registry.json",
+          Buffer.from(JSON.stringify(registry, null, 2)),
+          { upsert: true, contentType: "application/json" }
+        );
+      } catch (syncErr) {
+        console.warn("Lỗi đồng bộ shops_registry.json:", syncErr);
+      }
+    }
+
     return NextResponse.json({ ok: true, user: data.user });
   } catch (err) {
     return NextResponse.json(

@@ -29,6 +29,7 @@ import {
   validateShopApprovalInput,
   sanitizeShopApprovalInput,
 } from "@/lib/shop-approval-validation";
+import { canShopSignIn } from "@/lib/shop-product-approval";
 
 export type UserRole = "customer" | "shop" | "specialist" | "admin";
 export type AuthModalTab = "sign-in" | "register" | "doctor-approval" | "shop-approval";
@@ -188,6 +189,22 @@ export function AuthModal({
       }
 
       if (role === "shop") {
+        const check = canShopSignIn({
+          role,
+          status,
+          email: userEmail,
+        });
+
+        if (!check.allowed) {
+          setError(
+            check.reason ||
+              "Hồ sơ Gian hàng của bạn đang chờ Super Admin (Trần Thị Ngọc Hà) xét duyệt. Vui lòng đợi Admin phê duyệt trước khi đăng nhập Kênh Người Bán!"
+          );
+          setLoading(false);
+          await supabase.auth.signOut();
+          return;
+        }
+
         setSuccess("Đăng nhập Cửa hàng thành công! Đang mở Kênh Người bán...");
         setTimeout(() => {
           setIsOpen(false);
