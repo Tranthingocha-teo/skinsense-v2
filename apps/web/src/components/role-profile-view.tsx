@@ -38,6 +38,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { normalizeShopId } from "@/lib/shop-utils";
+import { pingChatSync, useChatSync, useStickToBottom } from "@/hooks/use-chat-sync";
 
 export type RoleType = "customer" | "specialist" | "shop" | "admin";
 
@@ -59,6 +60,31 @@ export interface ChatThreadItem {
   orderCode?: string;
   messages: ChatMessageItem[];
   updatedAt?: string;
+}
+
+const CHAT_POLL_INTERVAL_MS = 2000;
+
+/** Server messages win; local optimistic temp_* messages not yet acknowledged are kept at the end. */
+function mergeServerMessages(
+  prev: ChatMessageItem[],
+  server: ChatMessageItem[],
+): ChatMessageItem[] {
+  const pending = prev.filter((m) => m.id.startsWith("temp_"));
+  const next = pending.length > 0 ? [...server, ...pending] : server;
+  const sameAsPrev =
+    next.length === prev.length &&
+    next.every((m, i) => m.id === prev[i].id && m.text === prev[i].text);
+  return sameAsPrev ? prev : next;
+}
+
+/** Cheap change signature for the shop inbox: thread ids + last message id + updatedAt. */
+function shopThreadsSignature(threads: ChatThreadItem[]): string {
+  return threads
+    .map((t) => {
+      const last = t.messages?.[t.messages.length - 1];
+      return `${t.id}:${t.updatedAt ?? ""}:${last?.id ?? ""}:${t.messages?.length ?? 0}`;
+    })
+    .join("|");
 }
 
 function createLocalMessageId(prefix: string): string {
@@ -333,7 +359,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
             u.phone || "",
           );
           if (role === "shop") {
-            loadShopThreads(u.shop?.shopName || u.fullName);
+            void loadShopThreads();
           }
         }
       }
@@ -392,153 +418,69 @@ export function RoleProfileView({ role }: { role: RoleType }) {
   const [shopReplySending, setShopReplySending] = useState(false);
   const [shopChatAuthRequired, setShopChatAuthRequired] = useState(false);
 
-  // Tải các cuộc hội thoại dành cho Shop
-  async function loadShopThreads(shopTarget?: string) {
-    try {
-      const targetShopId = normalizeShopId(shopTarget || shopName || fullName || "skinsense_mall");
-      const res = await fetch(
-        `/api/chat?forShop=true&shopId=${encodeURIComponent(targetShopId)}`,
-        { cache: "no-store" },
-      );
-      if (res.status === 401 || res.status === 403) {
+  // Mỗi lần gửi/tải lại tăng version: kết quả poll bắt đầu trước đó bị bỏ qua (tránh ghi đè dữ liệu mới)
+  const shopSyncVersionRef = useRef(0);
+  const shopReplyInFlightRef = useRef(false);
+
+  // Shop chỉ đọc hộp thư của chính gian hàng mình: server suy ra shop từ phiên đăng nhập
+  async function fetchShopThreads(signal?: AbortSignal): Promise<ChatThreadItem[] | null> {
+    const res = await fetch("/api/chat?forShop=true", { cache: "no-store", signal });
+    if (res.status === 401 || res.status === 403) {
+      if (!signal?.aborted) {
         setShopChatAuthRequired(true);
         setShopThreads([]);
-        return;
       }
-      const data = await res.json();
-      setShopChatAuthRequired(false);
-      if (data.ok && Array.isArray(data.threads)) {
-        setShopThreads(data.threads as ChatThreadItem[]);
-        if (data.threads.length > 0) {
-          setSelectedThreadId((prev) => prev || data.threads[0].id);
-        }
-      }
-    } catch {}
+      return null;
+    }
+    const data = await res.json();
+    if (signal?.aborted) return null;
+    setShopChatAuthRequired(false);
+    return data.ok && Array.isArray(data.threads) ? (data.threads as ChatThreadItem[]) : null;
   }
 
-  // Cross-tab & Realtime sync trigger
-  function triggerChatRealtimeSync(data?: { shopId?: string; userId?: string }) {
+  function applyShopThreads(threads: ChatThreadItem[]) {
+    setShopThreads((prev) =>
+      shopThreadsSignature(prev) === shopThreadsSignature(threads) ? prev : threads,
+    );
+    setSelectedThreadId((prev) =>
+      prev && threads.some((t) => t.id === prev) ? prev : threads[0]?.id ?? "",
+    );
+  }
+
+  // Tải các cuộc hội thoại dành cho Shop
+  async function loadShopThreads() {
+    const version = ++shopSyncVersionRef.current;
     try {
-      if (typeof window !== "undefined") {
-        const payload = { ...data, timestamp: Date.now() };
-        if ("BroadcastChannel" in window) {
-          const bc = new BroadcastChannel("skinsense_realtime_chat");
-          bc.postMessage(payload);
-          bc.close();
-        }
-        localStorage.setItem("skinsense_realtime_chat_ping", JSON.stringify(payload));
-      }
+      const threads = await fetchShopThreads();
+      if (threads && version === shopSyncVersionRef.current) applyShopThreads(threads);
     } catch {}
   }
 
-  const customerChatEndRef = useRef<HTMLDivElement | null>(null);
-  const shopChatEndRef = useRef<HTMLDivElement | null>(null);
+  // Realtime Live Chat cho Chủ Shop: poll + đồng bộ chéo tab, không cần F5
+  useChatSync<{ version: number; threads: ChatThreadItem[] }>({
+    enabled: role === "shop" && activeTab === "messages" && !shopChatAuthRequired,
+    intervalMs: CHAT_POLL_INTERVAL_MS,
+    fetcher: async (signal) => {
+      const version = shopSyncVersionRef.current;
+      const threads = await fetchShopThreads(signal);
+      return threads ? { version, threads } : null;
+    },
+    onData: ({ version, threads }) => {
+      if (shopReplyInFlightRef.current || version !== shopSyncVersionRef.current) return;
+      applyShopThreads(threads);
+    },
+  });
 
-  // Tự động cuộn xuống cuối khi có tin nhắn mới phía Khách hàng
-  useEffect(() => {
-    if (isChatOpen) {
-      customerChatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [chatMessages, isChatOpen]);
-
-  // Tự động cuộn xuống cuối khi có tin nhắn mới phía Shop
-  useEffect(() => {
-    if (role === "shop" && activeTab === "messages") {
-      shopChatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [shopThreads, selectedThreadId, activeTab, role]);
-
-  // Realtime Live Chat Listener cho Khách Hàng (Customer) - không cần F5
-  useEffect(() => {
-    if (!isChatOpen) return;
-
-    const syncCustomer = async () => {
-      try {
-        const res = await fetch(`/api/chat?shopId=${activeChatShopId}&userId=thuy_dung&_t=${Date.now()}`);
-        const data = await res.json();
-        if (data.ok && data.thread && Array.isArray(data.thread.messages)) {
-          setChatMessages((prev) => {
-            if (prev.length !== data.thread.messages.length) return data.thread.messages;
-            const lastP = prev[prev.length - 1];
-            const lastN = data.thread.messages[data.thread.messages.length - 1];
-            if (lastP?.id !== lastN?.id || lastP?.text !== lastN?.text) {
-              return data.thread.messages;
-            }
-            return prev;
-          });
-        }
-      } catch {}
-    };
-
-    let bc: BroadcastChannel | null = null;
-    if (typeof window !== "undefined" && "BroadcastChannel" in window) {
-      bc = new BroadcastChannel("skinsense_realtime_chat");
-      bc.onmessage = () => syncCustomer();
-    }
-
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key === "skinsense_realtime_chat_ping") {
-        syncCustomer();
-      }
-    };
-    window.addEventListener("storage", handleStorage);
-
-    const timer = setInterval(syncCustomer, 1000);
-
-    return () => {
-      if (bc) bc.close();
-      window.removeEventListener("storage", handleStorage);
-      clearInterval(timer);
-    };
-  }, [isChatOpen, activeChatShopId]);
-
-  // Realtime Live Chat Listener cho Chủ Shop (Shop Owner) - không cần F5
-  useEffect(() => {
-    if (role !== "shop" || activeTab !== "messages") return;
-
-    loadShopThreads();
-
-    const syncShop = async () => {
-      try {
-        const res = await fetch(`/api/chat?forShop=true&_t=${Date.now()}`);
-        const data = await res.json();
-        if (data.ok && Array.isArray(data.threads)) {
-          setShopThreads((prev) => {
-            const prevTotal = prev.reduce((acc, t) => acc + (t.messages?.length || 0), 0);
-            const newTotal = data.threads.reduce((acc: number, t: any) => acc + (t.messages?.length || 0), 0);
-            if (prevTotal !== newTotal || prev.length !== data.threads.length) {
-              return data.threads;
-            }
-            return prev;
-          });
-          if (data.threads.length > 0) {
-            setSelectedThreadId((prev) => prev || data.threads[0].id);
-          }
-        }
-      } catch {}
-    };
-
-    let bc: BroadcastChannel | null = null;
-    if (typeof window !== "undefined" && "BroadcastChannel" in window) {
-      bc = new BroadcastChannel("skinsense_realtime_chat");
-      bc.onmessage = () => syncShop();
-    }
-
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key === "skinsense_realtime_chat_ping") {
-        syncShop();
-      }
-    };
-    window.addEventListener("storage", handleStorage);
-
-    const timer = setInterval(syncShop, 1000);
-
-    return () => {
-      if (bc) bc.close();
-      window.removeEventListener("storage", handleStorage);
-      clearInterval(timer);
-    };
-  }, [role, activeTab]);
+  const activeShopThread =
+    shopThreads.find((t) => t.id === selectedThreadId) || shopThreads[0];
+  const activeShopThreadLast = activeShopThread?.messages?.[activeShopThread.messages.length - 1];
+  const shopChatListRef = useRef<HTMLDivElement | null>(null);
+  const handleShopChatScroll = useStickToBottom(
+    shopChatListRef,
+    activeTab === "messages" ? activeShopThread?.id ?? "" : "",
+    activeShopThreadLast?.id ?? "",
+    activeShopThreadLast?.sender === "shop",
+  );
 
   // Shop gửi phản hồi trực tiếp cho khách hàng
   async function handleSendShopReply() {
@@ -546,6 +488,8 @@ export function RoleProfileView({ role }: { role: RoleType }) {
     const activeThread = shopThreads.find((t) => t.id === selectedThreadId);
     if (!activeThread) return;
 
+    shopReplyInFlightRef.current = true;
+    shopSyncVersionRef.current++;
     try {
       setShopReplySending(true);
       const res = await fetch("/api/chat", {
@@ -568,13 +512,16 @@ export function RoleProfileView({ role }: { role: RoleType }) {
         setShopThreads((prev) =>
           prev.map((t) => (t.id === activeThread.id ? (data.thread as ChatThreadItem) : t))
         );
-        triggerChatRealtimeSync({ shopId: activeThread.shopId, userId: activeThread.userId });
+        // Ping các tab khác sau khi server đã lưu tin nhắn
+        pingChatSync();
       } else {
         toast.error(data.error || "Không thể gửi phản hồi.");
       }
     } catch {
       toast.error("Lỗi khi gửi phản hồi.");
     } finally {
+      shopReplyInFlightRef.current = false;
+      shopSyncVersionRef.current++;
       setShopReplySending(false);
     }
   }
@@ -703,12 +650,64 @@ export function RoleProfileView({ role }: { role: RoleType }) {
     }
   }
 
+  // Shop đang mở trong khung chat (ref để bỏ qua phản hồi của shop cũ khi khách đổi shop)
+  const chatShopRef = useRef(activeChatShopId);
+  const chatSyncVersionRef = useRef(0);
+  const chatSendInFlightRef = useRef(false);
+
+  // Realtime Live Chat cho Khách Hàng: server suy ra khách từ phiên đăng nhập, không gửi userId
+  useChatSync<{ version: number; shopId: string; messages: ChatMessageItem[] }>({
+    enabled: isChatOpen && !chatAuthRequired,
+    key: activeChatShopId,
+    intervalMs: CHAT_POLL_INTERVAL_MS,
+    // loadChatThreadForShop already fetches when the chat opens or the shop changes
+    immediate: false,
+    fetcher: async (signal) => {
+      const version = chatSyncVersionRef.current;
+      const shopId = activeChatShopId;
+      const res = await fetch(`/api/chat?shopId=${encodeURIComponent(shopId)}`, {
+        cache: "no-store",
+        signal,
+      });
+      if (res.status === 401) {
+        if (!signal.aborted) setChatAuthRequired(true);
+        return null;
+      }
+      const data = await res.json();
+      if (!data.ok || !Array.isArray(data.thread?.messages)) return null;
+      return { version, shopId, messages: data.thread.messages as ChatMessageItem[] };
+    },
+    onData: ({ version, shopId, messages }) => {
+      // Trong lúc gửi (đang hiện "Shop đang soạn tin") không áp dụng kết quả poll,
+      // để tin trả lời tự động chỉ hiện khi POST đã xong.
+      if (
+        chatSendInFlightRef.current ||
+        version !== chatSyncVersionRef.current ||
+        shopId !== chatShopRef.current
+      ) {
+        return;
+      }
+      setChatMessages((prev) => mergeServerMessages(prev, messages));
+    },
+  });
+
+  const customerChatLast = chatMessages[chatMessages.length - 1];
+  const customerChatListRef = useRef<HTMLDivElement | null>(null);
+  const handleCustomerChatScroll = useStickToBottom(
+    customerChatListRef,
+    isChatOpen ? activeChatShopId : "",
+    customerChatLast?.id ?? "",
+    customerChatLast?.sender === "user",
+  );
+
   // Tải lịch sử hội thoại cho đúng Shop đang chọn (tách biệt theo từng Shop)
   async function loadChatThreadForShop(
     shopId: string,
     shopDisplayName: string,
     order?: UserOrder | null,
   ) {
+    chatShopRef.current = shopId;
+    chatSyncVersionRef.current++;
     setActiveChatShopId(shopId);
     setActiveChatShopName(shopDisplayName);
 
@@ -725,17 +724,21 @@ export function RoleProfileView({ role }: { role: RoleType }) {
         },
       ];
     };
+    // Bỏ qua phản hồi đến muộn nếu khách đã chuyển sang shop khác
+    const isStale = () => chatShopRef.current !== shopId;
 
     try {
       const res = await fetch(`/api/chat?shopId=${encodeURIComponent(shopId)}`, {
         cache: "no-store",
       });
+      if (isStale()) return;
       if (res.status === 401) {
         setChatAuthRequired(true);
         setChatMessages(buildWelcomeMessages());
         return;
       }
       const data = await res.json();
+      if (isStale()) return;
       setChatAuthRequired(false);
       if (data.ok && data.thread && Array.isArray(data.thread.messages)) {
         setChatMessages(data.thread.messages as ChatMessageItem[]);
@@ -743,7 +746,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
         setChatMessages(buildWelcomeMessages());
       }
     } catch {
-      setChatMessages(buildWelcomeMessages());
+      if (!isStale()) setChatMessages(buildWelcomeMessages());
     }
   }
 
@@ -761,6 +764,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
     const text = (customText || chatInput).trim();
     if (!text) return;
 
+    const shopId = activeChatShopId;
     const tempId = createLocalMessageId("temp");
     const tempUserMsg: ChatMessageItem = {
       id: tempId,
@@ -771,20 +775,19 @@ export function RoleProfileView({ role }: { role: RoleType }) {
     setChatMessages((prev) => [...prev, tempUserMsg]);
     setChatInput("");
     setIsShopTyping(true);
+    chatSendInFlightRef.current = true;
+    chatSyncVersionRef.current++;
 
     try {
-      triggerChatRealtimeSync({ shopId: activeChatShopId, userId: "thuy_dung" });
+      // Không gửi userId: server lấy khách hàng từ phiên đăng nhập
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          shopId: activeChatShopId,
+          shopId,
           shopName: activeChatShopName,
-          userId: userId || undefined,
-          userName: fullName || undefined,
           orderCode: chatOrder?.orderCode,
           sender: "user",
-          senderName: fullName || undefined,
           text,
         }),
       });
@@ -797,14 +800,20 @@ export function RoleProfileView({ role }: { role: RoleType }) {
         return;
       }
       setChatAuthRequired(false);
-      if (data.thread && Array.isArray(data.thread.messages)) {
-        setChatMessages(data.thread.messages as ChatMessageItem[]);
+      if (chatShopRef.current === shopId && data.thread && Array.isArray(data.thread.messages)) {
+        const serverMessages = data.thread.messages as ChatMessageItem[];
+        setChatMessages((prev) =>
+          mergeServerMessages(prev.filter((m) => m.id !== tempId), serverMessages),
+        );
       }
-      triggerChatRealtimeSync({ shopId: activeChatShopId, userId: "thuy_dung" });
+      // Ping các tab khác sau khi server đã lưu tin nhắn
+      pingChatSync();
     } catch {
       setChatMessages((prev) => prev.filter((m) => m.id !== tempId));
       toast.error("Lỗi kết nối khi gửi tin nhắn.");
     } finally {
+      chatSendInFlightRef.current = false;
+      chatSyncVersionRef.current++;
       setIsShopTyping(false);
     }
   }
@@ -1014,10 +1023,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
               {role === "shop" && (
                 <button
                   type="button"
-                  onClick={() => {
-                    setActiveTab("messages");
-                    loadShopThreads();
-                  }}
+                  onClick={() => setActiveTab("messages")}
                   className={`flex items-center gap-2 h-9 px-4 rounded-xl text-xs font-bold transition cursor-pointer ${
                     activeTab === "messages"
                       ? "bg-[#2D5A43] text-white shadow-xs"
@@ -1728,7 +1734,11 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                             </div>
 
                             {/* Danh sách tin nhắn */}
-                            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#F8F7F4]/40">
+                            <div
+                              ref={shopChatListRef}
+                              onScroll={handleShopChatScroll}
+                              className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#F8F7F4]/40"
+                            >
                               {activeThread.messages?.map((msg: ChatMessageItem) => {
                                 const isShopSender = msg.sender === "shop";
                                 return (
@@ -1765,7 +1775,6 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                                   </div>
                                 );
                               })}
-                              <div ref={shopChatEndRef} />
                             </div>
 
                             {/* Khung Shop gõ phản hồi */}
@@ -2739,7 +2748,11 @@ export function RoleProfileView({ role }: { role: RoleType }) {
           )}
 
           {/* Message Area */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#F8F7F4]/60">
+          <div
+            ref={customerChatListRef}
+            onScroll={handleCustomerChatScroll}
+            className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#F8F7F4]/60"
+          >
             {chatMessages.map((msg) => {
               const isShop = msg.sender === "shop";
               return (
@@ -2785,7 +2798,6 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                 </div>
               </div>
             )}
-            <div ref={customerChatEndRef} />
           </div>
 
           {/* Quick Questions (Gợi ý câu hỏi nhanh) */}
