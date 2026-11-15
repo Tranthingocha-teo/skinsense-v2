@@ -1,5 +1,6 @@
 import os from "os";
 import path from "path";
+import { normalizeShopId } from "@/lib/shop-utils";
 import { createPersistentJsonStore } from "@/lib/supabase/storage-json";
 
 export const ORDER_STATUSES = [
@@ -47,6 +48,41 @@ export interface BackendOrder {
   review?: OrderReview;
   paidAt?: string;
   createdAt: string;
+  /** The signed-in buyer's auth user id. Orders without it predate the field (see isOrderOwnedByActor). */
+  customerId?: string;
+}
+
+/**
+ * Whether a signed-in actor may see and act on an order. A customer owns the orders bound to their
+ * user id. Matching by recipient name or phone is only for legacy orders without `customerId`:
+ * names are not unique, and checkout used to prefill one fixed recipient for every buyer.
+ */
+export function isOrderOwnedByActor(
+  order: BackendOrder,
+  actor: { role: string; userId: string; fullName: string; phone: string; shopId?: string },
+): boolean {
+  if (actor.role === "admin") return true;
+  if (actor.role === "shop") {
+    return Boolean(actor.shopId) && normalizeShopId(order.shopName) === actor.shopId;
+  }
+  if (actor.role !== "customer") return false;
+  if (order.customerId) return order.customerId === actor.userId;
+
+  const orderName = normalizePersonName(order.customerName);
+  const actorName = normalizePersonName(actor.fullName);
+  if (orderName && actorName && orderName === actorName) return true;
+  const orderPhone = (order.customerPhone || "").replace(/[^0-9]/g, "");
+  return Boolean(orderPhone && actor.phone && orderPhone === actor.phone);
+}
+
+function normalizePersonName(value?: string | null): string {
+  return (value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[đĐ]/g, "d")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 const DB_FILE = path.join(process.cwd(), ".orders-db.json");
@@ -166,59 +202,36 @@ function applyCreate(
   return { nextList, order: newOrder };
 }
 
-function applyMarkAsPaid(
-  list: BackendOrder[],
-  code: string,
-): { nextList: BackendOrder[]; order: BackendOrder } {
+export type MarkAsPaidResult =
+  | { ok: true; order: BackendOrder; mutated: boolean; nextList: BackendOrder[] }
+  | { ok: false; code: "NOT_FOUND" | "CANCELLED"; error: string };
+
+/**
+ * Pays exactly the order with this code. The pay endpoints are unauthenticated (the phone that
+ * scans the QR is not signed in), so this must never guess: "latest" or an empty code used to pay
+ * whichever customer's order was pending first, and an unknown code created a fake paid order.
+ */
+export function applyMarkAsPaid(list: BackendOrder[], code: string): MarkAsPaidResult {
   const clean = code.trim().toLowerCase();
-
-  if (clean === "latest" || !clean) {
-    const pendingIndex = list.findIndex(
-      (o) => o.status === "pending" || o.paymentStatus === "unpaid",
-    );
-    if (pendingIndex !== -1) {
-      list[pendingIndex].paymentStatus = "paid";
-      list[pendingIndex].status = "processing";
-      list[pendingIndex].paidAt = new Date().toISOString();
-      return { nextList: list, order: list[pendingIndex] };
-    }
-    if (list.length > 0) {
-      list[0].paymentStatus = "paid";
-      list[0].status = "processing";
-      list[0].paidAt = new Date().toISOString();
-      return { nextList: list, order: list[0] };
-    }
-  }
-
-  const index = list.findIndex(
-    (o) => o.orderCode.toLowerCase() === clean || o.id.toLowerCase() === clean,
-  );
-
+  const index = clean
+    ? list.findIndex((o) => o.orderCode.toLowerCase() === clean || o.id.toLowerCase() === clean)
+    : -1;
   if (index === -1) {
-    const autoCreated: BackendOrder = {
-      id: `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
-      orderCode: code,
-      customerName: "Khách hàng MoMo",
-      customerPhone: "0901234567",
-      shippingAddress: "Địa chỉ giao hàng mặc định",
-      totalAmount: 395000,
-      status: "processing",
-      paymentMethod: "momo",
-      paymentStatus: "paid",
-      shopName: "Shopee Mall Flagship",
-      brand: "Dược Mỹ Phẩm",
-      carrier: "SPX Express",
-      items: [],
-      paidAt: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
-    };
-    return { nextList: [autoCreated, ...list], order: autoCreated };
+    return { ok: false, code: "NOT_FOUND", error: "Không tìm thấy đơn hàng" };
   }
 
-  list[index].paymentStatus = "paid";
-  list[index].status = "processing";
-  list[index].paidAt = new Date().toISOString();
-  return { nextList: list, order: list[index] };
+  const order = list[index];
+  if (order.status === "cancelled") {
+    return { ok: false, code: "CANCELLED", error: "Đơn hàng đã bị hủy, không thể thanh toán." };
+  }
+  if (order.paymentStatus === "paid") {
+    return { ok: true, order, mutated: false, nextList: list };
+  }
+
+  order.paymentStatus = "paid";
+  if (order.status === "pending") order.status = "processing";
+  order.paidAt = new Date().toISOString();
+  return { ok: true, order, mutated: true, nextList: list };
 }
 
 type UpdateStatusResult =
@@ -353,18 +366,26 @@ export const ordersStore = {
     });
   },
 
-  markAsPaid(code: string): BackendOrder {
-    const { nextList, order } = applyMarkAsPaid(persistence.readSync(), code);
-    persistence.writeSync(nextList);
-    return order;
-  },
-
-  async markAsPaidAsync(code: string): Promise<BackendOrder> {
+  /** Creates the order unless its code is taken; the check and the write share the store lock. */
+  async createIfAbsentAsync(order: Omit<BackendOrder, "id" | "createdAt">): Promise<BackendOrder | null> {
     return persistence.withLock(async () => {
       const list = await persistence.readAsync();
-      const { nextList, order } = applyMarkAsPaid(list, code);
+      if (findOrderInList(list, order.orderCode)) return null;
+      const { nextList, order: newOrder } = applyCreate(list, order);
       await persistence.writeAsync(nextList);
-      return order;
+      return newOrder;
+    });
+  },
+
+  async markAsPaidAsync(
+    code: string,
+  ): Promise<{ ok: true; order: BackendOrder } | { ok: false; code: "NOT_FOUND" | "CANCELLED"; error: string }> {
+    return persistence.withLock(async () => {
+      const list = await persistence.readAsync();
+      const res = applyMarkAsPaid(list, code);
+      if (!res.ok) return res;
+      if (res.mutated) await persistence.writeAsync(res.nextList);
+      return { ok: true as const, order: res.order };
     });
   },
 

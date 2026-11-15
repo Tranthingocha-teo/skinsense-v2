@@ -15,34 +15,22 @@ export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: corsHeaders });
 }
 
-export async function POST(request: Request) {
+// Fallback of /api/orders/[id]/pay for the pay-demo page. A code is required: without one this
+// used to pay whichever customer's order was pending first.
+async function pay(code: string) {
+  if (!code) {
+    return NextResponse.json({ ok: false, error: "Thiếu mã đơn hàng" }, { status: 400, headers: corsHeaders });
+  }
   try {
-    let code = "";
-    try {
-      const body = await request.json();
-      code = body.orderCode || body.code || "";
-    } catch {}
-
-    if (!code) {
-      const { searchParams } = new URL(request.url);
-      code = searchParams.get("code") || searchParams.get("orderCode") || "";
+    const result = await ordersStore.markAsPaidAsync(code);
+    if (!result.ok) {
+      return NextResponse.json(
+        { ok: false, error: result.error },
+        { status: result.code === "NOT_FOUND" ? 404 : 409, headers: corsHeaders },
+      );
     }
-
-    if (!code) {
-      const allOrders = await ordersStore.getAllAsync();
-      const latestPending = allOrders.find((o) => o.status === "pending" || o.paymentStatus === "unpaid");
-      if (latestPending) {
-        code = latestPending.orderCode;
-      }
-    }
-
-    if (!code) {
-      return NextResponse.json({ ok: false, error: "Thiếu mã đơn hàng" }, { status: 400, headers: corsHeaders });
-    }
-
-    const updated = await ordersStore.markAsPaidAsync(code);
     return NextResponse.json(
-      { ok: true, message: "Thanh toán thành công", order: updated },
+      { ok: true, message: "Thanh toán thành công", order: result.order },
       { headers: corsHeaders },
     );
   } catch {
@@ -50,25 +38,20 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET(request: Request) {
+function codeFromQuery(request: Request): string {
   const { searchParams } = new URL(request.url);
-  let code = searchParams.get("code") || searchParams.get("orderCode") || "";
+  return (searchParams.get("code") || searchParams.get("orderCode") || "").trim();
+}
 
-  if (!code) {
-    const allOrders = await ordersStore.getAllAsync();
-    const latestPending = allOrders.find((o) => o.status === "pending" || o.paymentStatus === "unpaid");
-    if (latestPending) {
-      code = latestPending.orderCode;
-    }
-  }
+export async function POST(request: Request) {
+  let code = "";
+  try {
+    const body = await request.json();
+    code = String(body.orderCode || body.code || "").trim();
+  } catch {}
+  return pay(code || codeFromQuery(request));
+}
 
-  if (!code) {
-    return NextResponse.json({ ok: false, error: "Thiếu mã đơn hàng" }, { status: 400, headers: corsHeaders });
-  }
-
-  const updated = await ordersStore.markAsPaidAsync(code);
-  return NextResponse.json(
-    { ok: true, message: "Thanh toán thành công", order: updated },
-    { headers: corsHeaders },
-  );
+export async function GET(request: Request) {
+  return pay(codeFromQuery(request));
 }

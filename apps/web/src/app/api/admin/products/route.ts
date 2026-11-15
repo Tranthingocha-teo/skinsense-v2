@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { getAuthenticatedActor, requireRoleActor } from "@/lib/session-auth";
 import { matchesShop } from "@/lib/shop-product-approval";
+import { downloadStorageJson } from "@/lib/supabase/storage-json";
 
 export interface ProductItem {
   id: string;
@@ -33,13 +34,9 @@ async function loadStorageProducts(): Promise<ProductItem[]> {
   try {
     const admin = getSupabaseAdmin();
     if (!admin) return [];
-    const { data: fileBlob } = await admin.storage
-      .from("photos")
-      .download("products/products_registry.json");
-    if (fileBlob) {
-      const list = JSON.parse(await fileBlob.text());
-      if (Array.isArray(list)) return list;
-    }
+    // Cache-busted read: storage .download() can be stale, and saving a stale list lost products.
+    const list = await downloadStorageJson<ProductItem[]>("products/products_registry.json", admin);
+    if (Array.isArray(list)) return list;
   } catch {}
   return [];
 }

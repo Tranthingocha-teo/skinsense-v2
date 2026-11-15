@@ -22,7 +22,9 @@ export async function signedInCookies(email: string): Promise<{ cookies: Cookie[
       return await signInOnce(email);
     } catch (error) {
       if (attempt >= 5) throw error;
-      await new Promise((resolve) => setTimeout(resolve, 200 + Math.random() * 800));
+      // Supabase limits magic-link verifications per IP; back off instead of burning the retries.
+      const rateLimited = /rate limit/i.test(error instanceof Error ? error.message : String(error));
+      await new Promise((resolve) => setTimeout(resolve, rateLimited ? 15_000 : 200 + Math.random() * 800));
     }
   }
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
+import { downloadStorageJson } from "@/lib/supabase/storage-json";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -84,11 +85,8 @@ export async function GET() {
     if (url && serviceKey) {
       try {
         const adminClient = createAdminClient(url, serviceKey);
-        const { data: fileBlob } = await adminClient.storage
-          .from("photos")
-          .download("shops/shops_registry.json");
-        if (fileBlob) {
-          const list = JSON.parse(await fileBlob.text()) as ShopRecord[];
+        const list = await downloadStorageJson<ShopRecord[]>("shops/shops_registry.json", adminClient);
+        if (Array.isArray(list)) {
           shopRecord = list.find((s) => s.email?.toLowerCase() === email) ?? null;
         }
       } catch {}

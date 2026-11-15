@@ -69,7 +69,9 @@ export async function getAuthenticatedActor(request?: Request): Promise<Authenti
       shopName = String(
         meta.shop_name || shopDetails?.shopName || fullName || "SkinSense Official",
       ).trim();
-      const rawShopId = String(meta.shop_id || appMeta.shop_id || shopName);
+      // Tenancy from app_metadata (set when the role is granted). user_metadata is user-writable,
+      // so it is only a fallback for shops approved before the shop_id claim existed.
+      const rawShopId = String(appMeta.shop_id || meta.shop_id || shopName);
       shopId = normalizeShopId(rawShopId);
     }
 

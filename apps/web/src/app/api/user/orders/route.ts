@@ -1,39 +1,12 @@
 import { NextResponse } from "next/server";
-import { isValidOrderStatus, ordersStore, type BackendOrder } from "@/lib/orders-store";
-import { getAuthenticatedActor, type AuthenticatedActor } from "@/lib/session-auth";
+import { isOrderOwnedByActor, isValidOrderStatus, ordersStore, type BackendOrder } from "@/lib/orders-store";
+import { getAuthenticatedActor } from "@/lib/session-auth";
 import { normalizeShopId } from "@/lib/shop-utils";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
-
-function normalizePersonName(value?: string | null): string {
-  return (value || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[đĐ]/g, "d")
-    .toLowerCase()
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function isOrderOwnedByActor(order: BackendOrder, actor: AuthenticatedActor): boolean {
-  if (actor.role === "admin") return true;
-  if (actor.role === "shop") {
-    return Boolean(actor.shopId) && normalizeShopId(order.shopName) === actor.shopId;
-  }
-  if (actor.role === "customer") {
-    const orderName = normalizePersonName(order.customerName);
-    const actorName = normalizePersonName(actor.fullName);
-    if (orderName && actorName && orderName === actorName) return true;
-
-    const orderPhone = (order.customerPhone || "").replace(/[^0-9]/g, "");
-    if (orderPhone && actor.phone && orderPhone === actor.phone) return true;
-    return false;
-  }
-  return false;
-}
 
 // Thư viện ảnh dược mỹ phẩm sắc nét cho sản phẩm
 const PRODUCT_IMAGES: Record<string, string> = {
@@ -92,6 +65,7 @@ export async function GET(req: Request) {
       const sampleOrders: Omit<BackendOrder, "id" | "createdAt">[] = [
         {
           orderCode: `SHOPEE-SS-${Math.floor(100000 + Math.random() * 900000)}`,
+          customerId: actor.userId,
           customerName: displayCustomerName,
           customerPhone: currentUserPhone || "0987 654 321",
           shippingAddress: "Số 123 Đường Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh",
@@ -116,6 +90,7 @@ export async function GET(req: Request) {
         },
         {
           orderCode: `SHOPEE-SS-${Math.floor(100000 + Math.random() * 900000)}`,
+          customerId: actor.userId,
           customerName: displayCustomerName,
           customerPhone: currentUserPhone || "0987 654 321",
           shippingAddress: "Số 123 Đường Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh",
@@ -140,6 +115,7 @@ export async function GET(req: Request) {
         },
         {
           orderCode: `SHOPEE-SS-${Math.floor(100000 + Math.random() * 900000)}`,
+          customerId: actor.userId,
           customerName: displayCustomerName,
           customerPhone: currentUserPhone || "0987 654 321",
           shippingAddress: "Số 123 Đường Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh",
@@ -163,6 +139,7 @@ export async function GET(req: Request) {
         },
         {
           orderCode: `SHOPEE-SS-${Math.floor(100000 + Math.random() * 900000)}`,
+          customerId: actor.userId,
           customerName: displayCustomerName,
           customerPhone: currentUserPhone || "0987 654 321",
           shippingAddress: "Số 123 Đường Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh",

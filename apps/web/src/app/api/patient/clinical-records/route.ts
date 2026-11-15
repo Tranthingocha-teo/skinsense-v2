@@ -48,8 +48,11 @@ export async function GET(request: Request) {
         "clinical_records/cases_registry.json",
       )) || [];
 
+    // ?mine=1: only the caller's own records whatever the role (the patient routine page), so a
+    // specialist opening /user/routine does not get another patient's prescription.
+    const mineOnly = new URL(request.url).searchParams.get("mine") === "1";
     const cases =
-      actor.role === "customer"
+      actor.role === "customer" || mineOnly
         ? allCases.filter(
             (c) =>
               c.patientUserId === actor.userId ||

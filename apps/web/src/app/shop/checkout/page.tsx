@@ -139,6 +139,12 @@ export const SHOP_MOMO_PROFILES: Record<string, ShopMoMoProfile> = {
   },
 };
 
+/** "16 Tháng 11 - 18 Tháng 11": today to two days out (this used to be a fixed date in the copy). */
+function deliveryWindowLabel(now: Date): string {
+  const label = (d: Date) => `${d.getDate()} Tháng ${d.getMonth() + 1}`;
+  return `${label(now)} - ${label(new Date(now.getTime() + 2 * 86_400_000))}`;
+}
+
 interface CheckoutItem {
   id: string;
   productId: string;
@@ -254,12 +260,37 @@ function CheckoutInner() {
   }, [productIdParam, variantParam, qtyParam]);
 
   // Thông tin địa chỉ giao hàng
-  const [recipientName, setRecipientName] = useState("Trần Thị Ngọc Hà");
-  const [recipientPhone, setRecipientPhone] = useState("(+84) 987 654 321");
-  const [recipientAddress, setRecipientAddress] = useState(
-    "Số 123 Đường Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh",
-  );
+  // Prefilled from the signed-in buyer's own profile. It used to be one fixed person's name, phone
+  // and home address for every buyer, so orders went out under someone else's identity.
+  const [recipientName, setRecipientName] = useState("");
+  const [recipientPhone, setRecipientPhone] = useState("");
+  const [recipientAddress, setRecipientAddress] = useState("");
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/auth/me", { cache: "no-store" })
+      .then((res) => res.json())
+      .then(async (me: { authenticated?: boolean }) => {
+        if (!me?.authenticated) return;
+        const res = await fetch("/api/profile?role=customer", { cache: "no-store" });
+        const data = (await res.json()) as {
+          ok?: boolean;
+          user?: { fullName?: string; phone?: string; customer?: { address?: string } };
+        };
+        if (cancelled || !data?.ok || !data.user) return;
+        const u = data.user;
+        setRecipientName((prev) => prev || u.fullName || "");
+        setRecipientPhone((prev) => prev || u.phone || "");
+        setRecipientAddress((prev) => prev || u.customer?.address || "");
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const [deliveryWindow] = useState(() => deliveryWindowLabel(new Date()));
 
   // Lời nhắn cho shop
   const [sellerNote, setSellerNote] = useState("Gói hàng kỹ kèm túi chống sốc giúp mình nha shop.");
@@ -312,19 +343,30 @@ function CheckoutInner() {
   const [hostIp, setHostIp] = useState("192.168.1.3");
   const [port, setPort] = useState("3000");
 
+  // On a deployment the phone opens this same origin. It used to be http://<host>:<port || 3000>,
+  // which on https://…vercel.app became http://…vercel.app:3000 — a QR no phone could open.
+  // Only a local dev server (localhost) needs the LAN address guess.
+  const [deployedOrigin, setDeployedOrigin] = useState("");
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       setPort(window.location.port || "3000");
       if (window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
         setHostIp(window.location.hostname);
+        setDeployedOrigin(window.location.origin);
       }
     }
   }, []);
 
-  const mobilePayUrl = useMemo(() => {
+  const payDemoPath = useMemo(() => {
     if (!orderCode) return "";
-    return `http://${hostIp}:${port}/pay-demo?orderCode=${encodeURIComponent(orderCode)}&amount=${finalTotal}&shop=${encodeURIComponent(activeShop.shopName)}`;
-  }, [hostIp, port, orderCode, finalTotal, activeShop.shopName]);
+    return `/pay-demo?orderCode=${encodeURIComponent(orderCode)}&amount=${finalTotal}&shop=${encodeURIComponent(activeShop.shopName)}`;
+  }, [orderCode, finalTotal, activeShop.shopName]);
+
+  const mobilePayUrl = useMemo(() => {
+    if (!payDemoPath) return "";
+    return `${deployedOrigin || `http://${hostIp}:${port}`}${payDemoPath}`;
+  }, [deployedOrigin, hostIp, port, payDemoPath]);
 
   // Tạo mã QR bằng thư viện qrcode nội bộ, đảm bảo 100% offline, sắc nét, không bị trễ hay lỗi mạng ngoài
   const [qrBase64, setQrBase64] = useState<string>("");
@@ -395,14 +437,23 @@ function CheckoutInner() {
       return;
     }
 
-    const activeOrderCode = orderCode || `SHOPEE-SS-${Math.floor(100000 + Math.random() * 900000)}`;
-    if (!orderCode) setOrderCode(activeOrderCode);
+    if (!recipientName.trim() || !recipientPhone.trim() || !recipientAddress.trim()) {
+      toast.error("Vui lòng nhập đầy đủ họ tên, số điện thoại và địa chỉ nhận hàng.");
+      setIsAddressModalOpen(true);
+      return;
+    }
+
+    // A fresh code per order: reusing the previous one would collide with the order just placed.
+    const activeOrderCode = `SHOPEE-SS-${Math.floor(100000 + Math.random() * 900000)}`;
+    setOrderCode(activeOrderCode);
     const nowTimestamp = Date.now();
     setModalOpenedAt(nowTimestamp);
 
-    // Lưu đơn hàng vào backend API /api/orders (Trạng thái pending)
+    // Lưu đơn hàng vào backend API /api/orders (Trạng thái pending). The QR or the success screen
+    // only opens once the order is saved: it used to open even when saving failed (signed out,
+    // network), so the buyer "paid" for an order that did not exist.
     try {
-      await fetch("/api/orders", {
+      const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -423,8 +474,18 @@ function CheckoutInner() {
           })),
         }),
       });
+      if (!res.ok) {
+        const json = (await res.json().catch(() => null)) as { error?: string } | null;
+        toast.error(
+          res.status === 401
+            ? "Vui lòng đăng nhập để đặt hàng."
+            : json?.error || "Không thể tạo đơn hàng, vui lòng thử lại.",
+        );
+        return;
+      }
     } catch {
-      // Fallback
+      toast.error("Lỗi kết nối khi tạo đơn hàng, vui lòng thử lại.");
+      return;
     }
 
     if (paymentMethod === "momo" || paymentMethod === "vietqr") {
@@ -579,10 +640,11 @@ function CheckoutInner() {
 
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs">
               <div className="font-bold text-[#191B19]">
-                {recipientName} <span className="font-mono font-medium text-[#5C605C]">({recipientPhone})</span>
+                {recipientName || "Chưa có người nhận"}{" "}
+                {recipientPhone && <span className="font-mono font-medium text-[#5C605C]">({recipientPhone})</span>}
               </div>
               <div className="text-[#5C605C] flex-1 line-clamp-2">
-                {recipientAddress}
+                {recipientAddress || "Chưa có địa chỉ, bấm “Thay đổi” để nhập."}
               </div>
               <span className="self-start sm:self-auto rounded-md border border-[#C2410C] bg-[#C2410C]/5 px-2 py-0.5 text-[10px] font-bold text-[#C2410C]">
                 Mặc định
@@ -772,7 +834,7 @@ function CheckoutInner() {
                 </span>
               </div>
               <p className="text-[11px] text-[#5C605C]">
-                Nhận hàng vào <strong>16 Tháng 11 - 18 Tháng 11</strong> (Giao hỏa tốc dược mỹ phẩm đóng gói cẩn thận)
+                Nhận hàng vào <strong>{deliveryWindow}</strong> (Giao hỏa tốc dược mỹ phẩm đóng gói cẩn thận)
               </p>
             </div>
 
@@ -1158,7 +1220,7 @@ function CheckoutInner() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => window.open(mobilePayUrl, "_blank")}
+                  onClick={() => window.open(payDemoPath, "_blank")}
                   className="rounded-xl bg-[#A50064] hover:bg-[#880052] active:scale-95 text-white text-[11px] font-bold px-3 py-1.5 transition shrink-0 flex items-center gap-1.5 cursor-pointer shadow-xs"
                 >
                   <ExternalLink className="size-3" />
@@ -1250,7 +1312,7 @@ function CheckoutInner() {
               </div>
               <div className="flex justify-between">
                 <span className="text-[#5C605C]">Dự kiến nhận hàng:</span>
-                <span className="font-medium text-[#2D5A43]">16 Tháng 11 - 18 Tháng 11</span>
+                <span className="font-medium text-[#2D5A43]">{deliveryWindow}</span>
               </div>
               <div className="pt-2 border-t border-[#D8D4CA]/60 flex justify-between">
                 <span className="text-[#5C605C]">Địa chỉ giao:</span>

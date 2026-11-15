@@ -40,6 +40,16 @@ export async function proxy(request: NextRequest) {
     return redirectTo("/");
   }
 
+  // The Seller Center is for approved shops (and admins); everyone else may only apply at
+  // /seller/register. It used to open for any signed-in account, customers included.
+  if ((pathname === "/seller" || pathname.startsWith("/seller/")) && pathname !== "/seller/register") {
+    const claims = data?.claims as { email?: string; app_metadata?: Record<string, unknown> } | undefined;
+    const role = claims ? resolveActorRole(claims.email ?? "", claims.app_metadata) : "customer";
+    if (role !== "shop" && role !== "admin") {
+      return redirectTo("/seller/register");
+    }
+  }
+
   // The admin console is for admins only (the API checks again on every call).
   if (pathname === "/admin" || pathname.startsWith("/admin/")) {
     const claims = data?.claims as { email?: string; app_metadata?: Record<string, unknown> } | undefined;

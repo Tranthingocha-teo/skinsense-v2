@@ -54,7 +54,7 @@ export async function GET(request: Request) {
     const storageSpecialists: SpecialistRegistryItem[] = (await downloadJsonFromStorage<SpecialistRegistryItem[]>(supabaseAdmin, "specialists/specialists_registry.json")) || [];
 
     // 2. Fetch from Supabase Auth
-    const { data, error } = await supabaseAdmin.auth.admin.listUsers();
+    const { data, error } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
@@ -115,7 +115,7 @@ export async function PATCH(request: Request) {
     try {
       let targetUserId: string | undefined = userId && userId.length === 36 ? userId : undefined;
       if (!targetUserId && targetEmail) {
-        const { data: list } = await supabaseAdmin.auth.admin.listUsers();
+        const { data: list } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
         targetUserId = list?.users.find((u) => u.email?.toLowerCase() === targetEmail)?.id;
       }
       if (targetUserId) {

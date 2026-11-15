@@ -1900,7 +1900,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                               <span className="text-[11px] font-semibold text-[#5C605C] block">Địa chỉ nhận hàng mặc định</span>
                               <p className="text-sm font-bold text-[#191B19] mt-1 flex items-center gap-2">
                                 <MapPin className="size-4 text-[#C2410C] shrink-0" />
-                                <span>{custAddress || "Số 123 Đường Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh"}</span>
+                                <span>{custAddress || "Chưa cập nhật"}</span>
                               </p>
                             </div>
 
@@ -1908,13 +1908,13 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                               <div className="rounded-xl border border-[#D8D4CA] bg-white p-3.5">
                                 <span className="text-[11px] font-semibold text-[#5C605C] block">Tình trạng / Loại da</span>
                                 <p className="text-sm font-bold text-[#191B19] mt-1">
-                                  {custSkinType || "Da hỗn hợp thiên dầu, nhạy cảm vùng chữ T (Fitzpatrick III)"}
+                                  {custSkinType || "Chưa cập nhật"}
                                 </p>
                               </div>
                               <div className="rounded-xl border border-[#D8D4CA] bg-white p-3.5">
                                 <span className="text-[11px] font-semibold text-[#5C605C] block">Tiền sử dị ứng mỹ phẩm</span>
                                 <p className="text-sm font-bold text-[#191B19] mt-1">
-                                  {custAllergies || "Dị ứng cồn khô nồng độ cao và hương liệu (Fragrance)"}
+                                  {custAllergies || "Chưa cập nhật"}
                                 </p>
                               </div>
                             </div>
@@ -1929,7 +1929,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                                 <span className="text-[11px] font-semibold text-[#5C605C] block">Bệnh viện / Cơ sở y tế công tác</span>
                                 <p className="text-sm font-bold text-[#191B19] mt-1 flex items-center gap-2">
                                   <Building className="size-4 text-[#2D5A43]" />
-                                  <span>{specHospital || "Bệnh viện Da Liễu Trung Ương"}</span>
+                                  <span>{specHospital || "Chưa cập nhật"}</span>
                                 </p>
                               </div>
 
@@ -1937,14 +1937,14 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                                 <span className="text-[11px] font-semibold text-[#5C605C] block">Số Chứng chỉ hành nghề (CCHN)</span>
                                 <p className="text-sm font-bold text-[#191B19] mt-1 flex items-center gap-2">
                                   <Award className="size-4 text-[#2D5A43]" />
-                                  <span>{specLicense || "014289/BYT-CCHN"}</span>
+                                  <span>{specLicense || "Chưa cập nhật"}</span>
                                 </p>
                               </div>
 
                               <div className="rounded-xl border border-[#D8D4CA] bg-white p-3.5">
                                 <span className="text-[11px] font-semibold text-[#5C605C] block">Chuyên khoa phụ trách</span>
                                 <p className="text-sm font-bold text-[#191B19] mt-1">
-                                  {specSpecialty || "Chuyên khoa Da liễu & Thẩm mỹ Da"}
+                                  {specSpecialty || "Chưa cập nhật"}
                                 </p>
                               </div>
 
@@ -1959,7 +1959,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                             <div className="rounded-xl border border-[#D8D4CA] bg-white p-3.5">
                               <span className="text-[11px] font-semibold text-[#5C605C] block">Tiểu sử chuyên môn (Bio)</span>
                               <p className="text-xs font-medium text-[#191B19] mt-1.5 leading-relaxed">
-                                {specBio || "Hơn 10 năm kinh nghiệm điều trị mụn trứng cá chuyên sâu, phục hồi hàng rào màng đáy da nhạy cảm và điều trị tăng sắc tố sau viêm."}
+                                {specBio || "Chưa cập nhật"}
                               </p>
                             </div>
                           </div>
@@ -1973,7 +1973,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                                 <span className="text-[11px] font-semibold text-[#5C605C] block">Tên gian hàng chính thức</span>
                                 <p className="text-sm font-bold text-[#191B19] mt-1 flex items-center gap-2">
                                   <Store className="size-4 text-[#C2410C]" />
-                                  <span>{shopName || "La Roche-Posay Official Flagship Store"}</span>
+                                  <span>{shopName || "Chưa cập nhật"}</span>
                                 </p>
                               </div>
 
@@ -1981,7 +1981,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                                 <span className="text-[11px] font-semibold text-[#5C605C] block">Mã số GPKD / CBMP</span>
                                 <p className="text-sm font-bold text-[#191B19] mt-1 flex items-center gap-2">
                                   <FileText className="size-4 text-[#5C605C]" />
-                                  <span>{shopLicense || "GPKD-882910-HCM / CBMP-54321/22/CBMP-QLD"}</span>
+                                  <span>{shopLicense || "Chưa cập nhật"}</span>
                                 </p>
                               </div>
                             </div>
@@ -1990,14 +1990,14 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                               <span className="text-[11px] font-semibold text-[#5C605C] block">Địa chỉ kho hàng & Trụ sở đăng ký</span>
                               <p className="text-sm font-bold text-[#191B19] mt-1 flex items-center gap-2">
                                 <MapPin className="size-4 text-[#C2410C] shrink-0" />
-                                <span>{shopAddress || "Tầng 12, Tòa nhà Bitexco, Số 2 Hải Triều, P. Bến Nghé, Quận 1, TP. HCM"}</span>
+                                <span>{shopAddress || "Chưa cập nhật"}</span>
                               </p>
                             </div>
 
                             <div className="rounded-xl border border-[#D8D4CA] bg-white p-3.5">
                               <span className="text-[11px] font-semibold text-[#5C605C] block">Ngành hàng dược mỹ phẩm</span>
                               <p className="text-sm font-bold text-[#191B19] mt-1">
-                                {shopCategory || "Dược mỹ phẩm chăm sóc & phục hồi da chuẩn y khoa"}
+                                {shopCategory || "Chưa cập nhật"}
                               </p>
                             </div>
                           </div>
@@ -2836,6 +2836,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
             <button
               type="submit"
               disabled={!chatInput.trim()}
+              aria-label="Gửi tin nhắn"
               className="size-9 rounded-xl bg-[#2D5A43] text-white flex items-center justify-center hover:bg-[#214332] transition disabled:opacity-40 cursor-pointer shrink-0 shadow-2xs"
             >
               <Send className="size-4" />
