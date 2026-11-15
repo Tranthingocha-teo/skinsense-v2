@@ -49,7 +49,7 @@ export class ApprovalError extends Error {
 export async function applyAccountDecision(
   admin: SupabaseClient,
   userId: string,
-  change: { role?: GrantableRole; status?: AccountStatus; approvedBy?: string; expectRole?: GrantableRole },
+  change: { role?: GrantableRole; status?: AccountStatus; unlock?: boolean; approvedBy?: string; expectRole?: GrantableRole },
 ): Promise<{ id: string; email: string; role: GrantableRole; status: AccountStatus }> {
   const { data, error } = await admin.auth.admin.getUserById(userId);
   if (error || !data.user) throw new ApprovalError("Không tìm thấy người dùng.", 404);
@@ -65,12 +65,27 @@ export async function applyAccountDecision(
   }
 
   const role: GrantableRole = change.role ?? (isGrantableRole(appMeta.role) ? appMeta.role : "customer");
-  const status: AccountStatus = change.status ?? (isAccountStatus(appMeta.status) ? appMeta.status : "active");
+  const current: AccountStatus = isAccountStatus(appMeta.status) ? appMeta.status : "active";
+  // Unlocking restores the status the account had when it was locked: a pending or rejected
+  // application that was locked must not come back approved.
+  let status: AccountStatus;
+  if (change.unlock) {
+    if (current !== "suspended") throw new ApprovalError("Tài khoản này không bị khóa.", 409);
+    const before = appMeta.status_before_lock;
+    status = isAccountStatus(before) && before !== "suspended" ? before : "active";
+  } else {
+    status = change.status ?? current;
+  }
+  const lockNote =
+    status === "suspended"
+      ? { status_before_lock: current === "suspended" ? (appMeta.status_before_lock ?? "active") : current }
+      : { status_before_lock: null };
   const now = new Date().toISOString();
-  const decided = change.status === "active" || change.status === "rejected";
+  const decided = !change.unlock && (change.status === "active" || change.status === "rejected");
 
   const { error: updateError } = await admin.auth.admin.updateUserById(userId, {
-    app_metadata: { ...authzClaims(role, status), ...shopIdClaim(role, appMeta, userMeta) },
+    // Supabase merges app_metadata keys; null removes one.
+    app_metadata: { ...authzClaims(role, status), ...shopIdClaim(role, appMeta, userMeta), ...lockNote },
     user_metadata: {
       ...userMeta,
       role,
@@ -84,6 +99,7 @@ export async function applyAccountDecision(
 
   // The registries hold the application details shown in the console; their status mirrors
   // app_metadata so the two never disagree. Only entries that already exist are updated.
+  const syncErrors: string[] = [];
   for (const [registryRole, path] of Object.entries(REGISTRY_PATHS)) {
     const matches = (entry: RegistryEntry) =>
       entry.id === userId || (typeof entry.email === "string" && entry.email.toLowerCase() === email);
@@ -102,12 +118,15 @@ export async function applyAccountDecision(
         };
       });
     } catch (err) {
-      // The rights are already stored; say exactly what is out of date instead of failing silently.
-      throw new ApprovalError(
-        `Đã cập nhật quyền tài khoản nhưng chưa đồng bộ được hồ sơ (${err instanceof Error ? err.message : "lỗi lưu trữ"}). Vui lòng thử lại.`,
-        502,
-      );
+      syncErrors.push(err instanceof Error ? err.message : `lỗi lưu ${path}`);
     }
+  }
+  if (syncErrors.length > 0) {
+    // The rights are already stored; say exactly what is out of date instead of failing silently.
+    throw new ApprovalError(
+      `Đã cập nhật quyền tài khoản nhưng chưa đồng bộ được hồ sơ (${syncErrors.join("; ")}). Vui lòng thử lại.`,
+      502,
+    );
   }
 
   return { id: userId, email, role, status };

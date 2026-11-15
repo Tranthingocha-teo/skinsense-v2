@@ -111,7 +111,12 @@ export async function GET(request: Request) {
   try {
     products = mergeWithSeeds(await readStorageJsonList<ProductItem>(PRODUCTS_PATH, storageClient()));
   } catch (err) {
-    return NextResponse.json({ ok: false, error: err instanceof Error ? err.message : "Không tải được sản phẩm." }, { status: 503 });
+    // The console must not show a partial list as if it were complete; buyers still get the
+    // built-in catalog rather than an empty storefront.
+    if (actor?.role === "admin") {
+      return NextResponse.json({ ok: false, error: err instanceof Error ? err.message : "Không tải được sản phẩm." }, { status: 503 });
+    }
+    products = SEED_PRODUCTS;
   }
 
   // Enforce draft visibility: unauthenticated / customer visitors only browse approved products;

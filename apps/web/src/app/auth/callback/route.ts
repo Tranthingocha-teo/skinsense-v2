@@ -86,7 +86,9 @@ export async function GET(request: Request) {
 
       // Display routing only; API rights come from app_metadata (lib/actor-role.ts).
       const appRole = (user.app_metadata as Record<string, unknown> | undefined)?.role;
-      const isSpecialistRole = appRole === "specialist" || meta.role === "specialist" || Boolean(specialistRecord);
+      // app_metadata only: a registry entry or user_metadata.role used to count too, so a doctor the
+      // admin had turned back into a customer was re-marked as a doctor on the next sign-in.
+      const isSpecialistRole = appRole === "specialist";
 
       // app_metadata holds the status the admin set; the registry and user_metadata only mirror it.
       const appStatus = (user.app_metadata as Record<string, unknown> | undefined)?.status;
@@ -109,8 +111,10 @@ export async function GET(request: Request) {
           } catch {}
         }
 
-        if (specialistStatus === "pending") {
-          return NextResponse.redirect(new URL("/specialist?status=pending", requestUrl.origin));
+        if (specialistStatus !== "active") {
+          return NextResponse.redirect(
+            new URL(`/specialist?status=${encodeURIComponent(specialistStatus)}`, requestUrl.origin),
+          );
         }
         return NextResponse.redirect(new URL("/specialist", requestUrl.origin));
       }

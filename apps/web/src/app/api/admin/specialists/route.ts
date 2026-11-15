@@ -60,7 +60,7 @@ export async function GET(request: Request) {
           licenseId: entry.licenseId || meta.license_id || "",
           hospital: entry.hospital || meta.hospital || "",
           submittedAt: entry.submittedAt || meta.submitted_at || u.created_at,
-          status: isAccountStatus(u.app_metadata?.status) ? u.app_metadata.status : "pending",
+          status: isAccountStatus(u.app_metadata?.status) ? u.app_metadata.status : "active",
         };
       });
 

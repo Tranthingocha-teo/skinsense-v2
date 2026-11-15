@@ -153,15 +153,16 @@ export async function POST(request: Request) {
     // The recipient must be a real account. An unknown email used to fall back to the super
     // admin's own account (a hard-coded id), overwriting her routine and still answering "ok".
     const supabase = getSupabaseAdmin();
-    const recipient = (await listAllUsers(supabase)).find(
-      (u) => u.id === target || u.email?.toLowerCase() === target,
-    );
+    const byId = /^[0-9a-f-]{36}$/.test(target) ? (await supabase.auth.admin.getUserById(target)).data?.user : null;
+    const recipient = byId ?? (await listAllUsers(supabase)).find((u) => u.email?.toLowerCase() === target);
     if (!recipient) {
       return NextResponse.json({ ok: false, error: `Không tìm thấy tài khoản ${targetUser.trim()}.` }, { status: 404 });
     }
     const targetUserId = recipient.id;
 
-    ROUTINES_STORE[role] = {
+    // Built aside and kept only once everything is stored, so a failed allocation leaves this
+    // instance serving the routine that is really saved.
+    const nextRoutine: RoleRoutine = {
       ...ROUTINES_STORE[role],
       ...(title ? { title: title.trim() } : {}),
       ...(description ? { description: description.trim() } : {}),
@@ -172,6 +173,11 @@ export async function POST(request: Request) {
 
     // Sync to Supabase routine_items for the recipient; every failure is reported, not logged.
     if (Array.isArray(steps)) {
+      const { data: previousRows, error: readError } = await supabase
+        .from("routine_items")
+        .select("user_id, label, position")
+        .eq("user_id", targetUserId);
+      if (readError) throw new Error(`Không đọc được routine_items: ${readError.message}`);
       const { error: deleteError } = await supabase.from("routine_items").delete().eq("user_id", targetUserId);
       if (deleteError) throw new Error(`Không cập nhật được routine_items: ${deleteError.message}`);
       const rows = steps.map((step: { label?: string; productName?: string }, i: number) => ({
@@ -181,15 +187,19 @@ export async function POST(request: Request) {
       }));
       if (rows.length > 0) {
         const { error: insertError } = await supabase.from("routine_items").insert(rows);
-        if (insertError) throw new Error(`Không lưu được routine_items: ${insertError.message}`);
+        if (insertError) {
+          // Put the recipient's previous routine back rather than leave them with none.
+          if (previousRows?.length) await supabase.from("routine_items").insert(previousRows);
+          throw new Error(`Không lưu được routine_items: ${insertError.message}`);
+        }
       }
 
       const userProtocol = {
         userId: targetUserId,
         targetUser: recipient.email ?? targetUserId,
         allocatedBy: auth.actor.fullName,
-        routineTitle: title || ROUTINES_STORE[role].title,
-        doctorNotes: description || ROUTINES_STORE[role].description,
+        routineTitle: nextRoutine.title,
+        doctorNotes: nextRoutine.description,
         products: steps,
       };
       if (!(await uploadStorageJson(`routines/protocol_${targetUserId}.json`, userProtocol, supabase))) {
@@ -197,14 +207,16 @@ export async function POST(request: Request) {
       }
     }
 
-    if (!(await uploadStorageJson(ROLE_ROUTINES_STORAGE_PATH, ROUTINES_STORE, supabase))) {
+    const nextStore = { ...ROUTINES_STORE, [role]: nextRoutine };
+    if (!(await uploadStorageJson(ROLE_ROUTINES_STORAGE_PATH, nextStore, supabase))) {
       throw new Error("Không lưu được routine theo vai trò, vui lòng thử lại.");
     }
+    ROUTINES_STORE[role] = nextRoutine;
 
     return NextResponse.json({
       ok: true,
       message: `Đã phân bổ Routine cho ${recipient.email ?? targetUserId}.`,
-      routine: ROUTINES_STORE[role],
+      routine: nextRoutine,
     });
   } catch (err) {
     return NextResponse.json({ ok: false, error: err instanceof Error ? err.message : "Phân bổ routine thất bại" }, { status: 500 });

@@ -61,7 +61,7 @@ describe("applyAccountDecision", () => {
     const result = await applyAccountDecision(fakeClient(), "u1", { status: "active" });
     expect(result).toMatchObject({ role: "shop", status: "active" });
     const patch = updateUserById.mock.calls[0][1];
-    expect(patch.app_metadata).toEqual({ role: "shop", status: "active", shop_id: "my_shop" });
+    expect(patch.app_metadata).toEqual({ role: "shop", status: "active", shop_id: "my_shop", status_before_lock: null });
     expect(patch.ban_duration).toBe("none");
     expect(files["shops/shops_registry.json"]).toEqual([
       expect.objectContaining({ id: "u1", status: "active" }),
@@ -75,6 +75,20 @@ describe("applyAccountDecision", () => {
     const patch = updateUserById.mock.calls[0][1];
     expect(patch.app_metadata.status).toBe("suspended");
     expect(patch.ban_duration).toBe("876000h");
+    expect(patch.app_metadata.status_before_lock).toBe("active");
+  });
+
+  it("unlocking restores the pre-lock status: a locked application does not come back approved", async () => {
+    user.app_metadata = { role: "shop", status: "suspended", shop_id: "my_shop", status_before_lock: "pending" };
+    const result = await applyAccountDecision(fakeClient(), "u1", { unlock: true });
+    expect(result.status).toBe("pending");
+    const patch = updateUserById.mock.calls[0][1];
+    expect(patch.app_metadata).toMatchObject({ status: "pending", status_before_lock: null });
+    expect(patch.ban_duration).toBe("none");
+    expect(patch.user_metadata.approved_at).toBeUndefined();
+
+    user.app_metadata = { role: "shop", status: "active" };
+    await expect(applyAccountDecision(fakeClient(), "u1", { unlock: true })).rejects.toMatchObject({ httpStatus: 409 });
   });
 
   it("refuses admins, the super admin and the wrong kind of application", async () => {

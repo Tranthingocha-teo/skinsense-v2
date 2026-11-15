@@ -287,7 +287,14 @@ function CheckoutInner() {
         .then((data: { ok?: boolean; products?: MarketplaceProduct[] }) => {
           if (cancelled) return;
           const product = data.products?.find((p) => p.id === productIdParam && p.status === "approved");
+          if (!data.ok) {
+            setItems([]);
+            toast.error("Không tải được sản phẩm, vui lòng thử lại.");
+            return;
+          }
           if (!product) {
+            // Nothing else may stay in the cart in its place.
+            setItems([]);
             toast.error("Sản phẩm này không còn được bán trên sàn.");
             return;
           }

@@ -481,7 +481,11 @@ export default function AdminDashboardPage() {
     });
   }
 
-  function patchUser(user: { id: string }, body: { role?: RoleType; status?: UserStatus }, success: string) {
+  function patchUser(
+    user: { id: string },
+    body: { role?: RoleType; status?: UserStatus; unlock?: true; expectRole?: RoleType },
+    success: string,
+  ) {
     return runAction(`user:${user.id}`, async () => {
       const json = await callApi<{ user: { role: RoleType; status: UserStatus } }>("/api/admin/users", {
         method: "PATCH",
@@ -493,16 +497,16 @@ export default function AdminDashboardPage() {
   }
 
   async function handleApproveShop(id: string, name: string) {
-    if (await patchUser({ id }, { status: "active" }, `Đã phê duyệt Cửa hàng: "${name}"`)) setInspectingShop(null);
+    if (await patchUser({ id }, { status: "active", expectRole: "shop" }, `Đã phê duyệt Cửa hàng: "${name}"`)) setInspectingShop(null);
   }
 
   async function handleRejectShop(id: string, name: string) {
-    if (await patchUser({ id }, { status: "rejected" }, `Đã từ chối hồ sơ Cửa hàng: "${name}"`)) setInspectingShop(null);
+    if (await patchUser({ id }, { status: "rejected", expectRole: "shop" }, `Đã từ chối hồ sơ Cửa hàng: "${name}"`)) setInspectingShop(null);
   }
 
   function handleToggleStatus(user: SystemUser) {
     if (user.status === "suspended") {
-      return patchUser(user, { status: "active" }, `Đã mở khóa tài khoản cho ${user.name}`);
+      return patchUser(user, { unlock: true }, `Đã mở khóa tài khoản cho ${user.name}`);
     }
     return patchUser(user, { status: "suspended" }, `Đã tạm khóa tài khoản của ${user.name}`);
   }
@@ -1297,11 +1301,12 @@ export default function AdminDashboardPage() {
                                 </button>
                               ) : (
                                 <button
-                                  onClick={() => handleApproveSpecialist(doc.id, doc.name)}
-                                    disabled={saving.has(`user:${doc.id}`)}
-                                  className="px-3.5 py-1.5 rounded-md text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 transition cursor-pointer"
+                                  // A locked doctor is unlocked (back to its pre-lock status), not approved.
+                                  onClick={() => (doc.status === "suspended" ? handleToggleStatus(doc) : handleApproveSpecialist(doc.id, doc.name))}
+                                  disabled={saving.has(`user:${doc.id}`)}
+                                  className="px-3.5 py-1.5 rounded-md text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 transition cursor-pointer disabled:opacity-50"
                                 >
-                                  {doc.status === "rejected" ? "Duyệt lại" : "Kích hoạt lại"}
+                                  {doc.status === "rejected" ? "Duyệt lại" : "Mở khóa"}
                                 </button>
                               )}
                             </div>

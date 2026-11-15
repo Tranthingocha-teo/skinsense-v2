@@ -135,7 +135,9 @@ export async function PATCH(request: Request) {
 
   try {
     const body = await request.json();
-    const { userId, role, status } = body;
+    // unlock: restore the status from before the lock. expectRole: the application being decided
+    // (a shop approval must not approve an account that is not a shop applicant).
+    const { userId, role, status, unlock, expectRole } = body;
 
     if (!userId || typeof userId !== "string") {
       return NextResponse.json({ ok: false, error: "Thiếu userId." }, { status: 400 });
@@ -146,14 +148,26 @@ export async function PATCH(request: Request) {
     if (status !== undefined && !isAccountStatus(status)) {
       return NextResponse.json({ ok: false, error: "Trạng thái không hợp lệ." }, { status: 400 });
     }
-    if (role === undefined && status === undefined) {
+    if (expectRole !== undefined && !isGrantableRole(expectRole)) {
+      return NextResponse.json({ ok: false, error: "Loại hồ sơ không hợp lệ." }, { status: 400 });
+    }
+    if (unlock !== undefined && (unlock !== true || role !== undefined || status !== undefined)) {
+      return NextResponse.json({ ok: false, error: "Yêu cầu mở khóa không hợp lệ." }, { status: 400 });
+    }
+    if (role === undefined && status === undefined && !unlock) {
       return NextResponse.json({ ok: false, error: "Không có thay đổi nào." }, { status: 400 });
     }
     if (userId === auth.actor.userId) {
       return NextResponse.json({ ok: false, error: "Không thể tự thay đổi tài khoản của chính mình." }, { status: 403 });
     }
 
-    const user = await applyAccountDecision(adminClientOr500(), userId, { role, status, approvedBy: auth.actor.fullName });
+    const user = await applyAccountDecision(adminClientOr500(), userId, {
+      role,
+      status,
+      unlock: unlock === true,
+      expectRole,
+      approvedBy: auth.actor.fullName,
+    });
     return NextResponse.json({ ok: true, user });
   } catch (err) {
     return errorResponse(err, "Cập nhật người dùng thất bại.");

@@ -4,6 +4,7 @@ import { getAuthenticatedActor } from "@/lib/session-auth";
 import { authzClaims, SUPER_ADMIN_EMAIL } from "@/lib/actor-role";
 import { shopIdClaim } from "@/lib/shop-utils";
 import { updateStorageJsonList } from "@/lib/supabase/storage-json";
+import { listAllUsers } from "@/lib/admin-approvals";
 
 export async function POST(request: Request) {
   try {
@@ -81,8 +82,9 @@ export async function POST(request: Request) {
     };
 
     // 1. Check if user already exists
-    const { data: userList } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
-    const existingUser = userList?.users.find((u) => u.email?.toLowerCase() === normalizedEmail);
+    // Every page: one listUsers call stops at 1000 accounts, and a returning applicant beyond that
+    // was treated as new and failed with "already registered".
+    const existingUser = (await listAllUsers(supabaseAdmin)).find((u) => u.email?.toLowerCase() === normalizedEmail);
 
     let savedUser = null;
 
