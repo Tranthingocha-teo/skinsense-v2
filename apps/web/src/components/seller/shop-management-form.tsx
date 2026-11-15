@@ -33,6 +33,7 @@ export function ShopManagementForm({
   onSave?: (updated: Partial<Shop>) => void;
 }) {
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -169,6 +170,7 @@ export function ShopManagementForm({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <ImageUploader
+                onUploadingChange={setUploading}
                 images={avatarUrl ? [avatarUrl] : []}
                 onChange={(next) => setAvatarUrl(next[0] ?? "")}
                 folder="shops"
@@ -179,6 +181,7 @@ export function ShopManagementForm({
 
             <div className="space-y-1.5">
               <ImageUploader
+                onUploadingChange={setUploading}
                 images={bannerUrl ? [bannerUrl] : []}
                 onChange={(next) => setBannerUrl(next[0] ?? "")}
                 folder="shops"
@@ -227,7 +230,7 @@ export function ShopManagementForm({
       </Card>
 
       <div className="flex justify-end gap-3 pt-2">
-        <Button type="submit" disabled={saving} className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium min-w-36 gap-2">
+        <Button type="submit" disabled={saving || uploading} className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium min-w-36 gap-2">
           <Save className="size-4" />
           <span>{saving ? "Đang lưu..." : "Lưu thay đổi"}</span>
         </Button>

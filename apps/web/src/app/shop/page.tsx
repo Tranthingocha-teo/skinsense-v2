@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -46,6 +46,11 @@ import {
   matchesShop,
   filterProductsByShop,
 } from "@/lib/shop-product-approval";
+
+/** Shops and the admin start in, and are labelled for, the seller channel. */
+function isSellerAccount(u: { role?: string; isSuperAdmin?: boolean } | null | undefined): boolean {
+  return u?.role === "shop" || u?.role === "admin" || Boolean(u?.isSuperAdmin);
+}
 
 // Shopee Product Variant
 export interface ProductVariant {
@@ -557,7 +562,13 @@ interface AdminProductApiRecord {
 export default function ShopProductPage() {
   const router = useRouter();
   // Page mode: "seller" (Kênh người bán SkinSense) vs "buyer" (Shopee Marketplace Storefront)
-  const [viewMode, setViewMode] = useState<"seller" | "buyer">("seller");
+  const [viewMode, setViewModeState] = useState<"seller" | "buyer">("seller");
+  // Set once the user picks a mode themselves, so the post-auth default never overrides it.
+  const viewModeChosen = useRef(false);
+  const setViewMode = (mode: "seller" | "buyer") => {
+    viewModeChosen.current = true;
+    setViewModeState(mode);
+  };
 
   // User session & approval state
   const [currentUser, setCurrentUser] = useState<ShopCurrentUser | null>(null);
@@ -581,12 +592,14 @@ export default function ShopProductPage() {
           setCurrentUser(null);
         }
         // Buyers and visitors land on the storefront; only shops and admins start in the seller channel
-        // (a customer used to land on a locked "shops only" screen).
-        const u = data?.authenticated ? data.user : null;
-        if (!(u?.role === "shop" || u?.role === "admin" || u?.isSuperAdmin)) setViewMode("buyer");
+        // (a customer used to land on a locked "shops only" screen). A choice made meanwhile wins.
+        if (!viewModeChosen.current && !isSellerAccount(data?.authenticated ? data.user : null)) setViewModeState("buyer");
         setAuthLoading(false);
       })
-      .catch(() => setAuthLoading(false));
+      .catch(() => {
+        if (!viewModeChosen.current) setViewModeState("buyer");
+        setAuthLoading(false);
+      });
   }, []);
 
   // Load products from /api/admin/products to sync approval status
@@ -932,7 +945,7 @@ export default function ShopProductPage() {
             </Link>
 
             {/* Only a shop (or the admin) has a shop and an approval status to show. */}
-            {(currentUser?.role === "shop" || currentUser?.isSuperAdmin) && (
+            {isSellerAccount(currentUser) && (
             <>
             <span className="hidden h-4 w-px bg-border lg:inline-block" />
 

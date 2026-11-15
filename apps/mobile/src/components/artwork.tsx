@@ -167,7 +167,8 @@ export function ProductImage({
     <Image
       source={{ uri: own }}
       className={className}
-      style={[{ width: '100%', height: '100%' }, style as object]}
+      // Callers size thumbnails with className; fill the parent only when they give no size.
+      style={className ? (style as object) : [{ width: '100%', height: '100%' }, style as object]}
       contentFit="cover"
       accessibilityLabel={name}
       onError={() => setFailed(own)}

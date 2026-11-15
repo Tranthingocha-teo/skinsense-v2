@@ -219,6 +219,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   // Form State
   const [userId, setUserId] = useState("");
@@ -1929,6 +1930,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
 
                           <div className="space-y-1.5">
                             <ImageUploader
+                              onUploadingChange={setUploading}
                               images={avatarUrl ? [avatarUrl] : []}
                               onChange={(next) => setAvatarUrl(next[0] ?? "")}
                               folder="avatars"
@@ -2102,7 +2104,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                         </button>
                         <button
                           type="submit"
-                          disabled={saving}
+                          disabled={saving || uploading}
                           className="h-10 px-5 rounded-xl bg-[#2D5A43] text-xs font-bold text-white shadow-xs hover:bg-[#214332] transition flex items-center gap-2 disabled:opacity-50 cursor-pointer"
                         >
                           {saving ? (

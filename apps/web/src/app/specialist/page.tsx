@@ -404,6 +404,7 @@ function SpecialistContent() {
   const [customProdBrand, setCustomProdBrand] = useState("");
   const [customProdCategory, setCustomProdCategory] = useState("Serum điều trị");
   const [customProdImage, setCustomProdImage] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [customProdActives, setCustomProdActives] = useState("");
   const [customProdTime, setCustomProdTime] = useState<"morning" | "evening" | "both">("both");
   const [customProdDosage, setCustomProdDosage] = useState("1 hạt đậu");
@@ -1429,6 +1430,7 @@ function SpecialistContent() {
                 </div>
                 <div>
                   <ImageUploader
+                    onUploadingChange={setUploadingImage}
                     images={customProdImage ? [customProdImage] : []}
                     onChange={(next) => setCustomProdImage(next[0] ?? "")}
                     folder="products"
@@ -1481,6 +1483,7 @@ function SpecialistContent() {
               <button
                 type="button"
                 onClick={handleAddProductConfirm}
+                disabled={uploadingImage}
                 className="rounded-2xl bg-[#2D5A43] px-5 py-2 text-sm font-bold text-white cursor-pointer"
               >
                 Thêm vào Routine

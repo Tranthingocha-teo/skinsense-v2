@@ -442,8 +442,12 @@ function CheckoutInner() {
 
   // Tạo mã QR bằng thư viện qrcode nội bộ, đảm bảo 100% offline, sắc nét, không bị trễ hay lỗi mạng ngoài
   const [qrBase64, setQrBase64] = useState<string>("");
+  const [qrFailed, setQrFailed] = useState(false);
 
   useEffect(() => {
+    // A new order must never show the previous order's QR while its own is drawn.
+    setQrBase64("");
+    setQrFailed(false);
     if (!mobilePayUrl) return;
     import("qrcode")
       .then((QRCode) => {
@@ -457,9 +461,9 @@ function CheckoutInner() {
           },
         })
           .then(setQrBase64)
-          .catch(() => {});
+          .catch(() => setQrFailed(true));
       })
-      .catch(() => {});
+      .catch(() => setQrFailed(true));
   }, [mobilePayUrl]);
 
   // Quantity helpers
@@ -1262,6 +1266,10 @@ function CheckoutInner() {
                   // Drawn in the browser by the qrcode package: no QR image service is called.
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={qrBase64} alt="Mã QR thanh toán mô phỏng" className="w-full h-full object-contain rounded-xl select-none" />
+                ) : qrFailed ? (
+                  <div role="alert" className="flex flex-col items-center gap-2 px-3 text-center text-xs text-destructive">
+                    <span>Không tạo được mã QR. Mở liên kết bên dưới trên điện thoại hoặc tải lại trang.</span>
+                  </div>
                 ) : (
                   <div role="status" className="flex flex-col items-center gap-2 text-xs text-muted-foreground">
                     <Loader2 className="size-6 animate-spin" aria-hidden />

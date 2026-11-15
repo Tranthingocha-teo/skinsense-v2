@@ -44,6 +44,7 @@ export function SellerRegistrationModal({
     onOpenChange?.(next);
   }
   const [submitting, setSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [submittedSuccess, setSubmittedSuccess] = useState(false);
@@ -278,6 +279,7 @@ export function SellerRegistrationModal({
             {/* Avatar URL */}
             <div className="space-y-1.5">
               <ImageUploader
+                onUploadingChange={setUploading}
                 images={avatarUrl ? [avatarUrl] : []}
                 onChange={(next) => setAvatarUrl(next[0] ?? "")}
                 folder="shops"
@@ -305,7 +307,7 @@ export function SellerRegistrationModal({
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                 Hủy
               </Button>
-              <Button type="submit" disabled={submitting} className="bg-emerald-600 hover:bg-emerald-700 text-white min-w-32">
+              <Button type="submit" disabled={submitting || uploading} className="bg-emerald-600 hover:bg-emerald-700 text-white min-w-32">
                 {submitting ? (
                   <>
                     <Loader2 className="size-4 animate-spin mr-2" />

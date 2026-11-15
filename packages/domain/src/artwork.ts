@@ -24,10 +24,12 @@ const FOREIGN_IMAGE_HOSTS = [
 export function ownImageUrl(url: string | null | undefined): string | undefined {
   const trimmed = url?.trim();
   if (!trimmed) return undefined;
-  if (!/^https?:\/\//i.test(trimmed)) return trimmed;
+  // Relative paths, data: and blob: URLs are the app's own; anything with a host is checked,
+  // protocol-relative ("//images.unsplash.com/...") included.
+  if (!/^(https?:)?\/\//i.test(trimmed)) return trimmed;
   let host: string;
   try {
-    host = new URL(trimmed).hostname.toLowerCase();
+    host = new URL(trimmed, "https://app.invalid").hostname.toLowerCase();
   } catch {
     return undefined;
   }
@@ -84,6 +86,16 @@ export function crc16Ccitt(text: string): string {
   return crc.toString(16).toUpperCase().padStart(4, "0");
 }
 
+/** EMVCo purpose (62/08): ASCII letters, digits, space and dash, at most 25 characters. */
+export function vietQrMemo(memo: string): string {
+  return memo
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[đĐ]/g, (c) => (c === "đ" ? "d" : "D"))
+    .replace(/[^A-Za-z0-9 -]/g, "")
+    .slice(0, 25);
+}
+
 const tlv = (id: string, value: string) => `${id}${String(value.length).padStart(2, "0")}${value}`;
 
 /**
@@ -100,7 +112,7 @@ export function vietQrPayload(params: { bankBin: string; accountNo: string; amou
     tlv("53", "704") +
     tlv("54", String(Math.round(params.amount))) +
     tlv("58", "VN") +
-    tlv("62", tlv("08", params.memo.slice(0, 50))) +
+    tlv("62", tlv("08", vietQrMemo(params.memo))) +
     "6304";
   return body + crc16Ccitt(body);
 }

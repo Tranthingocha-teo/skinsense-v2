@@ -50,6 +50,7 @@ export function ProductEditorModal(props: ProductEditorModalProps) {
 
 function ProductEditorDialog({ open, onOpenChange, initialProduct, onSave }: ProductEditorModalProps) {
   const [submitting, setSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Form Fields
@@ -222,6 +223,7 @@ function ProductEditorDialog({ open, onOpenChange, initialProduct, onSave }: Pro
 
           <div className="space-y-1.5">
             <ImageUploader
+              onUploadingChange={setUploading}
               multiple
               images={images}
               onChange={setImages}
@@ -245,7 +247,7 @@ function ProductEditorDialog({ open, onOpenChange, initialProduct, onSave }: Pro
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Hủy
             </Button>
-            <Button type="submit" disabled={submitting} className="bg-emerald-600 hover:bg-emerald-700 text-white min-w-32">
+            <Button type="submit" disabled={submitting || uploading} className="bg-emerald-600 hover:bg-emerald-700 text-white min-w-32">
               {submitting ? <Loader2 className="size-4 animate-spin" /> : "Lưu sản phẩm"}
             </Button>
           </div>

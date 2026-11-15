@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { crc16Ccitt, initialsOf, ownImageUrl, productShape, tintIndex, vietQrPayload } from "./artwork";
+import { crc16Ccitt, initialsOf, ownImageUrl, productShape, tintIndex, vietQrMemo, vietQrPayload } from "./artwork";
 
 describe("ownImageUrl", () => {
   it("keeps uploads and local images", () => {
@@ -26,6 +26,7 @@ describe("ownImageUrl", () => {
       "https://img.vietqr.io/image/MB-1-compact2.png",
       "https://randomuser.me/api/portraits/women/1.jpg",
       "https://ui-avatars.com/api/?name=A",
+      "//images.unsplash.com/photo-1",
     ]) {
       expect(ownImageUrl(url), url).toBeUndefined();
     }
@@ -92,5 +93,13 @@ describe("vietQrPayload", () => {
     const body = payload.slice(0, -4);
     expect(body.endsWith("6304")).toBe(true);
     expect(payload.slice(-4)).toBe(crc16Ccitt(body));
+  });
+
+  it("keeps the memo to what bank apps accept", () => {
+    expect(vietQrMemo("Đơn hàng số 12 – thanh toán nhanh giúp mình")).toBe("Don hang so 12  thanh toa");
+    expect(vietQrMemo("SS-123456")).toBe("SS-123456");
+    const payload = vietQrPayload({ bankBin: "970422", accountNo: "1", amount: 1, memo: "Đặt hàng" });
+    expect(payload).toContain("0808Dat hang");
+    expect(payload.slice(-4)).toBe(crc16Ccitt(payload.slice(0, -4)));
   });
 });
