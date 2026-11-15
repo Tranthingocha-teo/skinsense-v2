@@ -7,11 +7,11 @@ import { SafeProductImage } from "@/components/safe-product-image";
 import {
   type RoleRoutine,
   type RoutineStep,
-  DEFAULT_ROLE_ROUTINES,
+  EMPTY_ROLE_ROUTINES,
 } from "@/lib/role-routines";
 
 export function AllocatedRoutineView() {
-  const [routine, setRoutine] = useState<RoleRoutine>(DEFAULT_ROLE_ROUTINES.customer);
+  const [routine, setRoutine] = useState<RoleRoutine>(EMPTY_ROLE_ROUTINES.customer);
   const [isUpdatingStep, setIsUpdatingStep] = useState<string | null>(null);
 
   useEffect(() => {

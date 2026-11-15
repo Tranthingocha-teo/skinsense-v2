@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
-import { getProductForStep } from "@/lib/role-routines";
 import { isPatientAliasOfHa, filterProductsByTimeOfDay } from "@/lib/prescription-sync";
 
 export const dynamic = "force-dynamic";
@@ -96,23 +95,28 @@ export async function GET(request: Request) {
     // Priority A: Check clinical records registry
     const registryCases = (await downloadJsonFromStorage<any[]>(supabaseAdmin, "clinical_records/cases_registry.json")) || [];
     
-    // Check if user is Hà (support both her Google account and school email / names)
-    const isHaUser = isPatientAliasOfHa({ userId, email: userEmail, name: userName });
+    const userRole = meta.role || (userEmail === "hattn.23itb@vku.udn.vn" ? "admin" : "customer");
+    const isDoctor = userRole === "specialist" || userEmail.includes("doctor") || userEmail.includes("bacsi") || userEmail.includes("lananh");
+    const isAdmin = userRole === "admin" || userEmail === "admin@skinsense.vn";
 
-    const matchedCase = registryCases.find((c) => {
+    // Phân quyền độc lập (của ai hiển thị cái đó, không mẫu, nếu chưa có thì để trống):
+    // Bác sĩ và Admin không tự động gán bệnh án người bệnh.
+    const isPatientUser = !isDoctor && !isAdmin;
+    const isHaPatient = isPatientUser && isPatientAliasOfHa({ userId, email: userEmail, name: userName });
+
+    const matchedCase = isPatientUser ? registryCases.find((c) => {
       if (c.patientUserId === userId || c.alternateUserId === userId || c.id === userId || c.userId === userId) return true;
       if (c.patientEmail && c.patientEmail.trim().toLowerCase() === userEmail) return true;
       if (c.alternateEmail && c.alternateEmail.trim().toLowerCase() === userEmail) return true;
-      if (isHaUser && (
+      if (isHaPatient && (
         c.patientName?.toLowerCase().includes("ngọc hà") ||
         c.patientName?.toLowerCase().includes("ngoc ha") ||
-        c.patientEmail === "hattn.23itb@vku.udn.vn" ||
         c.patientEmail === "trandinhhai0936039127@gmail.com"
       )) {
         return true;
       }
       return false;
-    });
+    }) : null;
 
     if (matchedCase?.currentRoutine && Array.isArray(matchedCase.currentRoutine.products) && matchedCase.currentRoutine.products.length > 0) {
       prescribedRoutine = matchedCase.currentRoutine;
@@ -132,8 +136,8 @@ export async function GET(request: Request) {
       } catch {}
     }
 
-    // Priority B: Check user-specific protocol in storage
-    if (!prescribedRoutine) {
+    // Priority B: Check user-specific protocol in storage (chỉ dành cho tài khoản bệnh nhân)
+    if (!prescribedRoutine && isPatientUser) {
       const userProtocol = await downloadJsonFromStorage<any>(supabaseAdmin, `routines/protocol_${userId}.json`);
       if (userProtocol?.products && Array.isArray(userProtocol.products) && userProtocol.products.length > 0) {
         prescribedRoutine = userProtocol;
@@ -204,20 +208,20 @@ export async function GET(request: Request) {
           : "Tẩy trang hòa tan bụi mịn và dầu nhờn, kháng khuẩn ngừa mụn và tái tạo màng ẩm ban đêm.";
 
         finalSteps = itemsToUse.map((item, idx) => {
-          const prod = getProductForStep(item.label, timeOfDay as "morning" | "evening", idx);
-          const isCompleted = completedSet.has(item.label) || (prod.productName && completedSet.has(prod.productName));
+          const isCompleted = completedSet.has(item.label);
           return {
             id: item.id || `user-step-${idx}`,
             stepNumber: idx + 1,
             label: item.label,
-            productName: prod.productName,
-            brand: prod.brand,
-            category: prod.category,
-            imageUrl: prod.imageUrl,
-            activeIngredients: prod.activeIngredients,
-            stepTime: prod.stepTime || timeOfDay,
-            dosage: prod.dosage,
-            usageGuide: prod.usageGuide,
+            // Không tự động chèn sản phẩm mẫu giả lập (CeraVe / La Roche-Posay)
+            productName: null,
+            brand: null,
+            category: null,
+            imageUrl: null,
+            activeIngredients: null,
+            stepTime: timeOfDay,
+            dosage: null,
+            usageGuide: null,
             isCompleted: Boolean(isCompleted),
           };
         });
