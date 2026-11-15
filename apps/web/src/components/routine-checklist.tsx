@@ -15,9 +15,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Sparkles, Sun, Moon, Info, ShieldCheck, CheckCircle2 } from "lucide-react";
 import { SafeProductImage } from "@/components/safe-product-image";
-import {
-  getProductForStep,
-} from "@/lib/role-routines";
 import type * as routineLib from "@/lib/routine";
 import type { RoutineEntry, RoutineItem } from "@/lib/routine";
 
@@ -64,23 +61,33 @@ export function RoutineChecklist({ api, embedded = false }: { api: RoutineApi; e
         return res.json();
       })
       .then((data) => {
-        if (data && data.ok && data.steps?.length > 0) {
+        if (data && data.ok) {
           setSupabaseProtocol(data);
-          // Set real items from Supabase protocol for morning or evening
-          const realItems: RoutineItem[] = data.steps.map((s: any, idx: number) => ({
-            id: s.id || `step-${timeOfDay}-${idx}`,
-            label: s.label,
-            position: idx,
-          }));
-          setItems(realItems);
-          const realCompletedLabels = data.steps
-            .filter((s: any) => s.isCompleted)
-            .map((s: any) => s.label);
-          setEntry((prev) => ({
-            night: prev?.night || night || new Date().toISOString().split("T")[0],
-            completed_labels: realCompletedLabels,
-            item_count: realItems.length,
-          }));
+          if (Array.isArray(data.steps) && data.steps.length > 0) {
+            // Set real items from Supabase protocol for morning or evening
+            const realItems: RoutineItem[] = data.steps.map((s: any, idx: number) => ({
+              id: s.id || `step-${timeOfDay}-${idx}`,
+              label: s.label,
+              position: idx,
+            }));
+            setItems(realItems);
+            const realCompletedLabels = data.steps
+              .filter((s: any) => s.isCompleted)
+              .map((s: any) => s.label);
+            setEntry((prev) => ({
+              night: prev?.night || night || new Date().toISOString().split("T")[0],
+              completed_labels: realCompletedLabels,
+              item_count: realItems.length,
+            }));
+          } else {
+            // Strict: của ai hiển thị cái đó, chứ không mẫu. Nếu chưa có thì để trống!
+            setItems([]);
+            setEntry((prev) => ({
+              night: prev?.night || night || new Date().toISOString().split("T")[0],
+              completed_labels: [],
+              item_count: 0,
+            }));
+          }
         }
       })
       .catch(() => {});
@@ -88,8 +95,10 @@ export function RoutineChecklist({ api, embedded = false }: { api: RoutineApi; e
 
   const reload = useCallback(async (n: string) => {
     const loaded = await api.loadRoutine(n, defaults);
-    setItems(loaded.items);
-    setEntry(loaded.entry);
+    if (loaded && Array.isArray(loaded.items)) {
+      setItems(loaded.items);
+      setEntry(loaded.entry);
+    }
   }, [api, defaults]);
 
   useEffect(() => {
@@ -215,9 +224,10 @@ export function RoutineChecklist({ api, embedded = false }: { api: RoutineApi; e
   const rows = items.map((item, index) => {
     const isTicked = ticked.has(item.label);
     const supabaseStep = supabaseProtocol?.steps?.find(
-      (s: any) => s.label.toLowerCase() === item.label.toLowerCase()
+      (s: any) => s.label?.toLowerCase() === item.label?.toLowerCase()
     ) || supabaseProtocol?.steps?.[index];
-    const product = (supabaseStep && supabaseStep.productName) ? {
+    // CHỈ hiển thị thông tin sản phẩm và liều lượng khi là phác đồ kê đơn y khoa thật sự
+    const product = (supabaseProtocol?.isPrescribed && supabaseStep && supabaseStep.productName) ? {
       id: supabaseStep.id || `step_${index}`,
       stepNumber: supabaseStep.stepNumber || index + 1,
       label: supabaseStep.label || item.label,
@@ -229,7 +239,9 @@ export function RoutineChecklist({ api, embedded = false }: { api: RoutineApi; e
       stepTime: supabaseStep.stepTime || timeOfDay,
       dosage: supabaseStep.dosage,
       usageGuide: supabaseStep.usageGuide,
-    } : getProductForStep(item.label, timeOfDay, index);
+    } : null;
+
+    const stepTime = product?.stepTime || supabaseStep?.stepTime;
 
     return (
       <li
@@ -256,19 +268,19 @@ export function RoutineChecklist({ api, embedded = false }: { api: RoutineApi; e
                 <span className={`text-[16px] sm:text-[17px] transition-colors ${isTicked ? "font-light text-muted-foreground line-through decoration-muted-foreground/40" : "font-semibold text-foreground/90"}`}>
                   {item.label}
                 </span>
-                {product.stepTime === "evening" && (
+                {stepTime === "evening" && (
                   <span className="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
                     <Moon className="size-2.5" />
                     <span>Tối</span>
                   </span>
                 )}
-                {product.stepTime === "morning" && (
+                {stepTime === "morning" && (
                   <span className="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-amber-500/10 text-amber-500 border border-amber-500/20">
                     <Sun className="size-2.5" />
                     <span>Sáng</span>
                   </span>
                 )}
-                {product.stepTime === "both" && (
+                {stepTime === "both" && (
                   <span className="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-sky-500/10 text-sky-400 border border-sky-500/20">
                     <Sun className="size-2.5" />
                     <span>Sáng & Tối</span>
@@ -341,8 +353,8 @@ export function RoutineChecklist({ api, embedded = false }: { api: RoutineApi; e
           )}
         </div>
 
-        {/* Product Details & Usage Guide Box */}
-        {showUsageTips && editing !== item.id && (
+        {/* Product Details & Usage Guide Box - CHỈ hiển thị khi có sản phẩm kê đơn thật sự */}
+        {showUsageTips && editing !== item.id && product && product.productName && (
           <div className="ml-9.5 p-3 rounded-xl border border-border/80 bg-surface-2/40 flex flex-col sm:flex-row gap-3">
             <SafeProductImage
               src={product.imageUrl}
