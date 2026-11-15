@@ -14,7 +14,6 @@ export interface ProductItem {
   brand?: string;
   sku?: string;
   coverImage?: string;
-  images?: string[];
   description?: string;
   origin?: string;
 }
@@ -145,20 +144,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, shopName, price, category, stock, brand, sku, coverImage, images, description, origin } = body;
-
-    const normalizedImages: string[] = Array.isArray(images)
-      ? images
-          .filter((item): item is string => typeof item === "string" && item.trim().length > 0)
-          .map((item) => item.trim())
-      : [];
-    const resolvedCover = coverImage?.trim() || normalizedImages[0] || "";
-    const resolvedImages =
-      normalizedImages.length > 0
-        ? normalizedImages
-        : resolvedCover
-          ? [resolvedCover]
-          : [];
+    const { name, shopName, price, category, stock, brand, sku, coverImage, description, origin } = body;
 
     const newProd: ProductItem = {
       id: `prod_${Date.now()}`,
@@ -171,8 +157,7 @@ export async function POST(request: Request) {
       stock: Number(stock) || 100,
       brand: brand?.trim() || shopName?.trim() || "SkinSense Flagship",
       sku: sku?.trim() || `SKU-${Date.now().toString().slice(-6)}`,
-      coverImage: resolvedCover,
-      images: resolvedImages,
+      coverImage: coverImage?.trim() || "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=800&auto=format&fit=crop&q=80",
       description: description?.trim() || "Sản phẩm chính hãng đã qua kiểm định.",
       origin: origin?.trim() || "Pháp",
     };
