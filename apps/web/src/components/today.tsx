@@ -37,9 +37,6 @@ function Band({ photo }: { photo: boolean }) {
         <rect width="100%" height="100%" filter="url(#today-grain)" />
       </svg>
       <div className={`absolute inset-0 ${SCRIM}`} />
-      <span className="absolute top-4 right-4 rounded-4xl border border-dashed border-foreground/45 px-2.5 py-1 text-[11px] md:top-5 md:right-6">
-        {t("photoPlaceholder")}
-      </span>
     </div>
   );
 }
@@ -229,7 +226,7 @@ export function Today({ api }: { api: TodayApi }) {
               className="flex h-[52px] items-center justify-center gap-2 rounded-lg border border-primary/40 bg-primary/10 px-4 text-[14px] font-semibold text-primary transition hover:bg-primary/20 md:h-12 cursor-pointer"
             >
               <Stethoscope className="size-4.5" />
-              <span>Xuất bệnh án gửi Bác sĩ</span>
+              <span>{t("exportRecord")}</span>
             </button>
 
             {last && (

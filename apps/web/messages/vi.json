@@ -66,7 +66,8 @@
     "note": "Mọi thay đổi chỉ lưu trên trình duyệt này.",
     "persona": "Hồ sơ mẫu: Da dầu, mụn ở má · 90 ngày",
     "reset": "Đặt lại",
-    "signIn": "Đăng nhập bằng Google"
+    "signIn": "Đăng nhập bằng Google",
+    "home": "Trang chủ"
   },
   "Today": {
     "title": "Hôm nay",
@@ -76,13 +77,14 @@
     "tonightSaved": "Đã chụp ảnh tối nay",
     "last": "Lần trước: {when} · {count, plural, other {# nốt đã đánh dấu}}",
     "noPhoto": "Chưa có ảnh nào. Chụp ảnh đầu tiên để bắt đầu nhật ký.",
-    "photoPlaceholder": "Ảnh · placeholder",
+    "photoPlaceholder": "Ảnh mẫu",
     "markSpots": "Đánh dấu nốt mụn →",
     "captureStreak": "Chuỗi chụp ảnh",
     "routineStreak": "Chuỗi routine",
     "nights": "{count, plural, other {đêm liên tiếp}}",
     "redness7": "Chỉ số mẩn đỏ 7 ngày qua",
-    "trends": "Xu hướng →"
+    "trends": "Xu hướng →",
+    "exportRecord": "Xuất bệnh án gửi Bác sĩ"
   },
   "Shell": {
     "signOut": "Đăng xuất"
@@ -106,7 +108,22 @@
     ],
     "edit": "Sửa routine",
     "back": "Quay lại",
-    "duplicate": "Bước này đã có"
+    "duplicate": "Bước này đã có",
+    "titleMorning": "Routine sáng nay",
+    "morning": "Routine Sáng",
+    "evening": "Routine Tối",
+    "periodMorning": "Buổi Sáng",
+    "periodEvening": "Buổi Tối",
+    "protocolPrescribed": "Phác đồ Y khoa {period}",
+    "protocolPersonal": "Routine Cá Nhân {period}",
+    "privateData": "Dữ liệu riêng tư của bạn",
+    "defaultTitleMorning": "Routine Sáng: Cấp Ẩm & Bảo Vệ Da",
+    "defaultTitleEvening": "Routine Tối: Làm Sạch Sâu & Phục Hồi",
+    "defaultDescMorning": "Làm sạch dịu nhẹ pH 5.5, cấp nước phục hồi và chống nắng bảo vệ da.",
+    "defaultDescEvening": "Hòa tan bụi bẩn dầu nhờn, kháng khuẩn ngừa mụn và tái tạo màng ẩm tự nhiên ban đêm.",
+    "emptyTitle": "Chưa có bước routine nào",
+    "emptyEmbedded": "Chưa có bước nào. Nhấn \"Sửa routine\" để thêm bước chăm sóc da.",
+    "emptyFull": "Chưa có bước chăm sóc da nào. Bạn có thể tự thêm bước bên dưới."
   },
   "Landing": {
     "title": "SkinSense",

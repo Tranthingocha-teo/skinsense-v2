@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { CanvasIcon, SiteHeader } from "@/components/site-header";
 import { APK_URL } from "@/lib/utils";
+import Image from "next/image";
 
 const LIVE_URL = "https://skinsense-v2-topaz.vercel.app";
 const REPO_URL = "https://github.com/Tranthingocha-teo/skinsense-v2";
@@ -20,10 +21,10 @@ const META = [
 ];
 
 const STEPS = [
-  ["Capture with a guide", "Guide ellipse, a ghost of the last photo and a live light check."],
-  ["Mark what you see", "Tap a spot; it is assigned to a face zone from the landmarks."],
-  ["Tick tonight’s routine", "Steps the user sets, with a streak of nights kept."],
-  ["Follow each zone", "Redness and spot count per zone over 7 or 30 days, with before/after."],
+  ["Capture with a guide", "Guide ellipse, a ghost of the last photo and a live light check.", "/case-study/step-capture.jpg"],
+  ["Mark what you see", "Tap a spot; it is assigned to a face zone from the landmarks.", "/case-study/step-spots.jpg"],
+  ["Tick tonight’s routine", "Steps the user sets, with a streak of nights kept.", "/case-study/step-routine.jpg"],
+  ["Follow each zone", "Redness and spot count per zone over 7 or 30 days, with before/after.", "/case-study/step-trends.jpg"],
 ];
 
 const PIPELINE = [
@@ -72,7 +73,6 @@ const LINKS = [
 const lbl = "text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground";
 const h2 = "font-display text-[34px] leading-[1.2] font-light md:text-[44px] md:leading-[1.18]";
 const h3 = "font-display text-[22px] md:text-2xl";
-const ph = "rounded-4xl border border-dashed border-foreground/45 px-2.5 py-1 text-[11px]";
 const section = "border-t border-border px-6 py-16 md:px-24 md:py-24";
 const link = "flex min-h-11 items-center gap-1.5 underline underline-offset-4 hover:text-muted-foreground";
 
@@ -125,7 +125,6 @@ export default function CaseStudyPage() {
           </h1>
           <p className="text-[16.5px] font-light leading-[1.6] text-pretty md:max-w-[720px] md:text-xl">{INTRO}</p>
         </div>
-        <span className={`absolute right-14 bottom-10 hidden md:block ${ph}`}>Night photo · placeholder</span>
       </section>
 
       <section className="grid grid-cols-2 gap-x-5 gap-y-7 border-t border-border px-6 py-10 md:grid-cols-4 md:gap-8 md:px-24 md:py-12">
@@ -155,10 +154,10 @@ export default function CaseStudyPage() {
       <section className={`${section} flex flex-col gap-7 md:gap-12`}>
         <SectionTitle label="02 · The product" title="Four steps, every night." />
         <div className="grid grid-cols-2 gap-x-3.5 gap-y-7 md:grid-cols-4 md:gap-8">
-          {STEPS.map(([title, body]) => (
+          {STEPS.map(([title, body, shot]) => (
             <figure key={title} className="flex flex-col gap-2.5 md:gap-4">
-              <div className="relative h-[300px] rounded-[22px] border border-foreground/14 bg-photo md:h-[520px] md:rounded-[32px]">
-                <span className={`absolute bottom-3.5 left-3.5 hidden md:inline ${ph}`}>Screenshot · placeholder</span>
+              <div className="relative h-[300px] overflow-hidden rounded-[22px] border border-foreground/14 bg-photo md:h-[520px] md:rounded-[32px]">
+                <Image src={shot} alt={`SkinSense demo screen: ${title}`} fill sizes="(min-width: 768px) 25vw, 50vw" className="object-cover object-top" />
               </div>
               <figcaption className="flex flex-col gap-0.5 md:gap-1">
                 <span className="font-display text-lg md:text-[22px]">{title}</span>
@@ -167,7 +166,6 @@ export default function CaseStudyPage() {
             </figure>
           ))}
         </div>
-        <span className={`self-start md:hidden ${ph}`}>Screenshots · placeholder</span>
       </section>
 
       <section className={`${section} flex flex-col gap-6 md:gap-12`}>
@@ -203,19 +201,16 @@ export default function CaseStudyPage() {
           {/* C1 and C2 depict the rejected palettes, so their colours are content, not theme tokens. */}
           <figure className="flex flex-col gap-2 md:gap-3">
             <div className="relative h-[180px] rounded-[12px] bg-[#1D1711] md:h-[300px] md:rounded-xl">
-              <span className={`absolute bottom-3.5 left-3.5 hidden md:inline ${ph}`} style={{ color: "#F2EFE8", borderColor: "#F2EFE880" }}>Canvas still · placeholder</span>
             </div>
             <figcaption className="text-[12.5px] text-muted-foreground md:text-sm">C1 · Warm dark</figcaption>
           </figure>
           <figure className="flex flex-col gap-2 md:gap-3">
             <div className="relative h-[180px] rounded-[12px] bg-[#EEF2F5] md:h-[300px] md:rounded-xl">
-              <span className={`absolute bottom-3.5 left-3.5 hidden md:inline ${ph}`} style={{ color: "#191B19", borderColor: "#191B1980" }}>Canvas still · placeholder</span>
             </div>
             <figcaption className="text-[12.5px] text-muted-foreground md:text-sm">C2 · Cool light</figcaption>
           </figure>
           <figure className="flex flex-col gap-2 md:gap-3">
             <div className="relative h-[180px] rounded-[12px] bg-photo outline outline-1 outline-offset-4 outline-foreground md:h-[300px] md:rounded-xl md:outline-offset-[6px]">
-              <span className={`absolute bottom-3.5 left-3.5 hidden md:inline ${ph}`}>Canvas still · placeholder</span>
             </div>
             <figcaption className="flex items-center gap-2 text-[12.5px] font-medium md:text-sm">
               <span className="hidden text-success md:inline">
@@ -225,7 +220,6 @@ export default function CaseStudyPage() {
             </figcaption>
           </figure>
         </div>
-        <span className={`self-start md:hidden ${ph}`}>Canvas stills · placeholder</span>
         <Notes items={DESIGN_NOTES} />
       </section>
 
