@@ -85,11 +85,11 @@ Sprint 2 contributions occurred chronologically in two waves, with **`@Tranthing
 | `2026-10-27` (W7 Start — CR re-baseline) | `97` | `97` | `#75` (`8 SP`) in progress from `10-25..26` |
 | `2026-11-03` (W8 — Ruleset + `#75` complete) | `78` | `89` | `#75` (`8 SP`) complete |
 | `2026-11-09` (W9 — Team integration start) | `58` | `89` | `PR #32` (`#31`) in review |
-| `2026-11-14` (W10/W11 — Core APIs, Portals, Tests) | `24` | `39` | `#31, #33, #35, #76, #77, #78, #79, #82` (`49 SP` + prior `8 SP` = `57 SP`? Note: `#79` finished `11-15` across `#62/#63`, `#78` finished `11-14`: `#31(5)+#33(5)+#35(5)+#76(8)+#77(8)+#78(5)+#82(5)=41 SP` + `#75(8)=49` -> `48 SP` remaining!) |
-| `2026-11-15 Mid` (Shop Security, Media, Checkout) | `8` | `11` | `#30(1), #47(5), #60(5), #79(5), #80(8), #81(8), #83(5)` (`+37 SP`) closed -> `11 SP` left (`#84, #85, #29`) |
-| `2026-11-15 End` (CI Hardening & Docs) | `0` | `3` | `#84(5), #85(3)` closed -> **`3 SP` remaining (`#29` in `In Review`)** |
+| `2026-11-14` (W10/W11 — Core APIs, Portals, Tests) | `24` | `48` | `#31(5), #33(5), #35(5), #76(8), #77(8), #78(5), #82(5)` (`+41 SP`; cum. `49 SP`) |
+| `2026-11-15 Mid` (Shop Security, Media, Checkout) | `8` | `11` | `#30(1), #47(5), #60(5), #79(5), #80(8), #81(8), #83(5)` (`+37 SP`; cum. `86 SP`) |
+| `2026-11-15 End` (CI Hardening & Docs) | `0` | `3` | `#84(5), #85(3)` (`+8 SP`; cum. `94 SP`) — **`3 SP` remaining (`#29` in `In Review`)** |
 
-*(Let's double check exact arithmetic: `97 - 8 (#75) = 89`; `89 - 41 (#31,#33,#35,#76,#77,#78,#82) = 48`; `48 - 37 (#30,#47,#60,#79,#80,#81,#83) = 11`; `11 - 8 (#84,#85) = 3`. Exact!)*
+*Burndown balance: `97 → 89` (`#75`: 8 SP) `→ 48` (`+41 SP`) `→ 11` (`+37 SP`) `→ 3` (`+8 SP`). Machine-readable checkpoint dataset: [`docs/sprints/BURNDOWN_HISTORY.csv`](BURNDOWN_HISTORY.csv).*
 
 ```mermaid
 xychart-beta
