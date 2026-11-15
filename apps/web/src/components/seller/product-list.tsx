@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { formatVnd, PRODUCTS, type Product } from "@skinsense/domain";
+import { SafeProductImage } from "@/components/safe-product-image";
 
 export interface ExtendedProduct extends Product {
   stock?: number;
@@ -138,9 +139,12 @@ export function ProductList({
                   <TableRow key={product.id}>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-3">
-                        <img
+                        <SafeProductImage
                           src={product.imageUrl}
                           alt={product.name}
+                          brand={product.brand}
+                          category={product.category}
+                          seed={product.id}
                           className="size-12 rounded-lg object-cover bg-muted border shrink-0"
                         />
                         <div>

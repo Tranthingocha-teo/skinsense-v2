@@ -1,6 +1,6 @@
 import {
   formatVnd,
-  generateVietQrUrl,
+  generateVietQrPayload,
   getProductById,
   type Order,
   type PaymentMethod,
@@ -8,7 +8,6 @@ import {
   type Shop,
 } from '@skinsense/domain';
 import * as Haptics from 'expo-haptics';
-import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import {
   AlertTriangle,
@@ -56,6 +55,7 @@ import {
   type ProductShopVendor,
   type StoreProduct,
 } from '@/lib/marketplace';
+import { InitialsAvatar, ProductImage, QrImage } from '@/components/artwork';
 
 export function MarketProductShops({ productId }: { productId: string }) {
   const router = useRouter();
@@ -158,7 +158,7 @@ export function MarketProductShops({ productId }: { productId: string }) {
 
   const activeUnitPrice = selectedVendor ? selectedVendor.priceVnd : product.priceVnd;
   const totalAmount = activeUnitPrice * quantity;
-  const qrUrl = generateVietQrUrl({
+  const qrPayload = generateVietQrPayload({
     amount: totalAmount,
     memo: tempOrderMemo,
   });
@@ -187,7 +187,7 @@ export function MarketProductShops({ productId }: { productId: string }) {
         shopName: chosenShop?.shopName,
         productId: product.id,
         productName: product.name,
-        productImage: product.imageUrl,
+        productImage: product.imageUrl ?? '',
         priceVnd: activeUnitPrice,
         quantity,
         customerName: customerName.trim(),
@@ -243,11 +243,7 @@ export function MarketProductShops({ productId }: { productId: string }) {
         {/* Product Summary Card */}
         <View className="rounded-card border border-border/80 bg-card p-4 gap-3.5">
           <View className="flex-row gap-3.5">
-            <Image
-              source={{ uri: product.imageUrl }}
-              className="size-20 rounded-control bg-surface-2 border border-border/60"
-              contentFit="cover"
-            />
+            <ProductImage uri={product.imageUrl} name={product.name} brand={product.brand} category={product.category} seed={product.id} className="size-20 rounded-control border border-border/60" />
             <View className="flex-1 justify-center gap-1">
               <View className="flex-row items-center gap-1.5">
                 <Text className="text-[11px] font-semibold text-primary uppercase tracking-[0.12em]">
@@ -442,11 +438,7 @@ export function MarketProductShops({ productId }: { productId: string }) {
                     {/* Shop Info Row */}
                     <View className="flex-row items-center justify-between">
                       <View className="flex-row items-center gap-2.5 flex-1 pr-2">
-                        <Image
-                          source={{ uri: vendor.shop.avatarUrl }}
-                          className="size-10 rounded-pill bg-surface-2 border border-border/60"
-                          contentFit="cover"
-                        />
+                        <InitialsAvatar uri={vendor.shop.avatarUrl} name={vendor.shop.shopName} seed={vendor.shop.id} size={40} />
                         <View className="flex-1">
                           <View className="flex-row items-center gap-1.5 flex-wrap">
                             <Text className="text-[13.5px] font-bold text-foreground" numberOfLines={1}>
@@ -745,11 +737,7 @@ export function MarketProductShops({ productId }: { productId: string }) {
               <Text className="text-[12px] font-semibold text-primary uppercase tracking-wider">
                 Mã VietQR tự động theo số tiền đơn hàng
               </Text>
-              <Image
-                source={{ uri: qrUrl }}
-                className="size-48 rounded-control bg-white"
-                contentFit="contain"
-              />
+              <QrImage value={qrPayload} size={192} label="Mã VietQR" />
               <Text className="text-[12px] text-muted-foreground text-center">
                 Mở ứng dụng ngân hàng quét mã QR trên hoặc chuyển khoản sau khi tạo đơn
               </Text>
@@ -843,11 +831,7 @@ export function MarketProductShops({ productId }: { productId: string }) {
             {viewingShopModal && (
               <View className="gap-3.5">
                 <View className="flex-row items-center gap-3">
-                  <Image
-                    source={{ uri: viewingShopModal.avatarUrl }}
-                    className="size-14 rounded-pill bg-surface-2 border border-border"
-                    contentFit="cover"
-                  />
+                  <InitialsAvatar uri={viewingShopModal.avatarUrl} name={viewingShopModal.shopName} seed={viewingShopModal.id} size={56} />
                   <View className="flex-1">
                     <View className="flex-row items-center gap-1.5 flex-wrap">
                       <Text className="text-[16px] font-bold text-foreground">
@@ -992,11 +976,7 @@ export function MarketProductShops({ productId }: { productId: string }) {
                 <Text className="text-[12px] font-semibold text-primary uppercase">
                   Quét mã VietQR để hoàn tất thanh toán
                 </Text>
-                <Image
-                  source={{ uri: qrUrl }}
-                  className="size-48 rounded-control bg-white"
-                  contentFit="contain"
-                />
+                <QrImage value={qrPayload} size={192} label="Mã VietQR" />
                 <Text className="text-[14px] font-bold text-foreground">
                   {formatVnd(placedOrder.totalVnd)}
                 </Text>

@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { LogoMark } from "@/components/site-header";
+import { SafeProductImage } from "@/components/safe-product-image";
 import { AuthModal } from "@/components/auth-modal";
 import { CloudinaryProductUploader } from "@/components/cloudinary-product-uploader";
 import {
@@ -45,25 +46,6 @@ import {
   matchesShop,
   filterProductsByShop,
 } from "@/lib/shop-product-approval";
-
-function ProductImagePlaceholder({
-  label = "Chưa có ảnh",
-  compact = false,
-}: {
-  label?: string;
-  compact?: boolean;
-}) {
-  return (
-    <div className="flex size-full flex-col items-center justify-center gap-1.5 bg-surface-2 text-muted-foreground">
-      <Package className={compact ? "size-5 opacity-50" : "size-8 opacity-40"} />
-      {label ? (
-        <span className={compact ? "text-[10px] font-medium" : "text-[11px] font-medium"}>
-          {label}
-        </span>
-      ) : null}
-    </div>
-  );
-}
 
 // Shopee Product Variant
 export interface ProductVariant {
@@ -142,11 +124,8 @@ export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
     origin: "Pháp (L'Oréal Vietnam phân phối)",
     isMall: true,
     isPreferredPlus: true,
-    coverImage: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=600&auto=format&fit=crop&q=80",
-    images: [
-      "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=600&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=600&auto=format&fit=crop&crop=top&q=80",
-    ],
+    coverImage: "",
+    images: [],
     priceVnd: 395000,
     originalPriceVnd: 495000,
     discountPercent: 20,
@@ -191,11 +170,8 @@ export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
     origin: "Mỹ (Nhập khẩu chính hãng)",
     isMall: true,
     isPreferredPlus: true,
-    coverImage: "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=600&auto=format&fit=crop&q=80",
-    images: [
-      "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=600&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=600&auto=format&fit=crop&crop=center&q=80",
-    ],
+    coverImage: "",
+    images: [],
     priceVnd: 380000,
     originalPriceVnd: 450000,
     discountPercent: 16,
@@ -240,11 +216,8 @@ export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
     origin: "Pháp (L'Oréal Vietnam)",
     isMall: true,
     isPreferredPlus: true,
-    coverImage: "https://images.unsplash.com/photo-1617897903246-719242758050?w=600&auto=format&fit=crop&q=80",
-    images: [
-      "https://images.unsplash.com/photo-1617897903246-719242758050?w=600&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1617897903246-719242758050?w=600&auto=format&fit=crop&crop=bottom&q=80",
-    ],
+    coverImage: "",
+    images: [],
     priceVnd: 890000,
     originalPriceVnd: 1100000,
     discountPercent: 19,
@@ -289,11 +262,8 @@ export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
     origin: "Pháp",
     isMall: true,
     isPreferredPlus: true,
-    coverImage: "https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?w=600&auto=format&fit=crop&q=80",
-    images: [
-      "https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?w=600&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?w=600&auto=format&fit=crop&crop=center&q=80",
-    ],
+    coverImage: "",
+    images: [],
     priceVnd: 475000,
     originalPriceVnd: 560000,
     discountPercent: 15,
@@ -337,11 +307,8 @@ export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
     origin: "Pháp (Chính Hãng)",
     isMall: true,
     isPreferredPlus: true,
-    coverImage: "https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=600&auto=format&fit=crop&q=80",
-    images: [
-      "https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=600&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=600&auto=format&fit=crop&crop=top&q=80",
-    ],
+    coverImage: "",
+    images: [],
     priceVnd: 360000,
     originalPriceVnd: 420000,
     discountPercent: 14,
@@ -386,11 +353,8 @@ export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
     origin: "Pháp (L'Oréal Vietnam)",
     isMall: true,
     isPreferredPlus: true,
-    coverImage: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600&auto=format&fit=crop&q=80",
-    images: [
-      "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600&auto=format&fit=crop&crop=center&q=80",
-    ],
+    coverImage: "",
+    images: [],
     priceVnd: 435000,
     originalPriceVnd: 515000,
     discountPercent: 16,
@@ -434,11 +398,8 @@ export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
     origin: "Mỹ (Chính Hãng)",
     isMall: true,
     isPreferredPlus: true,
-    coverImage: "https://images.unsplash.com/photo-1601049541289-9b1b7bbbfe19?w=600&auto=format&fit=crop&q=80",
-    images: [
-      "https://images.unsplash.com/photo-1601049541289-9b1b7bbbfe19?w=600&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1601049541289-9b1b7bbbfe19?w=600&auto=format&fit=crop&crop=top&q=80",
-    ],
+    coverImage: "",
+    images: [],
     priceVnd: 1850000,
     originalPriceVnd: 2200000,
     discountPercent: 16,
@@ -482,11 +443,8 @@ export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
     origin: "Mỹ (Chính Hãng)",
     isMall: true,
     isPreferredPlus: true,
-    coverImage: "https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?w=600&auto=format&fit=crop&q=80",
-    images: [
-      "https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?w=600&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?w=600&auto=format&fit=crop&crop=center&q=80",
-    ],
+    coverImage: "",
+    images: [],
     priceVnd: 820000,
     originalPriceVnd: 960000,
     discountPercent: 15,
@@ -530,11 +488,8 @@ export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
     origin: "Ấn Độ (Nhập khẩu chính ngạch)",
     isMall: true,
     isPreferredPlus: true,
-    coverImage: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80",
-    images: [
-      "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&crop=top&q=80",
-    ],
+    coverImage: "",
+    images: [],
     priceVnd: 125000,
     originalPriceVnd: 155000,
     discountPercent: 19,
@@ -1384,15 +1339,7 @@ export default function ShopProductPage() {
                         className="relative aspect-square w-full overflow-hidden border-b border-border bg-surface-2 cursor-pointer"
                         title="Bấm để xem trang chi tiết sản phẩm trên sàn"
                       >
-                        {prod.coverImage ? (
-                          <img
-                            src={prod.coverImage}
-                            alt={prod.name}
-                            className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
-                          />
-                        ) : (
-                          <ProductImagePlaceholder />
-                        )}
+                        <SafeProductImage src={prod.coverImage} alt={prod.name} brand={prod.brand} category={prod.category} seed={prod.id} className="size-full object-cover transition-transform duration-300 group-hover:scale-105" />
                         {/* Overlay Badges Shopee Mall & Freeship & Approval Status */}
                         <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 items-start">
                           {prod.status === "pending" && (
@@ -1718,15 +1665,7 @@ export default function ShopProductPage() {
                 <div className="space-y-3.5 lg:col-span-5">
                   {/* Big Cover Image */}
                   <div className="relative aspect-square w-full overflow-hidden rounded-2xl border border-border bg-surface-2 shadow-xs">
-                    {selectedProduct.images[activeImageIndex] || selectedProduct.coverImage ? (
-                      <img
-                        src={selectedProduct.images[activeImageIndex] || selectedProduct.coverImage}
-                        alt={selectedProduct.name}
-                        className="size-full object-cover"
-                      />
-                    ) : (
-                      <ProductImagePlaceholder label="Shop chưa thêm ảnh sản phẩm" />
-                    )}
+                    <SafeProductImage src={selectedProduct.images[activeImageIndex] || selectedProduct.coverImage} alt={selectedProduct.name} brand={selectedProduct.brand} category={selectedProduct.category} seed={selectedProduct.id} className="size-full object-cover" />
                     {selectedProduct.isMall && (
                       <div className="absolute top-3 left-3 rounded-md bg-rose-600 px-2 py-0.5 text-xs font-bold text-white shadow-xs flex items-center gap-1">
                         <BadgeCheck className="size-3.5" />
@@ -1749,7 +1688,7 @@ export default function ShopProductPage() {
                           activeImageIndex === i ? "border-primary ring-2 ring-primary/20" : "border-border opacity-75 hover:opacity-100"
                         }`}
                       >
-                        <img src={imgUrl} alt={`Góc chụp ${i + 1}`} className="size-full object-cover" />
+                        <SafeProductImage src={imgUrl} alt={`Góc chụp ${i + 1}`} name={selectedProduct.name} brand={selectedProduct.brand} category={selectedProduct.category} seed={selectedProduct.id} className="size-full object-cover" />
                       </button>
                     ))}
                   </div>
@@ -2043,15 +1982,7 @@ export default function ShopProductPage() {
                         className="group flex flex-col justify-between overflow-hidden rounded-2xl border border-border bg-card text-left transition hover:border-primary/50 hover:shadow-md cursor-pointer"
                       >
                         <div className="relative aspect-square w-full overflow-hidden border-b border-border bg-surface-2">
-                          {bp.coverImage ? (
-                            <img
-                              src={bp.coverImage}
-                              alt={bp.name}
-                              className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
-                            />
-                          ) : (
-                            <ProductImagePlaceholder />
-                          )}
+                          <SafeProductImage src={bp.coverImage} alt={bp.name} brand={bp.brand} category={bp.category} seed={bp.id} className="size-full object-cover transition-transform duration-300 group-hover:scale-105" />
                           <span className="absolute top-2 right-2 rounded bg-amber-500 px-1.5 py-0.5 text-[9px] font-bold text-white shadow-xs">
                             -{bp.discountPercent}%
                           </span>
@@ -2087,17 +2018,7 @@ export default function ShopProductPage() {
           <div className="my-8 max-h-[90vh] w-full max-w-3xl space-y-5 overflow-y-auto rounded-3xl border border-border bg-card p-5 shadow-2xl sm:p-7">
             <div className="flex items-start justify-between border-b border-border pb-3.5">
               <div className="flex items-center gap-3">
-                {inspectingProduct.coverImage ? (
-                  <img
-                    src={inspectingProduct.coverImage}
-                    alt={inspectingProduct.name}
-                    className="size-12 shrink-0 rounded-xl border border-border object-cover"
-                  />
-                ) : (
-                  <div className="size-12 shrink-0 overflow-hidden rounded-xl border border-border">
-                    <ProductImagePlaceholder label="" compact />
-                  </div>
-                )}
+                <SafeProductImage src={inspectingProduct.coverImage} alt={inspectingProduct.name} brand={inspectingProduct.brand} category={inspectingProduct.category} seed={inspectingProduct.id} className="size-12 shrink-0 rounded-xl border border-border object-cover" />
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="rounded bg-rose-600 px-1.5 py-0.2 text-[9px] font-bold text-white">

@@ -129,6 +129,11 @@ export function SellerShell({ children }: { children: ReactNode }) {
     <SidebarProvider className="flex-1 flex-col md:flex-row min-h-screen bg-background" style={{ "--sidebar-width": "250px" } as CSSProperties}>
       <DesktopSellerNav />
       <div className="flex min-w-0 flex-1 flex-col pb-[72px] md:pb-6 px-4 md:px-8 pt-6 max-w-7xl mx-auto w-full">
+        {/* Every page here runs on built-in sample data (INITIAL_SHOPS, sample orders): say so. */}
+        <p role="note" className="mb-5 rounded-card border border-border bg-muted px-4 py-3 text-[13px] leading-relaxed text-muted-foreground">
+          <strong className="font-medium text-foreground">Bản trình diễn.</strong> Các số liệu, đơn hàng và khách hàng ở đây là dữ liệu mẫu, không phải giao dịch thật. Gian hàng thật của bạn nằm ở{" "}
+          <Link href="/shop" className="underline underline-offset-4 text-foreground">Kênh người bán</Link>.
+        </p>
         {children}
       </div>
       <PhoneSellerTabs />

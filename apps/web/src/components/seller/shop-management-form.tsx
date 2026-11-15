@@ -43,8 +43,8 @@ export function ShopManagementForm({
   const [address, setAddress] = useState(shop.address);
   const [category, setCategory] = useState("Dược mỹ phẩm & Chăm sóc da liễu");
   const [description, setDescription] = useState("Chuyên phân phối dược mỹ phẩm nhập khẩu chính hãng 100%, tư vấn chuẩn da liễu.");
-  const [avatarUrl, setAvatarUrl] = useState(shop.avatarUrl);
-  const [bannerUrl, setBannerUrl] = useState("https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=1200&q=80");
+  const [avatarUrl, setAvatarUrl] = useState(shop.avatarUrl ?? "");
+  const [bannerUrl, setBannerUrl] = useState("");
   const [operatingStatus, setOperatingStatus] = useState<"open" | "temporarily_closed">("open");
 
   async function handleSubmit(e: React.FormEvent) {

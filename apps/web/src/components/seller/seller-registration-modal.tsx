@@ -285,7 +285,7 @@ export function SellerRegistrationModal({
                   id="avatarUrl"
                   value={avatarUrl}
                   onChange={(e) => setAvatarUrl(e.target.value)}
-                  placeholder="https://images.unsplash.com/..."
+                  placeholder="https://res.cloudinary.com/…"
                   className="pl-9"
                 />
               </div>

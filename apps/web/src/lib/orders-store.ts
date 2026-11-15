@@ -89,31 +89,11 @@ const DB_FILE = path.join(process.cwd(), ".orders-db.json");
 const FALLBACK_DB_FILE = path.join(os.tmpdir(), ".skinsense-orders-db.json");
 const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
 
-export const PRODUCT_IMAGES: Record<string, string> = {
-  bioderma: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600&auto=format&fit=crop&q=80",
-  cerave: "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=600&auto=format&fit=crop&q=80",
-  hyalu: "https://images.unsplash.com/photo-1617897903246-719242758050?w=600&auto=format&fit=crop&q=80",
-  effaclar: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=600&auto=format&fit=crop&q=80",
-  duo: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=600&auto=format&fit=crop&q=80",
-  anthelios: "https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?w=600&auto=format&fit=crop&q=80",
-  paula: "https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=600&auto=format&fit=crop&q=80",
-  bha: "https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=600&auto=format&fit=crop&q=80",
-};
-
-export function resolveProductImage(name: string, fallback?: string): string {
-  if (fallback && fallback.startsWith("http")) return fallback;
-  const n = (name || "").toLowerCase();
-  for (const [key, url] of Object.entries(PRODUCT_IMAGES)) {
-    if (n.includes(key)) return url;
-  }
-  return "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=600&auto=format&fit=crop&q=80";
-}
-
 function getInitialOrders(): BackendOrder[] {
   return [
     {
       id: "ORD-9821",
-      orderCode: "SHOPEE-SS-982101",
+      orderCode: "SS-982101",
       customerName: "Trần Thị Ngọc Hà",
       customerPhone: "0987654321",
       shippingAddress: "Số 123 Đường Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh",
@@ -123,7 +103,7 @@ function getInitialOrders(): BackendOrder[] {
       paymentStatus: "paid",
       shopName: "La Roche-Posay Flagship Store",
       brand: "La Roche-Posay",
-      carrier: "SPX Express",
+      carrier: "Giao nhanh",
       items: [
         {
           id: "item_sp_01",
@@ -131,7 +111,6 @@ function getInitialOrders(): BackendOrder[] {
           price: 395000,
           quantity: 1,
           variant: "Tuýp 40ml",
-          image: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=600&auto=format&fit=crop&q=80",
         },
       ],
       paidAt: new Date().toISOString(),
@@ -154,15 +133,6 @@ function normalizeOrders(list: BackendOrder[]): { value: BackendOrder[]; changed
       if (!isNaN(createdMs) && now - createdMs > THREE_DAYS_MS) {
         order.status = "cancelled";
         changed = true;
-      }
-    }
-
-    if (Array.isArray(order.items)) {
-      for (const it of order.items) {
-        if (!it.image) {
-          it.image = resolveProductImage(it.name);
-          changed = true;
-        }
       }
     }
   }

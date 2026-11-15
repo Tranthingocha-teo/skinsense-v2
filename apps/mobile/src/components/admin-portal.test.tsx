@@ -78,7 +78,7 @@ describe('AdminPortal Component', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Lưu & Bày bán ngay')).toBeTruthy();
-      expect(screen.getByText('Chọn ảnh sản phẩm mẫu')).toBeTruthy();
+      expect(screen.queryByText('Chọn ảnh sản phẩm mẫu')).toBeNull(); // no stock photos to pick
     });
   });
 

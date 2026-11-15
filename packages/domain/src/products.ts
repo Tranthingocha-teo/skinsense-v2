@@ -17,8 +17,8 @@ export interface Product {
   priceFormatted: string;
   rating: number;
   reviewsCount: number;
-  imageUrl: string;
-  affiliateUrl: string;
+  /** A shop's own upload; without it the app draws the product (artwork.ts). */
+  imageUrl?: string;
   targetZones: Zone[];
   targetClasses: SkinConditionClass[];
   keyActives: string[];
@@ -38,8 +38,6 @@ export const PRODUCTS: Product[] = [
     priceFormatted: "395.000₫",
     rating: 4.9,
     reviewsCount: 14200,
-    imageUrl: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=600&q=80",
-    affiliateUrl: "https://shopee.vn/search?keyword=la%20roche%20posay%20effaclar%20duo%2B%20m%20chinh%20hang",
     targetZones: ["forehead", "leftCheek", "rightCheek", "nose", "chin"],
     targetClasses: ["acne_blemish", "brightening_tone"],
     keyActives: ["Phylobioma", "Procerad", "Niacinamide", "LHA & Salicylic Acid"],
@@ -57,8 +55,6 @@ export const PRODUCTS: Product[] = [
     priceFormatted: "345.000₫",
     rating: 4.9,
     reviewsCount: 28900,
-    imageUrl: "https://images.unsplash.com/photo-1608248597359-56330089a8dc?auto=format&fit=crop&w=600&q=80",
-    affiliateUrl: "https://shopee.vn/search?keyword=skin1004%20madagascar%20centella%20ampoule%20100ml%20chinh%20hang",
     targetZones: ["forehead", "leftCheek", "rightCheek", "nose", "chin"],
     targetClasses: ["calming_redness", "barrier_repair"],
     keyActives: ["100% Chiết xuất Rau Má Madagascar (Centella Asiatica)"],
@@ -75,8 +71,6 @@ export const PRODUCTS: Product[] = [
     priceFormatted: "365.000₫",
     rating: 4.9,
     reviewsCount: 22100,
-    imageUrl: "https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=600&q=80",
-    affiliateUrl: "https://shopee.vn/search?keyword=cicaplast%20baume%20b5%2B%20chinh%20hang",
     targetZones: ["leftCheek", "rightCheek", "forehead", "chin"],
     targetClasses: ["calming_redness", "barrier_repair"],
     keyActives: ["Panthenol 5% (Vitamin B5)", "Madecassoside", "Phức hợp vi sinh Tribioma"],
@@ -93,8 +87,6 @@ export const PRODUCTS: Product[] = [
     priceFormatted: "899.000₫",
     rating: 4.8,
     reviewsCount: 9500,
-    imageUrl: "https://images.unsplash.com/photo-1570194065650-d99fb4bedf0a?auto=format&fit=crop&w=600&q=80",
-    affiliateUrl: "https://shopee.vn/search?keyword=paula%20choice%202%20bha%20liquid%20chinh%20hang",
     targetZones: ["nose", "forehead", "chin"],
     targetClasses: ["pore_oil_control", "acne_blemish"],
     keyActives: ["Salicylic Acid 2% (BHA)", "Chiết xuất Trà xanh Camellia Oleifera"],
@@ -112,8 +104,6 @@ export const PRODUCTS: Product[] = [
     priceFormatted: "245.000₫",
     rating: 4.7,
     reviewsCount: 31000,
-    imageUrl: "https://images.unsplash.com/photo-1601049541289-9b1b7bbbfe19?auto=format&fit=crop&w=600&q=80",
-    affiliateUrl: "https://shopee.vn/search?keyword=the%20ordinary%20niacinamide%2010%20zinc%201%20chinh%20hang",
     targetZones: ["forehead", "leftCheek", "rightCheek", "nose", "chin"],
     targetClasses: ["brightening_tone", "pore_oil_control"],
     keyActives: ["Niacinamide 10% (Vitamin B3)", "Kẽm PCA 1% (Zinc PCA)"],
@@ -130,8 +120,6 @@ export const PRODUCTS: Product[] = [
     priceFormatted: "390.000₫",
     rating: 4.8,
     reviewsCount: 16800,
-    imageUrl: "https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?auto=format&fit=crop&w=600&q=80",
-    affiliateUrl: "https://shopee.vn/search?keyword=cerave%20pm%20facial%20moisturizing%20lotion%20chinh%20hang",
     targetZones: ["forehead", "leftCheek", "rightCheek", "chin"],
     targetClasses: ["barrier_repair", "gentle_maintenance"],
     keyActives: ["3 Ceramide thiết yếu (1, 3, 6-II)", "Niacinamide", "Hyaluronic Acid"],
@@ -148,8 +136,6 @@ export const PRODUCTS: Product[] = [
     priceFormatted: "75.000₫",
     rating: 4.9,
     reviewsCount: 45000,
-    imageUrl: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=600&q=80",
-    affiliateUrl: "https://shopee.vn/search?keyword=cosrx%20acne%20pimple%20master%20patch%20chinh%20hang",
     targetZones: ["forehead", "leftCheek", "rightCheek", "nose", "chin"],
     targetClasses: ["acne_blemish"],
     keyActives: ["Băng dán Hydrocolloid cao cấp"],
@@ -166,8 +152,6 @@ export const PRODUCTS: Product[] = [
     priceFormatted: "380.000₫",
     rating: 4.9,
     reviewsCount: 19400,
-    imageUrl: "https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?auto=format&fit=crop&w=600&q=80",
-    affiliateUrl: "https://shopee.vn/search?keyword=anua%20heartleaf%2077%20soothing%20toner%20chinh%20hang",
     targetZones: ["forehead", "leftCheek", "rightCheek", "nose", "chin"],
     targetClasses: ["calming_redness", "gentle_maintenance"],
     keyActives: ["77% Chiết xuất Lá Diếp cá (Houttuynia Cordata)"],
@@ -184,8 +168,6 @@ export const PRODUCTS: Product[] = [
     priceFormatted: "375.000₫",
     rating: 4.8,
     reviewsCount: 18200,
-    imageUrl: "https://images.unsplash.com/photo-1576426863848-c21f53c60b19?auto=format&fit=crop&w=600&q=80",
-    affiliateUrl: "https://shopee.vn/search?keyword=klairs%20midnight%20blue%20calming%20cream%20chinh%20hang",
     targetZones: ["leftCheek", "rightCheek", "forehead", "chin"],
     targetClasses: ["calming_redness", "barrier_repair"],
     keyActives: ["Guaiazulene (tinh dầu hoa cúc xanh)", "Chiết xuất Rau má", "Ceramide 3"],
@@ -202,8 +184,6 @@ export const PRODUCTS: Product[] = [
     priceFormatted: "360.000₫",
     rating: 4.9,
     reviewsCount: 24000,
-    imageUrl: "https://images.unsplash.com/photo-1617897903246-719242758050?auto=format&fit=crop&w=600&q=80",
-    affiliateUrl: "https://shopee.vn/search?keyword=torriden%20dive%20in%20serum%20chinh%20hang",
     targetZones: ["forehead", "leftCheek", "rightCheek", "nose", "chin"],
     targetClasses: ["barrier_repair", "gentle_maintenance"],
     keyActives: ["Phức hợp 5 loại Hyaluronic Acid", "D-Panthenol B5", "Ceramide NP"],

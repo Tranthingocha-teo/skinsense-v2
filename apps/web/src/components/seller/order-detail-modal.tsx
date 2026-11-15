@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatVnd, calculateOrderFinancials, type Order } from "@skinsense/domain";
+import { SafeProductImage } from "@/components/safe-product-image";
 
 export function OrderDetailModal({
   order,
@@ -54,7 +55,7 @@ export function OrderDetailModal({
             <p className="font-bold text-foreground">Sản Phẩm Đã Mua</p>
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2.5">
-                <img src={order.productImage} alt={order.productName} className="size-12 rounded object-cover border shrink-0" />
+                <SafeProductImage src={order.productImage} alt={order.productName} seed={order.productId} className="size-12 rounded object-cover border shrink-0" />
                 <div>
                   <p className="font-semibold text-foreground line-clamp-1">{order.productName}</p>
                   <p className="text-muted-foreground">Đơn giá: {formatVnd(order.priceVnd)} x {order.quantity}</p>

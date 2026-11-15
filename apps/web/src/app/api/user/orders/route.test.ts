@@ -71,6 +71,23 @@ describe("/api/user/orders POST security and workflow validation", () => {
         createdAt: now,
       },
       {
+        id: "ORD-E2E-DELIVERING",
+        orderCode: "ORD-E2E-04",
+        customerId: "cust_e2e",
+        customerName: "Nguyễn Văn E2E",
+        customerPhone: "0900000000",
+        shippingAddress: "Q1 HCM",
+        totalAmount: 120000,
+        status: "delivering",
+        paymentMethod: "cod",
+        paymentStatus: "unpaid",
+        shopName: "Bioderma Official Store",
+        brand: "Bioderma",
+        carrier: "Giao nhanh",
+        items: [],
+        createdAt: now,
+      },
+      {
         id: "ORD-COD-DELIVERING",
         orderCode: "ORD-COD-03",
         customerName: "Thùy Dung",
@@ -311,7 +328,7 @@ describe("/api/user/orders POST security and workflow validation", () => {
     expect(shopJson.orders).toHaveLength(1);
     expect(shopJson.orders[0].orderCode).toBe("ORD-UNPAID-01");
 
-    // Authenticated customer with no existing orders gets seeded under their real fullName (owning them)
+    // A customer sees only the orders they own: no invented sample orders
     currentUser = {
       id: "cust_e2e",
       email: "e2e@example.com",
@@ -322,7 +339,8 @@ describe("/api/user/orders POST security and workflow validation", () => {
     );
     expect(custGetRes.status).toBe(200);
     const custJson = await custGetRes.json();
-    expect(custJson.orders.length).toBeGreaterThan(0);
+    expect(custJson.orders).toHaveLength(1);
+    expect(custJson.orders[0].orderCode).toBe("ORD-E2E-04");
     expect(
       custJson.orders.every((o: BackendOrder) => o.customerName === "Nguyễn Văn E2E"),
     ).toBe(true);
@@ -344,5 +362,9 @@ describe("/api/user/orders POST security and workflow validation", () => {
       }),
     );
     expect(confirmRes.status).toBe(200);
+
+    currentUser = { id: "cust_new", email: "new@example.com", user_metadata: { role: "customer", full_name: "Khách Mới" } };
+    const fresh = await (await GET(new Request("http://localhost:3000/api/user/orders"))).json();
+    expect(fresh.orders).toEqual([]);
   });
 });

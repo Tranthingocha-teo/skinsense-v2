@@ -20,6 +20,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { SafeProductImage } from "@/components/safe-product-image";
+import { InitialsAvatar } from "@/components/initials-avatar";
+import { ownImageUrl } from "@skinsense/domain";
 
 // Routine Item (Sản phẩm trong phác đồ của Bác sĩ)
 export interface RoutineProduct {
@@ -66,116 +68,11 @@ export interface PrescribedRoutineData {
   products: RoutineProduct[];
 }
 
-// Dữ liệu mẫu phác đồ chuẩn y khoa - Cân đối, đầy đủ, không chi chít
-export const DEFAULT_PRESCRIBED_ROUTINE: PrescribedRoutineData = {
-  patientName: "Trần Thị Ngọc Hà (21 tuổi - Nữ)",
-  diagnosisShort: "Mụn bọc viêm đỏ má & cằm sau khi thử cushion mới; tổn thương màng lipid biểu bì.",
-  diagnosisDetails:
-    "Bùng mụn bọc viêm đỏ má & cằm sau khi thử cushion mới; da châm chích nhẹ, màng lipid biểu bì suy yếu. Cần phục hồi cấp ẩm và giảm viêm tại chỗ.",
-  severity: "Nặng",
-  rednessScore: 74,
-  planTitle: "Phác đồ Cấp Cứu Hàng Rào Da & Giảm Viêm Mụn (14 ngày)",
-  durationDays: 14,
-  prescribedDate: "14/11/2026",
-  revisitDate: "28/11/2026",
-  doctorInstructions: [
-    "Tạm ngưng hoàn toàn trang điểm (cushion, phấn phủ, kem nền) trong suốt 14 ngày điều trị.",
-    "Rửa mặt nhẹ nhàng với nước ấm, không dùng máy rửa mặt hoặc chà xát mạnh gây vỡ mụn viêm.",
-    "Thoa serum B5 khi da còn ẩm để thẩm thấu sâu, sau đó chấm kem Duo+M trực tiếp lên các nốt mụn sưng đỏ.",
-    "Bắt buộc thoa kem chống nắng phổ rộng mỗi buổi sáng trước khi ra ngoài 20 phút để ngừa thâm sau viêm (PIE).",
-  ],
-  doctor: {
-    name: "ThS. BS CKII Lê Hoàng Nam",
-    title: "Chuyên gia Da liễu & Thẩm mỹ Da Y khoa",
-    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80",
-    hospital: "Bệnh viện Da liễu Trung ương",
-    licenseNumber: "CCHN: 004812/BYT-CCHN",
-  },
-  products: [
-    {
-      id: "rp_01",
-      stepNumber: 1,
-      stepName: "Bước 1 • Làm sạch & Cân bằng ẩm",
-      targetGoal: "Làm sạch bụi bẩn, dịu kích ứng và bảo toàn màng lipid pH 5.5",
-      timing: "both",
-      timingLabel: "Sáng & Tối",
-      name: "Sữa Rửa Mặt Dưỡng Ẩm CeraVe Hydrating Cleanser",
-      brand: "CeraVe Skincare",
-      volume: "473ml",
-      image: "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=600&auto=format&fit=crop&q=80",
-      actives: "3 Ceramides thiết yếu (1, 3, 6-II), Hyaluronic Acid, Glycerin",
-      usageGuide: "Lấy 1 pump, tạo bọt nhẹ với nước ấm và massage mặt nhẹ nhàng 60 giây.",
-      priceVnd: 380000,
-      originalPriceVnd: 450000,
-      discountPercent: 16,
-      productId: "sp_02",
-    },
-    {
-      id: "rp_02",
-      stepNumber: 2,
-      stepName: "Bước 2 • Cấp nước & Phục hồi đa tầng",
-      targetGoal: "Làm dịu da đỏ buốt, bù nước tầng sâu và kích thích tái sinh biểu bì",
-      timing: "both",
-      timingLabel: "Sáng & Tối",
-      name: "Tinh Chất Phục Hồi La Roche-Posay Hyalu B5 Serum",
-      brand: "La Roche-Posay",
-      volume: "30ml",
-      image: "https://images.unsplash.com/photo-1617897903246-719242758050?w=600&auto=format&fit=crop&q=80",
-      actives: "Pure Hyaluronic Acid Duo, Vitamin B5 (Panthenol 5%), Madecassoside",
-      usageGuide: "Nhỏ 3-4 giọt lên trán và má khi da còn hơi ẩm, vỗ nhẹ nhàng khắp mặt.",
-      priceVnd: 890000,
-      originalPriceVnd: 1100000,
-      discountPercent: 19,
-      productId: "sp_03",
-    },
-    {
-      id: "rp_03",
-      stepNumber: 3,
-      stepName: "Bước 3 • Giảm viêm & Ngừa sẹo thâm",
-      targetGoal: "Cân bằng hệ vi sinh da, tiêu diệt vi khuẩn mụn và làm mờ thâm đỏ",
-      timing: "both",
-      timingLabel: "Sáng & Tối",
-      name: "Kem Dưỡng Giảm Mụn La Roche-Posay Effaclar Duo+M",
-      brand: "La Roche-Posay",
-      volume: "40ml",
-      image: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=600&auto=format&fit=crop&q=80",
-      actives: "Hoạt chất độc quyền Phylobioma, Niacinamide, Salicylic Acid, Zinc PCA",
-      usageGuide: "Thoa một lớp mỏng toàn mặt, chấm thêm một lớp nhỏ lên các nốt mụn sưng viêm.",
-      priceVnd: 395000,
-      originalPriceVnd: 495000,
-      discountPercent: 20,
-      productId: "sp_01",
-    },
-    {
-      id: "rp_04",
-      stepNumber: 4,
-      stepName: "Bước 4 • Màng lọc bảo vệ da phổ rộng",
-      targetGoal: "Chống tia UVA dài (380-400nm) và kiểm soát bã nhờn suốt 12 tiếng",
-      timing: "morning",
-      timingLabel: "Chỉ Dùng Buổi Sáng",
-      name: "Kem Chống Nắng La Roche-Posay Anthelios UVMune 400",
-      brand: "La Roche-Posay",
-      volume: "50ml",
-      image: "https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?w=600&auto=format&fit=crop&q=80",
-      actives: "Màng lọc độc quyền Mexoryl 400, Công nghệ kiềm dầu Airlicium, Netlock",
-      usageGuide: "Thoa đều trước khi ra ngoài 20 phút. Thoa lại vào đầu giờ chiều nếu ra nắng nhiều.",
-      priceVnd: 475000,
-      originalPriceVnd: 560000,
-      discountPercent: 15,
-      productId: "sp_04",
-    },
-  ],
-};
-
 function formatMoney(amount: number) {
   return new Intl.NumberFormat("vi-VN").format(amount) + "\u00A0₫";
 }
 
-export function UserPrescribedRoutine({
-  routine = DEFAULT_PRESCRIBED_ROUTINE,
-}: {
-  routine?: PrescribedRoutineData;
-}) {
+export function UserPrescribedRoutine({ routine }: { routine: PrescribedRoutineData }) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"all" | "morning" | "evening">("all");
 
@@ -193,7 +90,7 @@ export function UserPrescribedRoutine({
   const eveningCount = routine.products.filter((p) => p.timing === "evening" || p.timing === "both").length;
 
   function handleGoToShop() {
-    toast.success("Đang chuyển đến trang thanh toán Shopee Mall...");
+    toast.success("Đang chuyển đến trang thanh toán...");
     router.push("/shop/checkout");
   }
 
@@ -204,11 +101,12 @@ export function UserPrescribedRoutine({
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-[#D8D4CA]/70 pb-4">
           {/* Thông tin Bác sĩ */}
           <div className="flex items-center gap-3.5">
-            {routine.doctor.avatar ? (
-              <img
+            {ownImageUrl(routine.doctor.avatar) ? (
+              <InitialsAvatar
+                name={routine.doctor.name}
                 src={routine.doctor.avatar}
-                alt={routine.doctor.name}
-                className="size-14 rounded-2xl object-cover border-2 border-[#2D5A43] shadow-xs shrink-0"
+                label={routine.doctor.name}
+                className="size-14 rounded-2xl border-2 border-[#2D5A43] shadow-xs"
               />
             ) : (
               <span className="size-14 rounded-2xl border-2 border-[#2D5A43] bg-[#2D5A43]/10 text-[#2D5A43] flex items-center justify-center shrink-0">
@@ -369,6 +267,8 @@ export function UserPrescribedRoutine({
                 <SafeProductImage
                   src={prod.image}
                   alt={prod.name}
+                  brand={prod.brand}
+                  seed={prod.productId}
                   className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
                 />
                 {prod.volume && (
@@ -380,7 +280,7 @@ export function UserPrescribedRoutine({
 
               <div className="space-y-1.5 flex-1 min-w-0">
                 <span className="text-[11px] font-bold text-[#5C605C] uppercase tracking-wider block">
-                  {prod.brand} (Shopee Mall)
+                  {prod.brand} (SkinSense Mall)
                 </span>
 
                 <h4 className="font-bold text-base text-[#191B19] leading-snug">
@@ -413,7 +313,7 @@ export function UserPrescribedRoutine({
             <div className="pt-2 border-t border-[#D8D4CA]/60 flex items-center justify-between text-xs">
               <div className="flex items-center gap-1.5 text-[#5C605C]">
                 <ShieldCheck className="size-4 text-[#2D5A43]" />
-                <span>Chính Hãng 100% Shopee Mall</span>
+                <span>Chính hãng tại SkinSense Mall</span>
               </div>
 
               {prod.priceVnd > 0 && <div className="flex items-baseline gap-2">
@@ -445,7 +345,7 @@ export function UserPrescribedRoutine({
             <span className="text-xs text-[#5C605C]">• Freeship Xtra toàn quốc</span>
           </div>
           <h3 className="font-serif text-lg sm:text-xl font-bold text-[#191B19]">
-            Hoàn Tất Đơn Kê & Mua Sản Phẩm Tại Gian Hàng Shopee
+            Hoàn Tất Đơn Kê & Mua Sản Phẩm Tại Gian Hàng SkinSense
           </h3>
           <p className="text-xs text-[#5C605C]">
             Tất cả {routine.products.length} sản phẩm chính hãng sẽ được chuẩn bị sẵn tại Shop để bạn đặt hàng và nhận thuốc/dược mỹ phẩm tại nhà.

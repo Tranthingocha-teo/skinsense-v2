@@ -4,7 +4,6 @@ import {
   type OrderStatus,
   type OrderTrackingEvent,
 } from '@skinsense/domain';
-import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import {
@@ -46,6 +45,7 @@ import {
   loadOrders,
   onMarketplaceChange,
 } from '@/lib/marketplace';
+import { ProductImage } from '@/components/artwork';
 
 export type BuyerTab = 'all' | 'pending' | 'processing' | 'shipping' | 'completed' | 'cancelled';
 
@@ -349,11 +349,7 @@ export function BuyerOrdersModal({
 
                   {/* Product Details Row */}
                   <View className="flex-row gap-3">
-                    <Image
-                      source={{ uri: order.productImage }}
-                      className="size-16 rounded-control bg-surface-2 border border-border"
-                      contentFit="cover"
-                    />
+                    <ProductImage uri={order.productImage} name={order.productName} seed={order.productId} className="size-16 rounded-control border border-border" />
                     <View className="flex-1 justify-center gap-1">
                       <Text
                         numberOfLines={2}
@@ -661,11 +657,7 @@ export function BuyerOrdersModal({
 
               {/* Product Summary */}
               <View className="flex-row items-center gap-3 rounded-control bg-surface-2 p-3">
-                <Image
-                  source={{ uri: ratingOrder.productImage }}
-                  className="size-12 rounded-control bg-surface-3"
-                  contentFit="cover"
-                />
+                <ProductImage uri={ratingOrder.productImage} name={ratingOrder.productName} seed={ratingOrder.productId} className="size-12 rounded-control" />
                 <View className="flex-1">
                   <Text numberOfLines={1} className="text-[13px] font-semibold text-foreground">
                     {ratingOrder.productName}

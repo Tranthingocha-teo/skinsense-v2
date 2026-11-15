@@ -55,6 +55,7 @@
   {"name":"react-native-reanimated","package":"react-native-reanimated","license":"MIT"},
   {"name":"react-native-safe-area-context","package":"react-native-safe-area-context","license":"MIT"},
   {"name":"react-native-screens","package":"react-native-screens","license":"MIT"},
+  {"name":"qrcode","package":"qrcode","license":"MIT"},
   {"name":"react-native-svg","package":"react-native-svg","license":"MIT"},
   {"name":"react-native-url-polyfill","package":"react-native-url-polyfill","license":"MIT"},
   {"name":"react-native-vision-camera","package":"react-native-vision-camera","license":"MIT"},

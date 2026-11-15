@@ -1,49 +1,54 @@
 "use client";
 
+import { ownImageUrl } from "@skinsense/domain";
 import { useState } from "react";
-import { Sparkles, ImageOff } from "lucide-react";
+import { ProductArt } from "./product-art";
 
 interface SafeProductImageProps {
   src?: string | null;
   alt: string;
   className?: string;
+  /** Classes for the drawn fallback; defaults to className. */
   containerClassName?: string;
+  /** Product name for the drawing; defaults to alt. */
+  name?: string;
+  brand?: string;
+  category?: string;
+  seed?: string;
 }
 
+/**
+ * A product's own uploaded photo, or the app's drawing of it (ProductArt) when there is none,
+ * the URL is a stock/placeholder host (legacy seed rows), or the image fails to load.
+ */
 export function SafeProductImage({
   src,
   alt,
   className = "size-14 sm:size-16 rounded-lg object-cover border border-border shrink-0",
   containerClassName,
+  name,
+  brand,
+  category,
+  seed,
 }: SafeProductImageProps) {
-  const [hasError, setHasError] = useState(false);
+  const [failed, setFailed] = useState<string | null>(null);
+  const url = ownImageUrl(src);
 
-  if (!src || hasError) {
+  if (!url || failed === url) {
     return (
-      <div
-        role="img"
-        aria-label={alt}
-        className={
-          containerClassName ||
-          `${className} flex items-center justify-center bg-muted/30 text-muted-foreground/60 border border-border/80 select-none`
-        }
-      >
-        <div className="flex flex-col items-center justify-center gap-1 text-[10px]">
-          <Sparkles className="size-4 opacity-50" />
-          <span className="sr-only">{alt}</span>
-        </div>
-      </div>
+      <ProductArt
+        name={name ?? alt}
+        brand={brand}
+        category={category}
+        seed={seed}
+        label={alt}
+        className={containerClassName || className}
+      />
     );
   }
 
   return (
     // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={src}
-      alt={alt}
-      className={className}
-      onError={() => setHasError(true)}
-      loading="lazy"
-    />
+    <img src={url} alt={alt} className={className} onError={() => setFailed(url)} loading="lazy" />
   );
 }

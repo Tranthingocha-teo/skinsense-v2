@@ -94,28 +94,16 @@ describe("RoleProfileView", () => {
     paymentStatus: "unpaid" as const,
   };
 
-  it("filters community reviews when clicking star filter buttons in the Review modal", async () => {
+  it("shows only the buyer's own review form, no invented reviews from other buyers", async () => {
     render(<RoleProfileView role="customer" />);
 
-    const ordersTab = await screen.findByText(/Đơn Mua Của Tôi/i);
-    fireEvent.click(ordersTab);
+    fireEvent.click(await screen.findByText(/Đơn Mua Của Tôi/i));
+    fireEvent.click(await screen.findByText("Viết Đánh Giá"));
 
-    const reviewBtn = await screen.findByText("Viết Đánh Giá");
-    fireEvent.click(reviewBtn);
-
-    expect(await screen.findByText(/Hiển thị 4 \/ 4 đánh giá tiêu biểu/i)).toBeTruthy();
-    expect(screen.getByText("tranngoc***")).toBeTruthy();
-    expect(screen.getByText("ducphuong_danang")).toBeTruthy();
-
-    fireEvent.click(screen.getByText("4 Sao (1)"));
-    expect(screen.getByText(/Hiển thị 1 \/ 4 đánh giá tiêu biểu/i)).toBeTruthy();
+    expect(await screen.findByText("Đánh giá của bạn")).toBeTruthy();
     expect(screen.queryByText("tranngoc***")).toBeNull();
-    expect(screen.getByText("ducphuong_danang")).toBeTruthy();
-
-    fireEvent.click(screen.getByText("5 Sao (3)"));
-    expect(screen.getByText(/Hiển thị 3 \/ 4 đánh giá tiêu biểu/i)).toBeTruthy();
-    expect(screen.getByText("tranngoc***")).toBeTruthy();
-    expect(screen.queryByText("ducphuong_danang")).toBeNull();
+    expect(screen.queryByText(/đánh giá tiêu biểu/i)).toBeNull();
+    expect(screen.queryByText(/Đã mua hàng/)).toBeNull();
   });
 
   it("syncs paymentStatus and status from server response on delivery confirmation", async () => {

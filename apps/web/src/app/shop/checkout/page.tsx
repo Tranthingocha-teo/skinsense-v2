@@ -27,6 +27,7 @@ import {
   Smartphone,
   ExternalLink,
   Zap,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { LogoMark } from "@/components/site-header";
@@ -1200,17 +1201,16 @@ function CheckoutInner() {
                 )}
 
                 {/* Mã QR dẫn trực tiếp tới trang xác nhận điện thoại pay-demo (Base64 nội bộ cực nét, quét nhạy 100%) */}
-                <img
-                  src={
-                    qrBase64 ||
-                    `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(mobilePayUrl || `http://${hostIp}:${port}/pay-demo?orderCode=${orderCode}&amount=${finalTotal}`)}`
-                  }
-                  alt="Mã QR Quét MoMo"
-                  className="w-full h-full object-contain rounded-xl select-none"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = `https://quickchart.io/qr?text=${encodeURIComponent(mobilePayUrl || `http://${hostIp}:${port}/pay-demo?orderCode=${orderCode}&amount=${finalTotal}`)}&size=260&margin=1`;
-                  }}
-                />
+                {qrBase64 ? (
+                  // Drawn in the browser by the qrcode package: no QR image service is called.
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={qrBase64} alt="Mã QR thanh toán mô phỏng" className="w-full h-full object-contain rounded-xl select-none" />
+                ) : (
+                  <div role="status" className="flex flex-col items-center gap-2 text-xs text-muted-foreground">
+                    <Loader2 className="size-6 animate-spin" aria-hidden />
+                    <span>Đang tạo mã QR…</span>
+                  </div>
+                )}
 
                 {/* Lớp phủ thông báo khi quét xong ("SAU QUÉT TỰ TẮT") */}
                 {momoScanningState === "success" && (

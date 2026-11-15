@@ -145,7 +145,7 @@ export async function POST(request: Request) {
           phone: userMetadata.phone_number,
           specialty: userMetadata.specialty,
           status,
-          avatarUrl: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400&auto=format&fit=crop&q=80",
+          avatarUrl: "",
           submittedAt: userMetadata.submitted_at,
         };
 
@@ -180,7 +180,7 @@ export async function POST(request: Request) {
           address: userMetadata.address,
           phone: userMetadata.phone_number,
           status,
-          avatarUrl: "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&auto=format&fit=crop&q=80",
+          avatarUrl: "",
           submittedAt: userMetadata.submitted_at,
         };
 

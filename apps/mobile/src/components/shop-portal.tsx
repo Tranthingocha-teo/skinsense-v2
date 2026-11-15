@@ -71,6 +71,7 @@ import {
   updateOrderStatus,
   updateShopStatus,
 } from '@/lib/marketplace';
+import { ProductImage } from '@/components/artwork';
 
 export type ShopPortalTab = 'orders' | 'inventory' | 'wallet' | 'profile';
 export type ShopOrderFilter = 'all' | 'pending' | 'processing' | 'shipping' | 'completed' | 'cancelled';
@@ -291,7 +292,7 @@ export function ShopPortal() {
     setEditPriceStr(existing ? existing.priceVnd.toString() : product.priceVnd.toString());
     setEditStockStr(existing ? existing.stock.toString() : '50');
     setEditRichDesc(existing?.richDescription || product.description || '');
-    setEditImages(existing?.images && existing.images.length > 0 ? [...existing.images] : [product.imageUrl]);
+    setEditImages(existing?.images && existing.images.length > 0 ? [...existing.images] : product.imageUrl ? [product.imageUrl] : []);
     setNewImageUrl('');
   }
 
@@ -738,11 +739,7 @@ export function ShopPortal() {
 
                     {/* Product & Qty */}
                     <View className="flex-row gap-2.5">
-                      <Image
-                        source={{ uri: order.productImage }}
-                        className="size-14 rounded-control bg-surface-2 border border-border/80"
-                        contentFit="cover"
-                      />
+                      <ProductImage uri={order.productImage} name={order.productName} seed={order.productId} className="size-14 rounded-control border border-border/80" />
                       <View className="flex-1 justify-between">
                         <Text numberOfLines={2} className="text-[13px] font-medium leading-[17px]">
                           {order.productName}
@@ -879,11 +876,7 @@ export function ShopPortal() {
                   className="rounded-card border border-border/80 bg-card p-3.5 gap-3 shadow-xs"
                 >
                   <View className="flex-row gap-3">
-                    <Image
-                      source={{ uri: prod.imageUrl }}
-                      className="size-16 rounded-control bg-surface-2 border border-border/80"
-                      contentFit="cover"
-                    />
+                    <ProductImage uri={prod.imageUrl} name={prod.name} brand={prod.brand} category={prod.category} seed={prod.id} className="size-16 rounded-control border border-border/80" />
                     <View className="flex-1 justify-center gap-1">
                       <Text numberOfLines={1} className="text-[11px] font-bold text-primary uppercase tracking-wider">
                         {prod.brand}
@@ -1364,30 +1357,6 @@ export function ShopPortal() {
                     </Pressable>
                   </View>
 
-                  <View className="flex-row gap-1.5 pt-1">
-                    <Pressable
-                      onPress={() => {
-                        setEditImages([
-                          ...editImages,
-                          'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=600&q=80',
-                        ]);
-                      }}
-                      className="rounded-pill bg-surface-2 px-2.5 py-1 border border-border/80 active:scale-[0.98]"
-                    >
-                      <Text className="text-[10px] text-muted-foreground">+ Ảnh mẫu Serum</Text>
-                    </Pressable>
-                    <Pressable
-                      onPress={() => {
-                        setEditImages([
-                          ...editImages,
-                          'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=600&q=80',
-                        ]);
-                      }}
-                      className="rounded-pill bg-surface-2 px-2.5 py-1 border border-border/80 active:scale-[0.98]"
-                    >
-                      <Text className="text-[10px] text-muted-foreground">+ Ảnh mẫu Tem Phụ</Text>
-                    </Pressable>
-                  </View>
                 </View>
               </ScrollView>
 

@@ -65,9 +65,7 @@ function ProductEditorDialog({ open, onOpenChange, initialProduct, onSave }: Pro
   const [howToUse, setHowToUse] = useState(initialProduct?.howToUse || "");
   const [caution, setCaution] = useState(initialProduct?.caution || "");
   const [origin, setOrigin] = useState("Pháp");
-  const [imageUrl, setImageUrl] = useState(
-    initialProduct?.imageUrl || "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=600&q=80"
-  );
+  const [imageUrl, setImageUrl] = useState(initialProduct?.imageUrl || "");
 
   function toggleSkinType(id: string) {
     setSkinTypes((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
@@ -90,7 +88,7 @@ function ProductEditorDialog({ open, onOpenChange, initialProduct, onSave }: Pro
       howToUse,
       caution,
       origin,
-      images: [imageUrl],
+      images: imageUrl.trim() ? [imageUrl.trim()] : [],
     };
 
     const validation = validateProductInput(input);

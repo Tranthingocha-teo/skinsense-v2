@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import {
   User,
   ShieldCheck,
@@ -34,9 +33,10 @@ import {
   QrCode,
   MessageSquare,
   Send,
-  ThumbsUp,
 } from "lucide-react";
 import { toast } from "sonner";
+import { InitialsAvatar } from "@/components/initials-avatar";
+import { SafeProductImage } from "@/components/safe-product-image";
 import { normalizeShopId } from "@/lib/shop-utils";
 import { pingChatSync, useChatSync, useStickToBottom } from "@/hooks/use-chat-sync";
 
@@ -208,76 +208,6 @@ function formatDate(iso: string) {
   }
 }
 
-const PRODUCT_IMAGE_FALLBACKS: Record<string, string> = {
-  cerave: "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=600&auto=format&fit=crop&q=80",
-  hyalu: "https://images.unsplash.com/photo-1617897903246-719242758050?w=600&auto=format&fit=crop&q=80",
-  bioderma: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600&auto=format&fit=crop&q=80",
-  effaclar: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=600&auto=format&fit=crop&q=80",
-  duo: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=600&auto=format&fit=crop&q=80",
-  anthelios: "https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?w=600&auto=format&fit=crop&q=80",
-};
-
-function getDisplayProductImage(name: string, img?: string): string {
-  if (img && img.startsWith("http")) return img;
-  const n = (name || "").toLowerCase();
-  for (const [k, url] of Object.entries(PRODUCT_IMAGE_FALLBACKS)) {
-    if (n.includes(k)) return url;
-  }
-  return "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=600&auto=format&fit=crop&q=80";
-}
-
-// Danh sách đánh giá mẫu thực tế từ cộng đồng người mua Shopee Mall
-export const COMMUNITY_REVIEWS = [
-  {
-    id: "rev_1",
-    author: "tranngoc***",
-    rating: 5,
-    variant: "Chai 40ml Chính Hãng",
-    date: "2 ngày trước",
-    tags: ["⭐ Sản phẩm chính hãng 100%", "🌿 Da dịu ngay sau khi dùng"],
-    comment:
-      "Duo+M dùng êm thật sự, mụn sưng đỏ sau 2 đêm gom cồi rõ rệt. Shop tư vấn nhiệt tình, đóng gói có bọc bóng khí cẩn thận, 10/10.",
-    initialLikes: 24,
-    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80",
-  },
-  {
-    id: "rev_2",
-    author: "hoangha_skincare",
-    rating: 5,
-    variant: "Bản Fullsize 500ml",
-    date: "4 ngày trước",
-    tags: ["📦 Đóng gói rất cẩn thận", "🚚 Giao hàng nhanh như chớp"],
-    comment:
-      "Nước tẩy trang Bioderma Sensibio dịu nhẹ đỉnh của chóp, tẩy trang sạch sâu mà không hề khô căng rát mặt. Tem phụ tiếng Việt và mã vạch check chuẩn authentic.",
-    initialLikes: 18,
-    avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&auto=format&fit=crop&q=80",
-  },
-  {
-    id: "rev_3",
-    author: "minhanh_2004",
-    rating: 5,
-    variant: "Chai 473ml Tiết Kiệm",
-    date: "1 tuần trước",
-    tags: ["✨ Mùi hương dễ chịu, thấm nhanh", "⭐ Sản phẩm chính hãng 100%"],
-    comment:
-      "Sữa rửa mặt CeraVe tạo bọt dịu nhẹ, cân bằng ẩm tốt cho da đang treatment. Giao hàng hỏa tốc trong 24h. Rất hài lòng với dịch vụ của shop!",
-    initialLikes: 12,
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80",
-  },
-  {
-    id: "rev_4",
-    author: "ducphuong_danang",
-    rating: 4,
-    variant: "Tuýp tiêu chuẩn",
-    date: "2 tuần trước",
-    tags: ["🚚 Giao hàng nhanh như chớp"],
-    comment:
-      "Hàng chính hãng, bọc hộp cứng cáp, shipper SPX thân thiện gọi trước khi giao. Sẽ tiếp tục ủng hộ gian hàng.",
-    initialLikes: 7,
-    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&auto=format&fit=crop&q=80",
-  },
-];
-
 export function RoleProfileView({ role }: { role: RoleType }) {
   const cfg = ROLE_SETTINGS[role];
 
@@ -398,8 +328,6 @@ export function RoleProfileView({ role }: { role: RoleType }) {
   const [reviewSelectedTags, setReviewSelectedTags] = useState<string[]>([]);
   const [reviewSubmitting, setReviewSubmitting] = useState<boolean>(false);
   const [reviewMode, setReviewMode] = useState<"create" | "view">("create");
-  const [reviewFilterStars, setReviewFilterStars] = useState<string>("all");
-  const [reviewLikes, setReviewLikes] = useState<Record<string, number>>({});
 
   // Shopee Live Chat State (Phía Customer)
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -527,16 +455,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
   }
 
   // Like tương tác đánh giá cộng đồng
-  function handleToggleLike(reviewId: string, initialCount: number) {
-    setReviewLikes((prev) => {
-      const current = prev[reviewId] ?? initialCount;
-      const isLiked = current > initialCount;
-      return {
-        ...prev,
-        [reviewId]: isLiked ? initialCount : initialCount + 1,
-      };
-    });
-  }
+
 
   // Cập nhật trạng thái đơn hàng (Khách xác nhận đã nhận / Shop duyệt & chuẩn bị / Hủy)
   async function handleUpdateOrderStatus(
@@ -588,7 +507,6 @@ export function RoleProfileView({ role }: { role: RoleType }) {
   function handleOpenReviewModal(order: UserOrder, mode: "create" | "view" = "create") {
     setReviewOrder(order);
     setReviewMode(mode);
-    setReviewFilterStars("all");
     if (order.review) {
       setReviewRating(order.review.rating || 5);
       setReviewComment(order.review.comment || "");
@@ -901,25 +819,6 @@ export function RoleProfileView({ role }: { role: RoleType }) {
     return true;
   });
 
-  // Lọc & thống kê chính xác theo COMMUNITY_REVIEWS hiện có
-  const totalCommunityReviews = COMMUNITY_REVIEWS.length;
-  const avgCommunityRating =
-    totalCommunityReviews > 0
-      ? (
-          COMMUNITY_REVIEWS.reduce((sum, r) => sum + r.rating, 0) /
-          totalCommunityReviews
-        ).toFixed(1)
-      : "5.0";
-  const fiveStarCount = COMMUNITY_REVIEWS.filter((r) => r.rating === 5).length;
-  const fourStarCount = COMMUNITY_REVIEWS.filter((r) => r.rating === 4).length;
-  const withCommentCount = COMMUNITY_REVIEWS.filter((r) => Boolean(r.comment?.trim())).length;
-  const filteredCommunityReviews = COMMUNITY_REVIEWS.filter((rev) => {
-    if (reviewFilterStars === "5") return rev.rating === 5;
-    if (reviewFilterStars === "4") return rev.rating === 4;
-    if (reviewFilterStars === "comment") return Boolean(rev.comment?.trim());
-    return true;
-  });
-
   return (
     <div className="min-h-screen bg-[#E8E5DE] text-[#191B19] antialiased">
       {/* HEADER TƯƠNG ĐỒNG VỚI HỆ THỐNG SKINSENSE */}
@@ -1064,19 +963,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
               {/* Thẻ Avatar & Định danh */}
               <div className="rounded-2xl border border-[#D8D4CA] bg-[#FAF8F5] p-6 shadow-xs text-center relative overflow-hidden">
                 <div className="relative mx-auto size-24 rounded-full border-2 border-[#D8D4CA] shadow-sm overflow-hidden bg-white">
-                  {avatarUrl ? (
-                    <Image
-                      src={avatarUrl}
-                      alt={fullName}
-                      fill
-                      className="object-cover"
-                      unoptimized
-                    />
-                  ) : (
-                    <div className="flex size-full items-center justify-center bg-[#F6F4EF] text-[#5C605C]">
-                      <cfg.icon className="size-10" />
-                    </div>
-                  )}
+                  <InitialsAvatar name={fullName || email || "?"} seed={email} src={avatarUrl} label={fullName} className="size-full text-2xl" />
                 </div>
 
                 <h2 className="mt-3.5 text-lg font-bold text-[#191B19] leading-snug">
@@ -1412,20 +1299,16 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                             <div className="p-5 divide-y divide-[#D8D4CA]/50 space-y-3">
                               {order.items && order.items.length > 0 ? (
                                 order.items.map((item, idx) => {
-                                  const itemImg = getDisplayProductImage(item.name, item.image);
                                   return (
                                     <div key={idx} className="flex items-start justify-between gap-3 pt-2 first:pt-0">
                                       <div className="flex items-center gap-3">
                                         <div className="relative size-14 rounded-xl overflow-hidden border border-[#D8D4CA] bg-white shrink-0 shadow-2xs">
-                                          <img
-                                            src={itemImg}
+                                          <SafeProductImage
+                                            src={item.image}
                                             alt={item.name}
-                                            className="size-full object-cover transition-transform duration-300 hover:scale-105"
-                                            loading="lazy"
-                                            onError={(e) => {
-                                              (e.currentTarget as HTMLImageElement).src =
-                                                "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=600&auto=format&fit=crop&q=80";
-                                            }}
+                                            brand={order.brand}
+                                            seed={item.id}
+                                            className="size-full object-cover"
                                           />
                                         </div>
                                         <div>
@@ -2312,9 +2195,10 @@ export function RoleProfileView({ role }: { role: RoleType }) {
             {/* Sản phẩm trong đơn */}
             <div className="rounded-xl border border-[#D8D4CA]/70 bg-[#FAF8F5] p-3.5 flex items-center gap-3">
               <div className="relative size-14 rounded-lg overflow-hidden border border-[#D8D4CA] bg-white shrink-0 shadow-2xs">
-                <img
-                  src={getDisplayProductImage(reviewOrder.items?.[0]?.name || "", reviewOrder.items?.[0]?.image)}
-                  alt="product"
+                <SafeProductImage
+                  src={reviewOrder.items?.[0]?.image}
+                  alt={reviewOrder.items?.[0]?.name || "Sản phẩm"}
+                  brand={reviewOrder.brand}
                   className="size-full object-cover"
                 />
               </div>
@@ -2328,48 +2212,6 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                 <p className="text-[11px] font-semibold text-[#C2410C]">
                   {formatMoney(reviewOrder.totalAmount)}
                 </p>
-              </div>
-            </div>
-
-            {/* BẢNG TỔNG QUAN XẾP HẠNG SHOPEE (RATING OVERVIEW) */}
-            <div className="rounded-xl border border-amber-200/80 bg-amber-50/40 p-4 sm:p-5 flex flex-col sm:flex-row items-center gap-6">
-              {/* Điểm số to */}
-              <div className="text-center sm:text-left shrink-0">
-                <div className="flex items-baseline justify-center sm:justify-start gap-1">
-                  <span className="text-3xl font-extrabold text-[#C2410C]">{avgCommunityRating}</span>
-                  <span className="text-xs text-[#5C605C]">trên 5</span>
-                </div>
-                <div className="flex items-center justify-center sm:justify-start gap-0.5 mt-1">
-                  {[1, 2, 3, 4, 5].map((s) => (
-                    <Star key={s} className="size-4 text-amber-500 fill-amber-500" />
-                  ))}
-                </div>
-                <p className="text-[11px] text-[#5C605C] mt-1">
-                  {totalCommunityReviews} đánh giá thực tế
-                </p>
-              </div>
-
-              {/* Bộ lọc sao chuẩn Shopee */}
-              <div className="flex-1 flex flex-wrap gap-2">
-                {[
-                  { key: "all", label: `Tất Cả (${totalCommunityReviews})` },
-                  { key: "5", label: `5 Sao (${fiveStarCount})` },
-                  { key: "4", label: `4 Sao (${fourStarCount})` },
-                  { key: "comment", label: `Có Bình Luận (${withCommentCount})` },
-                ].map((f) => (
-                  <button
-                    key={f.key}
-                    type="button"
-                    onClick={() => setReviewFilterStars(f.key)}
-                    className={`h-7 px-3 rounded-lg text-xs font-semibold transition cursor-pointer border ${
-                      reviewFilterStars === f.key
-                        ? "bg-[#C2410C] text-white border-[#C2410C] shadow-2xs"
-                        : "bg-white text-[#5C605C] border-[#D8D4CA] hover:border-[#C2410C]"
-                    }`}
-                  >
-                    {f.label}
-                  </button>
-                ))}
               </div>
             </div>
 
@@ -2547,98 +2389,6 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                   </div>
                 </div>
               )}
-            </div>
-
-            {/* ======================================================= */}
-            {/* PHẦN 2: ĐÁNH GIÁ TỪ CỘNG ĐỒNG NGƯỜI MUA KHÁC (SHOPEE)   */}
-            {/* ======================================================= */}
-            <div className="space-y-3 pt-2">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-[#191B19] flex items-center justify-between">
-                <span>Đánh giá từ người mua khác (Đã mua tại Shopee Mall)</span>
-                <span className="text-[11px] text-[#5C605C] font-normal">
-                  Hiển thị {filteredCommunityReviews.length} / {totalCommunityReviews} đánh giá tiêu biểu
-                </span>
-              </h4>
-
-              <div className="divide-y divide-[#D8D4CA]/50 border-t border-[#D8D4CA]/60">
-                {filteredCommunityReviews.length === 0 ? (
-                  <div className="py-6 text-center text-xs text-[#5C605C]">
-                    Chưa có đánh giá nào phù hợp bộ lọc này.
-                  </div>
-                ) : (
-                  filteredCommunityReviews.map((rev) => {
-                  const currentLikes = reviewLikes[rev.id] ?? rev.initialLikes;
-                  const isLiked = currentLikes > rev.initialLikes;
-
-                  return (
-                    <div key={rev.id} className="py-4 space-y-2 first:pt-3">
-                      {/* Author Info */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2.5">
-                          <img
-                            src={rev.avatar}
-                            alt={rev.author}
-                            className="size-8 rounded-full object-cover border border-[#D8D4CA]"
-                          />
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-bold text-[#191B19]">{rev.author}</span>
-                              <span className="rounded bg-emerald-50 text-emerald-800 border border-emerald-200 px-1.5 py-0.2 text-[9px] font-bold">
-                                ✓ Đã mua hàng
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-1 mt-0.5">
-                              {[1, 2, 3, 4, 5].map((s) => (
-                                <Star
-                                  key={s}
-                                  className={`size-3 ${
-                                    s <= rev.rating ? "text-amber-500 fill-amber-500" : "text-[#D8D4CA]"
-                                  }`}
-                                />
-                              ))}
-                              <span className="text-[10px] text-[#9CA3AF] ml-1.5">•</span>
-                              <span className="text-[10px] text-[#5C605C]">{rev.date}</span>
-                              <span className="text-[10px] text-[#9CA3AF]">•</span>
-                              <span className="text-[10px] text-[#5C605C]">{rev.variant}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Thumbs up like */}
-                        <button
-                          type="button"
-                          onClick={() => handleToggleLike(rev.id, rev.initialLikes)}
-                          className={`flex items-center gap-1 h-7 px-2.5 rounded-lg border text-[11px] font-semibold transition cursor-pointer ${
-                            isLiked
-                              ? "bg-rose-50 text-rose-700 border-rose-300"
-                              : "bg-white text-[#5C605C] border-[#D8D4CA] hover:border-[#191B19]"
-                          }`}
-                        >
-                          <ThumbsUp className={`size-3 ${isLiked ? "fill-rose-600 text-rose-600" : ""}`} />
-                          <span>Hữu ích ({currentLikes})</span>
-                        </button>
-                      </div>
-
-                      {/* Tags */}
-                      <div className="flex flex-wrap gap-1.5">
-                        {rev.tags.map((t, idx) => (
-                          <span
-                            key={idx}
-                            className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#FAF8F5] text-[#5C605C] border border-[#D8D4CA]"
-                          >
-                            {t}
-                          </span>
-                        ))}
-                      </div>
-
-                      {/* Comment text */}
-                      <p className="text-xs text-[#191B19] leading-relaxed pt-0.5">
-                        {rev.comment}
-                      </p>
-                    </div>
-                  );
-                }))}
-              </div>
             </div>
 
             {/* Nút Đóng Modal */}

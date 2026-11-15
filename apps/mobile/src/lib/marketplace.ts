@@ -124,10 +124,7 @@ export async function saveCustomProduct(input: {
     priceFormatted: formatVnd(priceVnd),
     rating: 5.0,
     reviewsCount: 1,
-    imageUrl:
-      input.imageUrl?.trim() ||
-      'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=600&q=80',
-    affiliateUrl: '',
+    imageUrl: input.imageUrl?.trim() || undefined,
     targetZones: input.targetZones ?? ['forehead', 'leftCheek', 'rightCheek', 'nose', 'chin'],
     targetClasses: input.targetClasses ?? ['barrier_repair', 'calming_redness'],
     keyActives: input.keyActives ?? ['Panthenol B5', 'Ceramide NP', 'Centella Asiatica'],
@@ -210,7 +207,6 @@ export async function registerShop(input: {
     rating: 5.0,
     reviewCount: 0,
     isOfficial: false,
-    avatarUrl: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=200&q=80',
     createdAt: new Date().toISOString(),
   };
 
@@ -390,8 +386,7 @@ const INITIAL_DEMO_ORDERS: Order[] = [
     shopName: 'Dược Mỹ Phẩm Hà Nội',
     productId: 'lrp-effaclar-duo-m',
     productName: 'Effaclar Duo+M Giảm Mụn & Ngừa Thâm 40ml',
-    productImage:
-      'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=400&q=80',
+    productImage: '',
     priceVnd: 375000,
     quantity: 1,
     totalVnd: 375000,
@@ -420,8 +415,7 @@ const INITIAL_DEMO_ORDERS: Order[] = [
     shopName: 'K-Beauty Mall Vietnam',
     productId: 'skin1004-centella-ampoule',
     productName: 'Tinh Chất Rau Má Madagascar Centella Ampoule 100ml',
-    productImage:
-      'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=400&q=80',
+    productImage: '',
     priceVnd: 330000,
     quantity: 1,
     totalVnd: 330000,
@@ -449,8 +443,7 @@ const INITIAL_DEMO_ORDERS: Order[] = [
     shopName: 'SkinSense Official Store',
     productId: 'lrp-cicaplast-b5-plus',
     productName: 'Cicaplast Baume B5+ Phục Hồi & Làm Dịu Da 40ml',
-    productImage:
-      'https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?auto=format&fit=crop&w=400&q=80',
+    productImage: '',
     priceVnd: 365000,
     quantity: 1,
     totalVnd: 365000,

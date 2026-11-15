@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatVnd, validateOrderStatusTransition, type Order, type OrderStatus } from "@skinsense/domain";
+import { SafeProductImage } from "@/components/safe-product-image";
 
 const DEMO_ORDERS: Order[] = [
   {
@@ -15,7 +16,7 @@ const DEMO_ORDERS: Order[] = [
     shopName: "SkinSense Official Store",
     productId: "lrp-effaclar-duo-m",
     productName: "Effaclar Duo+M Giảm Mụn & Ngừa Thâm 40ml",
-    productImage: "https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=400&q=80",
+    productImage: "",
     priceVnd: 375000,
     quantity: 1,
     totalVnd: 375000,
@@ -38,7 +39,7 @@ const DEMO_ORDERS: Order[] = [
     shopName: "SkinSense Official Store",
     productId: "skin1004-centella-ampoule",
     productName: "Tinh Chất Rau Má Madagascar Centella Ampoule 100ml",
-    productImage: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=400&q=80",
+    productImage: "",
     priceVnd: 330000,
     quantity: 2,
     totalVnd: 660000,
@@ -60,7 +61,7 @@ const DEMO_ORDERS: Order[] = [
     shopName: "SkinSense Official Store",
     productId: "lrp-cicaplast-b5-plus",
     productName: "Cicaplast Baume B5+ Phục Hồi & Làm Dịu Da 40ml",
-    productImage: "https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?auto=format&fit=crop&w=400&q=80",
+    productImage: "",
     priceVnd: 365000,
     quantity: 1,
     totalVnd: 365000,
@@ -179,7 +180,7 @@ export function OrderList({
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <img src={order.productImage} alt={order.productName} className="size-9 rounded object-cover border shrink-0" />
+                      <SafeProductImage src={order.productImage} alt={order.productName} seed={order.productId} className="size-9 rounded object-cover border shrink-0" />
                       <div>
                         <p className="text-xs font-medium line-clamp-1">{order.productName}</p>
                         <p className="text-[11px] text-muted-foreground">x{order.quantity}</p>

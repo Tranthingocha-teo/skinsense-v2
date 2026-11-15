@@ -6,7 +6,6 @@ import {
   type ZoneTelemetry,
 } from '@skinsense/domain';
 import * as Haptics from 'expo-haptics';
-import { Image } from 'expo-image';
 import { router, useRouter } from 'expo-router';
 import {
   AlertTriangle,
@@ -18,11 +17,12 @@ import {
   Star,
 } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
-import { Linking, Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
+import { ProductImage } from '@/components/artwork';
 
 export function ProductDetail({
   productId,
@@ -61,20 +61,6 @@ export function ProductDetail({
 
   const clinicalExplanation = explainProductRecommendation(product, zone, defaultTelem);
 
-  async function openPurchaseLink() {
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-    try {
-      const supported = await Linking.canOpenURL(product!.affiliateUrl);
-      if (supported) {
-        await Linking.openURL(product!.affiliateUrl);
-      } else {
-        await Linking.openURL('https://shopee.vn');
-      }
-    } catch {
-      await Linking.openURL('https://shopee.vn');
-    }
-  }
-
   return (
     <View className="flex-1 bg-background">
       {/* Top Header */}
@@ -101,12 +87,7 @@ export function ProductDetail({
       >
         {/* Product Hero Image */}
         <View className="aspect-square w-full overflow-hidden rounded-card border border-border bg-surface-2 shadow-xs">
-          <Image
-            source={{ uri: product.imageUrl }}
-            style={{ width: '100%', height: '100%' }}
-            contentFit="cover"
-            transition={300}
-          />
+          <ProductImage uri={product.imageUrl} name={product.name} brand={product.brand} category={product.category} seed={product.id} style={{ width: '100%', height: '100%' }} />
         </View>
 
         {/* Brand & Title Info */}

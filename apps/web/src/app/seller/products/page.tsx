@@ -58,9 +58,7 @@ export default function ProductsPage() {
         priceFormatted: formatVnd(input.priceVnd),
         rating: 5.0,
         reviewsCount: 0,
-        imageUrl:
-          input.images?.[0] ?? "https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=400&q=80",
-        affiliateUrl: "",
+        imageUrl: input.images?.[0],
         targetZones: [],
         targetClasses: [],
         summary: input.summary || "",

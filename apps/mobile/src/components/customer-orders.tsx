@@ -1,11 +1,10 @@
 import {
   formatVnd,
-  generateVietQrUrl,
+  generateVietQrPayload,
   type Order,
   type OrderStatus,
 } from '@skinsense/domain';
 import * as Haptics from 'expo-haptics';
-import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import {
   AlertCircle,
@@ -39,6 +38,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { loadOrders, updateOrderStatus } from '@/lib/marketplace';
+import { ProductImage, QrImage } from '@/components/artwork';
 
 const STATUS_FILTERS: { label: string; value: 'all' | OrderStatus }[] = [
   { label: 'Tất cả', value: 'all' },
@@ -288,11 +288,7 @@ export function CustomerOrders() {
                 {/* Product info */}
                 <View className="flex-row gap-3">
                   <View className="size-16 overflow-hidden rounded-control bg-surface-2">
-                    <Image
-                      source={{ uri: order.productImage }}
-                      style={{ width: '100%', height: '100%' }}
-                      contentFit="cover"
-                    />
+                    <ProductImage uri={order.productImage} name={order.productName} seed={order.productId} style={{ width: '100%', height: '100%' }} />
                   </View>
                   <View className="flex-1 justify-between">
                     <View>
@@ -388,16 +384,7 @@ export function CustomerOrders() {
 
               <View className="items-center py-4">
                 <View className="size-60 items-center justify-center rounded-card border border-border bg-white p-2">
-                  <Image
-                    source={{
-                      uri: generateVietQrUrl({
-                        amount: qrModalOrder.totalVnd,
-                        memo: qrModalOrder.id,
-                      }),
-                    }}
-                    style={{ width: '100%', height: '100%' }}
-                    contentFit="contain"
-                  />
+                  <QrImage value={generateVietQrPayload({ amount: qrModalOrder.totalVnd, memo: qrModalOrder.id })} size={224} label={`Mã VietQR cho đơn ${qrModalOrder.id}`} />
                 </View>
 
                 <View className="mt-3 w-full rounded-card border border-border bg-surface-1 p-3 gap-1.5">
