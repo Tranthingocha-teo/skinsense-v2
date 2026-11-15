@@ -1,3 +1,4 @@
+import { ownImageUrl } from "@skinsense/domain";
 import { NextResponse } from "next/server";
 import { isOrderOwnedByActor, isValidOrderStatus, ordersStore, type BackendOrder } from "@/lib/orders-store";
 import { getAuthenticatedActor } from "@/lib/session-auth";
@@ -8,25 +9,10 @@ export const revalidate = 0;
 
 const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
 
-// Thư viện ảnh dược mỹ phẩm sắc nét cho sản phẩm
-const PRODUCT_IMAGES: Record<string, string> = {
-  bioderma: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600&auto=format&fit=crop&q=80",
-  cerave: "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=600&auto=format&fit=crop&q=80",
-  hyalu: "https://images.unsplash.com/photo-1617897903246-719242758050?w=600&auto=format&fit=crop&q=80",
-  effaclar: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=600&auto=format&fit=crop&q=80",
-  duo: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=600&auto=format&fit=crop&q=80",
-  anthelios: "https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?w=600&auto=format&fit=crop&q=80",
-  paula: "https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=600&auto=format&fit=crop&q=80",
-  bha: "https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=600&auto=format&fit=crop&q=80",
-};
-
-function resolveItemImage(name: string, fallback?: string): string {
-  if (fallback) return fallback;
-  const n = (name || "").toLowerCase();
-  for (const [key, url] of Object.entries(PRODUCT_IMAGES)) {
-    if (n.includes(key)) return url;
-  }
-  return "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=600&auto=format&fit=crop&q=80";
+// An item keeps the image its shop uploaded; stock photos from old rows are dropped so the
+// client draws the product instead (components/product-art.tsx).
+function resolveItemImage(fallback?: string): string {
+  return ownImageUrl(fallback) ?? "";
 }
 
 export async function GET(req: Request) {
@@ -58,118 +44,8 @@ export async function GET(req: Request) {
       userOrders = allOrders.filter((o) => isOrderOwnedByActor(o, actor));
     }
 
-    // Chỉ tự động tạo đơn mẫu ban đầu cho tài khoản Customer (không tạo cho Shop/Admin)
-    if (actor.role === "customer" && userOrders.length === 0) {
-      const displayCustomerName = currentUserName;
-
-      const sampleOrders: Omit<BackendOrder, "id" | "createdAt">[] = [
-        {
-          orderCode: `SHOPEE-SS-${Math.floor(100000 + Math.random() * 900000)}`,
-          customerId: actor.userId,
-          customerName: displayCustomerName,
-          customerPhone: currentUserPhone || "0987 654 321",
-          shippingAddress: "Số 123 Đường Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh",
-          totalAmount: 485000,
-          status: "delivered",
-          paymentMethod: "momo",
-          paymentStatus: "paid",
-          shopName: "Bioderma Official Store",
-          brand: "Bioderma",
-          carrier: "Shopee Express (Freeship Xtra)",
-          items: [
-            {
-              id: "item_sp_01",
-              name: "Nước Tẩy Trang Bioderma Sensibio H2O Micellar Dịu Nhẹ Cho Da Nhạy Cảm 500ml",
-              price: 485000,
-              quantity: 1,
-              variant: "Chai 500ml Tiết Kiệm",
-              image: PRODUCT_IMAGES.bioderma,
-            },
-          ],
-          paidAt: new Date(now - 3 * 86400000).toISOString(),
-        },
-        {
-          orderCode: `SHOPEE-SS-${Math.floor(100000 + Math.random() * 900000)}`,
-          customerId: actor.userId,
-          customerName: displayCustomerName,
-          customerPhone: currentUserPhone || "0987 654 321",
-          shippingAddress: "Số 123 Đường Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh",
-          totalAmount: 840000,
-          status: "delivering",
-          paymentMethod: "momo",
-          paymentStatus: "paid",
-          shopName: "La Roche-Posay Flagship Store",
-          brand: "La Roche-Posay",
-          carrier: "Shopee Express Fast",
-          items: [
-            {
-              id: "item_sp_03",
-              name: "Tinh Chất Phục Hồi & Cấp Nước Đa Tầng La Roche-Posay Hyalu B5 Serum 30ml",
-              price: 890000,
-              quantity: 1,
-              variant: "Chai 30ml",
-              image: PRODUCT_IMAGES.hyalu,
-            },
-          ],
-          paidAt: new Date(now - 86400000).toISOString(),
-        },
-        {
-          orderCode: `SHOPEE-SS-${Math.floor(100000 + Math.random() * 900000)}`,
-          customerId: actor.userId,
-          customerName: displayCustomerName,
-          customerPhone: currentUserPhone || "0987 654 321",
-          shippingAddress: "Số 123 Đường Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh",
-          totalAmount: 330000,
-          status: "pending",
-          paymentMethod: "momo",
-          paymentStatus: "unpaid",
-          shopName: "SkinSense Official Medical Mall",
-          brand: "SkinSense",
-          carrier: "Shopee Express Tiết Kiệm",
-          items: [
-            {
-              id: "item_sp_02",
-              name: "Sữa Rửa Mặt Dưỡng Ẩm Cho Da Khô CeraVe Hydrating Cleanser 473ml",
-              price: 380000,
-              quantity: 1,
-              variant: "Chai 473ml",
-              image: PRODUCT_IMAGES.cerave,
-            },
-          ],
-        },
-        {
-          orderCode: `SHOPEE-SS-${Math.floor(100000 + Math.random() * 900000)}`,
-          customerId: actor.userId,
-          customerName: displayCustomerName,
-          customerPhone: currentUserPhone || "0987 654 321",
-          shippingAddress: "Số 123 Đường Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh",
-          totalAmount: 395000,
-          status: "cancelled", // Đơn hàng đã tự động hủy do quá hạn 3 ngày chưa thanh toán
-          paymentMethod: "momo",
-          paymentStatus: "unpaid",
-          shopName: "La Roche-Posay Flagship Store",
-          brand: "La Roche-Posay",
-          carrier: "Shopee Express",
-          items: [
-            {
-              id: "item_sp_04",
-              name: "Kem Dưỡng Giảm Mụn & Ngừa Thâm La Roche-Posay Effaclar Duo+M 40ml",
-              price: 395000,
-              quantity: 1,
-              variant: "Tuýp 40ml",
-              image: PRODUCT_IMAGES.effaclar,
-            },
-          ],
-        },
-      ];
-
-      const createdList: BackendOrder[] = [];
-      for (const sample of sampleOrders) {
-        const created = await ordersStore.createAsync(sample);
-        createdList.push(created);
-      }
-      userOrders = createdList;
-    }
+    // A customer with no orders sees an empty list. This used to invent four sample orders
+    // (fixed address, other shops) and save them as if the customer had placed them.
 
     // 5. Đảm bảo toàn bộ mặt hàng đều có link ảnh sắc nét và kiểm tra tự động hủy sau 3 ngày
     const enrichedOrders = userOrders.map((order) => {
@@ -184,7 +60,7 @@ export async function GET(req: Request) {
 
       const items = (order.items || []).map((it) => ({
         ...it,
-        image: resolveItemImage(it.name, it.image),
+        image: resolveItemImage(it.image),
       }));
 
       return {

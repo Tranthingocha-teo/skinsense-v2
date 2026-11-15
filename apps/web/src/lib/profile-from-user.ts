@@ -1,3 +1,4 @@
+import { ownImageUrl } from "@skinsense/domain";
 import type { ActorRole } from "@/lib/actor-role";
 
 /** The fields of a Supabase auth user this module reads. */
@@ -69,7 +70,7 @@ export function profileFromAuthUser(
     email,
     role,
     fullName: text(rows.profile?.full_name) || text(meta.full_name) || text(meta.name) || email.split("@")[0],
-    avatarUrl: text(rows.profile?.avatar_url) || text(meta.avatar_url) || rows.defaultAvatarUrl || "",
+    avatarUrl: ownImageUrl(text(rows.profile?.avatar_url) || text(meta.avatar_url) || rows.defaultAvatarUrl) ?? "",
     phone,
     status: "active",
     createdAt: user.created_at,

@@ -1,3 +1,4 @@
+import { ownImageUrl } from "@skinsense/domain";
 import { NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { createClient as createAdminClient, type SupabaseClient } from "@supabase/supabase-js";
@@ -233,7 +234,7 @@ export async function GET(request: Request) {
           productName: p.name || p.productName || label,
           brand: p.brand || "Dược mỹ phẩm chỉ định",
           category: p.category || "Đặc trị phục hồi",
-          imageUrl: p.imageUrl || "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&auto=format&fit=crop&q=80",
+          imageUrl: ownImageUrl(p.imageUrl) ?? "",
           activeIngredients: p.activeIngredients || "Hoạt chất chuẩn y khoa",
           stepTime: p.stepTime || timeOfDay,
           dosage: p.dosage || "1 lượng vừa đủ",

@@ -4,26 +4,26 @@ import { Star, MapPin, Phone, CheckCircle2, ShieldCheck, Store } from "lucide-re
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { Shop } from "@skinsense/domain";
+import { InitialsAvatar } from "@/components/initials-avatar";
 
 export function ShopPreviewCard({ shop }: { shop: Shop }) {
   return (
     <Card className="overflow-hidden border-border/80 shadow-sm">
       <div className="relative h-32 sm:h-40 bg-muted">
-        <img
-          src="https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=1200&q=80"
-          alt="Shop Banner"
-          className="w-full h-full object-cover"
-        />
+        {/* No banner uploaded yet: the photo-placeholder gradient from DESIGN.md. */}
+        <div aria-hidden className="size-full bg-[linear-gradient(135deg,var(--photo-a),var(--photo-b)_55%,var(--photo-c))]" />
         <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/30 to-transparent" />
       </div>
 
       <CardContent className="relative px-6 pb-6 pt-0">
         <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4 -mt-12 mb-4">
           <div className="flex items-end gap-3">
-            <img
+            <InitialsAvatar
+              name={shop.shopName}
+              seed={shop.id}
               src={shop.avatarUrl}
-              alt={shop.shopName}
-              className="size-20 rounded-2xl border-4 border-background bg-card object-cover shadow-md"
+              label={shop.shopName}
+              className="size-20 rounded-2xl border-4 border-background shadow-md text-xl"
             />
             <div className="space-y-1">
               <div className="flex items-center gap-2 flex-wrap">

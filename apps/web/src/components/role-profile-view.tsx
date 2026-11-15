@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import {
   User,
   ShieldCheck,
@@ -34,11 +33,13 @@ import {
   QrCode,
   MessageSquare,
   Send,
-  ThumbsUp,
 } from "lucide-react";
 import { toast } from "sonner";
+import { InitialsAvatar } from "@/components/initials-avatar";
+import { SafeProductImage } from "@/components/safe-product-image";
 import { normalizeShopId } from "@/lib/shop-utils";
 import { pingChatSync, useChatSync, useStickToBottom } from "@/hooks/use-chat-sync";
+import { ImageUploader } from "@/components/cloudinary-product-uploader";
 
 export type RoleType = "customer" | "specialist" | "shop" | "admin";
 
@@ -119,7 +120,7 @@ const ROLE_SETTINGS: Record<RoleType, RoleConfig> = {
     badgeClass: "bg-[#2D5A43]/10 text-[#2D5A43] border-[#2D5A43]/30",
     primaryColor: "#2D5A43",
     backHref: "/products",
-    backLabel: "Cửa Hàng Mall",
+    backLabel: "Cửa hàng SkinSense",
     portalHref: "/user/routine",
     portalLabel: "Xem Phác Đồ Routine",
     icon: User,
@@ -139,7 +140,7 @@ const ROLE_SETTINGS: Record<RoleType, RoleConfig> = {
   shop: {
     role: "shop",
     title: "Hồ Sơ Cửa Hàng (Shop)",
-    roleBadge: "Mall Flagship",
+    roleBadge: "SkinSense Mall",
     badgeClass: "bg-[#C2410C]/10 text-[#C2410C] border-[#C2410C]/30",
     primaryColor: "#C2410C",
     backHref: "/shop",
@@ -208,76 +209,6 @@ function formatDate(iso: string) {
   }
 }
 
-const PRODUCT_IMAGE_FALLBACKS: Record<string, string> = {
-  cerave: "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=600&auto=format&fit=crop&q=80",
-  hyalu: "https://images.unsplash.com/photo-1617897903246-719242758050?w=600&auto=format&fit=crop&q=80",
-  bioderma: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600&auto=format&fit=crop&q=80",
-  effaclar: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=600&auto=format&fit=crop&q=80",
-  duo: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=600&auto=format&fit=crop&q=80",
-  anthelios: "https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?w=600&auto=format&fit=crop&q=80",
-};
-
-function getDisplayProductImage(name: string, img?: string): string {
-  if (img && img.startsWith("http")) return img;
-  const n = (name || "").toLowerCase();
-  for (const [k, url] of Object.entries(PRODUCT_IMAGE_FALLBACKS)) {
-    if (n.includes(k)) return url;
-  }
-  return "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=600&auto=format&fit=crop&q=80";
-}
-
-// Danh sách đánh giá mẫu thực tế từ cộng đồng người mua Shopee Mall
-export const COMMUNITY_REVIEWS = [
-  {
-    id: "rev_1",
-    author: "tranngoc***",
-    rating: 5,
-    variant: "Chai 40ml Chính Hãng",
-    date: "2 ngày trước",
-    tags: ["⭐ Sản phẩm chính hãng 100%", "🌿 Da dịu ngay sau khi dùng"],
-    comment:
-      "Duo+M dùng êm thật sự, mụn sưng đỏ sau 2 đêm gom cồi rõ rệt. Shop tư vấn nhiệt tình, đóng gói có bọc bóng khí cẩn thận, 10/10.",
-    initialLikes: 24,
-    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80",
-  },
-  {
-    id: "rev_2",
-    author: "hoangha_skincare",
-    rating: 5,
-    variant: "Bản Fullsize 500ml",
-    date: "4 ngày trước",
-    tags: ["📦 Đóng gói rất cẩn thận", "🚚 Giao hàng nhanh như chớp"],
-    comment:
-      "Nước tẩy trang Bioderma Sensibio dịu nhẹ đỉnh của chóp, tẩy trang sạch sâu mà không hề khô căng rát mặt. Tem phụ tiếng Việt và mã vạch check chuẩn authentic.",
-    initialLikes: 18,
-    avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&auto=format&fit=crop&q=80",
-  },
-  {
-    id: "rev_3",
-    author: "minhanh_2004",
-    rating: 5,
-    variant: "Chai 473ml Tiết Kiệm",
-    date: "1 tuần trước",
-    tags: ["✨ Mùi hương dễ chịu, thấm nhanh", "⭐ Sản phẩm chính hãng 100%"],
-    comment:
-      "Sữa rửa mặt CeraVe tạo bọt dịu nhẹ, cân bằng ẩm tốt cho da đang treatment. Giao hàng hỏa tốc trong 24h. Rất hài lòng với dịch vụ của shop!",
-    initialLikes: 12,
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80",
-  },
-  {
-    id: "rev_4",
-    author: "ducphuong_danang",
-    rating: 4,
-    variant: "Tuýp tiêu chuẩn",
-    date: "2 tuần trước",
-    tags: ["🚚 Giao hàng nhanh như chớp"],
-    comment:
-      "Hàng chính hãng, bọc hộp cứng cáp, shipper SPX thân thiện gọi trước khi giao. Sẽ tiếp tục ủng hộ gian hàng.",
-    initialLikes: 7,
-    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&auto=format&fit=crop&q=80",
-  },
-];
-
 export function RoleProfileView({ role }: { role: RoleType }) {
   const cfg = ROLE_SETTINGS[role];
 
@@ -288,6 +219,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   // Form State
   const [userId, setUserId] = useState("");
@@ -343,7 +275,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
           setSpecHospital(u.specialist.hospital || "");
           setSpecLicense(u.specialist.licenseNumber || "");
           setSpecSpecialty(u.specialist.specialty || "");
-          setSpecExpYears(String(u.specialist.experienceYears || 10));
+          setSpecExpYears(u.specialist.experienceYears ? String(u.specialist.experienceYears) : "");
           setSpecBio(u.specialist.bio || "");
         } else if (role === "shop" && u.shop) {
           setShopName(u.shop.shopName || "");
@@ -398,14 +330,12 @@ export function RoleProfileView({ role }: { role: RoleType }) {
   const [reviewSelectedTags, setReviewSelectedTags] = useState<string[]>([]);
   const [reviewSubmitting, setReviewSubmitting] = useState<boolean>(false);
   const [reviewMode, setReviewMode] = useState<"create" | "view">("create");
-  const [reviewFilterStars, setReviewFilterStars] = useState<string>("all");
-  const [reviewLikes, setReviewLikes] = useState<Record<string, number>>({});
 
   // Shopee Live Chat State (Phía Customer)
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatOrder, setChatOrder] = useState<UserOrder | null>(null);
   const [activeChatShopId, setActiveChatShopId] = useState<string>("skinsense_mall");
-  const [activeChatShopName, setActiveChatShopName] = useState<string>("Gian Hàng Mall");
+  const [activeChatShopName, setActiveChatShopName] = useState<string>("Gian hàng SkinSense Mall");
   const [chatMessages, setChatMessages] = useState<ChatMessageItem[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [isShopTyping, setIsShopTyping] = useState(false);
@@ -527,16 +457,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
   }
 
   // Like tương tác đánh giá cộng đồng
-  function handleToggleLike(reviewId: string, initialCount: number) {
-    setReviewLikes((prev) => {
-      const current = prev[reviewId] ?? initialCount;
-      const isLiked = current > initialCount;
-      return {
-        ...prev,
-        [reviewId]: isLiked ? initialCount : initialCount + 1,
-      };
-    });
-  }
+
 
   // Cập nhật trạng thái đơn hàng (Khách xác nhận đã nhận / Shop duyệt & chuẩn bị / Hủy)
   async function handleUpdateOrderStatus(
@@ -572,7 +493,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
         } else if (newStatus === "processing") {
           toast.success("Shop đã phê duyệt và bắt đầu đóng gói đơn hàng.");
         } else if (newStatus === "delivering") {
-          toast.success("Đã bàn giao đơn hàng cho đơn vị vận chuyển SPX Express.");
+          toast.success("Đã bàn giao đơn hàng cho đơn vị vận chuyển.");
         } else {
           toast.success("Cập nhật trạng thái đơn hàng thành công!");
         }
@@ -588,7 +509,6 @@ export function RoleProfileView({ role }: { role: RoleType }) {
   function handleOpenReviewModal(order: UserOrder, mode: "create" | "view" = "create") {
     setReviewOrder(order);
     setReviewMode(mode);
-    setReviewFilterStars("all");
     if (order.review) {
       setReviewRating(order.review.rating || 5);
       setReviewComment(order.review.comment || "");
@@ -752,7 +672,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
 
   // Mở chat với Shop (TÁCH BIỆT THEO TỪNG SHOP)
   async function openChatWithShop(order?: UserOrder) {
-    const sName = order?.shopName || "Mall Flagship";
+    const sName = order?.shopName || "SkinSense Mall";
     const sId = normalizeShopId(sName);
     setChatOrder(order || null);
     setIsChatOpen(true);
@@ -901,31 +821,12 @@ export function RoleProfileView({ role }: { role: RoleType }) {
     return true;
   });
 
-  // Lọc & thống kê chính xác theo COMMUNITY_REVIEWS hiện có
-  const totalCommunityReviews = COMMUNITY_REVIEWS.length;
-  const avgCommunityRating =
-    totalCommunityReviews > 0
-      ? (
-          COMMUNITY_REVIEWS.reduce((sum, r) => sum + r.rating, 0) /
-          totalCommunityReviews
-        ).toFixed(1)
-      : "5.0";
-  const fiveStarCount = COMMUNITY_REVIEWS.filter((r) => r.rating === 5).length;
-  const fourStarCount = COMMUNITY_REVIEWS.filter((r) => r.rating === 4).length;
-  const withCommentCount = COMMUNITY_REVIEWS.filter((r) => Boolean(r.comment?.trim())).length;
-  const filteredCommunityReviews = COMMUNITY_REVIEWS.filter((rev) => {
-    if (reviewFilterStars === "5") return rev.rating === 5;
-    if (reviewFilterStars === "4") return rev.rating === 4;
-    if (reviewFilterStars === "comment") return Boolean(rev.comment?.trim());
-    return true;
-  });
-
   return (
     <div className="min-h-screen bg-[#E8E5DE] text-[#191B19] antialiased">
       {/* HEADER TƯƠNG ĐỒNG VỚI HỆ THỐNG SKINSENSE */}
       <header className="sticky top-0 z-30 border-b border-[#D8D4CA] bg-[#E8E5DE]/95 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-          <div className="flex items-center gap-3">
+        <div className="mx-auto flex min-h-16 max-w-6xl flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-2.5 sm:px-6">
+          <div className="flex min-w-0 items-center gap-3">
             <Link
               href={cfg.backHref}
               className="flex size-9 items-center justify-center rounded-xl border border-[#D8D4CA] bg-[#FAF8F5] text-[#5C605C] hover:border-[#191B19] hover:text-[#191B19] transition"
@@ -934,14 +835,14 @@ export function RoleProfileView({ role }: { role: RoleType }) {
               <ArrowLeft className="size-4" />
             </Link>
             <div>
-              <h1 className="text-base font-bold text-[#191B19] leading-tight flex items-center gap-2">
+              <h1 className="text-base font-bold text-[#191B19] leading-tight flex flex-wrap items-center gap-x-2 gap-y-1">
                 <span>{cfg.title}</span>
                 <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold border ${cfg.badgeClass}`}>
                   <BadgeCheck className="size-3" />
                   {cfg.roleBadge}
                 </span>
               </h1>
-              <p className="text-xs text-[#5C605C]">
+              <p className="hidden text-xs text-[#5C605C] sm:block">
                 Quản lý thông tin định danh cá nhân & thiết lập tài khoản
               </p>
             </div>
@@ -974,7 +875,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                   <button
                     type="button"
                     onClick={() => setIsEditing(true)}
-                    className="flex items-center gap-1.5 h-9 rounded-xl bg-[#2D5A43] px-4 text-xs font-bold text-white shadow-xs hover:bg-[#214332] transition cursor-pointer"
+                    className="flex items-center gap-1.5 min-h-10 whitespace-nowrap rounded-xl bg-[#2D5A43] px-4 text-xs font-bold text-white shadow-xs hover:bg-[#214332] transition cursor-pointer"
                   >
                     <Edit3 className="size-3.5" />
                     <span>Chỉnh Sửa Hồ Sơ</span>
@@ -1084,19 +985,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
               {/* Thẻ Avatar & Định danh */}
               <div className="rounded-2xl border border-[#D8D4CA] bg-[#FAF8F5] p-6 shadow-xs text-center relative overflow-hidden">
                 <div className="relative mx-auto size-24 rounded-full border-2 border-[#D8D4CA] shadow-sm overflow-hidden bg-white">
-                  {avatarUrl ? (
-                    <Image
-                      src={avatarUrl}
-                      alt={fullName}
-                      fill
-                      className="object-cover"
-                      unoptimized
-                    />
-                  ) : (
-                    <div className="flex size-full items-center justify-center bg-[#F6F4EF] text-[#5C605C]">
-                      <cfg.icon className="size-10" />
-                    </div>
-                  )}
+                  <InitialsAvatar name={fullName || email || "?"} seed={email} src={avatarUrl} label={fullName} className="size-full text-2xl" />
                 </div>
 
                 <h2 className="mt-3.5 text-lg font-bold text-[#191B19] leading-snug">
@@ -1121,67 +1010,27 @@ export function RoleProfileView({ role }: { role: RoleType }) {
               </div>
 
               {/* Thẻ Chỉ số hoạt động riêng cho Role */}
+              {(role === "customer" || role === "shop") && (
               <div className="rounded-2xl border border-[#D8D4CA] bg-[#FAF8F5] p-5 shadow-xs space-y-3.5">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-[#5C605C] flex items-center gap-1.5">
                   <Sparkles className="size-3.5 text-[#2D5A43]" />
                   <span>Chỉ số hoạt động</span>
                 </h3>
 
-                {role === "customer" && (
-                  <div className="grid grid-cols-2 gap-3 text-center">
-                    <div className="rounded-xl border border-[#D8D4CA] bg-white p-3">
-                      <div className="text-xl font-bold text-[#191B19]">{orders.length}</div>
-                      <div className="text-[11px] text-[#5C605C] mt-0.5">Đơn hàng của bạn</div>
-                    </div>
-                    <div className="rounded-xl border border-[#D8D4CA] bg-white p-3">
-                      <div className="text-xl font-bold text-[#2D5A43]">12 ngày</div>
-                      <div className="text-[11px] text-[#5C605C] mt-0.5">Routine duy trì</div>
-                    </div>
+                {/* Counted from the orders this page loaded. The tiles used to show fixed numbers
+                    (12-day streak, 890 cases, 12.850+ sold) whatever the account had done. */}
+                <div className="grid grid-cols-2 gap-3 text-center">
+                  <div className="rounded-xl border border-[#D8D4CA] bg-white p-3">
+                    <div className="text-xl font-bold text-[#191B19]">{orders.length}</div>
+                    <div className="text-[11px] text-[#5C605C] mt-0.5">{role === "shop" ? "Đơn hàng của shop" : "Đơn hàng"}</div>
                   </div>
-                )}
-
-                {role === "specialist" && (
-                  <div className="grid grid-cols-2 gap-3 text-center">
-                    <div className="rounded-xl border border-[#D8D4CA] bg-white p-3">
-                      <div className="text-xl font-bold text-[#2D5A43]">890</div>
-                      <div className="text-[11px] text-[#5C605C] mt-0.5">Ca lâm sàng</div>
-                    </div>
-                    <div className="rounded-xl border border-[#D8D4CA] bg-white p-3">
-                      <div className="text-xl font-bold text-amber-600 flex items-center justify-center gap-1">
-                        <span>5.0</span>
-                        <Star className="size-3.5 fill-current" />
-                      </div>
-                      <div className="text-[11px] text-[#5C605C] mt-0.5">142 đánh giá</div>
-                    </div>
+                  <div className="rounded-xl border border-[#D8D4CA] bg-white p-3">
+                    <div className="text-xl font-bold text-[#2D5A43]">{orders.filter((o) => o.status === "delivered").length}</div>
+                    <div className="text-[11px] text-[#5C605C] mt-0.5">Đã giao thành công</div>
                   </div>
-                )}
-
-                {role === "shop" && (
-                  <div className="grid grid-cols-2 gap-3 text-center">
-                    <div className="rounded-xl border border-[#D8D4CA] bg-white p-3">
-                      <div className="text-xl font-bold text-[#C2410C]">45</div>
-                      <div className="text-[11px] text-[#5C605C] mt-0.5">Sản phẩm đăng bán</div>
-                    </div>
-                    <div className="rounded-xl border border-[#D8D4CA] bg-white p-3">
-                      <div className="text-xl font-bold text-[#2D5A43]">12.850+</div>
-                      <div className="text-[11px] text-[#5C605C] mt-0.5">Đã bán thành công</div>
-                    </div>
-                  </div>
-                )}
-
-                {role === "admin" && (
-                  <div className="grid grid-cols-2 gap-3 text-center">
-                    <div className="rounded-xl border border-[#D8D4CA] bg-white p-3">
-                      <div className="text-xl font-bold text-[#2D5A43]">4 / 4</div>
-                      <div className="text-[11px] text-[#5C605C] mt-0.5">Phân hệ Quản trị</div>
-                    </div>
-                    <div className="rounded-xl border border-[#D8D4CA] bg-white p-3">
-                      <div className="text-xl font-bold text-emerald-700">100%</div>
-                      <div className="text-[11px] text-[#5C605C] mt-0.5">An toàn hệ thống</div>
-                    </div>
-                  </div>
-                )}
+                </div>
               </div>
+              )}
             </div>
 
             {/* ============================================================= */}
@@ -1241,7 +1090,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                       <ShoppingBag className="size-12 text-[#D8D4CA] mx-auto stroke-1" />
                       <h4 className="text-sm font-bold text-[#191B19]">Chưa có đơn hàng nào</h4>
                       <p className="text-xs text-[#5C605C] max-w-sm mx-auto">
-                        Bạn chưa có đơn hàng nào trong mục này. Hãy ghé qua cửa hàng Mall để chọn mua sản phẩm chăm sóc da nhé!
+                        Bạn chưa có đơn hàng nào trong mục này. Hãy ghé qua SkinSense Mall để chọn mua sản phẩm chăm sóc da nhé!
                       </p>
                       <Link
                         href="/products"
@@ -1281,7 +1130,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                               <div className="flex items-center gap-2.5 font-bold text-[#191B19]">
                                 <div className="flex items-center gap-1.5">
                                   <Store className="size-3.5 text-[#C2410C]" />
-                                  <span>{order.shopName || "Gian Hàng Mall"}</span>
+                                  <span>{order.shopName || "Gian hàng SkinSense Mall"}</span>
                                   <span className="rounded bg-rose-600 px-1.5 py-0.2 text-[9px] text-white font-bold">
                                     Mall
                                   </span>
@@ -1339,7 +1188,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                                   ) : (
                                     <>
                                       <Clock className="size-3 animate-pulse text-amber-600" />
-                                      <span>Chờ Thanh Toán MoMo</span>
+                                      <span>Chờ thanh toán</span>
                                     </>
                                   )}
                                 </span>
@@ -1352,10 +1201,10 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                                 <div className="text-[11px] font-bold text-[#5C605C] uppercase tracking-wider mb-3 flex items-center justify-between">
                                   <span className="flex items-center gap-1.5 text-[#2D5A43]">
                                     <Truck className="size-3.5" />
-                                    Tiến trình vận đơn Shopee
+                                    Tiến trình vận đơn
                                   </span>
                                   <span className="font-mono text-[10px] text-[#5C605C]">
-                                    Mã vận đơn: SPX-VN{order.orderCode.replace(/\D/g, "") || "982101"}
+                                    Mã vận đơn: SS-VN{order.orderCode.replace(/\D/g, "") || "982101"}
                                   </span>
                                 </div>
 
@@ -1380,7 +1229,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                                   {[
                                     { key: "pending", label: "Đã Đặt Đơn", desc: "Chờ xác nhận", icon: Package, activeIf: ["pending", "processing", "delivering", "delivered"] },
                                     { key: "processing", label: "Chuẩn Bị Hàng", desc: "Shop đóng gói", icon: Store, activeIf: ["processing", "delivering", "delivered"] },
-                                    { key: "delivering", label: "Đang Giao", desc: "SPX vận chuyển", icon: Truck, activeIf: ["delivering", "delivered"] },
+                                    { key: "delivering", label: "Đang Giao", desc: "Đang vận chuyển", icon: Truck, activeIf: ["delivering", "delivered"] },
                                     { key: "delivered", label: "Đã Nhận Hàng", desc: "Giao thành công", icon: CheckCircle2, activeIf: ["delivered"] },
                                   ].map((step, sIdx) => {
                                     const isReached = step.activeIf.includes(order.status);
@@ -1432,20 +1281,16 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                             <div className="p-5 divide-y divide-[#D8D4CA]/50 space-y-3">
                               {order.items && order.items.length > 0 ? (
                                 order.items.map((item, idx) => {
-                                  const itemImg = getDisplayProductImage(item.name, item.image);
                                   return (
                                     <div key={idx} className="flex items-start justify-between gap-3 pt-2 first:pt-0">
                                       <div className="flex items-center gap-3">
                                         <div className="relative size-14 rounded-xl overflow-hidden border border-[#D8D4CA] bg-white shrink-0 shadow-2xs">
-                                          <img
-                                            src={itemImg}
+                                          <SafeProductImage
+                                            src={item.image}
                                             alt={item.name}
-                                            className="size-full object-cover transition-transform duration-300 hover:scale-105"
-                                            loading="lazy"
-                                            onError={(e) => {
-                                              (e.currentTarget as HTMLImageElement).src =
-                                                "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=600&auto=format&fit=crop&q=80";
-                                            }}
+                                            brand={order.brand}
+                                            seed={item.id}
+                                            className="size-full object-cover"
                                           />
                                         </div>
                                         <div>
@@ -1494,7 +1339,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                               <div className="mx-5 mb-3 rounded-xl border border-rose-200 bg-rose-50/80 px-3.5 py-2 text-xs font-medium text-rose-900 flex items-center gap-2">
                                 <XCircle className="size-4 text-rose-600 shrink-0" />
                                 <span>
-                                  Đơn hàng này đã <strong>tự động hủy</strong> do quá thời hạn 3 ngày chưa quét thanh toán MoMo.
+                                  Đơn hàng này đã <strong>tự động hủy</strong> do quá thời hạn 3 ngày chưa thanh toán.
                                 </span>
                               </div>
                             )}
@@ -1503,7 +1348,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                             <div className="border-t border-[#D8D4CA] bg-white px-5 py-3.5 flex items-center justify-between flex-wrap gap-3">
                               <div className="text-xs text-[#5C605C] flex items-center gap-2">
                                 <Truck className="size-3.5 text-[#2D5A43]" />
-                                <span>{order.carrier || "Shopee Express"}</span>
+                                <span>{order.carrier || "Giao nhanh"}</span>
                                 <span className="text-[11px] text-[#9CA3AF]">•</span>
                                 <span className="text-[11px] text-[#5C605C]">{formatDate(order.createdAt)}</span>
                               </div>
@@ -1616,7 +1461,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                                         className="flex items-center gap-1 h-8.5 px-3.5 rounded-xl bg-[#C2410C] text-xs font-bold text-white shadow-2xs hover:bg-[#9A3412] transition"
                                       >
                                         <QrCode className="size-3" />
-                                        <span>Thanh Toán MoMo</span>
+                                        <span>Thanh toán</span>
                                       </Link>
                                     )}
 
@@ -1651,7 +1496,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                     <div>
                       <h3 className="text-sm font-bold text-[#191B19] flex items-center gap-2">
                         <MessageSquare className="size-4 text-[#2D5A43]" />
-                        <span>Kênh Chat Trực Tiếp Khách Hàng (Shopee Seller Live Chat)</span>
+                        <span>Kênh Chat Trực Tiếp Khách Hàng (chat trực tiếp)</span>
                       </h3>
                       <p className="text-[11px] text-[#5C605C] mt-0.5">
                         Nhận tin nhắn, xem đơn hàng liên quan và phản hồi khách hàng theo thời gian thực
@@ -1971,7 +1816,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                               <div className="rounded-xl border border-[#D8D4CA] bg-white p-3.5">
                                 <span className="text-[11px] font-semibold text-[#5C605C] block">Số năm kinh nghiệm</span>
                                 <p className="text-sm font-bold text-[#191B19] mt-1">
-                                  {specExpYears || "10"} năm kinh nghiệm
+                                  {specExpYears ? `${specExpYears} năm kinh nghiệm` : "Chưa cập nhật"}
                                 </p>
                               </div>
                             </div>
@@ -2031,7 +1876,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                               <span>Đặc quyền Quản trị Toàn quyền (Super Admin)</span>
                             </div>
                             <p className="text-xs text-[#5C605C] leading-relaxed">
-                              Toàn quyền kiểm soát cơ sở dữ liệu Supabase, kiểm duyệt phê duyệt tài khoản Bác sĩ, cấp phép gian hàng Shopee Mall và cấu hình luồng thanh toán.
+                              Toàn quyền kiểm soát cơ sở dữ liệu Supabase, kiểm duyệt phê duyệt tài khoản Bác sĩ, cấp phép gian hàng SkinSense Mall và cấu hình luồng thanh toán.
                             </p>
                             <div className="pt-2 text-xs text-[#191B19] font-medium">
                               <strong>Đơn vị trực thuộc:</strong> Viện CNTT & Y tế Số VKU
@@ -2104,13 +1949,14 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                           </div>
 
                           <div className="space-y-1.5">
-                            <label className="text-xs font-semibold text-[#191B19]">Link ảnh đại diện (Avatar URL)</label>
-                            <input
-                              type="url"
-                              value={avatarUrl}
-                              onChange={(e) => setAvatarUrl(e.target.value)}
-                              placeholder="https://..."
-                              className="h-10 w-full rounded-xl border border-[#D8D4CA] bg-white px-3.5 text-sm text-[#191B19] focus:border-[#191B19] focus:outline-none transition"
+                            <ImageUploader
+                              onUploadingChange={setUploading}
+                              images={avatarUrl ? [avatarUrl] : []}
+                              onChange={(next) => setAvatarUrl(next[0] ?? "")}
+                              folder="avatars"
+                              shape="round"
+                              label="Ảnh đại diện"
+                              emptyHint="Chưa có ảnh đại diện: hồ sơ hiện chữ viết tắt tên bạn."
                             />
                           </div>
                         </div>
@@ -2278,7 +2124,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                         </button>
                         <button
                           type="submit"
-                          disabled={saving}
+                          disabled={saving || uploading}
                           className="h-10 px-5 rounded-xl bg-[#2D5A43] text-xs font-bold text-white shadow-xs hover:bg-[#214332] transition flex items-center gap-2 disabled:opacity-50 cursor-pointer"
                         >
                           {saving ? (
@@ -2332,9 +2178,10 @@ export function RoleProfileView({ role }: { role: RoleType }) {
             {/* Sản phẩm trong đơn */}
             <div className="rounded-xl border border-[#D8D4CA]/70 bg-[#FAF8F5] p-3.5 flex items-center gap-3">
               <div className="relative size-14 rounded-lg overflow-hidden border border-[#D8D4CA] bg-white shrink-0 shadow-2xs">
-                <img
-                  src={getDisplayProductImage(reviewOrder.items?.[0]?.name || "", reviewOrder.items?.[0]?.image)}
-                  alt="product"
+                <SafeProductImage
+                  src={reviewOrder.items?.[0]?.image}
+                  alt={reviewOrder.items?.[0]?.name || "Sản phẩm"}
+                  brand={reviewOrder.brand}
                   className="size-full object-cover"
                 />
               </div>
@@ -2348,48 +2195,6 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                 <p className="text-[11px] font-semibold text-[#C2410C]">
                   {formatMoney(reviewOrder.totalAmount)}
                 </p>
-              </div>
-            </div>
-
-            {/* BẢNG TỔNG QUAN XẾP HẠNG SHOPEE (RATING OVERVIEW) */}
-            <div className="rounded-xl border border-amber-200/80 bg-amber-50/40 p-4 sm:p-5 flex flex-col sm:flex-row items-center gap-6">
-              {/* Điểm số to */}
-              <div className="text-center sm:text-left shrink-0">
-                <div className="flex items-baseline justify-center sm:justify-start gap-1">
-                  <span className="text-3xl font-extrabold text-[#C2410C]">{avgCommunityRating}</span>
-                  <span className="text-xs text-[#5C605C]">trên 5</span>
-                </div>
-                <div className="flex items-center justify-center sm:justify-start gap-0.5 mt-1">
-                  {[1, 2, 3, 4, 5].map((s) => (
-                    <Star key={s} className="size-4 text-amber-500 fill-amber-500" />
-                  ))}
-                </div>
-                <p className="text-[11px] text-[#5C605C] mt-1">
-                  {totalCommunityReviews} đánh giá thực tế
-                </p>
-              </div>
-
-              {/* Bộ lọc sao chuẩn Shopee */}
-              <div className="flex-1 flex flex-wrap gap-2">
-                {[
-                  { key: "all", label: `Tất Cả (${totalCommunityReviews})` },
-                  { key: "5", label: `5 Sao (${fiveStarCount})` },
-                  { key: "4", label: `4 Sao (${fourStarCount})` },
-                  { key: "comment", label: `Có Bình Luận (${withCommentCount})` },
-                ].map((f) => (
-                  <button
-                    key={f.key}
-                    type="button"
-                    onClick={() => setReviewFilterStars(f.key)}
-                    className={`h-7 px-3 rounded-lg text-xs font-semibold transition cursor-pointer border ${
-                      reviewFilterStars === f.key
-                        ? "bg-[#C2410C] text-white border-[#C2410C] shadow-2xs"
-                        : "bg-white text-[#5C605C] border-[#D8D4CA] hover:border-[#C2410C]"
-                    }`}
-                  >
-                    {f.label}
-                  </button>
-                ))}
               </div>
             </div>
 
@@ -2567,98 +2372,6 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                   </div>
                 </div>
               )}
-            </div>
-
-            {/* ======================================================= */}
-            {/* PHẦN 2: ĐÁNH GIÁ TỪ CỘNG ĐỒNG NGƯỜI MUA KHÁC (SHOPEE)   */}
-            {/* ======================================================= */}
-            <div className="space-y-3 pt-2">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-[#191B19] flex items-center justify-between">
-                <span>Đánh giá từ người mua khác (Đã mua tại Shopee Mall)</span>
-                <span className="text-[11px] text-[#5C605C] font-normal">
-                  Hiển thị {filteredCommunityReviews.length} / {totalCommunityReviews} đánh giá tiêu biểu
-                </span>
-              </h4>
-
-              <div className="divide-y divide-[#D8D4CA]/50 border-t border-[#D8D4CA]/60">
-                {filteredCommunityReviews.length === 0 ? (
-                  <div className="py-6 text-center text-xs text-[#5C605C]">
-                    Chưa có đánh giá nào phù hợp bộ lọc này.
-                  </div>
-                ) : (
-                  filteredCommunityReviews.map((rev) => {
-                  const currentLikes = reviewLikes[rev.id] ?? rev.initialLikes;
-                  const isLiked = currentLikes > rev.initialLikes;
-
-                  return (
-                    <div key={rev.id} className="py-4 space-y-2 first:pt-3">
-                      {/* Author Info */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2.5">
-                          <img
-                            src={rev.avatar}
-                            alt={rev.author}
-                            className="size-8 rounded-full object-cover border border-[#D8D4CA]"
-                          />
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-bold text-[#191B19]">{rev.author}</span>
-                              <span className="rounded bg-emerald-50 text-emerald-800 border border-emerald-200 px-1.5 py-0.2 text-[9px] font-bold">
-                                ✓ Đã mua hàng
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-1 mt-0.5">
-                              {[1, 2, 3, 4, 5].map((s) => (
-                                <Star
-                                  key={s}
-                                  className={`size-3 ${
-                                    s <= rev.rating ? "text-amber-500 fill-amber-500" : "text-[#D8D4CA]"
-                                  }`}
-                                />
-                              ))}
-                              <span className="text-[10px] text-[#9CA3AF] ml-1.5">•</span>
-                              <span className="text-[10px] text-[#5C605C]">{rev.date}</span>
-                              <span className="text-[10px] text-[#9CA3AF]">•</span>
-                              <span className="text-[10px] text-[#5C605C]">{rev.variant}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Thumbs up like */}
-                        <button
-                          type="button"
-                          onClick={() => handleToggleLike(rev.id, rev.initialLikes)}
-                          className={`flex items-center gap-1 h-7 px-2.5 rounded-lg border text-[11px] font-semibold transition cursor-pointer ${
-                            isLiked
-                              ? "bg-rose-50 text-rose-700 border-rose-300"
-                              : "bg-white text-[#5C605C] border-[#D8D4CA] hover:border-[#191B19]"
-                          }`}
-                        >
-                          <ThumbsUp className={`size-3 ${isLiked ? "fill-rose-600 text-rose-600" : ""}`} />
-                          <span>Hữu ích ({currentLikes})</span>
-                        </button>
-                      </div>
-
-                      {/* Tags */}
-                      <div className="flex flex-wrap gap-1.5">
-                        {rev.tags.map((t, idx) => (
-                          <span
-                            key={idx}
-                            className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#FAF8F5] text-[#5C605C] border border-[#D8D4CA]"
-                          >
-                            {t}
-                          </span>
-                        ))}
-                      </div>
-
-                      {/* Comment text */}
-                      <p className="text-xs text-[#191B19] leading-relaxed pt-0.5">
-                        {rev.comment}
-                      </p>
-                    </div>
-                  );
-                }))}
-              </div>
             </div>
 
             {/* Nút Đóng Modal */}

@@ -5,7 +5,6 @@ import {
   type Zone,
   type ZoneTelemetry,
 } from '@skinsense/domain';
-import { Image } from 'expo-image';
 import { Link, router } from 'expo-router';
 import { ExternalLink, Sparkles, Star } from 'lucide-react-native';
 import { useState } from 'react';
@@ -14,6 +13,7 @@ import { Pressable, ScrollView, View } from 'react-native';
 
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
+import { ProductImage } from '@/components/artwork';
 
 const ZONE_FILTERS: { id: Zone | 'all'; label: string }[] = [
   { id: 'all', label: 'Tất cả' },
@@ -40,12 +40,7 @@ export function ProductCard({
       className="w-[232px] rounded-card border border-border bg-card p-3.5 shadow-xs active:scale-[0.98]"
     >
       <View className="relative aspect-square w-full overflow-hidden rounded-control bg-surface-2">
-        <Image
-          source={{ uri: product.imageUrl }}
-          style={{ width: '100%', height: '100%' }}
-          contentFit="cover"
-          transition={200}
-        />
+        <ProductImage uri={product.imageUrl} name={product.name} brand={product.brand} category={product.category} seed={product.id} style={{ width: '100%', height: '100%' }} />
         <View className="absolute right-2 top-2 rounded-pill bg-background/80 px-2 py-0.5 backdrop-blur-sm">
           <View className="flex-row items-center gap-1">
             <Icon as={Star} size={12} className="text-amber-500 fill-amber-500" />

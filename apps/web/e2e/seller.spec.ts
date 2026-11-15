@@ -1,4 +1,6 @@
 import { expect, test } from "@playwright/test";
+import { createHash } from "node:crypto";
+import path from "node:path";
 import { cleanupUsers, collectPageErrors, runTag, signIn, userPool, type TestUser } from "./roles";
 
 // Seller Center (/seller/*): an approved shop walks every page and adds a product; everyone else
@@ -6,7 +8,21 @@ import { cleanupUsers, collectPageErrors, runTag, signIn, userPool, type TestUse
 
 const users: TestUser[] = [];
 const pool = userPool(users);
-test.afterAll(async () => cleanupUsers(users));
+// Images this file uploaded to Cloudinary, destroyed again afterwards (same signed API the app uses).
+const uploaded: string[] = [];
+test.afterAll(async () => {
+  await cleanupUsers(users);
+  const { CLOUDINARY_CLOUD_NAME: cloud, CLOUDINARY_API_KEY: key, CLOUDINARY_API_SECRET: secret } = process.env;
+  for (const publicId of uploaded) {
+    if (!cloud || !key || !secret) break;
+    const timestamp = String(Math.floor(Date.now() / 1000));
+    const signature = createHash("sha1").update(`public_id=${publicId}&timestamp=${timestamp}${secret}`).digest("hex");
+    await fetch(`https://api.cloudinary.com/v1_1/${cloud}/image/destroy`, {
+      method: "POST",
+      body: new URLSearchParams({ public_id: publicId, timestamp, api_key: key, signature }),
+    }).catch(() => {});
+  }
+});
 
 const PAGES: Array<[string, string]> = [
   ["/seller/dashboard", "Bảng Điều Khiển"],
@@ -36,6 +52,15 @@ test("an approved shop opens every Seller Center page and adds a product", async
   const productName = `E2E Serum ${runTag()}`;
   await dialog.getByPlaceholder("Tên sản phẩm đầy đủ...").fill(productName);
   await dialog.getByPlaceholder("La Roche-Posay, Skin1004...").fill("E2E Brand");
+
+  // The product photo comes from the device (no URL field): upload a small local fixture.
+  await expect(dialog.getByRole("textbox", { name: /https/ })).toHaveCount(0);
+  const uploadDone = page.waitForResponse((r) => r.url().includes("/api/upload/cloudinary") && r.request().method() === "POST");
+  await dialog.getByTestId("product-file-input").setInputFiles(path.join(__dirname, "fixtures/upload-square.png"));
+  const upload = await (await uploadDone).json();
+  expect(upload.ok, JSON.stringify(upload)).toBe(true);
+  uploaded.push(upload.publicId);
+  await expect(dialog.locator(`img[src="${upload.url}"]`)).toBeVisible();
   await dialog.getByRole("button", { name: "Lưu sản phẩm" }).click();
   await expect(page.getByText(productName).first()).toBeVisible();
 

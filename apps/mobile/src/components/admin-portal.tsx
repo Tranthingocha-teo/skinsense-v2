@@ -9,7 +9,6 @@ import {
   type Zone,
 } from '@skinsense/domain';
 import * as Haptics from 'expo-haptics';
-import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import {
   AlertTriangle,
@@ -74,25 +73,8 @@ import {
   updateOrderStatus,
   updateShopStatus,
 } from '@/lib/marketplace';
+import { ProductImage, InitialsAvatar } from '@/components/artwork';
 
-const PRESET_IMAGES = [
-  {
-    label: 'Serum Phục Hồi',
-    url: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    label: 'Kem Dưỡng B5',
-    url: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    label: 'Tinh Chất Rau Má',
-    url: 'https://images.unsplash.com/photo-1608248597359-56330089a8dc?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    label: 'Chống Nắng Quang Phổ Rộng',
-    url: 'https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?auto=format&fit=crop&w=600&q=80',
-  },
-];
 
 export function AdminPortal() {
   const router = useRouter();
@@ -121,7 +103,7 @@ export function AdminPortal() {
   const [newProdPrice, setNewProdPrice] = useState('350000');
   const [newProdSummary, setNewProdSummary] = useState('Công thức phục hồi chuyên sâu làm dịu da');
   const [newProdDescription, setNewProdDescription] = useState('Dược mỹ phẩm độc quyền phòng khám SkinSense');
-  const [newProdImage, setNewProdImage] = useState(PRESET_IMAGES[0].url);
+  const [newProdImage, setNewProdImage] = useState('');
   const [savingProduct, setSavingProduct] = useState(false);
 
   // Add Shop Modal
@@ -187,7 +169,7 @@ export function AdminPortal() {
   async function handleApproveShop(shopId: string, shopName: string) {
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     await updateShopStatus(shopId, 'approved');
-    Alert.alert('Đã duyệt mở bán', `Gian hàng "${shopName}" đã được phê duyệt và mở bán chính thức trên sàn Shopee Mall.`);
+    Alert.alert('Đã duyệt mở bán', `Gian hàng "${shopName}" đã được phê duyệt và mở bán chính thức trên sàn SkinSense Mall.`);
     await refreshData();
   }
 
@@ -202,9 +184,9 @@ export function AdminPortal() {
     void Haptics.selectionAsync().catch(() => {});
     const isNowOfficial = await toggleShopOfficial(shopId);
     Alert.alert(
-      isNowOfficial ? 'Đã cấp Shopee Mall' : 'Đã gỡ Shopee Mall',
+      isNowOfficial ? 'Đã cấp SkinSense Mall' : 'Đã gỡ SkinSense Mall',
       isNowOfficial
-        ? 'Gian hàng đã được gắn huy hiệu Shopee Mall chính hãng.'
+        ? 'Gian hàng đã được gắn huy hiệu SkinSense Mall chính hãng.'
         : 'Gian hàng đã chuyển về shop tiêu chuẩn.',
     );
     await refreshData();
@@ -860,11 +842,7 @@ export function AdminPortal() {
                   key={p.id}
                   className="rounded-card border border-border bg-card p-3.5 flex-row gap-3"
                 >
-                  <Image
-                    source={{ uri: p.imageUrl }}
-                    className="size-20 rounded-control bg-surface-2 border border-border"
-                    contentFit="cover"
-                  />
+                  <ProductImage uri={p.imageUrl} name={p.name} brand={p.brand} category={p.category} seed={p.id} className="size-20 rounded-control border border-border" />
                   <View className="flex-1 justify-between">
                     <View className="gap-1">
                       <View className="flex-row items-center justify-between">
@@ -986,7 +964,7 @@ export function AdminPortal() {
                       Có {pendingShops.length} hồ sơ gian hàng mới chờ bạn duyệt!
                     </Text>
                     <Text className="text-[11.5px] text-muted-foreground">
-                      Duyệt để shop xuất hiện trên sàn Shopee Mall và bắt đầu bán hàng.
+                      Duyệt để shop xuất hiện trên sàn SkinSense Mall và bắt đầu bán hàng.
                     </Text>
                   </View>
                 </View>
@@ -1017,11 +995,7 @@ export function AdminPortal() {
                       {/* Shop Header */}
                       <View className="flex-row items-start justify-between pb-2 border-b border-border">
                         <View className="flex-row items-center gap-2.5 flex-1 pr-2">
-                          <Image
-                            source={{ uri: s.avatarUrl }}
-                            className="size-11 rounded-pill bg-surface-2 border border-border"
-                            contentFit="cover"
-                          />
+                          <InitialsAvatar uri={s.avatarUrl} name={s.shopName} seed={s.id} size={44} />
                           <View className="flex-1">
                             <View className="flex-row items-center gap-1.5 flex-wrap">
                               <Text className="text-[14.5px] font-bold text-foreground">
@@ -1030,7 +1004,7 @@ export function AdminPortal() {
                               {s.isOfficial ? (
                                 <View className="rounded-pill bg-destructive/15 px-1.5 py-0.5">
                                   <Text className="text-[10px] font-bold text-destructive uppercase">
-                                    Shopee Mall
+                                    SkinSense Mall
                                   </Text>
                                 </View>
                               ) : (
@@ -1142,7 +1116,7 @@ export function AdminPortal() {
                                   s.isOfficial ? 'text-destructive' : 'text-amber-500'
                                 }`}
                               >
-                                {s.isOfficial ? 'Gỡ Shopee Mall' : 'Cấp Shopee Mall'}
+                                {s.isOfficial ? 'Gỡ SkinSense Mall' : 'Cấp SkinSense Mall'}
                               </Text>
                             </Pressable>
 
@@ -1604,30 +1578,6 @@ export function AdminPortal() {
                   />
                 </View>
 
-                {/* Preset Image Picker */}
-                <View className="gap-1.5">
-                  <Text className="text-[12.5px] font-medium text-muted-foreground">
-                    Chọn ảnh sản phẩm mẫu
-                  </Text>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={{ gap: 8 }}
-                  >
-                    {PRESET_IMAGES.map((img, i) => (
-                      <Pressable
-                        key={i}
-                        role="button"
-                        onPress={() => setNewProdImage(img.url)}
-                        className={`size-16 rounded-control overflow-hidden border-2 ${
-                          newProdImage === img.url ? 'border-primary' : 'border-border'
-                        }`}
-                      >
-                        <Image source={{ uri: img.url }} className="size-full" contentFit="cover" />
-                      </Pressable>
-                    ))}
-                  </ScrollView>
-                </View>
               </ScrollView>
 
               <View className="flex-row gap-3 pt-3 border-t border-border">

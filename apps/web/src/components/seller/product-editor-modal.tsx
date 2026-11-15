@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { validateProductInput, type ProductInput, type Product } from "@skinsense/domain";
+import { ImageUploader } from "@/components/cloudinary-product-uploader";
 
 const CATEGORIES = [
   "Tẩy trang & Sữa rửa mặt",
@@ -49,6 +50,7 @@ export function ProductEditorModal(props: ProductEditorModalProps) {
 
 function ProductEditorDialog({ open, onOpenChange, initialProduct, onSave }: ProductEditorModalProps) {
   const [submitting, setSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Form Fields
@@ -65,9 +67,7 @@ function ProductEditorDialog({ open, onOpenChange, initialProduct, onSave }: Pro
   const [howToUse, setHowToUse] = useState(initialProduct?.howToUse || "");
   const [caution, setCaution] = useState(initialProduct?.caution || "");
   const [origin, setOrigin] = useState("Pháp");
-  const [imageUrl, setImageUrl] = useState(
-    initialProduct?.imageUrl || "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=600&q=80"
-  );
+  const [images, setImages] = useState<string[]>(initialProduct?.imageUrl ? [initialProduct.imageUrl] : []);
 
   function toggleSkinType(id: string) {
     setSkinTypes((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
@@ -90,7 +90,7 @@ function ProductEditorDialog({ open, onOpenChange, initialProduct, onSave }: Pro
       howToUse,
       caution,
       origin,
-      images: [imageUrl],
+      images,
     };
 
     const validation = validateProductInput(input);
@@ -222,8 +222,14 @@ function ProductEditorDialog({ open, onOpenChange, initialProduct, onSave }: Pro
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Link Hình Ảnh Sản Phẩm</Label>
-            <Input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://..." />
+            <ImageUploader
+              onUploadingChange={setUploading}
+              multiple
+              images={images}
+              onChange={setImages}
+              folder="products"
+              label="Hình ảnh sản phẩm (chọn từ máy hoặc chụp camera)"
+            />
           </div>
 
           {/* Descriptions & Usage */}
@@ -241,7 +247,7 @@ function ProductEditorDialog({ open, onOpenChange, initialProduct, onSave }: Pro
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Hủy
             </Button>
-            <Button type="submit" disabled={submitting} className="bg-emerald-600 hover:bg-emerald-700 text-white min-w-32">
+            <Button type="submit" disabled={submitting || uploading} className="bg-emerald-600 hover:bg-emerald-700 text-white min-w-32">
               {submitting ? <Loader2 className="size-4 animate-spin" /> : "Lưu sản phẩm"}
             </Button>
           </div>

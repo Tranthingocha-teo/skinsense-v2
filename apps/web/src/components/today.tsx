@@ -284,7 +284,8 @@ export function Today({ api }: { api: TodayApi }) {
       <ExportClinicalRecordModal
         isOpen={isExportModalOpen}
         onClose={() => setIsExportModalOpen(false)}
-        defaultSkinPhotoUrl={last ? (last.storage_path.startsWith("http") ? last.storage_path : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80") : undefined}
+        defaultSkinPhotoUrl={last?.storage_path.startsWith("http") ? last.storage_path : undefined}
+        defaultSpotsCount={last ? data.spots.filter((s) => s.photo_id === last.id).length : undefined}
       />
     </Frame>
   );

@@ -1,3 +1,4 @@
+import { ownImageUrl } from "@skinsense/domain";
 import { NextResponse } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { requireRoleActor } from "@/lib/session-auth";
@@ -137,7 +138,7 @@ export async function POST(request: Request) {
       treatmentDay: "Ngày 1/14",
       symptoms: symptoms.trim(),
       allergies: allergies?.trim() || "Không ghi nhận tiền sử dị ứng mỹ phẩm",
-      skinPhotoUrl: skinPhotoUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80",
+      skinPhotoUrl: ownImageUrl(skinPhotoUrl) ?? "",
       aiAnalysis: {
         skinHealthScore: Math.max(30, Math.min(95, 100 - (Number(rednessIndex) || 45))),
         rednessIndex: Number(rednessIndex) || 45,

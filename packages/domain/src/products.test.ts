@@ -19,8 +19,7 @@ describe("Products catalog & Recommendation domain logic", () => {
       expect(p.brand).toBeDefined();
       expect(p.priceVnd).toBeGreaterThan(0);
       expect(p.rating).toBeGreaterThanOrEqual(4.0);
-      expect(p.imageUrl).toMatch(/^https:\/\//);
-      expect(p.affiliateUrl).toMatch(/^https:\/\//);
+      expect(p.imageUrl).toBeUndefined(); // no stock photos: the app draws the product
       expect(p.targetZones.length).toBeGreaterThan(0);
       expect(p.targetClasses.length).toBeGreaterThan(0);
       expect(p.keyActives.length).toBeGreaterThan(0);

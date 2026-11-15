@@ -4,8 +4,8 @@ import {
   uploadImageToCloudinary,
 } from "@/lib/cloudinary";
 import { requireRoleActor } from "@/lib/session-auth";
+import { MAX_IMAGE_BYTES } from "@/lib/upload-limits";
 
-const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // 10MB
 const ALLOWED_IMAGE_TYPES = new Set([
   "image/jpeg",
   "image/jpg",

@@ -1,3 +1,4 @@
+import { vietQrPayload } from "./artwork";
 import type { Product } from "./products";
 import { PRODUCTS } from "./products";
 
@@ -14,7 +15,7 @@ export interface Shop {
   rating: number;
   reviewCount: number;
   isOfficial: boolean;
-  avatarUrl: string;
+  avatarUrl?: string;
   walletBalanceVnd?: number;
   createdAt: string;
 }
@@ -108,7 +109,6 @@ export const INITIAL_SHOPS: Shop[] = [
     rating: 5.0,
     reviewCount: 4200,
     isOfficial: true,
-    avatarUrl: "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=200&q=80",
     createdAt: "2026-01-01T00:00:00.000Z",
   },
   {
@@ -121,7 +121,6 @@ export const INITIAL_SHOPS: Shop[] = [
     rating: 4.9,
     reviewCount: 1850,
     isOfficial: true,
-    avatarUrl: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=200&q=80",
     createdAt: "2026-02-15T00:00:00.000Z",
   },
   {
@@ -134,7 +133,6 @@ export const INITIAL_SHOPS: Shop[] = [
     rating: 4.8,
     reviewCount: 3100,
     isOfficial: false,
-    avatarUrl: "https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=200&q=80",
     createdAt: "2026-03-10T00:00:00.000Z",
   },
   {
@@ -147,7 +145,6 @@ export const INITIAL_SHOPS: Shop[] = [
     rating: 4.9,
     reviewCount: 2600,
     isOfficial: true,
-    avatarUrl: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=200&q=80",
     createdAt: "2026-03-20T00:00:00.000Z",
   },
   {
@@ -160,7 +157,6 @@ export const INITIAL_SHOPS: Shop[] = [
     rating: 5.0,
     reviewCount: 350,
     isOfficial: false,
-    avatarUrl: "https://images.unsplash.com/photo-1586015555751-63bb77f4322a?auto=format&fit=crop&w=200&q=80",
     createdAt: "2026-10-25T08:00:00.000Z",
   },
 ];
@@ -327,8 +323,8 @@ export function generateTrackingTimeline(
     },
     {
       time: formatTime(90),
-      title: `Đã bàn giao cho ĐVVC SPX Express (${trackingCode})`,
-      desc: "Bưu tá SPX Express đã nhận kiện hàng tại kho xuất hàng và quét mã vận đơn.",
+      title: `Đã bàn giao cho ĐVVC Giao nhanh (${trackingCode})`,
+      desc: "Bưu tá Giao nhanh đã nhận kiện hàng tại kho xuất hàng và quét mã vận đơn.",
       completed: isShipped,
     },
     {
@@ -340,7 +336,7 @@ export function generateTrackingTimeline(
     {
       time: formatTime(720),
       title: "Đang phát hàng đến bạn",
-      desc: "Shipper SPX Express đang liên hệ để giao hàng tận tay khách hàng.",
+      desc: "Shipper đang liên hệ để giao hàng tận tay khách hàng.",
       completed: isDelivered,
     },
     {
@@ -352,18 +348,22 @@ export function generateTrackingTimeline(
   ];
 }
 
-export function generateVietQrUrl(params: {
-  bankId?: string;
+/**
+ * The VietQR text for an order, drawn as a QR on the device (no QR image service). The account is
+ * the demo store's: MB Bank (BIN 970422).
+ */
+export function generateVietQrPayload(params: {
+  bankBin?: string;
   accountNo?: string;
   amount: number;
   memo: string;
 }): string {
-  const bank = params.bankId ?? "MB";
-  const acc = params.accountNo ?? "999988886666";
-  const template = "compact2";
-  return `https://img.vietqr.io/image/${bank}-${acc}-${template}.png?amount=${params.amount}&addInfo=${encodeURIComponent(
-    params.memo
-  )}&accountName=SKINSENSE%20VIETNAM`;
+  return vietQrPayload({
+    bankBin: params.bankBin ?? "970422",
+    accountNo: params.accountNo ?? "999988886666",
+    amount: params.amount,
+    memo: params.memo,
+  });
 }
 
 // -------------------------------------------------------------

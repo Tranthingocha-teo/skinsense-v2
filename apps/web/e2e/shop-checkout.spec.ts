@@ -24,7 +24,7 @@ test("a buyer checks out with MoMo, pays from the phone link, and sees the paid 
   users.push(buyer);
   await signIn(context, buyer);
 
-  // The buyer storefront is /products; /shop is the seller's channel.
+  // Buyers start from the /products storefront.
   await page.goto("/products");
   await page.getByRole("button", { name: "Mua Ngay", exact: true }).first().click();
   await expect(page).toHaveURL(/\/shop\/checkout\?productId=/);
@@ -34,15 +34,15 @@ test("a buyer checks out with MoMo, pays from the phone link, and sees the paid 
   await expect(page.getByText("Trần Thị Ngọc Hà")).toHaveCount(0);
 
   // No phone or address on file yet: placing the order asks for them first.
-  await page.getByRole("button", { name: /Thanh Toán MoMo/ }).click();
+  await page.getByRole("button", { name: /Thanh toán mô phỏng \(\d/ }).click();
   await expect(page.getByText("Cập Nhật Địa Chỉ Nhận Hàng")).toBeVisible();
   await page.locator('label:text-is("Số điện thoại") + input').fill("0900 000 001");
   await page.locator('label:text-is("Địa chỉ giao hàng chi tiết") + textarea').fill("1 E2E Street, Da Nang");
   await page.getByRole("button", { name: "Lưu Địa Chỉ" }).click();
 
-  await page.getByRole("button", { name: /Thanh Toán MoMo/ }).click();
-  await expect(page.getByText("Thanh Toán Ví MoMo")).toBeVisible();
-  const codeText = await page.getByText(/^SHOPEE-SS-\d{6}$/).first().textContent();
+  await page.getByRole("button", { name: /Thanh toán mô phỏng \(\d/ }).click();
+  await expect(page.getByText("Quét mã QR thanh toán (demo)")).toBeVisible();
+  const codeText = await page.getByText(/^SS-\d{6}$/).first().textContent();
   const orderCode = codeText!.trim();
   orderCodes.push(orderCode);
 
@@ -67,7 +67,7 @@ test("a buyer checks out with MoMo, pays from the phone link, and sees the paid 
 
   // The desktop QR closes by itself and the success screen opens.
   await expect(page.getByText("Đặt Hàng Thành Công!")).toBeVisible({ timeout: 20_000 });
-  await expect(page.getByText("Thanh Toán Ví MoMo")).toHaveCount(0);
+  await expect(page.getByText("Quét mã QR thanh toán (demo)")).toHaveCount(0);
 
   // The buyer's own order list has it, paid and being prepared.
   await page.goto("/user/profile");
@@ -79,7 +79,7 @@ test("a buyer checks out with MoMo, pays from the phone link, and sees the paid 
 });
 
 test("paying an unknown order code is refused instead of creating a paid order", async ({ request }) => {
-  const code = `SHOPEE-SS-E2E${runTag()}`;
+  const code = `SS-E2E${runTag()}`;
   const res = await request.get(`/api/orders/${code}/pay`);
   expect(res.status()).toBe(404);
   const fallback = await request.get(`/api/orders/pay`);
@@ -88,13 +88,14 @@ test("paying an unknown order code is refused instead of creating a paid order",
 });
 
 test("a signed-out visitor cannot place an order", async ({ request }) => {
-  const res = await request.post("/api/orders", { data: { orderCode: `SHOPEE-SS-E2E${runTag()}`, totalAmount: 1000 } });
+  const res = await request.post("/api/orders", { data: { orderCode: `SS-E2E${runTag()}`, totalAmount: 1000 } });
   expect(res.status()).toBe(401);
 });
 
 test("the pay-demo page without an order code pays nothing", async ({ page }) => {
   await page.goto("/pay-demo");
-  await page.getByRole("button", { name: /XÁC NHẬN THANH TOÁN/ }).click();
-  await expect(page.getByText(/Thiếu mã đơn hàng/)).toBeVisible();
+  // No order to pay: the button is disabled and the page says where the link comes from.
+  await expect(page.getByRole("button", { name: /XÁC NHẬN THANH TOÁN/ })).toBeDisabled();
+  await expect(page.getByText(/Trang này mở từ mã QR/)).toBeVisible();
   await expect(page.getByText("THANH TOÁN THÀNH CÔNG!")).toHaveCount(0);
 });

@@ -76,7 +76,7 @@ export async function POST(request: Request) {
       paymentStatus: "unpaid",
       shopName,
       brand,
-      carrier: "SPX Express (Freeship Xtra)",
+      carrier: "Giao nhanh (miễn phí vận chuyển)",
       items,
     });
     if (!newOrder) {

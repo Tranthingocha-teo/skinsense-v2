@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Store,
@@ -34,6 +35,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { LogoMark } from "@/components/site-header";
+import { SafeProductImage } from "@/components/safe-product-image";
 import { AuthModal } from "@/components/auth-modal";
 import { CloudinaryProductUploader } from "@/components/cloudinary-product-uploader";
 import {
@@ -45,23 +47,9 @@ import {
   filterProductsByShop,
 } from "@/lib/shop-product-approval";
 
-function ProductImagePlaceholder({
-  label = "Chưa có ảnh",
-  compact = false,
-}: {
-  label?: string;
-  compact?: boolean;
-}) {
-  return (
-    <div className="flex size-full flex-col items-center justify-center gap-1.5 bg-surface-2 text-muted-foreground">
-      <Package className={compact ? "size-5 opacity-50" : "size-8 opacity-40"} />
-      {label ? (
-        <span className={compact ? "text-[10px] font-medium" : "text-[11px] font-medium"}>
-          {label}
-        </span>
-      ) : null}
-    </div>
-  );
+/** Shops and the admin start in, and are labelled for, the seller channel. */
+function isSellerAccount(u: { role?: string; isSuperAdmin?: boolean } | null | undefined): boolean {
+  return u?.role === "shop" || u?.role === "admin" || Boolean(u?.isSuperAdmin);
 }
 
 // Shopee Product Variant
@@ -93,7 +81,7 @@ export interface ShopeeProduct {
   category: string;
   brand: string;
   origin: string;
-  isMall: boolean; // Shopee Mall badge
+  isMall: boolean; // SkinSense Mall badge
   isPreferredPlus: boolean; // Yêu thích+
   images: string[];
   coverImage: string;
@@ -135,17 +123,14 @@ export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
     id: "sp_01",
     shopName: "La Roche-Posay Official Store",
     sku: "LRP-DUO-PLUS-M-40ML",
-    name: "Kem Dưỡng Giảm Mụn & Ngừa Thâm La Roche-Posay Effaclar Duo+M 40ml (Mall)",
+    name: "Kem Dưỡng Giảm Mụn & Ngừa Thâm La Roche-Posay Effaclar Duo+M 40ml",
     category: "Chăm sóc da mặt > Kem dưỡng & Trị mụn",
     brand: "La Roche-Posay",
     origin: "Pháp (L'Oréal Vietnam phân phối)",
     isMall: true,
     isPreferredPlus: true,
-    coverImage: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=600&auto=format&fit=crop&q=80",
-    images: [
-      "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=600&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=600&auto=format&fit=crop&crop=top&q=80",
-    ],
+    coverImage: "",
+    images: [],
     priceVnd: 395000,
     originalPriceVnd: 495000,
     discountPercent: 20,
@@ -190,11 +175,8 @@ export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
     origin: "Mỹ (Nhập khẩu chính hãng)",
     isMall: true,
     isPreferredPlus: true,
-    coverImage: "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=600&auto=format&fit=crop&q=80",
-    images: [
-      "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=600&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=600&auto=format&fit=crop&crop=center&q=80",
-    ],
+    coverImage: "",
+    images: [],
     priceVnd: 380000,
     originalPriceVnd: 450000,
     discountPercent: 16,
@@ -214,7 +196,7 @@ export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
     ],
     vouchers: [
       { id: "vc_03", code: "CERAVE20K", discountLabel: "Giảm 20.000₫", minSpendLabel: "Đơn từ 350.000₫" },
-      { id: "vc_04", code: "FREESHIP", discountLabel: "Freeship Xtra", minSpendLabel: "Tối đa 70.000₫" },
+      { id: "vc_04", code: "FREESHIP", discountLabel: "Miễn phí ship", minSpendLabel: "Tối đa 70.000₫" },
     ],
     specifications: {
       skinType: "Da thường, da khô, da nhạy cảm",
@@ -239,11 +221,8 @@ export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
     origin: "Pháp (L'Oréal Vietnam)",
     isMall: true,
     isPreferredPlus: true,
-    coverImage: "https://images.unsplash.com/photo-1617897903246-719242758050?w=600&auto=format&fit=crop&q=80",
-    images: [
-      "https://images.unsplash.com/photo-1617897903246-719242758050?w=600&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1617897903246-719242758050?w=600&auto=format&fit=crop&crop=bottom&q=80",
-    ],
+    coverImage: "",
+    images: [],
     priceVnd: 890000,
     originalPriceVnd: 1100000,
     discountPercent: 19,
@@ -263,7 +242,7 @@ export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
     ],
     vouchers: [
       { id: "vc_05", code: "LRP50K", discountLabel: "Giảm 50.000₫", minSpendLabel: "Đơn từ 800.000₫" },
-      { id: "vc_06", code: "FREESHIP", discountLabel: "Freeship Xtra", minSpendLabel: "Toàn quốc" },
+      { id: "vc_06", code: "FREESHIP", discountLabel: "Miễn phí ship", minSpendLabel: "Toàn quốc" },
     ],
     specifications: {
       skinType: "Mọi loại da, da thiếu ẩm, da có nếp nhăn li ti",
@@ -288,11 +267,8 @@ export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
     origin: "Pháp",
     isMall: true,
     isPreferredPlus: true,
-    coverImage: "https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?w=600&auto=format&fit=crop&q=80",
-    images: [
-      "https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?w=600&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?w=600&auto=format&fit=crop&crop=center&q=80",
-    ],
+    coverImage: "",
+    images: [],
     priceVnd: 475000,
     originalPriceVnd: 560000,
     discountPercent: 15,
@@ -311,7 +287,7 @@ export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
     ],
     vouchers: [
       { id: "vc_07", code: "LRP15K", discountLabel: "Giảm 15.000₫", minSpendLabel: "Đơn từ 300.000₫" },
-      { id: "vc_08", code: "FREESHIP", discountLabel: "Freeship Xtra", minSpendLabel: "Tối đa 70.000₫" },
+      { id: "vc_08", code: "FREESHIP", discountLabel: "Miễn phí ship", minSpendLabel: "Tối đa 70.000₫" },
     ],
     specifications: {
       skinType: "Da dầu mụn, da hỗn hợp thiên dầu",
@@ -336,11 +312,8 @@ export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
     origin: "Pháp (Chính Hãng)",
     isMall: true,
     isPreferredPlus: true,
-    coverImage: "https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=600&auto=format&fit=crop&q=80",
-    images: [
-      "https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=600&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=600&auto=format&fit=crop&crop=top&q=80",
-    ],
+    coverImage: "",
+    images: [],
     priceVnd: 360000,
     originalPriceVnd: 420000,
     discountPercent: 14,
@@ -360,7 +333,7 @@ export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
     ],
     vouchers: [
       { id: "vc_09", code: "LRP15K", discountLabel: "Giảm 15.000₫", minSpendLabel: "Đơn từ 300.000₫" },
-      { id: "vc_10", code: "FREESHIP", discountLabel: "Freeship Xtra", minSpendLabel: "Toàn sàn" },
+      { id: "vc_10", code: "FREESHIP", discountLabel: "Miễn phí ship", minSpendLabel: "Toàn sàn" },
     ],
     specifications: {
       skinType: "Da nhạy cảm, da sau peel, laser, da khô nứt nẻ",
@@ -385,11 +358,8 @@ export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
     origin: "Pháp (L'Oréal Vietnam)",
     isMall: true,
     isPreferredPlus: true,
-    coverImage: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600&auto=format&fit=crop&q=80",
-    images: [
-      "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600&auto=format&fit=crop&crop=center&q=80",
-    ],
+    coverImage: "",
+    images: [],
     priceVnd: 435000,
     originalPriceVnd: 515000,
     discountPercent: 16,
@@ -408,7 +378,7 @@ export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
       { id: "var_10", name: "Chai 200ml", priceVnd: 285000, originalPriceVnd: 340000, stock: 75, sku: "LRP-MICELLAR-200ML" },
     ],
     vouchers: [
-      { id: "vc_11", code: "FREESHIP", discountLabel: "Freeship Xtra", minSpendLabel: "Tối đa 70.000₫" },
+      { id: "vc_11", code: "FREESHIP", discountLabel: "Miễn phí ship", minSpendLabel: "Tối đa 70.000₫" },
     ],
     specifications: {
       skinType: "Da dầu mụn, da dễ bít tắc lỗ chân lông",
@@ -433,11 +403,8 @@ export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
     origin: "Mỹ (Chính Hãng)",
     isMall: true,
     isPreferredPlus: true,
-    coverImage: "https://images.unsplash.com/photo-1601049541289-9b1b7bbbfe19?w=600&auto=format&fit=crop&q=80",
-    images: [
-      "https://images.unsplash.com/photo-1601049541289-9b1b7bbbfe19?w=600&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1601049541289-9b1b7bbbfe19?w=600&auto=format&fit=crop&crop=top&q=80",
-    ],
+    coverImage: "",
+    images: [],
     priceVnd: 1850000,
     originalPriceVnd: 2200000,
     discountPercent: 16,
@@ -456,7 +423,7 @@ export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
     ],
     vouchers: [
       { id: "vc_12", code: "VIP100K", discountLabel: "Giảm 100.000₫", minSpendLabel: "Đơn từ 1.500.000₫" },
-      { id: "vc_13", code: "FREESHIP", discountLabel: "Freeship Xtra", minSpendLabel: "Toàn quốc" },
+      { id: "vc_13", code: "FREESHIP", discountLabel: "Miễn phí ship", minSpendLabel: "Toàn quốc" },
     ],
     specifications: {
       skinType: "Mọi loại da, da sau can thiệp y khoa chuyên sâu",
@@ -481,11 +448,8 @@ export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
     origin: "Mỹ (Chính Hãng)",
     isMall: true,
     isPreferredPlus: true,
-    coverImage: "https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?w=600&auto=format&fit=crop&q=80",
-    images: [
-      "https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?w=600&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?w=600&auto=format&fit=crop&crop=center&q=80",
-    ],
+    coverImage: "",
+    images: [],
     priceVnd: 820000,
     originalPriceVnd: 960000,
     discountPercent: 15,
@@ -504,7 +468,7 @@ export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
     ],
     vouchers: [
       { id: "vc_14", code: "OBAGI50K", discountLabel: "Giảm 50.000₫", minSpendLabel: "Đơn từ 800.000₫" },
-      { id: "vc_15", code: "FREESHIP", discountLabel: "Freeship Xtra", minSpendLabel: "Tối đa 70.000₫" },
+      { id: "vc_15", code: "FREESHIP", discountLabel: "Miễn phí ship", minSpendLabel: "Tối đa 70.000₫" },
     ],
     specifications: {
       skinType: "Da dầu mụn, mụn đầu đen, bít tắc lỗ chân lông",
@@ -529,11 +493,8 @@ export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
     origin: "Ấn Độ (Nhập khẩu chính ngạch)",
     isMall: true,
     isPreferredPlus: true,
-    coverImage: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80",
-    images: [
-      "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&crop=top&q=80",
-    ],
+    coverImage: "",
+    images: [],
     priceVnd: 125000,
     originalPriceVnd: 155000,
     discountPercent: 19,
@@ -551,7 +512,7 @@ export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
       { id: "var_14", name: "Tuýp 15g", priceVnd: 125000, originalPriceVnd: 155000, stock: 480, sku: "KLENZIT-MS-15G" },
     ],
     vouchers: [
-      { id: "vc_16", code: "FREESHIP", discountLabel: "Freeship Xtra", minSpendLabel: "Đơn từ 99.000₫" },
+      { id: "vc_16", code: "FREESHIP", discountLabel: "Miễn phí ship", minSpendLabel: "Đơn từ 99.000₫" },
     ],
     specifications: {
       skinType: "Da mụn ẩn, mụn đầu trắng, da sần sùi bít tắc",
@@ -599,8 +560,15 @@ interface AdminProductApiRecord {
 }
 
 export default function ShopProductPage() {
-  // Page mode: "seller" (Shopee Seller Center) vs "buyer" (Shopee Marketplace Storefront)
-  const [viewMode, setViewMode] = useState<"seller" | "buyer">("seller");
+  const router = useRouter();
+  // Page mode: "seller" (Kênh người bán SkinSense) vs "buyer" (Shopee Marketplace Storefront)
+  const [viewMode, setViewModeState] = useState<"seller" | "buyer">("seller");
+  // Set once the user picks a mode themselves, so the post-auth default never overrides it.
+  const viewModeChosen = useRef(false);
+  const setViewMode = (mode: "seller" | "buyer") => {
+    viewModeChosen.current = true;
+    setViewModeState(mode);
+  };
 
   // User session & approval state
   const [currentUser, setCurrentUser] = useState<ShopCurrentUser | null>(null);
@@ -608,6 +576,10 @@ export default function ShopProductPage() {
 
   // Products state - Exactly 9 authentic products
   const [products, setProducts] = useState<ShopeeProduct[]>(INITIAL_SHOPEE_PRODUCTS);
+  const [selectedProduct, setSelectedProduct] = useState<ShopeeProduct>(INITIAL_SHOPEE_PRODUCTS[0]);
+  const [selectedVariantIndex, setSelectedVariantIndex] = useState<number>(0);
+  const [buyerQuantity, setBuyerQuantity] = useState<number>(1);
+  const [activeImageIndex, setActiveImageIndex] = useState<number>(0);
 
   // Load session from /api/auth/me
   useEffect(() => {
@@ -619,9 +591,15 @@ export default function ShopProductPage() {
         } else {
           setCurrentUser(null);
         }
+        // Buyers and visitors land on the storefront; only shops and admins start in the seller channel
+        // (a customer used to land on a locked "shops only" screen). A choice made meanwhile wins.
+        if (!viewModeChosen.current && !isSellerAccount(data?.authenticated ? data.user : null)) setViewModeState("buyer");
         setAuthLoading(false);
       })
-      .catch(() => setAuthLoading(false));
+      .catch(() => {
+        if (!viewModeChosen.current) setViewModeState("buyer");
+        setAuthLoading(false);
+      });
   }, []);
 
   // Load products from /api/admin/products to sync approval status
@@ -966,13 +944,16 @@ export default function ShopProductPage() {
               </div>
             </Link>
 
+            {/* Only a shop (or the admin) has a shop and an approval status to show. */}
+            {isSellerAccount(currentUser) && (
+            <>
             <span className="hidden h-4 w-px bg-border lg:inline-block" />
 
             <div className="hidden items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary lg:flex">
               <Store className="size-3.5" />
               <span>
                 {currentUser?.shopDetails?.shopName ||
-                  (currentUser?.isSuperAdmin ? "SkinSense Super Admin Hub" : "La Roche-Posay Official Store")}
+                  (currentUser?.isSuperAdmin ? "SkinSense Super Admin Hub" : "Gian hàng")}
               </span>
               {currentUser?.status === "pending" ? (
                 <span className="rounded bg-amber-500/20 text-amber-900 dark:text-amber-300 px-1.5 py-0.5 text-[9px] font-bold">
@@ -988,9 +969,12 @@ export default function ShopProductPage() {
                 </span>
               )}
             </div>
+            </>
+            )}
           </div>
 
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center lg:gap-2.5">
+          {/* One wrapping row on phones: the toggle takes the first line, the actions share the next. */}
+          <div className="flex flex-wrap items-center gap-2 lg:flex-nowrap lg:gap-2.5">
             {/* View Mode Toggle: Seller Center vs Buyer Storefront */}
             <div className="flex w-full items-center rounded-xl border border-border bg-card p-1 shadow-xs sm:w-auto">
               <button
@@ -1023,16 +1007,25 @@ export default function ShopProductPage() {
 
             <AuthModal
               defaultTab="shop-approval"
-              triggerLabel="🏪 Đăng ký mở Gian hàng"
-              triggerClassName="flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-amber-600/40 bg-amber-500/10 px-3.5 py-2 text-xs font-semibold text-amber-800 dark:text-amber-300 transition hover:border-amber-600 hover:bg-amber-500/20 cursor-pointer shadow-2xs whitespace-nowrap"
+              triggerLabel="Đăng ký mở gian hàng"
+              triggerClassName="flex min-h-11 flex-1 sm:flex-none items-center justify-center gap-1.5 rounded-xl border border-amber-600/40 bg-amber-500/10 px-3.5 py-2 text-xs font-semibold text-amber-800 dark:text-amber-300 transition hover:border-amber-600 hover:bg-amber-500/20 cursor-pointer shadow-2xs whitespace-nowrap"
             />
 
             <Link
-              href={viewMode === "seller" ? "/shop/profile" : "/user/profile"}
-              className="flex items-center gap-1.5 rounded-xl border border-[#D8D4CA] bg-white px-3 py-1.5 text-xs font-bold text-[#191B19] hover:border-[#191B19] transition shadow-2xs"
-              title={viewMode === "seller" ? "Xem hồ sơ Cửa hàng (Shop)" : "Xem hồ sơ Người mua (Khách hàng)"}
+              href="/shop/checkout"
+              className="flex min-h-11 items-center gap-1.5 rounded-xl border border-[#C2410C]/40 bg-[#C2410C]/10 px-3 py-1.5 text-xs font-bold text-[#C2410C] dark:text-orange-300 hover:bg-[#C2410C] hover:text-white transition shadow-2xs"
             >
-              <User className="size-3.5 text-[#C2410C]" />
+              <ShoppingBag className="size-3.5" />
+              <span>Thanh Toán</span>
+            </Link>
+
+            <Link
+              href={viewMode === "seller" ? "/shop/profile" : "/user/profile"}
+              className="flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-3 py-1.5 text-xs font-bold text-foreground hover:border-foreground transition shadow-2xs"
+              title={viewMode === "seller" ? "Xem hồ sơ Cửa hàng (Shop)" : "Xem hồ sơ Người mua (Khách hàng)"}
+              aria-label={viewMode === "seller" ? "Hồ sơ shop" : "Hồ sơ"}
+            >
+              <User className="size-3.5 text-[#C2410C] dark:text-orange-300" />
               <span className="hidden sm:inline">
                 {viewMode === "seller" ? "Hồ Sơ Shop" : "Hồ Sơ"}
               </span>
@@ -1040,8 +1033,9 @@ export default function ShopProductPage() {
 
             <Link
               href="/app"
-              className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2 text-xs font-semibold text-muted-foreground transition hover:bg-surface-2 hover:text-foreground"
+              className="flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2 text-xs font-semibold text-muted-foreground transition hover:bg-surface-2 hover:text-foreground"
               title="Về trang soi da (Hôm nay)"
+              aria-label="Về trang soi da"
             >
               <Home className="size-3.5" />
               <span className="hidden sm:inline">Trang soi da (Trang chủ)</span>
@@ -1093,7 +1087,7 @@ export default function ShopProductPage() {
 
                 {/* CẢNH BÁO TẠM KHÓA */}
                 <div className="rounded-xl border border-dashed border-amber-600/40 bg-amber-500/10 p-3.5 text-xs text-amber-950 dark:text-amber-200">
-                  🔒 <strong>Chức năng Kênh Người Bán tạm khóa:</strong> Bạn chưa thể đăng bán sản phẩm mới, cập nhật tồn kho hoặc xử lý đơn hàng cho đến khi Super Admin phê duyệt.
+                  <strong>Chức năng Kênh Người Bán tạm khóa:</strong> Bạn chưa thể đăng bán sản phẩm mới, cập nhật tồn kho hoặc xử lý đơn hàng cho đến khi Super Admin phê duyệt.
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3 pt-2">
@@ -1113,13 +1107,14 @@ export default function ShopProductPage() {
                     <span>Làm mới trạng thái</span>
                   </button>
 
-                  <Link
-                    href="/products"
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("buyer")}
                     className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-xs hover:bg-primary/90 transition cursor-pointer"
                   >
                     <ShoppingBag className="size-3.5" />
                     <span>Chuyển sang Kênh Mua Hàng</span>
-                  </Link>
+                  </button>
                 </div>
               </div>
             ) : (
@@ -1129,7 +1124,7 @@ export default function ShopProductPage() {
                   <Store className="size-7" />
                 </div>
                 <h2 className="font-display text-xl sm:text-2xl font-bold text-foreground">
-                  Kênh Quản Lý Người Bán Mall
+                  Kênh Quản Lý Người Bán SkinSense Mall
                 </h2>
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   Kênh Người Bán chỉ dành cho các Gian hàng Dược mỹ phẩm đối tác đã được Super Admin Trần Thị Ngọc Hà kiểm duyệt và cấp phép. Vui lòng đăng nhập tài khoản Gian hàng hoặc nộp hồ sơ xin mở gian hàng để bắt đầu.
@@ -1137,21 +1132,22 @@ export default function ShopProductPage() {
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
                   <AuthModal
                     defaultTab="sign-in"
-                    triggerLabel="🔑 Đăng nhập Gian hàng"
+                    triggerLabel="Đăng nhập Gian hàng"
                     triggerClassName="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2 text-xs font-semibold text-primary-foreground shadow-xs hover:bg-primary/90 transition cursor-pointer"
                   />
                   <AuthModal
                     defaultTab="shop-approval"
-                    triggerLabel="🏪 Nộp hồ sơ Mở Gian hàng"
+                    triggerLabel="Nộp hồ sơ Mở Gian hàng"
                     triggerClassName="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-amber-600/40 bg-amber-500/10 px-5 py-2 text-xs font-semibold text-amber-800 dark:text-amber-300 hover:border-amber-600 hover:bg-amber-500/20 transition cursor-pointer"
                   />
-                  <Link
-                    href="/products"
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("buyer")}
                     className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-xs font-semibold text-muted-foreground hover:bg-surface-2 hover:text-foreground transition cursor-pointer"
                   >
                     <ShoppingBag className="size-4" />
                     <span>Xem Kênh Mua Hàng</span>
-                  </Link>
+                  </button>
                 </div>
               </div>
             )
@@ -1207,7 +1203,7 @@ export default function ShopProductPage() {
                 </div>
                 <div>
                   <span className="block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    Vận chuyển Mall
+                    Vận chuyển
                   </span>
                   <div className="font-display text-xl font-medium text-foreground sm:text-2xl">
                     100% <span className="font-sans text-xs font-normal text-primary">Freeship</span>
@@ -1277,7 +1273,7 @@ export default function ShopProductPage() {
                         const count = filterProductsByShop(products, sn, false).length;
                         return (
                           <option key={sn} value={sn}>
-                            🏪 {sn} ({count} SP)
+                            {sn} ({count} SP)
                           </option>
                         );
                       })}
@@ -1363,20 +1359,17 @@ export default function ShopProductPage() {
                     {/* KHỐI 1: HÌNH ẢNH SẢN PHẨM (Bấm vào xem ngay trang chi tiết sản phẩm chuẩn sàn) */}
                     <div>
                       <div
-                        onClick={() => setInspectingProduct(prod)}
+                        onClick={() => {
+                          setSelectedProduct(prod);
+                          setSelectedVariantIndex(0);
+                          setActiveImageIndex(0);
+                          setViewMode("buyer");
+                        }}
                         className="relative aspect-square w-full overflow-hidden border-b border-border bg-surface-2 cursor-pointer"
-                        title="Bấm để xem thông số sản phẩm"
+                        title="Bấm để xem trang chi tiết sản phẩm trên sàn"
                       >
-                        {prod.coverImage ? (
-                          <img
-                            src={prod.coverImage}
-                            alt={prod.name}
-                            className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
-                          />
-                        ) : (
-                          <ProductImagePlaceholder />
-                        )}
-                        {/* Overlay Badges Shopee Mall & Freeship & Approval Status */}
+                        <SafeProductImage src={prod.coverImage} alt={prod.name} brand={prod.brand} category={prod.category} seed={prod.id} className="size-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                        {/* Overlay Badges SkinSense Mall & Freeship & Approval Status */}
                         <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 items-start">
                           {prod.status === "pending" && (
                             <span className="flex items-center gap-1 rounded bg-amber-600 px-2 py-0.5 text-[9px] font-bold text-white shadow-xs">
@@ -1404,7 +1397,7 @@ export default function ShopProductPage() {
                           )}
                           <span className="flex items-center gap-1 rounded bg-success px-1.5 py-0.5 text-[9px] font-semibold text-primary-foreground shadow-xs">
                             <Truck className="size-2.5" />
-                            <span>Freeship Xtra</span>
+                            <span>Miễn phí ship</span>
                           </span>
                         </div>
 
@@ -1426,9 +1419,14 @@ export default function ShopProductPage() {
                         </div>
 
                         <h3
-                          onClick={() => setInspectingProduct(prod)}
+                          onClick={() => {
+                            setSelectedProduct(prod);
+                            setSelectedVariantIndex(0);
+                            setActiveImageIndex(0);
+                            setViewMode("buyer");
+                          }}
                           className="min-h-[40px] line-clamp-2 text-sm font-semibold leading-snug text-foreground cursor-pointer hover:text-primary transition"
-                          title="Bấm để xem thông số sản phẩm"
+                          title="Bấm để xem chi tiết sản phẩm"
                         >
                           {prod.name}
                         </h3>
@@ -1496,11 +1494,11 @@ export default function ShopProductPage() {
                           {/* PHẦN A: GIÁ BÁN & VOUCHERS */}
                           {activeTab === "sales" && (
                             <div className="space-y-2">
-                              {/* Hộp Giá Niêm Yết */}
+                              {/* Hộp Giá Shopee */}
                               <div className="flex items-baseline justify-between rounded-xl border border-border bg-background p-3">
                                 <div>
                                   <span className="block text-[9px] font-semibold uppercase text-muted-foreground">
-                                    Giá niêm yết:
+                                    Giá bán:
                                   </span>
                                   <div className="font-display text-base font-semibold text-primary">
                                     {formatMoney(prod.priceVnd)}
@@ -1585,21 +1583,47 @@ export default function ShopProductPage() {
                       <button
                         type="button"
                         onClick={() => setInspectingProduct(prod)}
-                        className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl border border-border bg-background text-xs font-semibold text-foreground transition hover:bg-surface-2 cursor-pointer shadow-2xs"
-                        title="Xem đầy đủ mọi trường thông số Mall & Pháp lý Y tế"
+                        className="flex min-h-11 flex-1 items-center justify-center gap-1 rounded-xl border border-border bg-background text-[11px] font-semibold text-foreground transition hover:bg-surface-2 cursor-pointer"
+                        title="Xem đầy đủ thông số sản phẩm"
                       >
-                        <FileText className="size-3.5 text-muted-foreground" />
-                        <span>Xem Thông Số</span>
+                        <FileText className="size-3 text-muted-foreground" />
+                        <span>Thông Số</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedProduct(prod);
+                          setSelectedVariantIndex(0);
+                          setActiveImageIndex(0);
+                          setViewMode("buyer");
+                        }}
+                        className="flex min-h-11 flex-1 items-center justify-center gap-1 rounded-xl border border-primary/30 bg-primary/5 text-primary text-[11px] font-semibold hover:bg-primary/10 transition cursor-pointer"
+                        title="Xem giao diện mua hàng"
+                      >
+                        <Eye className="size-3" />
+                        <span>Chi Tiết</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          router.push(`/shop/checkout?productId=${prod.id}&variant=0&quantity=1`);
+                        }}
+                        className="flex min-h-11 flex-1 items-center justify-center gap-1 rounded-xl bg-primary text-[11px] font-semibold text-primary-foreground shadow-xs transition hover:bg-primary/90 cursor-pointer"
+                        title="Mua ngay sản phẩm này và chuyển đến trang thanh toán"
+                      >
+                        <ShoppingBag className="size-3" />
+                        <span>Mua Ngay</span>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => handleDeleteProduct(prod.id)}
-                        className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-destructive/30 bg-destructive/5 px-4 text-xs font-semibold text-destructive transition hover:bg-destructive hover:text-white cursor-pointer shadow-2xs"
+                        className="size-11 flex shrink-0 items-center justify-center rounded-xl border border-destructive/30 bg-background text-destructive transition hover:bg-destructive/10 cursor-pointer"
                         title="Xóa khỏi gian hàng"
                       >
                         <Trash2 className="size-3.5" />
-                        <span>Xóa</span>
                       </button>
                     </div>
                   </div>
@@ -1611,140 +1635,406 @@ export default function ShopProductPage() {
           )
         )}
 
-        {/* BUYER STOREFRONT MODE: CHỈ HIỂN THỊ SẢN PHẨM ĐÃ ĐƯỢC KIỂM ĐỊNH */}
-        {viewMode === "buyer" && (
+        {/* BUYER STOREFRONT MODE (GIAO DIỆN MUA HÀNG CHUẨN 100% SHOPEE MALL) */}
+        {viewMode === "buyer" && selectedProduct && (
           <div className="space-y-6">
-            {/* Header: Tiêu đề & Nút quay lại Kênh Quản Lý Người Bán */}
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-4">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <Package className="size-5 text-primary" />
-                  <h2 className="font-display text-lg sm:text-xl font-bold text-foreground">
-                    Sản Phẩm Đã Được Kiểm Định ({buyerProducts.length} mặt hàng)
-                  </h2>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Chỉ hiển thị các sản phẩm dược mỹ phẩm chính hãng của gian hàng đã được Super Admin kiểm định và cấp phép.
-                </p>
-              </div>
+            {/* Back button & Breadcrumbs */}
+            <div className="flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setViewMode("seller")}
+                className="flex min-h-11 items-center gap-1.5 rounded-xl border border-border bg-card px-3.5 py-2 text-xs font-semibold text-foreground transition hover:bg-surface-2 cursor-pointer"
+              >
+                <ArrowRight className="size-3.5 rotate-180" />
+                <span>Quay lại Kênh Quản Lý Người Bán</span>
+              </button>
 
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsAddModalOpen(true)}
-                  className="flex min-h-10 items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-xs transition hover:bg-primary/90 cursor-pointer"
-                >
-                  <Plus className="size-4" />
-                  <span>Thêm Sản Phẩm</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setViewMode("seller")}
-                  className="flex min-h-10 items-center gap-1.5 self-start sm:self-auto rounded-xl border border-border bg-card px-3.5 py-2 text-xs font-semibold text-foreground transition hover:bg-surface-2 cursor-pointer shadow-xs"
-                >
-                  <ArrowRight className="size-3.5 rotate-180" />
-                  <span>Quay lại Kênh Quản Lý Người Bán</span>
-                </button>
+              <div className="hidden text-xs text-muted-foreground sm:block">
+                SkinSense Mall {">"} {selectedProduct.category} {">"} <strong className="text-foreground">{selectedProduct.brand}</strong>
               </div>
             </div>
 
-            {/* Grid Sản Phẩm Đã Được Kiểm Định */}
-            {buyerProducts.length === 0 ? (
-              <div className="rounded-3xl border border-dashed border-border bg-card p-12 text-center space-y-3">
-                <Package className="size-10 mx-auto text-muted-foreground" />
-                <h3 className="text-base font-semibold text-foreground">
-                  Chưa có sản phẩm nào được kiểm định
-                </h3>
-                <p className="text-xs text-muted-foreground">
-                  Hiện tại các sản phẩm đang trong quá trình chờ phê duyệt bởi Super Admin.
-                </p>
+            {/* Banner cảnh báo kiểm duyệt nếu sản phẩm đang pending hoặc rejected */}
+            {selectedProduct.status === "pending" && (
+              <div className="flex items-start gap-3 rounded-2xl border border-amber-600/40 bg-amber-500/10 p-4 text-xs text-amber-950 dark:text-amber-200">
+                <Clock className="size-5 shrink-0 text-amber-800 dark:text-amber-300 mt-0.5" />
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <strong className="text-sm font-bold text-amber-900 dark:text-amber-200">
+                      Sản phẩm đang chờ Super Admin Trần Thị Ngọc Hà phê duyệt
+                    </strong>
+                    <span className="rounded bg-amber-600 px-2 py-0.5 text-[10px] font-bold text-white shadow-xs">
+                      Chờ duyệt
+                    </span>
+                  </div>
+                  <p className="text-muted-foreground">
+                    Sản phẩm này đang trong quy trình kiểm duyệt hồ sơ pháp lý, số công bố mỹ phẩm và nguồn gốc xuất xứ. Sản phẩm tạm thời chưa mở bán công khai cho người mua cho đến khi được Admin phê duyệt.
+                  </p>
+                </div>
               </div>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                {buyerProducts.map((bp) => (
-                  <div
-                    key={bp.id}
-                    className="group flex flex-col justify-between overflow-hidden rounded-2xl border border-border bg-card shadow-xs transition hover:border-primary/50 hover:shadow-md"
-                  >
-                    <div
-                      onClick={() => setInspectingProduct(bp)}
-                      className="relative aspect-square w-full overflow-hidden border-b border-border bg-surface-2 cursor-pointer"
-                      title="Bấm để xem thông số kiểm định"
-                    >
-                      {bp.coverImage ? (
-                        <img
-                          src={bp.coverImage}
-                          alt={bp.name}
-                          className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
-                        />
-                      ) : (
-                        <ProductImagePlaceholder />
-                      )}
-                      <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 items-start">
-                        {bp.isMall && (
-                          <span className="rounded bg-rose-600 px-1.5 py-0.5 text-[9px] font-bold text-white shadow-xs">
-                            Mall
-                          </span>
-                        )}
-                        <span className="flex items-center gap-1 rounded bg-emerald-700 px-1.5 py-0.5 text-[9px] font-bold text-white shadow-xs">
-                          <CheckCircle2 className="size-2.5" />
-                          <span>Đã kiểm định</span>
-                        </span>
+            )}
+            {selectedProduct.status === "rejected" && (
+              <div className="flex items-start gap-3 rounded-2xl border border-rose-600/40 bg-rose-500/10 p-4 text-xs text-rose-950 dark:text-rose-200">
+                <XCircle className="size-5 shrink-0 text-rose-800 dark:text-rose-300 mt-0.5" />
+                <div className="space-y-0.5">
+                  <strong className="text-sm font-bold text-rose-900 dark:text-rose-200">
+                    Sản phẩm bị từ chối phê duyệt
+                  </strong>
+                  <p className="text-muted-foreground">
+                    Sản phẩm này không đủ điều kiện mở bán trên sàn SkinSense theo đánh giá của Super Admin.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* SHOPEE MAIN PRODUCT CARD - TÁCH CÁC PHẦN RÕ RÀNG */}
+            <div className="space-y-6 rounded-3xl border border-border bg-card p-4 shadow-xs sm:p-6 lg:p-8">
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-8">
+                {/* Left: Product Gallery Images (5 cols) - Cùng 1 mặt hàng */}
+                <div className="space-y-3.5 lg:col-span-5">
+                  {/* Big Cover Image */}
+                  <div className="relative aspect-square w-full overflow-hidden rounded-2xl border border-border bg-surface-2 shadow-xs">
+                    <SafeProductImage src={selectedProduct.images[activeImageIndex] || selectedProduct.coverImage} alt={selectedProduct.name} brand={selectedProduct.brand} category={selectedProduct.category} seed={selectedProduct.id} className="size-full object-cover" />
+                    {selectedProduct.isMall && (
+                      <div className="absolute top-3 left-3 rounded-md bg-rose-600 px-2 py-0.5 text-xs font-bold text-white shadow-xs flex items-center gap-1">
+                        <BadgeCheck className="size-3.5" />
+                        <span>SkinSense Mall</span>
                       </div>
-                      <span className="absolute top-2.5 right-2.5 rounded bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-xs">
-                        -{bp.discountPercent}%
+                    )}
+                    <span className="absolute top-3 right-3 rounded-md bg-amber-500 px-2 py-0.5 text-xs font-bold text-white shadow-xs">
+                      GIẢM {selectedProduct.discountPercent}%
+                    </span>
+                  </div>
+
+                  {/* Thumbnail Row - Các ảnh đều là 1 mặt hàng */}
+                  <div className="flex items-center gap-2.5 overflow-x-auto pb-1">
+                    {selectedProduct.images.map((imgUrl, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => setActiveImageIndex(i)}
+                        className={`size-16 rounded-xl overflow-hidden border-2 transition cursor-pointer shrink-0 ${
+                          activeImageIndex === i ? "border-primary ring-2 ring-primary/20" : "border-border opacity-75 hover:opacity-100"
+                        }`}
+                      >
+                        <SafeProductImage src={imgUrl} alt={`Góc chụp ${i + 1}`} name={selectedProduct.name} brand={selectedProduct.brand} category={selectedProduct.category} seed={selectedProduct.id} className="size-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Shopee Guarantee banner */}
+                  <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-surface-2/50 p-3 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1.5 font-semibold text-foreground">
+                      <ShieldCheck className="size-4 text-success" />
+                      <span>SkinSense Đảm Bảo</span>
+                    </span>
+                    <span>3 Ngày Trả Hàng / Hoàn Tiền 100%</span>
+                  </div>
+                </div>
+
+                {/* Right: Product Details & Buying Actions (7 cols) */}
+                <div className="space-y-5 lg:col-span-7">
+                  {/* Title & Brand */}
+                  <div className="space-y-1.5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="rounded bg-rose-600 px-2 py-0.5 text-xs font-bold text-white">
+                        Mall
+                      </span>
+                      <span className="rounded bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
+                        {selectedProduct.brand} Chính Hãng
+                      </span>
+                      <span className="rounded bg-primary/5 border border-primary/20 px-2 py-0.5 text-xs font-semibold text-primary flex items-center gap-1">
+                        <Store className="size-3" />
+                        <span>Gian hàng: {selectedProduct.shopName || selectedProduct.brand}</span>
+                      </span>
+                      <span className="font-mono text-xs text-muted-foreground">
+                        SKU: {selectedProduct.sku}
                       </span>
                     </div>
 
-                    <div className="p-3.5 space-y-2 flex-1 flex flex-col justify-between">
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-between gap-1 text-[10px]">
-                          <span className="font-semibold uppercase tracking-wider text-primary truncate">
-                            {bp.brand}
-                          </span>
-                          <span className="text-muted-foreground truncate flex items-center gap-0.5 shrink-0 max-w-[120px]" title={bp.shopName || bp.brand}>
-                            <Store className="size-2.5 shrink-0" />
-                            <span className="truncate">{bp.shopName || bp.brand}</span>
-                          </span>
+                    <h1 className="font-display text-xl font-medium leading-snug text-foreground sm:text-2xl">
+                      {selectedProduct.name}
+                    </h1>
+
+                    {/* Rating, Reviews & Sold counters */}
+                    <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm pt-0.5">
+                      <div className="flex items-center gap-1 text-amber-800 font-bold">
+                        <span className="border-b border-amber-800">{selectedProduct.rating}</span>
+                        <div className="flex items-center">
+                          {[...Array(5)].map((_, i) => (
+                            <Star key={i} className="size-3.5 fill-amber-700 text-amber-700" />
+                          ))}
                         </div>
-                        <h4
-                          onClick={() => setInspectingProduct(bp)}
-                          className="text-xs font-semibold text-foreground line-clamp-2 leading-snug cursor-pointer hover:text-primary transition"
-                          title={bp.name}
-                        >
-                          {bp.name}
-                        </h4>
                       </div>
-
-                      <div className="space-y-2 pt-2 border-t border-border/50">
-                        <div className="flex items-baseline justify-between">
-                          <div>
-                            <strong className="text-sm font-bold text-primary font-mono">
-                              {formatMoney(bp.priceVnd)}
-                            </strong>
-                            {bp.originalPriceVnd && (
-                              <span className="block text-[10px] text-muted-foreground line-through">
-                                {formatMoney(bp.originalPriceVnd)}
-                              </span>
-                            )}
-                          </div>
-                          <span className="text-[10px] text-muted-foreground">
-                            Đã bán {bp.soldCount.toLocaleString("vi-VN")}
-                          </span>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => setInspectingProduct(bp)}
-                          className="w-full flex min-h-9 items-center justify-center gap-1.5 rounded-xl border border-border bg-surface-2 text-xs font-semibold text-foreground hover:bg-surface-3 hover:border-primary transition cursor-pointer"
-                        >
-                          <FileText className="size-3 text-muted-foreground" />
-                          <span>Xem Thông Số</span>
-                        </button>
+                      <span className="text-border">•</span>
+                      <div>
+                        <strong className="border-b border-foreground text-foreground">
+                          {selectedProduct.reviewCount.toLocaleString()}
+                        </strong>{" "}
+                        <span className="text-muted-foreground">Đánh Giá</span>
+                      </div>
+                      <span className="text-border">•</span>
+                      <div>
+                        <strong className="text-foreground">{selectedProduct.soldCount.toLocaleString()}</strong>{" "}
+                        <span className="text-muted-foreground">Đã Bán</span>
                       </div>
                     </div>
                   </div>
-                ))}
+
+                  {/* SHOPEE FLASH SALE PRICE BOX (Nền kem cam đặc trưng Shopee) */}
+                  <div className="space-y-1.5 rounded-2xl border border-primary/25 bg-surface-2/50 p-4 sm:p-5">
+                  <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-primary">
+                      <Sparkles className="size-3.5" />
+                      <span>Giá khuyến mãi</span>
+                    </div>
+                    <div className="flex flex-wrap items-baseline gap-3">
+                      <span className="font-display text-2xl font-semibold text-primary sm:text-3xl">
+                        {formatMoney(
+                          selectedProduct.variants[selectedVariantIndex]?.priceVnd || selectedProduct.priceVnd,
+                        )}
+                      </span>
+                      <span className="text-sm text-muted-foreground line-through">
+                        {formatMoney(
+                          selectedProduct.variants[selectedVariantIndex]?.originalPriceVnd || selectedProduct.originalPriceVnd,
+                        )}
+                      </span>
+                      <span className="rounded bg-primary px-2 py-0.5 text-xs font-semibold text-primary-foreground shadow-xs">
+                        -{selectedProduct.discountPercent}% GIẢM
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Shop Vouchers */}
+                  <div className="space-y-1.5 pt-0.5">
+                    <span className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Mã Giảm Giá Của Shop:
+                    </span>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {selectedProduct.vouchers.map((vc) => (
+                        <div
+                          key={vc.id}
+                          className="flex items-center gap-1 rounded-lg border border-dashed border-primary/50 bg-primary/5 px-2.5 py-1.5 text-xs font-semibold text-primary"
+                        >
+                          <Tag className="size-3" />
+                          <span>{vc.discountLabel}</span>
+                          <span className="text-[10px] font-normal text-muted-foreground">({vc.minSpendLabel})</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Vận chuyển */}
+                  <div className="space-y-1.5 rounded-xl border border-border bg-surface-2/50 p-3 text-xs">
+                    <div className="flex items-center gap-1.5 font-semibold text-success">
+                      <Truck className="size-4" />
+                      <span>Vận Chuyển: Miễn Phí Vận Chuyển</span>
+                    </div>
+                    <div className="space-y-0.5 pl-5 text-xs text-muted-foreground">
+                      <div>Gửi hàng từ: <strong className="text-foreground">{selectedProduct.shippingInfo.shippingFrom}</strong></div>
+                      <div>Dự kiến nhận hàng: <strong className="text-foreground">{selectedProduct.shippingInfo.estimatedDelivery}</strong></div>
+                    </div>
+                  </div>
+
+                  {/* Phân loại hàng / Dung tích (Variants) */}
+                  <div className="space-y-2">
+                    <span className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Phân Loại Hàng:
+                    </span>
+                    <div className="flex flex-wrap items-center gap-2.5">
+                      {selectedProduct.variants.map((v, idx) => (
+                        <button
+                          key={v.id}
+                          type="button"
+                          aria-pressed={selectedVariantIndex === idx}
+                          onClick={() => setSelectedVariantIndex(idx)}
+                          className={`min-h-11 rounded-xl border px-3.5 py-2 text-xs font-semibold transition cursor-pointer ${
+                            selectedVariantIndex === idx
+                              ? "border-primary bg-primary/10 text-primary ring-2 ring-primary/20"
+                              : "border-border bg-background text-foreground hover:border-primary"
+                          }`}
+                        >
+                          <span>{v.name}</span>
+                          <span className="block text-[11px] opacity-75 font-mono">{formatMoney(v.priceVnd)}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Số lượng */}
+                  <div className="flex flex-wrap items-center gap-3 pt-1">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Số Lượng:
+                    </span>
+                    <div className="flex min-h-11 items-center rounded-xl border border-border bg-background">
+                      <button
+                        type="button"
+                        aria-label="Giảm số lượng"
+                        onClick={() => setBuyerQuantity((q) => Math.max(1, q - 1))}
+                        className="min-h-11 min-w-11 px-3 text-sm font-semibold text-muted-foreground transition hover:text-foreground cursor-pointer"
+                      >
+                        -
+                      </button>
+                      <span className="px-3.5 py-1 text-sm font-semibold text-foreground tabular-nums">
+                        {buyerQuantity}
+                      </span>
+                      <button
+                        type="button"
+                        aria-label="Tăng số lượng"
+                        onClick={() => setBuyerQuantity((q) => q + 1)}
+                        className="min-h-11 min-w-11 px-3 text-sm font-semibold text-muted-foreground transition hover:text-foreground cursor-pointer"
+                      >
+                        +
+                      </button>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      Còn <strong>{selectedProduct.variants[selectedVariantIndex]?.stock || selectedProduct.stock}</strong> sản phẩm trong kho
+                    </span>
+                  </div>
+
+                  {/* 2 Nút lớn Shopee - Khóa khi sản phẩm đang chờ duyệt */}
+                  <div className="flex flex-col items-stretch gap-3 pt-2 sm:flex-row">
+                    <button
+                      type="button"
+                      disabled={selectedProduct.status === "pending" || selectedProduct.status === "rejected"}
+                      onClick={() => toast.success(`Đã thêm ${buyerQuantity} sản phẩm vào giỏ hàng!`)}
+                      className="min-h-12 w-full flex-1 flex items-center justify-center gap-2 rounded-xl border border-primary bg-primary/5 px-5 text-sm font-semibold text-primary transition hover:bg-primary/10 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <ShoppingBag className="size-4.5" />
+                      <span>{selectedProduct.status === "pending" ? "Đang Chờ Duyệt (Chưa Bán)" : "Thêm Vào Giỏ Hàng"}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={selectedProduct.status === "pending" || selectedProduct.status === "rejected"}
+                      onClick={() => {
+                        toast.success(`Đang chuyển sang trang thanh toán đơn hàng ${formatMoney(selectedProduct.priceVnd * buyerQuantity)}...`);
+                        router.push(`/shop/checkout?productId=${selectedProduct.id}&variant=${selectedVariantIndex}&quantity=${buyerQuantity}`);
+                      }}
+                      className="min-h-12 w-full flex-1 flex items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-xs transition hover:bg-primary/90 active:scale-[0.98] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <span>{selectedProduct.status === "pending" ? "Chờ Admin Duyệt" : "Mua Ngay"}</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* BẢNG CHI TIẾT THÔNG SỐ SẢN PHẨM (SPECIFICATIONS TABLE CHUẨN SHOPEE) */}
+              <div className="space-y-4 border-t border-border pt-6">
+                <h3 className="font-display text-base font-medium text-foreground">
+                  Chi Tiết Thông Số Kỹ Thuật Sản Phẩm
+                </h3>
+
+                <div className="divide-y divide-border/70 rounded-xl border border-border bg-surface-2/50 p-4 text-xs">
+                  <div className="grid grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)] gap-2 py-2 sm:grid-cols-3">
+                    <span className="text-muted-foreground">Danh Mục</span>
+                    <span className="text-foreground font-medium sm:col-span-2">{selectedProduct.category}</span>
+                  </div>
+                  <div className="grid grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)] gap-2 py-2 sm:grid-cols-3">
+                    <span className="text-muted-foreground">Thương Hiệu</span>
+                    <span className="font-semibold text-primary sm:col-span-2">{selectedProduct.brand} (SkinSense Mall)</span>
+                  </div>
+                  <div className="grid grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)] gap-2 py-2 sm:grid-cols-3">
+                    <span className="text-muted-foreground">Xuất Xứ</span>
+                    <span className="text-foreground font-medium sm:col-span-2">{selectedProduct.origin}</span>
+                  </div>
+                  <div className="grid grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)] gap-2 py-2 sm:grid-cols-3">
+                    <span className="text-muted-foreground">Loại Da Phù Hợp</span>
+                    <span className="text-foreground font-medium sm:col-span-2">{selectedProduct.specifications.skinType}</span>
+                  </div>
+                  <div className="grid grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)] gap-2 py-2 sm:grid-cols-3">
+                    <span className="text-muted-foreground">Thành Phần Hoạt Chất</span>
+                    <span className="font-semibold text-success sm:col-span-2">{selectedProduct.specifications.actives}</span>
+                  </div>
+                  <div className="grid grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)] gap-2 py-2 sm:grid-cols-3">
+                    <span className="text-muted-foreground">Dung Tích / Khối Lượng</span>
+                    <span className="text-foreground font-medium sm:col-span-2">{selectedProduct.specifications.volume}</span>
+                  </div>
+                  <div className="grid grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)] gap-2 py-2 sm:grid-cols-3">
+                    <span className="text-muted-foreground">Hạn Sử Dụng</span>
+                    <span className="text-foreground font-medium sm:col-span-2">{selectedProduct.specifications.expiryMonths} tháng kể từ NSX</span>
+                  </div>
+                  <div className="grid grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)] gap-2 py-2 sm:grid-cols-3">
+                    <span className="text-muted-foreground">Số Công Bố (Bộ Y Tế)</span>
+                    <span className="font-mono font-medium text-foreground sm:col-span-2">{selectedProduct.specifications.healthMinistryLicense}</span>
+                  </div>
+                  <div className="grid grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)] gap-2 py-2 sm:grid-cols-3">
+                    <span className="text-muted-foreground">Gửi Hàng Từ</span>
+                    <span className="text-foreground font-medium sm:col-span-2">{selectedProduct.shippingInfo.shippingFrom}</span>
+                  </div>
+                </div>
+
+                {/* Mô tả sản phẩm chi tiết */}
+                <div className="space-y-2 pt-1">
+                  <h4 className="text-sm font-semibold text-foreground">
+                    Mô Tả Sản Phẩm Chi Tiết
+                  </h4>
+                  <div className="space-y-2 rounded-xl border border-border bg-surface-2/50 p-4 text-xs leading-relaxed text-muted-foreground">
+                    <p>{selectedProduct.description}</p>
+                    <div>
+                      <strong className="mb-0.5 block text-foreground">Hướng Dẫn Sử Dụng:</strong>
+                      <p>{selectedProduct.howToUse}</p>
+                    </div>
+                    <div className="rounded-lg border border-border bg-card p-2.5 text-[11px] font-medium text-success">
+                      ✓ Cam kết 100% hàng chính hãng, tem phụ tiếng Việt và hóa đơn VAT.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* CÁC SẢN PHẨM KHÁC ĐÃ ĐƯỢC DUYỆT TRÊN GIAN HÀNG */}
+            {buyerProducts.filter((p) => p.id !== selectedProduct.id).length > 0 && (
+              <div className="space-y-4 pt-4">
+                <div className="flex items-center justify-between border-b border-border pb-2.5">
+                  <div className="flex items-center gap-2">
+                    <Package className="size-4 text-primary" />
+                    <h3 className="font-display text-base font-semibold text-foreground">
+                      Sản Phẩm Đã Được Kiểm Định Khác ({buyerProducts.filter((p) => p.id !== selectedProduct.id).length} mặt hàng)
+                    </h3>
+                  </div>
+                  <span className="text-[11px] text-muted-foreground">Chỉ hiển thị các sản phẩm đã được Super Admin phê duyệt</span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+                  {buyerProducts
+                    .filter((p) => p.id !== selectedProduct.id)
+                    .map((bp) => (
+                      <button
+                        key={bp.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedProduct(bp);
+                          setSelectedVariantIndex(0);
+                          setActiveImageIndex(0);
+                          window.scrollTo({ top: 0, behavior: "smooth" });
+                        }}
+                        className="group flex flex-col justify-between overflow-hidden rounded-2xl border border-border bg-card text-left transition hover:border-primary/50 hover:shadow-md cursor-pointer"
+                      >
+                        <div className="relative aspect-square w-full overflow-hidden border-b border-border bg-surface-2">
+                          <SafeProductImage src={bp.coverImage} alt={bp.name} brand={bp.brand} category={bp.category} seed={bp.id} className="size-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                          <span className="absolute top-2 right-2 rounded bg-amber-500 px-1.5 py-0.5 text-[9px] font-bold text-white shadow-xs">
+                            -{bp.discountPercent}%
+                          </span>
+                        </div>
+                        <div className="p-3 space-y-1.5 flex-1 flex flex-col justify-between">
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between gap-1 text-[9px]">
+                              <span className="font-semibold uppercase text-primary truncate">{bp.brand}</span>
+                              <span className="text-muted-foreground truncate flex items-center gap-0.5 shrink-0 max-w-[100px]" title={bp.shopName || bp.brand}>
+                                <Store className="size-2.5 shrink-0" />
+                                <span className="truncate">{bp.shopName || bp.brand}</span>
+                              </span>
+                            </div>
+                            <h4 className="text-xs font-semibold text-foreground line-clamp-2 leading-snug">{bp.name}</h4>
+                          </div>
+                          <div className="pt-1 flex items-baseline justify-between">
+                            <strong className="text-xs font-bold text-primary font-mono">{formatMoney(bp.priceVnd)}</strong>
+                            <span className="text-[10px] text-muted-foreground">Đã bán {bp.soldCount}</span>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                </div>
               </div>
             )}
           </div>
@@ -1757,21 +2047,11 @@ export default function ShopProductPage() {
           <div className="my-8 max-h-[90vh] w-full max-w-3xl space-y-5 overflow-y-auto rounded-3xl border border-border bg-card p-5 shadow-2xl sm:p-7">
             <div className="flex items-start justify-between border-b border-border pb-3.5">
               <div className="flex items-center gap-3">
-                {inspectingProduct.coverImage ? (
-                  <img
-                    src={inspectingProduct.coverImage}
-                    alt={inspectingProduct.name}
-                    className="size-12 shrink-0 rounded-xl border border-border object-cover"
-                  />
-                ) : (
-                  <div className="size-12 shrink-0 overflow-hidden rounded-xl border border-border">
-                    <ProductImagePlaceholder label="" compact />
-                  </div>
-                )}
+                <SafeProductImage src={inspectingProduct.coverImage} alt={inspectingProduct.name} brand={inspectingProduct.brand} category={inspectingProduct.category} seed={inspectingProduct.id} className="size-12 shrink-0 rounded-xl border border-border object-cover" />
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="rounded bg-rose-600 px-1.5 py-0.2 text-[9px] font-bold text-white">
-                      Mall
+                      SkinSense Mall
                     </span>
                     <span className="font-mono text-[11px] text-muted-foreground">{inspectingProduct.sku}</span>
                   </div>
@@ -1795,7 +2075,7 @@ export default function ShopProductPage() {
               <div className="space-y-2.5 rounded-xl border border-border bg-background p-4">
                 <h4 className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-primary">
                   <ShieldCheck className="size-3.5" />
-                  <span>1. Thông số kỹ thuật & Pháp lý Y tế (Tiêu chuẩn Mall)</span>
+                  <span>1. Thông số kỹ thuật & Pháp lý Y tế (tiêu chuẩn SkinSense)</span>
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                   <div className="rounded-lg bg-surface-2 p-2">
@@ -1857,27 +2137,41 @@ export default function ShopProductPage() {
                 </div>
               </div>
 
-              {/* KHỐI 3: VẬN CHUYỂN & CHÍNH SÁCH MALL */}
+              {/* KHỐI 3: VẬN CHUYỂN & CHÍNH SÁCH SHOPEE */}
               <div className="space-y-1.5 rounded-xl border border-border bg-background p-4 text-xs">
                 <h4 className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-primary">
                   <Truck className="size-3.5" />
-                  <span>3. Vận chuyển & Cam kết Mall Chính Hãng</span>
+                  <span>3. Vận chuyển & Cam kết SkinSense Mall</span>
                 </h4>
                 <div className="space-y-0.5 rounded-lg bg-surface-2 p-2.5 text-xs">
-                  <div>Vận chuyển: <strong className="text-success">Freeship Xtra (Miễn phí toàn quốc)</strong></div>
+                  <div>Vận chuyển: <strong className="text-success">Miễn phí vận chuyển toàn quốc</strong></div>
                   <div>Gửi từ: <strong className="text-foreground">{inspectingProduct.shippingInfo.shippingFrom}</strong></div>
                   <div>Thời gian giao hàng: <strong className="text-foreground">{inspectingProduct.shippingInfo.estimatedDelivery}</strong></div>
                 </div>
               </div>
             </div>
 
-            <div className="flex justify-end border-t border-border pt-3">
+            <div className="flex flex-col-reverse justify-end gap-2.5 border-t border-border pt-3 sm:flex-row">
               <button
                 type="button"
                 onClick={() => setInspectingProduct(null)}
-                className="min-h-11 rounded-xl border border-border bg-card px-5 py-2 text-xs font-semibold text-muted-foreground transition hover:bg-surface-2 hover:text-foreground cursor-pointer"
+                className="min-h-11 rounded-xl border border-border bg-card px-4 py-2 text-xs font-semibold text-muted-foreground transition hover:bg-surface-2 hover:text-foreground cursor-pointer"
               >
                 Đóng
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedProduct(inspectingProduct);
+                  setSelectedVariantIndex(0);
+                  setActiveImageIndex(0);
+                  setInspectingProduct(null);
+                  setViewMode("buyer");
+                }}
+                className="flex min-h-11 items-center justify-center gap-1 rounded-xl bg-primary px-5 py-2 text-xs font-semibold text-primary-foreground shadow-xs transition hover:bg-primary/90 cursor-pointer"
+              >
+                <Eye className="size-3" />
+                <span>Xem trang sản phẩm</span>
               </button>
             </div>
           </div>
@@ -1992,7 +2286,7 @@ export default function ShopProductPage() {
               <div className="space-y-3 rounded-2xl border border-border bg-background p-4">
                 <h4 className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-primary">
                   <Percent className="size-3.5" />
-                  <span>2. Thông tin bán hàng & Giá niêm yết</span>
+                  <span>2. Thông tin bán hàng & giá</span>
                 </h4>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -2140,7 +2434,7 @@ export default function ShopProductPage() {
                   type="submit"
                   className="min-h-11 rounded-xl bg-primary px-6 py-2 text-xs font-semibold text-primary-foreground shadow-xs transition hover:bg-primary/90 active:scale-[0.98] cursor-pointer"
                 >
-                  Xác Nhận Đăng Bán Lên Sàn Mall
+                  Xác Nhận Đăng Bán Lên SkinSense Mall
                 </button>
               </div>
             </form>

@@ -87,7 +87,7 @@ test("a shop applies on the landing page, waits, is approved by the admin and ca
 
   // 1. The application, from the landing page's "Gian hàng" modal.
   await page.goto("/");
-  await page.getByRole("button", { name: "🏪 Store registration" }).first().click();
+  await page.getByRole("button", { name: "Store registration" }).first().click();
   await page.getByPlaceholder("La Roche-Posay Official Store / Innisfree Beauty Hub").fill(shopName);
   await page.getByPlaceholder("Nguyễn Thị Mai").fill(owner);
   await page.getByPlaceholder("GPKD-882910-HCM hoặc MST").fill(`GPKD-E2E-${tag}`);
@@ -95,7 +95,7 @@ test("a shop applies on the landing page, waits, is approved by the admin and ca
   await page.getByPlaceholder("shop.laroche@skinsense.vn").fill(email);
   await page.getByPlaceholder("028 3822 5588").fill("0900000004");
   await page.getByPlaceholder("••••••••").fill(`${randomUUID()}Aa1!`);
-  await page.getByRole("button", { name: "Gửi yêu cầu mở Gian hàng Shopee" }).click();
+  await page.getByRole("button", { name: "Gửi yêu cầu mở gian hàng" }).click();
   await expect(page.getByText(/Hồ sơ mở Gian hàng đã được gửi thành công/)).toBeVisible({ timeout: 20_000 });
   const shop = await trackUser(email, owner, shopName);
   expect((await readJsonStore(STORES.shops)).find((s) => s.email === email)).toMatchObject({ status: "pending", shopName });
@@ -220,7 +220,7 @@ test("a doctor applies on the landing page, is approved in Duyệt Bác sĩ, and
   const name = `BS. E2E ${tag}`;
 
   await page.goto("/");
-  await page.getByRole("button", { name: "🩺 Doctor registration" }).first().click();
+  await page.getByRole("button", { name: "Doctor registration" }).first().click();
   await page.getByPlaceholder("ThS. BS Trần Quốc Tuấn").fill(name);
   await page.getByPlaceholder("CCHN-008812/BYT").fill(`CCHN-E2E-${tag}`);
   await page.getByPlaceholder("Bệnh viện Da Liễu Trung Ương").fill("E2E Hospital");
@@ -354,7 +354,7 @@ test("product moderation: a pending product is hidden from buyers until approved
 test("the admin sees every order and its status changes persist", async ({ browser }) => {
   const customer = await pool("customer", "buyer");
   const adminUser = await pool("admin");
-  const orderCode = `SHOPEE-SS-E2E${runTag()}`;
+  const orderCode = `SS-E2E${runTag()}`;
   orderCodes.push(orderCode);
 
   await withContext(browser, customer, async (context) => {

@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { validateShopProfileUpdate, type ShopProfileUpdateInput, type Shop } from "@skinsense/domain";
+import { ImageUploader } from "@/components/cloudinary-product-uploader";
 
 const CATEGORIES = [
   "Dược mỹ phẩm & Chăm sóc da liễu",
@@ -32,6 +33,7 @@ export function ShopManagementForm({
   onSave?: (updated: Partial<Shop>) => void;
 }) {
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -43,8 +45,8 @@ export function ShopManagementForm({
   const [address, setAddress] = useState(shop.address);
   const [category, setCategory] = useState("Dược mỹ phẩm & Chăm sóc da liễu");
   const [description, setDescription] = useState("Chuyên phân phối dược mỹ phẩm nhập khẩu chính hãng 100%, tư vấn chuẩn da liễu.");
-  const [avatarUrl, setAvatarUrl] = useState(shop.avatarUrl);
-  const [bannerUrl, setBannerUrl] = useState("https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=1200&q=80");
+  const [avatarUrl, setAvatarUrl] = useState(shop.avatarUrl ?? "");
+  const [bannerUrl, setBannerUrl] = useState("");
   const [operatingStatus, setOperatingStatus] = useState<"open" | "temporarily_closed">("open");
 
   async function handleSubmit(e: React.FormEvent) {
@@ -167,13 +169,25 @@ export function ShopManagementForm({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Logo / Avatar (URL)</Label>
-              <Input value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} placeholder="https://..." />
+              <ImageUploader
+                onUploadingChange={setUploading}
+                images={avatarUrl ? [avatarUrl] : []}
+                onChange={(next) => setAvatarUrl(next[0] ?? "")}
+                folder="shops"
+                shape="round"
+                label="Logo / ảnh đại diện"
+              />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Banner Bìa Gian Hàng (URL)</Label>
-              <Input value={bannerUrl} onChange={(e) => setBannerUrl(e.target.value)} placeholder="https://..." />
+              <ImageUploader
+                onUploadingChange={setUploading}
+                images={bannerUrl ? [bannerUrl] : []}
+                onChange={(next) => setBannerUrl(next[0] ?? "")}
+                folder="shops"
+                shape="wide"
+                label="Ảnh bìa gian hàng"
+              />
             </div>
           </div>
 
@@ -216,7 +230,7 @@ export function ShopManagementForm({
       </Card>
 
       <div className="flex justify-end gap-3 pt-2">
-        <Button type="submit" disabled={saving} className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium min-w-36 gap-2">
+        <Button type="submit" disabled={saving || uploading} className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium min-w-36 gap-2">
           <Save className="size-4" />
           <span>{saving ? "Đang lưu..." : "Lưu thay đổi"}</span>
         </Button>

@@ -23,6 +23,8 @@ import {
 import { toast } from "sonner";
 import { LogoMark } from "@/components/site-header";
 import { SafeProductImage } from "@/components/safe-product-image";
+import { PatientPhoto } from "@/components/patient-photo";
+import { ImageUploader } from "@/components/cloudinary-product-uploader";
 
 function computeFutureDateIso(daysAhead: number): string {
   return new Date(Date.now() + daysAhead * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
@@ -36,7 +38,7 @@ export interface RoutineProduct {
   name: string;
   brand: string;
   category: string;
-  imageUrl: string;
+  imageUrl?: string;
   activeIngredients: string;
   stepTime: "morning" | "evening" | "both";
   stepNumber: number;
@@ -92,7 +94,6 @@ export const PRESET_PRODUCTS: Omit<RoutineProduct, "id" | "stepNumber">[] = [
     name: "Sữa rửa mặt CeraVe Hydrating Cleanser",
     brand: "CeraVe Skincare",
     category: "Làm sạch dịu nhẹ",
-    imageUrl: "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&auto=format&fit=crop&q=80",
     activeIngredients: "Ceramides 1, 3, 6-II, Hyaluronic Acid",
     stepTime: "both",
     dosage: "1 pump vừa đủ",
@@ -102,7 +103,6 @@ export const PRESET_PRODUCTS: Omit<RoutineProduct, "id" | "stepNumber">[] = [
     name: "Kem giảm mụn La Roche-Posay Effaclar Duo+M",
     brand: "La Roche-Posay",
     category: "Trị mụn & Ngừa thâm",
-    imageUrl: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=400&auto=format&fit=crop&q=80",
     activeIngredients: "Phylobioma, Niacinamide, Salicylic Acid, Zinc PCA",
     stepTime: "evening",
     dosage: "1 lượng bằng hạt đậu xanh",
@@ -112,7 +112,6 @@ export const PRESET_PRODUCTS: Omit<RoutineProduct, "id" | "stepNumber">[] = [
     name: "Serum phục hồi & cấp nước La Roche-Posay Hyalu B5",
     brand: "La Roche-Posay",
     category: "Tinh chất phục hồi",
-    imageUrl: "https://images.unsplash.com/photo-1617897903246-719242758050?w=400&auto=format&fit=crop&q=80",
     activeIngredients: "Vitamin B5 (Panthenol 5%), Hyaluronic Acid, Madecassoside",
     stepTime: "both",
     dosage: "3 giọt tinh chất",
@@ -122,7 +121,6 @@ export const PRESET_PRODUCTS: Omit<RoutineProduct, "id" | "stepNumber">[] = [
     name: "Kem chống nắng kiềm dầu La Roche-Posay Anthelios UVMune 400",
     brand: "La Roche-Posay",
     category: "Chống nắng y khoa",
-    imageUrl: "https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?w=400&auto=format&fit=crop&q=80",
     activeIngredients: "Mexoryl 400, Airlicium, SPF50+ PA++++",
     stepTime: "morning",
     dosage: "2 đốt ngón tay trỏ",
@@ -132,7 +130,6 @@ export const PRESET_PRODUCTS: Omit<RoutineProduct, "id" | "stepNumber">[] = [
     name: "Kem dưỡng ẩm làm dịu A-Derma Dermalibour+ CICA",
     brand: "A-Derma",
     category: "Phục hồi màng bảo vệ",
-    imageUrl: "https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=400&auto=format&fit=crop&q=80",
     activeIngredients: "Mạ yến mạch Rhealba, Đồng Sulfate & Kẽm Sulfate",
     stepTime: "both",
     dosage: "1 lượng bằng hạt bắp",
@@ -142,7 +139,6 @@ export const PRESET_PRODUCTS: Omit<RoutineProduct, "id" | "stepNumber">[] = [
     name: "Nước tẩy trang dịu nhẹ Bioderma Sensibio H2O",
     brand: "Bioderma Laboratoire",
     category: "Làm sạch micellar",
-    imageUrl: "https://images.unsplash.com/photo-1556228722-d0b77e8a93a0?w=400&auto=format&fit=crop&q=80",
     activeIngredients: "Micellar Water, Chiết xuất dưa leo làm dịu da",
     stepTime: "evening",
     dosage: "Thấm ướt bông tẩy trang",
@@ -162,7 +158,7 @@ export const INITIAL_PATIENT_CASES: PatientCase[] = [
     submittedDate: "14/11/2026",
     status: "in_treatment",
     severity: "moderate",
-    skinPhotoUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80",
+    skinPhotoUrl: "",
     skinType: "Hỗn hợp thiên dầu",
     fitzpatrickScale: "Loại III (Da sáng Châu Á)",
     symptoms: "Mụn viêm đỏ vùng má trái & cằm; da châm chích nhẹ sau khi đi nắng, tiết dầu nhờn vùng chữ T.",
@@ -185,7 +181,6 @@ export const INITIAL_PATIENT_CASES: PatientCase[] = [
           name: "Sữa rửa mặt CeraVe Hydrating Cleanser",
           brand: "CeraVe Skincare",
           category: "Làm sạch dịu nhẹ",
-          imageUrl: "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&auto=format&fit=crop&q=80",
           activeIngredients: "Ceramides 1, 3, 6-II, Hyaluronic Acid",
           stepTime: "both",
           stepNumber: 1,
@@ -197,7 +192,6 @@ export const INITIAL_PATIENT_CASES: PatientCase[] = [
           name: "Serum phục hồi & cấp nước La Roche-Posay Hyalu B5",
           brand: "La Roche-Posay",
           category: "Tinh chất phục hồi",
-          imageUrl: "https://images.unsplash.com/photo-1617897903246-719242758050?w=400&auto=format&fit=crop&q=80",
           activeIngredients: "Vitamin B5 (Panthenol 5%), Hyaluronic Acid, Madecassoside",
           stepTime: "both",
           stepNumber: 2,
@@ -209,7 +203,6 @@ export const INITIAL_PATIENT_CASES: PatientCase[] = [
           name: "Kem giảm mụn La Roche-Posay Effaclar Duo+M",
           brand: "La Roche-Posay",
           category: "Trị mụn & Ngừa thâm",
-          imageUrl: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=400&auto=format&fit=crop&q=80",
           activeIngredients: "Phylobioma, Niacinamide, Salicylic Acid, Zinc PCA",
           stepTime: "evening",
           stepNumber: 3,
@@ -221,7 +214,6 @@ export const INITIAL_PATIENT_CASES: PatientCase[] = [
           name: "Kem chống nắng kiềm dầu La Roche-Posay Anthelios UVMune 400",
           brand: "La Roche-Posay",
           category: "Chống nắng y khoa",
-          imageUrl: "https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?w=400&auto=format&fit=crop&q=80",
           activeIngredients: "Mexoryl 400, Airlicium, SPF50+ PA++++",
           stepTime: "morning",
           stepNumber: 4,
@@ -241,7 +233,7 @@ export const INITIAL_PATIENT_CASES: PatientCase[] = [
     submittedDate: "12/11/2026",
     status: "pending_routine",
     severity: "severe",
-    skinPhotoUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&auto=format&fit=crop&q=80",
+    skinPhotoUrl: "",
     skinType: "Da dầu mụn bùng phát",
     fitzpatrickScale: "Loại IV (Da ngăm khỏe)",
     symptoms: "Bùng mụn bọc sưng đỏ diện rộng 2 bên má sau thức khuya ôn thi, đau nhức khi chạm.",
@@ -263,7 +255,7 @@ export const INITIAL_PATIENT_CASES: PatientCase[] = [
     submittedDate: "10/11/2026",
     status: "in_treatment",
     severity: "mild",
-    skinPhotoUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500&auto=format&fit=crop&q=80",
+    skinPhotoUrl: "",
     skinType: "Da khô nhạy cảm",
     fitzpatrickScale: "Loại II (Da trắng sáng)",
     symptoms: "Da khô căng bong tróc nhẹ cánh mũi, ửng đỏ khi thay đổi thời tiết se lạnh.",
@@ -286,7 +278,6 @@ export const INITIAL_PATIENT_CASES: PatientCase[] = [
           name: "Sữa rửa mặt CeraVe Hydrating Cleanser",
           brand: "CeraVe Skincare",
           category: "Làm sạch dịu nhẹ",
-          imageUrl: "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&auto=format&fit=crop&q=80",
           activeIngredients: "Ceramides 1, 3, 6-II, Hyaluronic Acid",
           stepTime: "both",
           stepNumber: 1,
@@ -298,7 +289,6 @@ export const INITIAL_PATIENT_CASES: PatientCase[] = [
           name: "Kem dưỡng ẩm làm dịu A-Derma Dermalibour+ CICA",
           brand: "A-Derma",
           category: "Phục hồi màng bảo vệ",
-          imageUrl: "https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=400&auto=format&fit=crop&q=80",
           activeIngredients: "Mạ yến mạch Rhealba, Đồng Sulfate & Kẽm Sulfate",
           stepTime: "both",
           stepNumber: 2,
@@ -318,7 +308,7 @@ export const INITIAL_PATIENT_CASES: PatientCase[] = [
     submittedDate: "13/11/2026",
     status: "pending_routine",
     severity: "moderate",
-    skinPhotoUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=500&auto=format&fit=crop&q=80",
+    skinPhotoUrl: "",
     skinType: "Da hỗn hợp thiên dầu",
     fitzpatrickScale: "Loại III (Da sáng Châu Á)",
     symptoms: "Bít tắc lỗ chân lông vùng mũi & trán, nhiều mụn đầu đen và mụn ẩn li ti.",
@@ -333,15 +323,16 @@ export const INITIAL_PATIENT_CASES: PatientCase[] = [
 ];
 
 function SpecialistContent() {
+  // Filled from the signed-in account only: the old defaults named a made-up doctor and licence.
   const [doctorProfile, setDoctorProfile] = useState<DoctorProfile>({
-    name: "BS. CKI Nguyễn Mai Hoa",
-    title: "Bác sĩ Chuyên khoa Da liễu & Thẩm mỹ Da",
-    hospital: "Bệnh viện Da Liễu Trung Ương",
-    licenseNumber: "CCHN-008812/BYT",
-    experienceYears: 8,
-    avatarUrl: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400&auto=format&fit=crop&q=80",
-    bio: "Chuyên sâu điều trị mụn trứng cá viêm nặng, phục hồi hàng rào bảo vệ da sau treatment kích ứng.",
-    email: "bacsi.hoa@skinsense.vn",
+    name: "",
+    title: "",
+    hospital: "",
+    licenseNumber: "",
+    experienceYears: 0,
+    avatarUrl: "",
+    bio: "",
+    email: "",
   });
 
   const [isPending, setIsPending] = useState(false);
@@ -412,9 +403,8 @@ function SpecialistContent() {
   const [customProdName, setCustomProdName] = useState("");
   const [customProdBrand, setCustomProdBrand] = useState("");
   const [customProdCategory, setCustomProdCategory] = useState("Serum điều trị");
-  const [customProdImage, setCustomProdImage] = useState(
-    "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=400&auto=format&fit=crop&q=80",
-  );
+  const [customProdImage, setCustomProdImage] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [customProdActives, setCustomProdActives] = useState("");
   const [customProdTime, setCustomProdTime] = useState<"morning" | "evening" | "both">("both");
   const [customProdDosage, setCustomProdDosage] = useState("1 hạt đậu");
@@ -473,16 +463,12 @@ function SpecialistContent() {
         toast.error("Vui lòng nhập tên sản phẩm!");
         return;
       }
-      if (!customProdImage.trim()) {
-        toast.error("Vui lòng cung cấp link ảnh sản phẩm!");
-        return;
-      }
       newProd = {
         id: `prod_${Date.now()}`,
         name: customProdName.trim(),
         brand: customProdBrand.trim() || "Dược mỹ phẩm",
         category: customProdCategory,
-        imageUrl: customProdImage.trim(),
+        imageUrl: customProdImage.trim() || undefined,
         activeIngredients: customProdActives.trim() || "Hoạt chất da liễu",
         stepTime: customProdTime,
         stepNumber: modalProducts.length + 1,
@@ -615,8 +601,8 @@ function SpecialistContent() {
 
             <div className="hidden md:flex items-center gap-2 rounded-full border border-[#2D5A43]/30 bg-[#2D5A43]/10 px-3.5 py-1 text-xs font-semibold text-[#2D5A43]">
               <Stethoscope className="size-4" />
-              <span>{doctorProfile.name}</span>
-              <span className="opacity-75">({doctorProfile.licenseNumber})</span>
+              <span>{doctorProfile.name || "Bác sĩ"}</span>
+              {doctorProfile.licenseNumber && <span className="opacity-75">({doctorProfile.licenseNumber})</span>}
             </div>
           </div>
 
@@ -816,13 +802,14 @@ function SpecialistContent() {
             />
           </div>
 
-          <div className="flex items-center gap-2.5">
-            <div className="flex items-center gap-2 rounded-xl border border-[#D8D4CA] bg-white px-3.5 py-2 text-sm">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <div className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-[#D8D4CA] bg-white px-3.5 py-2 text-sm sm:flex-none">
               <Filter className="size-4 text-[#5C605C]" />
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="bg-transparent text-sm font-medium text-[#191B19] focus:outline-none cursor-pointer"
+                aria-label="Lọc theo trạng thái"
+                className="min-w-0 flex-1 bg-transparent text-sm font-medium text-[#191B19] focus:outline-none cursor-pointer"
               >
                 <option value="all">Tất cả trạng thái ({patientCases.length})</option>
                 <option value="pending_routine">Chờ xuất phác đồ ({pendingCount})</option>
@@ -830,11 +817,12 @@ function SpecialistContent() {
               </select>
             </div>
 
-            <div className="flex items-center gap-2 rounded-xl border border-[#D8D4CA] bg-white px-3.5 py-2 text-sm">
+            <div className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-[#D8D4CA] bg-white px-3.5 py-2 text-sm sm:flex-none">
               <select
                 value={severityFilter}
                 onChange={(e) => setSeverityFilter(e.target.value)}
-                className="bg-transparent text-sm font-medium text-[#191B19] focus:outline-none cursor-pointer"
+                aria-label="Lọc theo mức độ"
+                className="min-w-0 flex-1 bg-transparent text-sm font-medium text-[#191B19] focus:outline-none cursor-pointer"
               >
                 <option value="all">Mức độ: Tất cả</option>
                 <option value="severe">Nặng (Bùng phát)</option>
@@ -877,11 +865,7 @@ function SpecialistContent() {
               {/* Cột 1: Thông tin bệnh nhân */}
               <div className="flex items-center gap-4 w-full xl:w-[290px] shrink-0">
                 <div className="relative size-20 shrink-0 overflow-hidden rounded-2xl border-2 border-[#D8D4CA] bg-neutral-200 shadow-2xs">
-                  <img
-                    src={patientCase.skinPhotoUrl}
-                    alt={patientCase.patientName}
-                    className="size-full object-cover"
-                  />
+                  <PatientPhoto src={patientCase.skinPhotoUrl} name={patientCase.patientName} seed={patientCase.id} className="size-full" />
                 </div>
 
                 <div className="space-y-1 min-w-0 flex-1">
@@ -975,8 +959,8 @@ function SpecialistContent() {
 
                 {/* Hàng 3: Phác đồ Routine */}
                 {patientCase.currentRoutine ? (
-                  <div className="h-[52px] flex items-center justify-between gap-3 rounded-2xl bg-[#2D5A43]/5 border border-[#2D5A43]/20 px-4">
-                    <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="min-h-[52px] flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 rounded-2xl bg-[#2D5A43]/5 border border-[#2D5A43]/20 px-4 py-2">
+                    <div className="flex basis-full items-center gap-2.5 min-w-0 sm:basis-auto sm:flex-1">
                       <Sparkles className="size-4 text-[#2D5A43] shrink-0" />
                       <span className="font-bold text-xs sm:text-sm text-[#2D5A43] truncate">
                         {patientCase.currentRoutine.routineTitle}
@@ -985,13 +969,15 @@ function SpecialistContent() {
 
                     <div className="flex items-center gap-2 shrink-0">
                       {patientCase.currentRoutine.products.map((p) => (
-                        <img
-                          key={p.id}
-                          src={p.imageUrl}
-                          alt={p.name}
-                          title={p.name}
-                          className="size-8 rounded-lg object-cover border border-[#D8D4CA] shadow-2xs"
-                        />
+                        <span key={p.id} title={p.name} className="shrink-0">
+                          <SafeProductImage
+                            src={p.imageUrl}
+                            alt={p.name}
+                            brand={p.brand}
+                            category={p.category}
+                            className="size-8 rounded-lg object-cover border border-[#D8D4CA] shadow-2xs"
+                          />
+                        </span>
                       ))}
                       <span className="text-xs text-[#5C605C] font-mono ml-1">
                         Tái khám: <strong>{formatDateVi(patientCase.currentRoutine.revisitDate)}</strong>
@@ -1067,10 +1053,12 @@ function SpecialistContent() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 text-sm">
               <div className="space-y-2.5">
-                <SafeProductImage
+                <PatientPhoto
                   src={selectedCase.skinPhotoUrl}
-                  alt={selectedCase.patientName}
-                  className="w-full h-56 rounded-2xl object-cover border border-[#D8D4CA]"
+                  name={selectedCase.patientName}
+                  seed={selectedCase.id}
+                  large
+                  className="w-full h-56 rounded-2xl border border-[#D8D4CA]"
                 />
                 <div className="text-xs text-[#5C605C] bg-[#F6F4EF] p-2.5 rounded-xl">
                   Vùng tổn thương AI phân tích: <strong className="text-[#191B19]">{selectedCase.aiAnalysis.affectedZones.join(", ")}</strong>
@@ -1388,9 +1376,11 @@ function SpecialistContent() {
                         : "border-[#D8D4CA] bg-white hover:border-[#2D5A43]/50"
                     }`}
                   >
-                    <img
+                    <SafeProductImage
                       src={prod.imageUrl}
                       alt={prod.name}
+                      brand={prod.brand}
+                      category={prod.category}
                       className="size-16 rounded-xl object-cover border border-[#D8D4CA] shrink-0"
                     />
                     <div className="min-w-0 text-sm">
@@ -1439,22 +1429,24 @@ function SpecialistContent() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-[#191B19] font-semibold mb-1">Link ảnh (URL) *</label>
-                  <div className="flex gap-2.5">
-                    <input
-                      type="url"
-                      required
-                      value={customProdImage}
-                      onChange={(e) => setCustomProdImage(e.target.value)}
-                      className="flex-1 rounded-xl border border-[#D8D4CA] bg-white px-3.5 py-2 text-sm text-[#191B19]"
+                  <ImageUploader
+                    onUploadingChange={setUploadingImage}
+                    images={customProdImage ? [customProdImage] : []}
+                    onChange={(next) => setCustomProdImage(next[0] ?? "")}
+                    folder="products"
+                    label="Ảnh sản phẩm (không bắt buộc)"
+                    emptyHint="Không có ảnh: ứng dụng tự vẽ hình sản phẩm."
+                  />
+                  <div className="mt-2 flex items-center gap-2.5 text-xs text-[#5C605C]">
+                    <span>Xem trước:</span>
+                    <SafeProductImage
+                      src={customProdImage}
+                      alt="Xem trước"
+                      name={customProdName || "Sản phẩm"}
+                      brand={customProdBrand}
+                      category={customProdCategory}
+                      className="size-10 shrink-0 rounded-xl object-cover border border-[#D8D4CA]"
                     />
-                    {customProdImage && (
-                      <img
-                        src={customProdImage}
-                        alt="Preview"
-                        className="size-10 rounded-xl object-cover border border-[#D8D4CA]"
-                      />
-                    )}
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -1491,6 +1483,7 @@ function SpecialistContent() {
               <button
                 type="button"
                 onClick={handleAddProductConfirm}
+                disabled={uploadingImage}
                 className="rounded-2xl bg-[#2D5A43] px-5 py-2 text-sm font-bold text-white cursor-pointer"
               >
                 Thêm vào Routine

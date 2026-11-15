@@ -38,6 +38,7 @@ import {
 import { toast } from "sonner";
 import { LogoMark } from "@/components/site-header";
 import { SafeProductImage } from "@/components/safe-product-image";
+import { InitialsAvatar } from "@/components/initials-avatar";
 import {
   type RoutineStep,
   type RoleRoutine,
@@ -938,17 +939,7 @@ export default function AdminDashboardPage() {
                         <tr key={user.id} className="hover:bg-surface-2/40 transition">
                           <td className="py-4.5 px-6">
                             <div className="flex items-center gap-3.5">
-                              {user.avatarUrl ? (
-                                <img
-                                  src={user.avatarUrl}
-                                  alt={user.name}
-                                  className="size-9 rounded-full object-cover shrink-0 border border-border"
-                                />
-                              ) : (
-                                <div className="size-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs uppercase shrink-0">
-                                  {user.name.charAt(0)}
-                                </div>
-                              )}
+                              <InitialsAvatar name={user.name} seed={user.id} src={user.avatarUrl} className="size-9 border border-border text-xs" />
                               <div className="flex flex-col">
                                 <span className="font-semibold text-foreground text-sm">
                                   {user.name}

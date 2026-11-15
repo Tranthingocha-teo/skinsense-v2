@@ -124,10 +124,7 @@ export async function saveCustomProduct(input: {
     priceFormatted: formatVnd(priceVnd),
     rating: 5.0,
     reviewsCount: 1,
-    imageUrl:
-      input.imageUrl?.trim() ||
-      'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=600&q=80',
-    affiliateUrl: '',
+    imageUrl: input.imageUrl?.trim() || undefined,
     targetZones: input.targetZones ?? ['forehead', 'leftCheek', 'rightCheek', 'nose', 'chin'],
     targetClasses: input.targetClasses ?? ['barrier_repair', 'calming_redness'],
     keyActives: input.keyActives ?? ['Panthenol B5', 'Ceramide NP', 'Centella Asiatica'],
@@ -210,7 +207,6 @@ export async function registerShop(input: {
     rating: 5.0,
     reviewCount: 0,
     isOfficial: false,
-    avatarUrl: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=200&q=80',
     createdAt: new Date().toISOString(),
   };
 
@@ -385,13 +381,12 @@ export async function saveListing(input: {
 
 const INITIAL_DEMO_ORDERS: Order[] = [
   {
-    id: 'ORD-982104-SPX1',
+    id: 'ORD-982104-SS1',
     shopId: 'shop-duocmypham-hanoi',
     shopName: 'Dược Mỹ Phẩm Hà Nội',
     productId: 'lrp-effaclar-duo-m',
     productName: 'Effaclar Duo+M Giảm Mụn & Ngừa Thâm 40ml',
-    productImage:
-      'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=400&q=80',
+    productImage: '',
     priceVnd: 375000,
     quantity: 1,
     totalVnd: 375000,
@@ -402,11 +397,11 @@ const INITIAL_DEMO_ORDERS: Order[] = [
     note: 'Giao giờ hành chính giúp em',
     paymentMethod: 'cod',
     status: 'shipping',
-    trackingCode: 'SPX-VN982104',
-    shippingProvider: 'SPX Express',
+    trackingCode: 'SS-VN982104',
+    shippingProvider: 'Giao nhanh',
     trackingTimeline: generateTrackingTimeline(
       'shipping',
-      'SPX-VN982104',
+      'SS-VN982104',
       new Date(Date.now() - 3600000 * 5).toISOString(),
     ),
     shopEarningsVnd: 356250,
@@ -415,13 +410,12 @@ const INITIAL_DEMO_ORDERS: Order[] = [
     updatedAt: new Date(Date.now() - 3600000 * 2).toISOString(),
   },
   {
-    id: 'ORD-639201-SPX2',
+    id: 'ORD-639201-SS2',
     shopId: 'shop-kbeauty-vietnam',
     shopName: 'K-Beauty Mall Vietnam',
     productId: 'skin1004-centella-ampoule',
     productName: 'Tinh Chất Rau Má Madagascar Centella Ampoule 100ml',
-    productImage:
-      'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=400&q=80',
+    productImage: '',
     priceVnd: 330000,
     quantity: 1,
     totalVnd: 330000,
@@ -432,11 +426,11 @@ const INITIAL_DEMO_ORDERS: Order[] = [
     note: '',
     paymentMethod: 'vietqr',
     status: 'processing',
-    trackingCode: 'SPX-VN639201',
-    shippingProvider: 'SPX Express',
+    trackingCode: 'SS-VN639201',
+    shippingProvider: 'Giao nhanh',
     trackingTimeline: generateTrackingTimeline(
       'processing',
-      'SPX-VN639201',
+      'SS-VN639201',
       new Date(Date.now() - 3600000 * 12).toISOString(),
     ),
     shopEarningsVnd: 313500,
@@ -444,13 +438,12 @@ const INITIAL_DEMO_ORDERS: Order[] = [
     createdAt: new Date(Date.now() - 3600000 * 12).toISOString(),
   },
   {
-    id: 'ORD-119832-SPX3',
+    id: 'ORD-119832-SS3',
     shopId: 'shop-skinsense-official',
     shopName: 'SkinSense Official Store',
     productId: 'lrp-cicaplast-b5-plus',
     productName: 'Cicaplast Baume B5+ Phục Hồi & Làm Dịu Da 40ml',
-    productImage:
-      'https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?auto=format&fit=crop&w=400&q=80',
+    productImage: '',
     priceVnd: 365000,
     quantity: 1,
     totalVnd: 365000,
@@ -460,11 +453,11 @@ const INITIAL_DEMO_ORDERS: Order[] = [
     customerAddress: 'Tòa Landmark 72, Phạm Hùng, Mễ Trì, Nam Từ Liêm, Hà Nội',
     paymentMethod: 'vietqr',
     status: 'completed',
-    trackingCode: 'SPX-VN119832',
-    shippingProvider: 'SPX Express',
+    trackingCode: 'SS-VN119832',
+    shippingProvider: 'Giao nhanh',
     trackingTimeline: generateTrackingTimeline(
       'completed',
-      'SPX-VN119832',
+      'SS-VN119832',
       new Date(Date.now() - 3600000 * 48).toISOString(),
     ),
     shopEarningsVnd: 346750,
@@ -517,7 +510,7 @@ export async function createOrder(input: {
   const qty = input.quantity ?? 1;
   const totalVnd = input.priceVnd * qty;
   const { shopEarningsVnd, platformFeeVnd } = calculateOrderFinancials(totalVnd);
-  const trackingCode = `SPX-VN${Math.floor(100000 + Math.random() * 900000)}`;
+  const trackingCode = `SS-VN${Math.floor(100000 + Math.random() * 900000)}`;
   const now = new Date().toISOString();
 
   const order: Order = {
@@ -538,7 +531,7 @@ export async function createOrder(input: {
     paymentMethod: input.paymentMethod,
     status: 'pending',
     trackingCode,
-    shippingProvider: 'SPX Express',
+    shippingProvider: 'Giao nhanh',
     trackingTimeline: generateTrackingTimeline('pending', trackingCode, now),
     shopEarningsVnd,
     platformFeeVnd,
@@ -566,7 +559,7 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus): P
     updatedAt: now,
     trackingTimeline: generateTrackingTimeline(
       status,
-      current.trackingCode || `SPX-VN${Math.floor(100000 + Math.random() * 900000)}`,
+      current.trackingCode || `SS-VN${Math.floor(100000 + Math.random() * 900000)}`,
       current.createdAt,
     ),
   };
@@ -605,7 +598,7 @@ export async function completeOrder(
     updatedAt: now,
     trackingTimeline: generateTrackingTimeline(
       'completed',
-      current.trackingCode || `SPX-VN${Math.floor(100000 + Math.random() * 900000)}`,
+      current.trackingCode || `SS-VN${Math.floor(100000 + Math.random() * 900000)}`,
       current.createdAt,
     ),
   };

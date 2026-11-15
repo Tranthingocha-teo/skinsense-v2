@@ -37,7 +37,7 @@ function getInitialThreads(): ChatThread[] {
       shopName: "La Roche-Posay Flagship Store",
       userId: "thuy_dung",
       userName: "Thùy Dung",
-      orderCode: "SHOPEE-SS-982101",
+      orderCode: "SS-982101",
       updatedAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
       messages: [
         {
@@ -72,7 +72,7 @@ function getInitialThreads(): ChatThread[] {
       shopName: "Bioderma Official Store",
       userId: "thuy_dung",
       userName: "Thùy Dung",
-      orderCode: "SHOPEE-SS-485002",
+      orderCode: "SS-485002",
       updatedAt: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
       messages: [
         {
@@ -91,7 +91,7 @@ function getInitialThreads(): ChatThread[] {
       shopName: "CeraVe Official Mall",
       userId: "thuy_dung",
       userName: "Thùy Dung",
-      orderCode: "SHOPEE-SS-330003",
+      orderCode: "SS-330003",
       updatedAt: new Date(Date.now() - 1000 * 60 * 200).toISOString(),
       messages: [
         {
@@ -110,7 +110,7 @@ function getInitialThreads(): ChatThread[] {
       shopName: "SkinSense Official Medical Mall",
       userId: "thuy_dung",
       userName: "Thùy Dung",
-      orderCode: "SHOPEE-SS-998877",
+      orderCode: "SS-998877",
       updatedAt: new Date(Date.now() - 1000 * 60 * 10).toISOString(),
       messages: [
         {
@@ -260,7 +260,7 @@ function applySendMessage(
     let replyText = `Dạ ${targetThread.shopName} đã nhận được tin nhắn và sẽ hỗ trợ kiểm tra ngay cho bạn ạ!`;
 
     if (lower.includes("giao") || lower.includes("khi nào") || lower.includes("vận chuyển")) {
-      replyText = `Dạ đơn hàng của bạn đã được đóng gói cẩn thận và bàn giao cho đơn vị SPX Express, dự kiến giao trong 1-2 ngày tới bạn nhé!`;
+      replyText = `Dạ đơn hàng của bạn đã được đóng gói cẩn thận và bàn giao cho đơn vị giao nhanh, dự kiến giao trong 1-2 ngày tới bạn nhé!`;
     } else if (lower.includes("dùng") || lower.includes("bha") || lower.includes("serum") || lower.includes("routine")) {
       replyText = `Dạ bạn nên dùng sau bước làm sạch và toner, thoa một lớp mỏng và luôn nhớ chống nắng kỹ vào ban ngày bạn nhé!`;
     } else if (lower.includes("đổi") || lower.includes("trả") || lower.includes("lỗi") || lower.includes("hỏng")) {

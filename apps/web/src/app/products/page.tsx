@@ -7,7 +7,6 @@ import {
   ShoppingBag,
   Search,
   Filter,
-  Star,
   ShieldCheck,
   Truck,
   ArrowLeft,
@@ -23,6 +22,7 @@ import {
 import { toast } from "sonner";
 import { LogoMark } from "@/components/site-header";
 import { INITIAL_SHOPEE_PRODUCTS, type ShopeeProduct } from "@/app/shop/page";
+import { SafeProductImage } from "@/components/safe-product-image";
 
 const ALL_BRANDS = "Tất cả";
 
@@ -104,16 +104,6 @@ function toStorefrontProduct(ap: MarketplaceApiProduct): ShopeeProduct {
   };
 }
 
-// Sản phẩm chưa có ảnh: hiện ô trống trung thực, không lấy ảnh mẫu thay vào.
-function NoImage() {
-  return (
-    <div className="flex size-full flex-col items-center justify-center gap-1.5 text-[#8C8F8A]">
-      <Package className="size-8 opacity-40" />
-      <span className="text-[11px] font-medium">Chưa có ảnh</span>
-    </div>
-  );
-}
-
 function UserProductsMarketplaceContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -122,7 +112,7 @@ function UserProductsMarketplaceContent() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedBrand, setSelectedBrand] = useState(ALL_BRANDS);
   const [selectedSkinType, setSelectedSkinType] = useState("all");
-  const [sortBy, setSortBy] = useState<"popular" | "price-asc" | "price-desc" | "sales">("popular");
+  const [sortBy, setSortBy] = useState<"default" | "price-asc" | "price-desc">("default");
 
   // Danh sách sản phẩm đang bán (đã duyệt). Thêm sản phẩm thuộc Kênh Người Bán (/seller/products),
   // không phải trang mua hàng của khách.
@@ -210,8 +200,7 @@ function UserProductsMarketplaceContent() {
       .sort((a, b) => {
         if (sortBy === "price-asc") return a.priceVnd - b.priceVnd;
         if (sortBy === "price-desc") return b.priceVnd - a.priceVnd;
-        if (sortBy === "sales") return (b.soldCount || 0) - (a.soldCount || 0);
-        return b.rating - a.rating;
+        return 0;
       });
   }, [productsList, searchTerm, selectedBrand, selectedSkinType, sortBy]);
 
@@ -275,10 +264,6 @@ function UserProductsMarketplaceContent() {
               <span className="flex items-center gap-1 rounded-full bg-[#2D5A43]/10 px-2.5 py-0.5">
                 <ShieldCheck className="size-3.5 text-[#2D5A43]" />
                 100% Chính Hãng
-              </span>
-              <span className="flex items-center gap-1 rounded-full bg-[#C2410C]/10 text-[#C2410C] px-2.5 py-0.5">
-                <Truck className="size-3.5" />
-                Freeship Xtra 0đ
               </span>
             </div>
           </div>
@@ -360,15 +345,14 @@ function UserProductsMarketplaceContent() {
               <div className="space-y-4 lg:col-span-5">
                 {/* Ảnh bìa chính lớn */}
                 <div className="relative aspect-square w-full overflow-hidden rounded-2xl border border-[#D8D4CA]/80 bg-[#F6F4EF] shadow-2xs">
-                  {selectedProduct.images?.[activeImageIndex] || selectedProduct.coverImage ? (
-                    <img
-                      src={selectedProduct.images?.[activeImageIndex] || selectedProduct.coverImage}
-                      alt={selectedProduct.name}
-                      className="absolute inset-0 size-full object-cover"
-                    />
-                  ) : (
-                    <NoImage />
-                  )}
+                  <SafeProductImage
+                    src={selectedProduct.images?.[activeImageIndex] || selectedProduct.coverImage}
+                    alt={selectedProduct.name}
+                    brand={selectedProduct.brand}
+                    category={selectedProduct.category}
+                    seed={selectedProduct.id}
+                    className="absolute inset-0 size-full object-cover"
+                  />
                   {/* Badge Mall đỏ góc trái */}
                   <div className="absolute top-3 left-3 rounded-md bg-[#D0011B] px-2.5 py-1 text-xs font-bold text-white shadow-xs flex items-center gap-1">
                     <BadgeCheck className="size-3.5" />
@@ -400,9 +384,12 @@ function UserProductsMarketplaceContent() {
                           : "border-[#D8D4CA] opacity-75 hover:opacity-100"
                       }`}
                     >
-                      <img
+                      <SafeProductImage
                         src={imgUrl}
                         alt={`Ảnh góc ${i + 1}`}
+                        name={selectedProduct.name}
+                        brand={selectedProduct.brand}
+                        seed={`${selectedProduct.id}-${i}`}
                         className="absolute inset-0 size-full object-cover"
                       />
                     </button>
@@ -443,30 +430,6 @@ function UserProductsMarketplaceContent() {
                   <h1 className="text-xl sm:text-2xl font-bold leading-snug text-[#191B19]">
                     {selectedProduct.name}
                   </h1>
-
-                  {/* Điểm đánh giá sao, số lượng đánh giá & đã bán */}
-                  <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm pt-0.5">
-                    <div className="flex items-center gap-1 text-amber-600 font-bold">
-                      <span className="border-b border-amber-600">{selectedProduct.rating}</span>
-                      <div className="flex items-center">
-                        {[...Array(5)].map((_, i) => (
-                          <Star key={i} className="size-3.5 fill-amber-400 text-amber-400" />
-                        ))}
-                      </div>
-                    </div>
-                    <span className="text-[#D8D4CA]">•</span>
-                    <div>
-                      <strong className="border-b border-[#191B19] text-[#191B19]">
-                        {selectedProduct.reviewCount.toLocaleString("vi-VN")}
-                      </strong>{" "}
-                      <span className="text-[#5C605C]">Đánh Giá</span>
-                    </div>
-                    <span className="text-[#D8D4CA]">•</span>
-                    <div>
-                      <strong className="text-[#191B19]">{selectedProduct.soldCount.toLocaleString("vi-VN")}</strong>{" "}
-                      <span className="text-[#5C605C]">Đã Bán</span>
-                    </div>
-                  </div>
 
                   {/* KHỐI GIÁ KHUYẾN MÃI MALL */}
                   <div className="space-y-1.5 rounded-2xl border border-[#D8D4CA] bg-[#FAF8F5] p-4 sm:p-5">
@@ -516,7 +479,7 @@ function UserProductsMarketplaceContent() {
                   <div className="space-y-1.5 rounded-xl border border-[#D8D4CA]/80 bg-[#FAF8F5] p-3 text-xs">
                     <div className="flex items-center gap-1.5 font-bold text-[#2D5A43]">
                       <Truck className="size-4" />
-                      <span>Vận Chuyển: Miễn Phí Vận Chuyển (Freeship Xtra)</span>
+                      <span>Vận Chuyển</span>
                     </div>
                     <div className="space-y-0.5 pl-5 text-xs text-[#5C605C]">
                       <div>
@@ -674,13 +637,13 @@ function UserProductsMarketplaceContent() {
             <div className="mx-auto max-w-[1360px] space-y-1.5 text-center md:text-left">
               <div className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-0.5 text-xs font-bold text-white backdrop-blur-xs">
                 <Sparkles className="size-3.5 text-amber-300" />
-                SkinSense Official Mall • 100% Phân Phối Độc Quyền
+                SkinSense Mall
               </div>
               <h1 className="text-xl sm:text-2xl font-serif font-bold tracking-tight">
                 Sàn Dược Mỹ Phẩm Chuẩn Y Khoa Cho Làn Da Nhạy Cảm
               </h1>
               <p className="text-xs sm:text-sm text-white/85 max-w-2xl">
-                Chọn mua sản phẩm đã qua kiểm nghiệm lâm sàng từ La Roche-Posay, Bioderma, CeraVe. Miễn phí vận chuyển toàn quốc và hoàn tiền 200% nếu phát hiện hàng giả.
+                Chọn mua sản phẩm đã qua kiểm nghiệm lâm sàng từ La Roche-Posay, Bioderma, CeraVe.
               </p>
             </div>
           </section>
@@ -739,8 +702,7 @@ function UserProductsMarketplaceContent() {
                   onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
                   className="h-8 rounded-lg border border-[#D8D4CA] bg-white px-2.5 text-xs font-bold text-[#191B19] focus:outline-none focus:border-[#2D5A43]"
                 >
-                  <option value="popular">⭐ Đánh giá cao nhất</option>
-                  <option value="sales">🔥 Bán chạy nhất</option>
+                  <option value="default">Mặc định</option>
                   <option value="price-asc">💵 Giá: Thấp đến Cao</option>
                   <option value="price-desc">💎 Giá: Cao đến Thấp</option>
                 </select>
@@ -793,15 +755,14 @@ function UserProductsMarketplaceContent() {
                         onClick={() => handleOpenDetail(prod)}
                         className="relative aspect-square w-full overflow-hidden rounded-xl bg-[#F6F4EF] cursor-pointer mb-2.5"
                       >
-                        {prod.coverImage || prod.images?.[0] ? (
-                          <img
-                            src={prod.coverImage || prod.images[0]}
-                            alt={prod.name}
-                            className="absolute inset-0 size-full object-cover transition duration-300 group-hover:scale-105"
-                          />
-                        ) : (
-                          <NoImage />
-                        )}
+                        <SafeProductImage
+                          src={prod.coverImage || prod.images?.[0]}
+                          alt={prod.name}
+                          brand={prod.brand}
+                          category={prod.category}
+                          seed={prod.id}
+                          className="absolute inset-0 size-full object-cover transition duration-300 group-hover:scale-105"
+                        />
                         {/* Badge Mall */}
                         <span className="absolute top-2 left-2 rounded-md bg-[#D0011B] px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-white shadow-xs">
                           Mall
@@ -826,16 +787,6 @@ function UserProductsMarketplaceContent() {
                         >
                           {prod.name}
                         </h3>
-
-                        {/* Đánh giá sao & Đã bán */}
-                        <div className="flex items-center gap-1.5 text-[10px] text-[#5C605C] mb-2">
-                          <div className="flex items-center text-amber-500">
-                            <Star className="size-3 fill-amber-400 text-amber-400" />
-                            <span className="font-bold ml-0.5">{prod.rating.toFixed(1)}</span>
-                          </div>
-                          <span>•</span>
-                          <span>Đã bán {prod.soldCount.toLocaleString("vi-VN")}</span>
-                        </div>
 
                         {/* Giá tiền */}
                         <div className="mt-auto pt-2 border-t border-[#D8D4CA]/40">

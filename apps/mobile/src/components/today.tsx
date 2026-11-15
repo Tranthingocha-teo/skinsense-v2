@@ -244,9 +244,6 @@ function SpecialistTodayWorkstation({ user, date }: { user: AuthUser; date: stri
   const [selectedProduct, setSelectedProduct] = useState('Effaclar Duo+M Giảm Mụn 40ml');
   const [routinePhase, setRoutinePhase] = useState<'Buổi sáng' | 'Buổi tối' | 'Sáng & Tối' | 'Cách ngày'>('Sáng & Tối');
   const [productSpecificNote, setProductSpecificNote] = useState('');
-  const [prescriptionImage, setPrescriptionImage] = useState<string | null>(
-    'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=600&q=80',
-  );
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -260,7 +257,6 @@ function SpecialistTodayWorkstation({ user, date }: { user: AuthUser; date: stri
     setAdviceText(`Dặn dò bệnh nhân: ${pt.name} cần vệ sinh sạch vùng mũi và cằm, tuân thủ đúng lộ trình routine.`);
     setProductSpecificNote('Thoa lượng cỡ 1 hạt đậu xanh sau bước làm sạch, massage nhẹ 30s. Tránh vùng mắt.');
     setRoutinePhase('Sáng & Tối');
-    setPrescriptionImage('https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=600&q=80');
   }
 
   function handleSendPrescription() {
@@ -480,57 +476,6 @@ function SpecialistTodayWorkstation({ user, date }: { user: AuthUser; date: stri
                 />
               </View>
 
-              {/* Prescription / Product Image Attachment */}
-              <View className="gap-1.5">
-                <View className="flex-row items-center justify-between">
-                  <Text className="text-[12px] font-semibold text-primary uppercase tracking-[0.08em]">Ảnh sản phẩm / Toa thuốc đính kèm</Text>
-                  <Text className="text-[10px] text-muted-foreground">Toa chỉ định lâm sàng</Text>
-                </View>
-
-                {prescriptionImage ? (
-                  <View className="flex-row items-center gap-3 rounded-control border border-border/80 bg-surface-2 p-2.5">
-                    <View className="size-16 rounded-md overflow-hidden border border-border/80 bg-black/20">
-                      <Image source={{ uri: prescriptionImage }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
-                    </View>
-                    <View className="flex-1 gap-1">
-                      <Text className="text-[12px] font-medium text-foreground">Ảnh mẫu sản phẩm & toa thuốc</Text>
-                      <Text className="text-[10px] text-emerald-400">Đã đính kèm vào hồ sơ bệnh nhân</Text>
-                    </View>
-                    <Pressable
-                      onPress={() => setPrescriptionImage(null)}
-                      className="size-8 items-center justify-center rounded-pill bg-surface-1 active:scale-[0.98]"
-                    >
-                      <Icon as={X} size={15} className="text-muted-foreground" />
-                    </Pressable>
-                  </View>
-                ) : (
-                  <View className="flex-row gap-2 pt-1">
-                    <Pressable
-                      onPress={() =>
-                        setPrescriptionImage(
-                          'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=600&q=80',
-                        )
-                      }
-                      className="flex-row items-center gap-1.5 rounded-pill border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 active:scale-[0.98]"
-                    >
-                      <Icon as={Plus} size={13} className="text-emerald-400" />
-                      <Text className="text-[11.5px] font-medium text-emerald-400">+ Ảnh mẫu sản phẩm</Text>
-                    </Pressable>
-                    <Pressable
-                      onPress={() =>
-                        setPrescriptionImage(
-                          'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=600&q=80',
-                        )
-                      }
-                      className="flex-row items-center gap-1.5 rounded-pill border border-border/80 bg-surface-2 px-3 py-1.5 active:scale-[0.98]"
-                    >
-                      <Icon as={Camera} size={13} className="text-muted-foreground" />
-                      <Text className="text-[11.5px] font-medium text-foreground">+ Ảnh toa thuốc BS</Text>
-                    </Pressable>
-                  </View>
-                )}
-              </View>
-
               {/* Diagnosis and clinical advice */}
               <View className="gap-1.5">
                 <Text className="text-[12px] font-semibold text-primary uppercase tracking-[0.08em]">Chẩn đoán & Lời dặn chuyên khoa *</Text>
@@ -722,7 +667,7 @@ function ShopTodayWorkstation({ user, date }: { user: AuthUser; date: string }) 
               </Text>
             </View>
             <Text className="text-[12px] text-muted-foreground leading-4">
-              Sau khi được Admin phê duyệt, gian hàng sẽ được mở bán chính thức trên sàn Shopee Mall và hiển thị cho khách mua.
+              Sau khi được Admin phê duyệt, gian hàng sẽ được mở bán chính thức trên sàn SkinSense Mall và hiển thị cho khách mua.
             </Text>
           </View>
         )}
@@ -888,10 +833,10 @@ function CustomerToday() {
             </View>
             <View>
               <Text className="text-[14px] font-semibold text-foreground">
-                Đơn Mua Của Tôi (Shopee Mall)
+                Đơn Mua Của Tôi (SkinSense Mall)
               </Text>
               <Text className="text-[11.5px] text-muted-foreground">
-                Theo dõi vận đơn SPX, đánh giá 5 sao & quản lý đơn
+                Theo dõi vận đơn, đánh giá 5 sao & quản lý đơn
               </Text>
             </View>
           </View>
