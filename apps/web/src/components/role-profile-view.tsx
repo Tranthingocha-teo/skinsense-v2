@@ -273,7 +273,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
           setSpecHospital(u.specialist.hospital || "");
           setSpecLicense(u.specialist.licenseNumber || "");
           setSpecSpecialty(u.specialist.specialty || "");
-          setSpecExpYears(String(u.specialist.experienceYears || 10));
+          setSpecExpYears(u.specialist.experienceYears ? String(u.specialist.experienceYears) : "");
           setSpecBio(u.specialist.bio || "");
         } else if (role === "shop" && u.shop) {
           setShopName(u.shop.shopName || "");
@@ -823,8 +823,8 @@ export function RoleProfileView({ role }: { role: RoleType }) {
     <div className="min-h-screen bg-[#E8E5DE] text-[#191B19] antialiased">
       {/* HEADER TƯƠNG ĐỒNG VỚI HỆ THỐNG SKINSENSE */}
       <header className="sticky top-0 z-30 border-b border-[#D8D4CA] bg-[#E8E5DE]/95 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-          <div className="flex items-center gap-3">
+        <div className="mx-auto flex min-h-16 max-w-6xl flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-2.5 sm:px-6">
+          <div className="flex min-w-0 items-center gap-3">
             <Link
               href={cfg.backHref}
               className="flex size-9 items-center justify-center rounded-xl border border-[#D8D4CA] bg-[#FAF8F5] text-[#5C605C] hover:border-[#191B19] hover:text-[#191B19] transition"
@@ -833,14 +833,14 @@ export function RoleProfileView({ role }: { role: RoleType }) {
               <ArrowLeft className="size-4" />
             </Link>
             <div>
-              <h1 className="text-base font-bold text-[#191B19] leading-tight flex items-center gap-2">
+              <h1 className="text-base font-bold text-[#191B19] leading-tight flex flex-wrap items-center gap-x-2 gap-y-1">
                 <span>{cfg.title}</span>
                 <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold border ${cfg.badgeClass}`}>
                   <BadgeCheck className="size-3" />
                   {cfg.roleBadge}
                 </span>
               </h1>
-              <p className="text-xs text-[#5C605C]">
+              <p className="hidden text-xs text-[#5C605C] sm:block">
                 Quản lý thông tin định danh cá nhân & thiết lập tài khoản
               </p>
             </div>
@@ -853,7 +853,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                   <button
                     type="button"
                     onClick={() => setIsEditing(true)}
-                    className="flex items-center gap-1.5 h-9 rounded-xl bg-[#2D5A43] px-4 text-xs font-bold text-white shadow-xs hover:bg-[#214332] transition cursor-pointer"
+                    className="flex items-center gap-1.5 min-h-10 whitespace-nowrap rounded-xl bg-[#2D5A43] px-4 text-xs font-bold text-white shadow-xs hover:bg-[#214332] transition cursor-pointer"
                   >
                     <Edit3 className="size-3.5" />
                     <span>Chỉnh Sửa Hồ Sơ</span>
@@ -988,67 +988,27 @@ export function RoleProfileView({ role }: { role: RoleType }) {
               </div>
 
               {/* Thẻ Chỉ số hoạt động riêng cho Role */}
+              {(role === "customer" || role === "shop") && (
               <div className="rounded-2xl border border-[#D8D4CA] bg-[#FAF8F5] p-5 shadow-xs space-y-3.5">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-[#5C605C] flex items-center gap-1.5">
                   <Sparkles className="size-3.5 text-[#2D5A43]" />
                   <span>Chỉ số hoạt động</span>
                 </h3>
 
-                {role === "customer" && (
-                  <div className="grid grid-cols-2 gap-3 text-center">
-                    <div className="rounded-xl border border-[#D8D4CA] bg-white p-3">
-                      <div className="text-xl font-bold text-[#191B19]">{orders.length}</div>
-                      <div className="text-[11px] text-[#5C605C] mt-0.5">Đơn hàng của bạn</div>
-                    </div>
-                    <div className="rounded-xl border border-[#D8D4CA] bg-white p-3">
-                      <div className="text-xl font-bold text-[#2D5A43]">12 ngày</div>
-                      <div className="text-[11px] text-[#5C605C] mt-0.5">Routine duy trì</div>
-                    </div>
+                {/* Counted from the orders this page loaded. The tiles used to show fixed numbers
+                    (12-day streak, 890 cases, 12.850+ sold) whatever the account had done. */}
+                <div className="grid grid-cols-2 gap-3 text-center">
+                  <div className="rounded-xl border border-[#D8D4CA] bg-white p-3">
+                    <div className="text-xl font-bold text-[#191B19]">{orders.length}</div>
+                    <div className="text-[11px] text-[#5C605C] mt-0.5">{role === "shop" ? "Đơn hàng của shop" : "Đơn hàng"}</div>
                   </div>
-                )}
-
-                {role === "specialist" && (
-                  <div className="grid grid-cols-2 gap-3 text-center">
-                    <div className="rounded-xl border border-[#D8D4CA] bg-white p-3">
-                      <div className="text-xl font-bold text-[#2D5A43]">890</div>
-                      <div className="text-[11px] text-[#5C605C] mt-0.5">Ca lâm sàng</div>
-                    </div>
-                    <div className="rounded-xl border border-[#D8D4CA] bg-white p-3">
-                      <div className="text-xl font-bold text-amber-600 flex items-center justify-center gap-1">
-                        <span>5.0</span>
-                        <Star className="size-3.5 fill-current" />
-                      </div>
-                      <div className="text-[11px] text-[#5C605C] mt-0.5">142 đánh giá</div>
-                    </div>
+                  <div className="rounded-xl border border-[#D8D4CA] bg-white p-3">
+                    <div className="text-xl font-bold text-[#2D5A43]">{orders.filter((o) => o.status === "delivered").length}</div>
+                    <div className="text-[11px] text-[#5C605C] mt-0.5">Đã giao thành công</div>
                   </div>
-                )}
-
-                {role === "shop" && (
-                  <div className="grid grid-cols-2 gap-3 text-center">
-                    <div className="rounded-xl border border-[#D8D4CA] bg-white p-3">
-                      <div className="text-xl font-bold text-[#C2410C]">45</div>
-                      <div className="text-[11px] text-[#5C605C] mt-0.5">Sản phẩm đăng bán</div>
-                    </div>
-                    <div className="rounded-xl border border-[#D8D4CA] bg-white p-3">
-                      <div className="text-xl font-bold text-[#2D5A43]">12.850+</div>
-                      <div className="text-[11px] text-[#5C605C] mt-0.5">Đã bán thành công</div>
-                    </div>
-                  </div>
-                )}
-
-                {role === "admin" && (
-                  <div className="grid grid-cols-2 gap-3 text-center">
-                    <div className="rounded-xl border border-[#D8D4CA] bg-white p-3">
-                      <div className="text-xl font-bold text-[#2D5A43]">4 / 4</div>
-                      <div className="text-[11px] text-[#5C605C] mt-0.5">Phân hệ Quản trị</div>
-                    </div>
-                    <div className="rounded-xl border border-[#D8D4CA] bg-white p-3">
-                      <div className="text-xl font-bold text-emerald-700">100%</div>
-                      <div className="text-[11px] text-[#5C605C] mt-0.5">An toàn hệ thống</div>
-                    </div>
-                  </div>
-                )}
+                </div>
               </div>
+              )}
             </div>
 
             {/* ============================================================= */}
@@ -1834,7 +1794,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                               <div className="rounded-xl border border-[#D8D4CA] bg-white p-3.5">
                                 <span className="text-[11px] font-semibold text-[#5C605C] block">Số năm kinh nghiệm</span>
                                 <p className="text-sm font-bold text-[#191B19] mt-1">
-                                  {specExpYears || "10"} năm kinh nghiệm
+                                  {specExpYears ? `${specExpYears} năm kinh nghiệm` : "Chưa cập nhật"}
                                 </p>
                               </div>
                             </div>

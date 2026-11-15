@@ -20,7 +20,8 @@
     "today": "Hôm nay",
     "capture": "Chụp",
     "trends": "Xu hướng",
-    "settings": "Cài đặt"
+    "settings": "Cài đặt",
+    "sellerChannel": "Kênh Người Bán"
   },
   "Settings": {
     "title": "Cài đặt",
@@ -32,7 +33,9 @@
     "privacy": "Chính sách riêng tư",
     "data": "Dữ liệu",
     "history": "Lịch sử ảnh",
-    "export": "Xuất dữ liệu (.csv)"
+    "export": "Xuất dữ liệu (.csv)",
+    "sellerGroup": "Dành cho gian hàng",
+    "sellerLink": "Kênh Người Bán"
   },
   "Feedback": {
     "title": "Góp ý",
@@ -123,7 +126,14 @@
     "defaultDescEvening": "Hòa tan bụi bẩn dầu nhờn, kháng khuẩn ngừa mụn và tái tạo màng ẩm tự nhiên ban đêm.",
     "emptyTitle": "Chưa có bước routine nào",
     "emptyEmbedded": "Chưa có bước nào. Nhấn \"Sửa routine\" để thêm bước chăm sóc da.",
-    "emptyFull": "Chưa có bước chăm sóc da nào. Bạn có thể tự thêm bước bên dưới."
+    "emptyFull": "Chưa có bước chăm sóc da nào. Bạn có thể tự thêm bước bên dưới.",
+    "stepEvening": "Tối",
+    "stepMorning": "Sáng",
+    "stepBoth": "Sáng & Tối",
+    "doneBadge": "Đã làm ✓",
+    "actives": "Hoạt chất:",
+    "dosage": "Liều lượng: ",
+    "howToUse": "Cách dùng: "
   },
   "Landing": {
     "title": "SkinSense",

@@ -30,6 +30,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { SafeProductImage } from "@/components/safe-product-image";
 import { LogoMark } from "@/components/site-header";
 import { INITIAL_SHOPEE_PRODUCTS, ShopeeProduct } from "@/app/shop/page";
 
@@ -311,7 +312,7 @@ function CheckoutInner() {
   const coinDiscountVnd = 20000;
   const shopVoucherDiscountVnd = 50000;
   const shippingFeeVnd = 40000;
-  const shippingDiscountVnd = 40000; // Freeship Xtra
+  const shippingDiscountVnd = 40000; // Miễn phí ship
 
   // Mã đơn hàng được sinh ra khi thanh toán (Khởi tạo sẵn để mã QR luôn luôn có mã chuẩn xác, không bao giờ rỗng)
   // Generated in the browser only: a random value in the initial state differs between the
@@ -698,13 +699,13 @@ function CheckoutInner() {
               <Sparkles className="size-4 text-amber-600 shrink-0" />
               <span>Đang thanh toán cho gian hàng <strong>{activeShop.brand}</strong>. Muốn đổi món khác?</span>
             </div>
-            <div className="flex items-center gap-2">
-              <label htmlFor="prodSelect" className="text-amber-800 font-semibold text-[11px]">Đổi sản phẩm:</label>
+            <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto">
+              <label htmlFor="prodSelect" className="shrink-0 text-amber-800 font-semibold text-[11px]">Đổi sản phẩm:</label>
               <select
                 id="prodSelect"
                 value={selectedItems[0]?.productId || ""}
                 onChange={(e) => handleSelectAnotherProduct(e.target.value)}
-                className="rounded-lg border border-amber-300 bg-white px-2 py-1 text-xs text-[#191B19] focus:outline-none focus:ring-1 focus:ring-amber-500 font-medium cursor-pointer"
+                className="min-h-9 min-w-0 flex-1 truncate rounded-lg border border-amber-300 bg-white px-2 py-1 text-xs text-[#191B19] focus:outline-none focus:ring-1 focus:ring-amber-500 font-medium cursor-pointer sm:max-w-xs"
               >
                 {INITIAL_SHOPEE_PRODUCTS.map((p) => (
                   <option key={p.id} value={p.id}>
@@ -731,17 +732,13 @@ function CheckoutInner() {
                     className="size-4 rounded border-[#D8D4CA] text-[#C2410C] focus:ring-[#C2410C] cursor-pointer"
                   />
 
-                  {item.image ? (
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className="size-20 rounded-2xl border border-[#D8D4CA] object-cover bg-white shrink-0"
-                    />
-                  ) : (
-                    <div className="flex size-20 shrink-0 items-center justify-center rounded-2xl border border-[#D8D4CA] bg-white px-1 text-center text-[10px] font-medium text-neutral-400">
-                      Chưa có ảnh
-                    </div>
-                  )}
+                  <SafeProductImage
+                    src={item.image}
+                    alt={item.name}
+                    brand={item.brand}
+                    seed={item.productId}
+                    className="size-20 rounded-2xl border border-[#D8D4CA] object-cover shrink-0"
+                  />
 
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
@@ -833,7 +830,7 @@ function CheckoutInner() {
               <span>Phương Thức Vận Chuyển</span>
             </div>
             <span className="rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
-              Freeship Xtra
+              Miễn phí ship
             </span>
           </div>
 

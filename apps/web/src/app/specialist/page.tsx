@@ -804,13 +804,14 @@ function SpecialistContent() {
             />
           </div>
 
-          <div className="flex items-center gap-2.5">
-            <div className="flex items-center gap-2 rounded-xl border border-[#D8D4CA] bg-white px-3.5 py-2 text-sm">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <div className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-[#D8D4CA] bg-white px-3.5 py-2 text-sm sm:flex-none">
               <Filter className="size-4 text-[#5C605C]" />
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="bg-transparent text-sm font-medium text-[#191B19] focus:outline-none cursor-pointer"
+                aria-label="Lọc theo trạng thái"
+                className="min-w-0 flex-1 bg-transparent text-sm font-medium text-[#191B19] focus:outline-none cursor-pointer"
               >
                 <option value="all">Tất cả trạng thái ({patientCases.length})</option>
                 <option value="pending_routine">Chờ xuất phác đồ ({pendingCount})</option>
@@ -818,11 +819,12 @@ function SpecialistContent() {
               </select>
             </div>
 
-            <div className="flex items-center gap-2 rounded-xl border border-[#D8D4CA] bg-white px-3.5 py-2 text-sm">
+            <div className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-[#D8D4CA] bg-white px-3.5 py-2 text-sm sm:flex-none">
               <select
                 value={severityFilter}
                 onChange={(e) => setSeverityFilter(e.target.value)}
-                className="bg-transparent text-sm font-medium text-[#191B19] focus:outline-none cursor-pointer"
+                aria-label="Lọc theo mức độ"
+                className="min-w-0 flex-1 bg-transparent text-sm font-medium text-[#191B19] focus:outline-none cursor-pointer"
               >
                 <option value="all">Mức độ: Tất cả</option>
                 <option value="severe">Nặng (Bùng phát)</option>
@@ -959,8 +961,8 @@ function SpecialistContent() {
 
                 {/* Hàng 3: Phác đồ Routine */}
                 {patientCase.currentRoutine ? (
-                  <div className="h-[52px] flex items-center justify-between gap-3 rounded-2xl bg-[#2D5A43]/5 border border-[#2D5A43]/20 px-4">
-                    <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="min-h-[52px] flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 rounded-2xl bg-[#2D5A43]/5 border border-[#2D5A43]/20 px-4 py-2">
+                    <div className="flex basis-full items-center gap-2.5 min-w-0 sm:basis-auto sm:flex-1">
                       <Sparkles className="size-4 text-[#2D5A43] shrink-0" />
                       <span className="font-bold text-xs sm:text-sm text-[#2D5A43] truncate">
                         {patientCase.currentRoutine.routineTitle}

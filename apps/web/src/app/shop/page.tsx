@@ -191,7 +191,7 @@ export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
     ],
     vouchers: [
       { id: "vc_03", code: "CERAVE20K", discountLabel: "Giảm 20.000₫", minSpendLabel: "Đơn từ 350.000₫" },
-      { id: "vc_04", code: "FREESHIP", discountLabel: "Freeship Xtra", minSpendLabel: "Tối đa 70.000₫" },
+      { id: "vc_04", code: "FREESHIP", discountLabel: "Miễn phí ship", minSpendLabel: "Tối đa 70.000₫" },
     ],
     specifications: {
       skinType: "Da thường, da khô, da nhạy cảm",
@@ -237,7 +237,7 @@ export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
     ],
     vouchers: [
       { id: "vc_05", code: "LRP50K", discountLabel: "Giảm 50.000₫", minSpendLabel: "Đơn từ 800.000₫" },
-      { id: "vc_06", code: "FREESHIP", discountLabel: "Freeship Xtra", minSpendLabel: "Toàn quốc" },
+      { id: "vc_06", code: "FREESHIP", discountLabel: "Miễn phí ship", minSpendLabel: "Toàn quốc" },
     ],
     specifications: {
       skinType: "Mọi loại da, da thiếu ẩm, da có nếp nhăn li ti",
@@ -282,7 +282,7 @@ export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
     ],
     vouchers: [
       { id: "vc_07", code: "LRP15K", discountLabel: "Giảm 15.000₫", minSpendLabel: "Đơn từ 300.000₫" },
-      { id: "vc_08", code: "FREESHIP", discountLabel: "Freeship Xtra", minSpendLabel: "Tối đa 70.000₫" },
+      { id: "vc_08", code: "FREESHIP", discountLabel: "Miễn phí ship", minSpendLabel: "Tối đa 70.000₫" },
     ],
     specifications: {
       skinType: "Da dầu mụn, da hỗn hợp thiên dầu",
@@ -328,7 +328,7 @@ export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
     ],
     vouchers: [
       { id: "vc_09", code: "LRP15K", discountLabel: "Giảm 15.000₫", minSpendLabel: "Đơn từ 300.000₫" },
-      { id: "vc_10", code: "FREESHIP", discountLabel: "Freeship Xtra", minSpendLabel: "Toàn sàn" },
+      { id: "vc_10", code: "FREESHIP", discountLabel: "Miễn phí ship", minSpendLabel: "Toàn sàn" },
     ],
     specifications: {
       skinType: "Da nhạy cảm, da sau peel, laser, da khô nứt nẻ",
@@ -373,7 +373,7 @@ export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
       { id: "var_10", name: "Chai 200ml", priceVnd: 285000, originalPriceVnd: 340000, stock: 75, sku: "LRP-MICELLAR-200ML" },
     ],
     vouchers: [
-      { id: "vc_11", code: "FREESHIP", discountLabel: "Freeship Xtra", minSpendLabel: "Tối đa 70.000₫" },
+      { id: "vc_11", code: "FREESHIP", discountLabel: "Miễn phí ship", minSpendLabel: "Tối đa 70.000₫" },
     ],
     specifications: {
       skinType: "Da dầu mụn, da dễ bít tắc lỗ chân lông",
@@ -418,7 +418,7 @@ export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
     ],
     vouchers: [
       { id: "vc_12", code: "VIP100K", discountLabel: "Giảm 100.000₫", minSpendLabel: "Đơn từ 1.500.000₫" },
-      { id: "vc_13", code: "FREESHIP", discountLabel: "Freeship Xtra", minSpendLabel: "Toàn quốc" },
+      { id: "vc_13", code: "FREESHIP", discountLabel: "Miễn phí ship", minSpendLabel: "Toàn quốc" },
     ],
     specifications: {
       skinType: "Mọi loại da, da sau can thiệp y khoa chuyên sâu",
@@ -463,7 +463,7 @@ export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
     ],
     vouchers: [
       { id: "vc_14", code: "OBAGI50K", discountLabel: "Giảm 50.000₫", minSpendLabel: "Đơn từ 800.000₫" },
-      { id: "vc_15", code: "FREESHIP", discountLabel: "Freeship Xtra", minSpendLabel: "Tối đa 70.000₫" },
+      { id: "vc_15", code: "FREESHIP", discountLabel: "Miễn phí ship", minSpendLabel: "Tối đa 70.000₫" },
     ],
     specifications: {
       skinType: "Da dầu mụn, mụn đầu đen, bít tắc lỗ chân lông",
@@ -507,7 +507,7 @@ export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
       { id: "var_14", name: "Tuýp 15g", priceVnd: 125000, originalPriceVnd: 155000, stock: 480, sku: "KLENZIT-MS-15G" },
     ],
     vouchers: [
-      { id: "vc_16", code: "FREESHIP", discountLabel: "Freeship Xtra", minSpendLabel: "Đơn từ 99.000₫" },
+      { id: "vc_16", code: "FREESHIP", discountLabel: "Miễn phí ship", minSpendLabel: "Đơn từ 99.000₫" },
     ],
     specifications: {
       skinType: "Da mụn ẩn, mụn đầu trắng, da sần sùi bít tắc",
@@ -580,6 +580,10 @@ export default function ShopProductPage() {
         } else {
           setCurrentUser(null);
         }
+        // Buyers and visitors land on the storefront; only shops and admins start in the seller channel
+        // (a customer used to land on a locked "shops only" screen).
+        const u = data?.authenticated ? data.user : null;
+        if (!(u?.role === "shop" || u?.role === "admin" || u?.isSuperAdmin)) setViewMode("buyer");
         setAuthLoading(false);
       })
       .catch(() => setAuthLoading(false));
@@ -929,7 +933,7 @@ export default function ShopProductPage() {
               <Store className="size-3.5" />
               <span>
                 {currentUser?.shopDetails?.shopName ||
-                  (currentUser?.isSuperAdmin ? "SkinSense Super Admin Hub" : "La Roche-Posay Official Store")}
+                  (currentUser?.isSuperAdmin ? "SkinSense Super Admin Hub" : "Gian hàng")}
               </span>
               {currentUser?.status === "pending" ? (
                 <span className="rounded bg-amber-500/20 text-amber-900 dark:text-amber-300 px-1.5 py-0.5 text-[9px] font-bold">
@@ -947,7 +951,8 @@ export default function ShopProductPage() {
             </div>
           </div>
 
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center lg:gap-2.5">
+          {/* One wrapping row on phones: the toggle takes the first line, the actions share the next. */}
+          <div className="flex flex-wrap items-center gap-2 lg:flex-nowrap lg:gap-2.5">
             {/* View Mode Toggle: Seller Center vs Buyer Storefront */}
             <div className="flex w-full items-center rounded-xl border border-border bg-card p-1 shadow-xs sm:w-auto">
               <button
@@ -980,13 +985,13 @@ export default function ShopProductPage() {
 
             <AuthModal
               defaultTab="shop-approval"
-              triggerLabel="🏪 Đăng ký mở Gian hàng"
-              triggerClassName="flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-amber-600/40 bg-amber-500/10 px-3.5 py-2 text-xs font-semibold text-amber-800 dark:text-amber-300 transition hover:border-amber-600 hover:bg-amber-500/20 cursor-pointer shadow-2xs whitespace-nowrap"
+              triggerLabel="Đăng ký mở gian hàng"
+              triggerClassName="flex min-h-11 flex-1 sm:flex-none items-center justify-center gap-1.5 rounded-xl border border-amber-600/40 bg-amber-500/10 px-3.5 py-2 text-xs font-semibold text-amber-800 dark:text-amber-300 transition hover:border-amber-600 hover:bg-amber-500/20 cursor-pointer shadow-2xs whitespace-nowrap"
             />
 
             <Link
               href="/shop/checkout"
-              className="flex items-center gap-1.5 rounded-xl border border-[#C2410C]/40 bg-[#C2410C]/10 px-3 py-1.5 text-xs font-bold text-[#C2410C] hover:bg-[#C2410C] hover:text-white transition shadow-2xs"
+              className="flex min-h-11 items-center gap-1.5 rounded-xl border border-[#C2410C]/40 bg-[#C2410C]/10 px-3 py-1.5 text-xs font-bold text-[#C2410C] dark:text-orange-300 hover:bg-[#C2410C] hover:text-white transition shadow-2xs"
             >
               <ShoppingBag className="size-3.5" />
               <span>Thanh Toán</span>
@@ -994,10 +999,11 @@ export default function ShopProductPage() {
 
             <Link
               href={viewMode === "seller" ? "/shop/profile" : "/user/profile"}
-              className="flex items-center gap-1.5 rounded-xl border border-[#D8D4CA] bg-white px-3 py-1.5 text-xs font-bold text-[#191B19] hover:border-[#191B19] transition shadow-2xs"
+              className="flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-3 py-1.5 text-xs font-bold text-foreground hover:border-foreground transition shadow-2xs"
               title={viewMode === "seller" ? "Xem hồ sơ Cửa hàng (Shop)" : "Xem hồ sơ Người mua (Khách hàng)"}
+              aria-label={viewMode === "seller" ? "Hồ sơ shop" : "Hồ sơ"}
             >
-              <User className="size-3.5 text-[#C2410C]" />
+              <User className="size-3.5 text-[#C2410C] dark:text-orange-300" />
               <span className="hidden sm:inline">
                 {viewMode === "seller" ? "Hồ Sơ Shop" : "Hồ Sơ"}
               </span>
@@ -1005,8 +1011,9 @@ export default function ShopProductPage() {
 
             <Link
               href="/app"
-              className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2 text-xs font-semibold text-muted-foreground transition hover:bg-surface-2 hover:text-foreground"
+              className="flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2 text-xs font-semibold text-muted-foreground transition hover:bg-surface-2 hover:text-foreground"
               title="Về trang soi da (Hôm nay)"
+              aria-label="Về trang soi da"
             >
               <Home className="size-3.5" />
               <span className="hidden sm:inline">Trang soi da (Trang chủ)</span>
@@ -1058,7 +1065,7 @@ export default function ShopProductPage() {
 
                 {/* CẢNH BÁO TẠM KHÓA */}
                 <div className="rounded-xl border border-dashed border-amber-600/40 bg-amber-500/10 p-3.5 text-xs text-amber-950 dark:text-amber-200">
-                  🔒 <strong>Chức năng Kênh Người Bán tạm khóa:</strong> Bạn chưa thể đăng bán sản phẩm mới, cập nhật tồn kho hoặc xử lý đơn hàng cho đến khi Super Admin phê duyệt.
+                  <strong>Chức năng Kênh Người Bán tạm khóa:</strong> Bạn chưa thể đăng bán sản phẩm mới, cập nhật tồn kho hoặc xử lý đơn hàng cho đến khi Super Admin phê duyệt.
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3 pt-2">
@@ -1103,12 +1110,12 @@ export default function ShopProductPage() {
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
                   <AuthModal
                     defaultTab="sign-in"
-                    triggerLabel="🔑 Đăng nhập Gian hàng"
+                    triggerLabel="Đăng nhập Gian hàng"
                     triggerClassName="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2 text-xs font-semibold text-primary-foreground shadow-xs hover:bg-primary/90 transition cursor-pointer"
                   />
                   <AuthModal
                     defaultTab="shop-approval"
-                    triggerLabel="🏪 Nộp hồ sơ Mở Gian hàng"
+                    triggerLabel="Nộp hồ sơ Mở Gian hàng"
                     triggerClassName="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-amber-600/40 bg-amber-500/10 px-5 py-2 text-xs font-semibold text-amber-800 dark:text-amber-300 hover:border-amber-600 hover:bg-amber-500/20 transition cursor-pointer"
                   />
                   <button
@@ -1244,7 +1251,7 @@ export default function ShopProductPage() {
                         const count = filterProductsByShop(products, sn, false).length;
                         return (
                           <option key={sn} value={sn}>
-                            🏪 {sn} ({count} SP)
+                            {sn} ({count} SP)
                           </option>
                         );
                       })}
@@ -1368,7 +1375,7 @@ export default function ShopProductPage() {
                           )}
                           <span className="flex items-center gap-1 rounded bg-success px-1.5 py-0.5 text-[9px] font-semibold text-primary-foreground shadow-xs">
                             <Truck className="size-2.5" />
-                            <span>Freeship Xtra</span>
+                            <span>Miễn phí ship</span>
                           </span>
                         </div>
 
@@ -1798,7 +1805,7 @@ export default function ShopProductPage() {
                   <div className="space-y-1.5 rounded-xl border border-border bg-surface-2/50 p-3 text-xs">
                     <div className="flex items-center gap-1.5 font-semibold text-success">
                       <Truck className="size-4" />
-                      <span>Vận Chuyển: Miễn Phí Vận Chuyển (Freeship Xtra)</span>
+                      <span>Vận Chuyển: Miễn Phí Vận Chuyển</span>
                     </div>
                     <div className="space-y-0.5 pl-5 text-xs text-muted-foreground">
                       <div>Gửi hàng từ: <strong className="text-foreground">{selectedProduct.shippingInfo.shippingFrom}</strong></div>
@@ -2115,7 +2122,7 @@ export default function ShopProductPage() {
                   <span>3. Vận chuyển & Cam kết SkinSense Mall</span>
                 </h4>
                 <div className="space-y-0.5 rounded-lg bg-surface-2 p-2.5 text-xs">
-                  <div>Vận chuyển: <strong className="text-success">Freeship Xtra (Miễn phí toàn quốc)</strong></div>
+                  <div>Vận chuyển: <strong className="text-success">Miễn phí vận chuyển toàn quốc</strong></div>
                   <div>Gửi từ: <strong className="text-foreground">{inspectingProduct.shippingInfo.shippingFrom}</strong></div>
                   <div>Thời gian giao hàng: <strong className="text-foreground">{inspectingProduct.shippingInfo.estimatedDelivery}</strong></div>
                 </div>

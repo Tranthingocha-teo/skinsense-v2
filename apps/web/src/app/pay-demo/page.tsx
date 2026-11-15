@@ -205,10 +205,10 @@ function PayDemoInner() {
               <div className="rounded-2xl bg-stone-50/70 border border-stone-100 p-4 text-center space-y-1">
                 <span className="text-xs text-[#5C605C] font-medium">Số tiền thanh toán:</span>
                 <div className="font-serif font-bold text-3xl text-[#1C1F1C]">
-                  {amount > 0 ? formatMoney(amount) : "..."}
+                  {amount > 0 ? formatMoney(amount) : "—"}
                 </div>
                 <div className="text-[11px] text-[#5C605C] font-mono">
-                  Mã đơn: <strong>{orderCode || "(thiếu mã đơn)"}</strong>
+                  Mã đơn: <strong>{orderCode || "—"}</strong>
                 </div>
               </div>
 
@@ -241,6 +241,12 @@ function PayDemoInner() {
                 </div>
               </div>
 
+              {!orderCode && (
+                <div role="status" className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-xs text-amber-900 text-center font-medium">
+                  Trang này mở từ mã QR ở bước thanh toán. Hãy quét mã QR trên màn hình thanh toán để xác nhận đơn.
+                </div>
+              )}
+
               {errorMsg && (
                 <div className="rounded-xl bg-red-50 border border-red-200 p-3 text-xs text-red-700 text-center font-medium">
                   {errorMsg}
@@ -257,7 +263,7 @@ function PayDemoInner() {
               >
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || !orderCode}
                   className="w-full min-h-[52px] rounded-2xl bg-[#1C1F1C] hover:bg-[#2C302C] active:bg-black active:scale-[0.98] text-white font-bold text-sm shadow-md shadow-black/20 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 select-none touch-manipulation"
                 >
                   {loading ? (
@@ -275,7 +281,7 @@ function PayDemoInner() {
               </form>
 
               <p className="text-[10px] text-neutral-400 text-center leading-tight">
-                Bấm xác nhận trên điện thoại sẽ kích hoạt Backend và tự động tắt mã QR trên màn hình máy tính của bạn.
+                Đây là thanh toán mô phỏng, không trừ tiền thật. Sau khi xác nhận, mã QR trên màn hình máy tính sẽ tự đóng.
               </p>
             </>
           ) : (

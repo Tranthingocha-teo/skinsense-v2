@@ -342,7 +342,7 @@ export function UserPrescribedRoutine({ routine }: { routine: PrescribedRoutineD
                 Tiết kiệm {formatMoney(totalSaved)} khi mua cả bộ
               </span>
             )}
-            <span className="text-xs text-[#5C605C]">• Freeship Xtra toàn quốc</span>
+            <span className="text-xs text-[#5C605C]">• Miễn phí vận chuyển toàn quốc</span>
           </div>
           <h3 className="font-serif text-lg sm:text-xl font-bold text-[#191B19]">
             Hoàn Tất Đơn Kê & Mua Sản Phẩm Tại Gian Hàng SkinSense

@@ -94,7 +94,8 @@ test("a signed-out visitor cannot place an order", async ({ request }) => {
 
 test("the pay-demo page without an order code pays nothing", async ({ page }) => {
   await page.goto("/pay-demo");
-  await page.getByRole("button", { name: /XÁC NHẬN THANH TOÁN/ }).click();
-  await expect(page.getByText(/Thiếu mã đơn hàng/)).toBeVisible();
+  // No order to pay: the button is disabled and the page says where the link comes from.
+  await expect(page.getByRole("button", { name: /XÁC NHẬN THANH TOÁN/ })).toBeDisabled();
+  await expect(page.getByText(/Trang này mở từ mã QR/)).toBeVisible();
   await expect(page.getByText("THANH TOÁN THÀNH CÔNG!")).toHaveCount(0);
 });

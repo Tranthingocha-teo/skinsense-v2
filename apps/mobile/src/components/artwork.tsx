@@ -131,7 +131,7 @@ export function ProductArt({
           y={label.y + label.h / 2 + (initials.length > 1 ? 3.5 : 4)}
           textAnchor="middle"
           fill={palette.fg}
-          fontSize={initials.length > 1 ? 10 : 12}
+          fontSize={initials.length > 1 ? 12 : 14}
         >
           {initials}
         </SvgText>

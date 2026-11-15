@@ -20,7 +20,8 @@
     "today": "Today",
     "capture": "Capture",
     "trends": "Trends",
-    "settings": "Settings"
+    "settings": "Settings",
+    "sellerChannel": "Seller channel"
   },
   "Settings": {
     "title": "Settings",
@@ -32,7 +33,9 @@
     "privacy": "Privacy policy",
     "data": "Data",
     "history": "Photo history",
-    "export": "Export data (.csv)"
+    "export": "Export data (.csv)",
+    "sellerGroup": "For shops",
+    "sellerLink": "Seller channel"
   },
   "Feedback": {
     "title": "Feedback",
@@ -123,7 +126,14 @@
     "defaultDescEvening": "Dissolve oil and grime, calm breakouts and restore the skin barrier overnight.",
     "emptyTitle": "No routine steps yet",
     "emptyEmbedded": "No steps yet. Tap \"Edit routine\" to add one.",
-    "emptyFull": "No skincare steps yet. Add your first one below."
+    "emptyFull": "No skincare steps yet. Add your first one below.",
+    "stepEvening": "Evening",
+    "stepMorning": "Morning",
+    "stepBoth": "Morning & evening",
+    "doneBadge": "Done ✓",
+    "actives": "Actives:",
+    "dosage": "Dosage: ",
+    "howToUse": "How to use: "
   },
   "Landing": {
     "title": "SkinSense",

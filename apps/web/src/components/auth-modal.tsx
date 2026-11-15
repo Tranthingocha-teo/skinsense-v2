@@ -348,7 +348,7 @@ export function AuthModal({
       }
 
       setSuccess(
-        "✅ Hồ sơ Bác sĩ đã được gửi thành công! Ban quản trị sẽ xét duyệt Chứng chỉ hành nghề. Sau khi duyệt, bạn có thể đăng nhập vào cổng chuyên gia.",
+        "Hồ sơ Bác sĩ đã được gửi thành công! Ban quản trị sẽ xét duyệt Chứng chỉ hành nghề. Sau khi duyệt, bạn có thể đăng nhập vào cổng chuyên gia.",
       );
       setLoading(false);
     } catch (err) {
@@ -413,7 +413,7 @@ export function AuthModal({
       }
 
       setSuccess(
-        "✅ Hồ sơ mở Gian hàng đã được gửi thành công! Super Admin Trần Thị Ngọc Hà sẽ xét duyệt Giấy phép kinh doanh & Danh mục sản phẩm. Sau khi duyệt, bạn có thể đăng nhập vào Kênh Người Bán (SkinSense Mall).",
+        "Hồ sơ mở Gian hàng đã được gửi thành công! Super Admin Trần Thị Ngọc Hà sẽ xét duyệt Giấy phép kinh doanh & Danh mục sản phẩm. Sau khi duyệt, bạn có thể đăng nhập vào Kênh Người Bán (SkinSense Mall).",
       );
       setLoading(false);
     } catch (err) {

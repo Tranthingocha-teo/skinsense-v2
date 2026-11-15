@@ -98,7 +98,7 @@ export function ProductArt({ name, brand, category, seed, className, label }: Pr
           textAnchor="middle"
           dominantBaseline="central"
           fill="var(--foreground)"
-          fontSize={initials.length > 1 ? 10 : 12}
+          fontSize={initials.length > 1 ? 12 : 14}
           className="font-display"
           style={{ letterSpacing: "0.04em" }}
         >
