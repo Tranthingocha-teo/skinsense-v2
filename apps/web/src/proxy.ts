@@ -7,6 +7,10 @@ import { supabaseEnv } from "@/lib/env";
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  if (pathname === "/demo" || pathname.startsWith("/demo/")) {
+    return NextResponse.next({ request });
+  }
+
   let response = NextResponse.next({ request });
   const { url, anonKey } = supabaseEnv();
   const supabase = createServerClient(
