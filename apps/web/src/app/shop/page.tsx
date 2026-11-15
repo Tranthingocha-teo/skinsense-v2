@@ -808,7 +808,7 @@ export default function ShopProductPage() {
       return;
     }
     if (isUploadingImages) {
-      toast.info("Ảnh sản phẩm đang được tải lên Cloudinary, vui lòng đợi...");
+      toast.info("Ảnh sản phẩm đang được tải lên, vui lòng đợi...");
       return;
     }
 

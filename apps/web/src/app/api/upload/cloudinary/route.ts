@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import {
-  CLOUDINARY_CONSOLE_URL,
   isCloudinaryConfigured,
   uploadImageToCloudinary,
 } from "@/lib/cloudinary";
@@ -39,10 +38,6 @@ export async function GET() {
     ok: true,
     configured: status.configured,
     mode: status.mode,
-    cloudName: status.cloudName || null,
-    folder: status.folder,
-    missingKeys: status.missingKeys,
-    consoleUrl: CLOUDINARY_CONSOLE_URL,
   });
 }
 
@@ -55,9 +50,7 @@ export async function POST(request: Request) {
           ok: false,
           code: "CLOUDINARY_NOT_CONFIGURED",
           error:
-            "Chưa cấu hình tài khoản Cloudinary trên máy chủ. Vui lòng thêm CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET (hoặc CLOUDINARY_UPLOAD_PRESET) vào apps/web/.env.local.",
-          missingKeys: status.missingKeys,
-          consoleUrl: CLOUDINARY_CONSOLE_URL,
+            "Dịch vụ tải ảnh tạm thời chưa sẵn sàng. Vui lòng thử lại sau.",
         },
         { status: 503 },
       );
@@ -177,7 +170,7 @@ export async function POST(request: Request) {
         error:
           err instanceof Error
             ? err.message
-            : "Tải ảnh lên Cloudinary thất bại.",
+            : "Tải ảnh lên thất bại. Vui lòng thử lại.",
       },
       { status: 500 },
     );
