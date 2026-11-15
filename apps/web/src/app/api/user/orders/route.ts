@@ -1,0 +1,352 @@
+import { NextResponse } from "next/server";
+import { isValidOrderStatus, ordersStore, type BackendOrder } from "@/lib/orders-store";
+import { getAuthenticatedActor, type AuthenticatedActor } from "@/lib/session-auth";
+import { normalizeShopId } from "@/lib/shop-utils";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
+
+function normalizePersonName(value?: string | null): string {
+  return (value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[đĐ]/g, "d")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function isOrderOwnedByActor(order: BackendOrder, actor: AuthenticatedActor): boolean {
+  if (actor.role === "admin") return true;
+  if (actor.role === "shop") {
+    return Boolean(actor.shopId) && normalizeShopId(order.shopName) === actor.shopId;
+  }
+  if (actor.role === "customer") {
+    const orderName = normalizePersonName(order.customerName);
+    const actorName = normalizePersonName(actor.fullName);
+    if (orderName && actorName && orderName === actorName) return true;
+
+    const orderPhone = (order.customerPhone || "").replace(/[^0-9]/g, "");
+    if (orderPhone && actor.phone && orderPhone === actor.phone) return true;
+    return false;
+  }
+  return false;
+}
+
+// Thư viện ảnh dược mỹ phẩm sắc nét cho sản phẩm
+const PRODUCT_IMAGES: Record<string, string> = {
+  bioderma: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600&auto=format&fit=crop&q=80",
+  cerave: "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=600&auto=format&fit=crop&q=80",
+  hyalu: "https://images.unsplash.com/photo-1617897903246-719242758050?w=600&auto=format&fit=crop&q=80",
+  effaclar: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=600&auto=format&fit=crop&q=80",
+  duo: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=600&auto=format&fit=crop&q=80",
+  anthelios: "https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?w=600&auto=format&fit=crop&q=80",
+  paula: "https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=600&auto=format&fit=crop&q=80",
+  bha: "https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=600&auto=format&fit=crop&q=80",
+};
+
+function resolveItemImage(name: string, fallback?: string): string {
+  if (fallback) return fallback;
+  const n = (name || "").toLowerCase();
+  for (const [key, url] of Object.entries(PRODUCT_IMAGES)) {
+    if (n.includes(key)) return url;
+  }
+  return "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=600&auto=format&fit=crop&q=80";
+}
+
+export async function GET(req: Request) {
+  try {
+    const actor = await getAuthenticatedActor(req);
+    if (!actor) {
+      return NextResponse.json(
+        { ok: false, error: "Vui lòng đăng nhập để xem đơn hàng." },
+        { status: 401 },
+      );
+    }
+
+    const allOrders = await ordersStore.getAllAsync();
+    const now = Date.now();
+
+    let currentUserName = actor.fullName || "Khách hàng";
+    let currentUserPhone = actor.phone || "0987654321";
+    let userOrders: BackendOrder[] = [];
+
+    if (actor.role === "admin") {
+      userOrders = allOrders;
+    } else if (actor.role === "shop") {
+      const targetShopId =
+        actor.shopId || normalizeShopId(actor.shopName || "La Roche-Posay Flagship Store");
+      currentUserName = actor.shopName || "La Roche-Posay Flagship Store";
+      currentUserPhone = actor.phone || "";
+      userOrders = allOrders.filter((o) => normalizeShopId(o.shopName) === targetShopId);
+    } else {
+      userOrders = allOrders.filter((o) => isOrderOwnedByActor(o, actor));
+    }
+
+    // Chỉ tự động tạo đơn mẫu ban đầu cho tài khoản Customer (không tạo cho Shop/Admin)
+    if (actor.role === "customer" && userOrders.length === 0) {
+      const displayCustomerName = currentUserName;
+
+      const sampleOrders: Omit<BackendOrder, "id" | "createdAt">[] = [
+        {
+          orderCode: `SHOPEE-SS-${Math.floor(100000 + Math.random() * 900000)}`,
+          customerName: displayCustomerName,
+          customerPhone: currentUserPhone || "0987 654 321",
+          shippingAddress: "Số 123 Đường Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh",
+          totalAmount: 485000,
+          status: "delivered",
+          paymentMethod: "momo",
+          paymentStatus: "paid",
+          shopName: "Bioderma Official Store",
+          brand: "Bioderma",
+          carrier: "Shopee Express (Freeship Xtra)",
+          items: [
+            {
+              id: "item_sp_01",
+              name: "Nước Tẩy Trang Bioderma Sensibio H2O Micellar Dịu Nhẹ Cho Da Nhạy Cảm 500ml",
+              price: 485000,
+              quantity: 1,
+              variant: "Chai 500ml Tiết Kiệm",
+              image: PRODUCT_IMAGES.bioderma,
+            },
+          ],
+          paidAt: new Date(now - 3 * 86400000).toISOString(),
+        },
+        {
+          orderCode: `SHOPEE-SS-${Math.floor(100000 + Math.random() * 900000)}`,
+          customerName: displayCustomerName,
+          customerPhone: currentUserPhone || "0987 654 321",
+          shippingAddress: "Số 123 Đường Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh",
+          totalAmount: 840000,
+          status: "delivering",
+          paymentMethod: "momo",
+          paymentStatus: "paid",
+          shopName: "La Roche-Posay Flagship Store",
+          brand: "La Roche-Posay",
+          carrier: "Shopee Express Fast",
+          items: [
+            {
+              id: "item_sp_03",
+              name: "Tinh Chất Phục Hồi & Cấp Nước Đa Tầng La Roche-Posay Hyalu B5 Serum 30ml",
+              price: 890000,
+              quantity: 1,
+              variant: "Chai 30ml",
+              image: PRODUCT_IMAGES.hyalu,
+            },
+          ],
+          paidAt: new Date(now - 86400000).toISOString(),
+        },
+        {
+          orderCode: `SHOPEE-SS-${Math.floor(100000 + Math.random() * 900000)}`,
+          customerName: displayCustomerName,
+          customerPhone: currentUserPhone || "0987 654 321",
+          shippingAddress: "Số 123 Đường Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh",
+          totalAmount: 330000,
+          status: "pending",
+          paymentMethod: "momo",
+          paymentStatus: "unpaid",
+          shopName: "SkinSense Official Medical Mall",
+          brand: "SkinSense",
+          carrier: "Shopee Express Tiết Kiệm",
+          items: [
+            {
+              id: "item_sp_02",
+              name: "Sữa Rửa Mặt Dưỡng Ẩm Cho Da Khô CeraVe Hydrating Cleanser 473ml",
+              price: 380000,
+              quantity: 1,
+              variant: "Chai 473ml",
+              image: PRODUCT_IMAGES.cerave,
+            },
+          ],
+        },
+        {
+          orderCode: `SHOPEE-SS-${Math.floor(100000 + Math.random() * 900000)}`,
+          customerName: displayCustomerName,
+          customerPhone: currentUserPhone || "0987 654 321",
+          shippingAddress: "Số 123 Đường Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh",
+          totalAmount: 395000,
+          status: "cancelled", // Đơn hàng đã tự động hủy do quá hạn 3 ngày chưa thanh toán
+          paymentMethod: "momo",
+          paymentStatus: "unpaid",
+          shopName: "La Roche-Posay Flagship Store",
+          brand: "La Roche-Posay",
+          carrier: "Shopee Express",
+          items: [
+            {
+              id: "item_sp_04",
+              name: "Kem Dưỡng Giảm Mụn & Ngừa Thâm La Roche-Posay Effaclar Duo+M 40ml",
+              price: 395000,
+              quantity: 1,
+              variant: "Tuýp 40ml",
+              image: PRODUCT_IMAGES.effaclar,
+            },
+          ],
+        },
+      ];
+
+      const createdList: BackendOrder[] = [];
+      for (const sample of sampleOrders) {
+        const created = await ordersStore.createAsync(sample);
+        createdList.push(created);
+      }
+      userOrders = createdList;
+    }
+
+    // 5. Đảm bảo toàn bộ mặt hàng đều có link ảnh sắc nét và kiểm tra tự động hủy sau 3 ngày
+    const enrichedOrders = userOrders.map((order) => {
+      // Kiểm tra đơn chưa thanh toán quá 3 ngày
+      const createdMs = new Date(order.createdAt).getTime();
+      let status = order.status;
+      if ((order.status === "pending" || order.paymentStatus === "unpaid") && !isNaN(createdMs)) {
+        if (now - createdMs > THREE_DAYS_MS) {
+          status = "cancelled";
+        }
+      }
+
+      const items = (order.items || []).map((it) => ({
+        ...it,
+        image: resolveItemImage(it.name, it.image),
+      }));
+
+      return {
+        ...order,
+        status,
+        items,
+      };
+    });
+
+    return NextResponse.json({
+      ok: true,
+      orders: enrichedOrders,
+      user: {
+        name: currentUserName,
+        phone: currentUserPhone,
+      },
+    });
+  } catch (err: unknown) {
+    return NextResponse.json({ ok: false, error: err instanceof Error ? err.message : "Failed to load orders" }, { status: 500 });
+  }
+}
+
+export async function POST(req: Request) {
+  try {
+    const actor = await getAuthenticatedActor(req);
+    if (!actor) {
+      return NextResponse.json(
+        { ok: false, error: "Vui lòng đăng nhập để thao tác đơn hàng." },
+        { status: 401 },
+      );
+    }
+
+    let body: Record<string, unknown>;
+    try {
+      body = (await req.json()) as Record<string, unknown>;
+    } catch {
+      return NextResponse.json({ ok: false, error: "Dữ liệu yêu cầu không hợp lệ." }, { status: 400 });
+    }
+
+    const action = typeof body.action === "string" ? body.action : "";
+    const orderCode = typeof body.orderCode === "string" ? body.orderCode.trim() : "";
+
+    if (!orderCode) {
+      return NextResponse.json({ ok: false, error: "Thiếu mã đơn hàng" }, { status: 400 });
+    }
+
+    const existingOrder = await ordersStore.findByCodeAsync(orderCode);
+    if (!existingOrder) {
+      return NextResponse.json({ ok: false, error: "Không tìm thấy đơn hàng" }, { status: 404 });
+    }
+
+    if (!isOrderOwnedByActor(existingOrder, actor)) {
+      return NextResponse.json(
+        { ok: false, error: "Bạn không có quyền thao tác trên đơn hàng này." },
+        { status: 403 },
+      );
+    }
+
+    if (action === "update_status") {
+      const status = body.status;
+      if (!status || !isValidOrderStatus(status)) {
+        return NextResponse.json(
+          { ok: false, error: "Trạng thái cập nhật không hợp lệ." },
+          { status: 400 },
+        );
+      }
+
+      if (actor.role === "customer" && status !== "cancelled" && status !== "delivered") {
+        return NextResponse.json(
+          { ok: false, error: "Khách hàng chỉ có thể hủy đơn hoặc xác nhận đã nhận hàng." },
+          { status: 403 },
+        );
+      }
+
+      const result = await ordersStore.updateStatusSafeAsync(orderCode, status);
+      if (!result.ok) {
+        const httpStatus =
+          result.code === "NOT_FOUND" ? 404 : result.code === "INVALID_STATUS" ? 400 : 409;
+        return NextResponse.json({ ok: false, error: result.error }, { status: httpStatus });
+      }
+      return NextResponse.json({ ok: true, order: result.order });
+    }
+
+    if (action === "add_review") {
+      if (actor.role !== "customer") {
+        return NextResponse.json(
+          { ok: false, error: "Chỉ khách hàng mua đơn mới có thể gửi đánh giá." },
+          { status: 403 },
+        );
+      }
+
+      const rawReview = body.review as Record<string, unknown> | undefined;
+      if (!rawReview || typeof rawReview !== "object") {
+        return NextResponse.json({ ok: false, error: "Vui lòng chọn số sao đánh giá" }, { status: 400 });
+      }
+
+      const parsedRating = Number(rawReview.rating);
+      if (!Number.isInteger(parsedRating) || parsedRating < 1 || parsedRating > 5) {
+        return NextResponse.json(
+          { ok: false, error: "Số sao đánh giá phải từ 1 đến 5." },
+          { status: 400 },
+        );
+      }
+
+      const rawComment = typeof rawReview.comment === "string" ? rawReview.comment.trim() : "";
+      if (rawComment.length > 1000) {
+        return NextResponse.json(
+          { ok: false, error: "Nội dung đánh giá tối đa 1000 ký tự." },
+          { status: 400 },
+        );
+      }
+
+      const rawTags = Array.isArray(rawReview.tags)
+        ? rawReview.tags
+            .filter((t): t is string => typeof t === "string" && t.trim().length > 0)
+            .slice(0, 10)
+            .map((t) => t.trim().slice(0, 80))
+        : [];
+
+      const reviewPayload = {
+        rating: parsedRating,
+        comment: rawComment,
+        tags: rawTags,
+        createdAt: new Date().toISOString(),
+      };
+
+      const result = await ordersStore.addReviewSafeAsync(orderCode, reviewPayload);
+      if (!result.ok) {
+        const httpStatus = result.code === "NOT_FOUND" ? 404 : 409;
+        return NextResponse.json({ ok: false, error: result.error }, { status: httpStatus });
+      }
+      return NextResponse.json({ ok: true, order: result.order });
+    }
+
+    return NextResponse.json({ ok: false, error: "Hành động không hợp lệ" }, { status: 400 });
+  } catch (err: unknown) {
+    return NextResponse.json(
+      { ok: false, error: err instanceof Error ? err.message : "Lỗi xử lý đơn hàng" },
+      { status: 500 },
+    );
+  }
+}

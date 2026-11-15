@@ -17,6 +17,7 @@ import {
   Package,
   QrCode,
   RefreshCw,
+  RotateCcw,
   ShieldCheck,
   ShoppingBag,
   Store,
@@ -106,46 +107,65 @@ export function CustomerOrders() {
     switch (status) {
       case 'pending':
         return (
-          <View className="flex-row items-center gap-1 rounded-pill bg-amber-500/10 px-2.5 py-1">
-            <Icon as={Clock} size={12} className="text-amber-500" />
-            <Text className="text-[11.5px] font-medium text-amber-600 dark:text-amber-400">
+          <View className="flex-row items-center gap-1 rounded-pill bg-warning/10 px-2.5 py-1">
+            <Icon as={Clock} size={12} className="text-warning" />
+            <Text className="text-[12px] font-medium text-warning">
               Chờ xác nhận
             </Text>
           </View>
         );
       case 'confirmed':
+      case 'processing':
         return (
-          <View className="flex-row items-center gap-1 rounded-pill bg-blue-500/10 px-2.5 py-1">
-            <Icon as={Package} size={12} className="text-blue-500" />
-            <Text className="text-[11.5px] font-medium text-blue-600 dark:text-blue-400">
+          <View className="flex-row items-center gap-1 rounded-pill bg-primary/10 px-2.5 py-1">
+            <Icon as={Package} size={12} className="text-primary" />
+            <Text className="text-[12px] font-medium text-primary">
               Đã xác nhận
             </Text>
           </View>
         );
       case 'shipping':
         return (
-          <View className="flex-row items-center gap-1 rounded-pill bg-indigo-500/10 px-2.5 py-1">
-            <Icon as={Truck} size={12} className="text-indigo-500" />
-            <Text className="text-[11.5px] font-medium text-indigo-600 dark:text-indigo-400">
+          <View className="flex-row items-center gap-1 rounded-pill bg-primary/10 px-2.5 py-1">
+            <Icon as={Truck} size={12} className="text-primary" />
+            <Text className="text-[12px] font-medium text-primary">
               Đang giao hàng
+            </Text>
+          </View>
+        );
+      case 'delivered':
+        return (
+          <View className="flex-row items-center gap-1 rounded-pill bg-success/10 px-2.5 py-1">
+            <Icon as={CheckCircle2} size={12} className="text-success" />
+            <Text className="text-[12px] font-medium text-success">
+              Đã giao
             </Text>
           </View>
         );
       case 'completed':
         return (
-          <View className="flex-row items-center gap-1 rounded-pill bg-emerald-500/10 px-2.5 py-1">
-            <Icon as={CheckCircle2} size={12} className="text-emerald-500" />
-            <Text className="text-[11.5px] font-medium text-emerald-600 dark:text-emerald-400">
+          <View className="flex-row items-center gap-1 rounded-pill bg-success/10 px-2.5 py-1">
+            <Icon as={CheckCircle2} size={12} className="text-success" />
+            <Text className="text-[12px] font-medium text-success">
               Đã hoàn thành
             </Text>
           </View>
         );
       case 'cancelled':
         return (
-          <View className="flex-row items-center gap-1 rounded-pill bg-rose-500/10 px-2.5 py-1">
-            <Icon as={XCircle} size={12} className="text-rose-500" />
-            <Text className="text-[11.5px] font-medium text-rose-600 dark:text-rose-400">
+          <View className="flex-row items-center gap-1 rounded-pill bg-destructive/10 px-2.5 py-1">
+            <Icon as={XCircle} size={12} className="text-destructive" />
+            <Text className="text-[12px] font-medium text-destructive">
               Đã huỷ
+            </Text>
+          </View>
+        );
+      case 'refunded':
+        return (
+          <View className="flex-row items-center gap-1 rounded-pill bg-destructive/10 px-2.5 py-1">
+            <Icon as={RotateCcw} size={12} className="text-destructive" />
+            <Text className="text-[12px] font-medium text-destructive">
+              Đã hoàn tiền
             </Text>
           </View>
         );
@@ -219,7 +239,7 @@ export function CustomerOrders() {
 
       {/* Content List */}
       <ScrollView
-        contentContainerClassName="gap-3.5 p-4"
+        contentContainerClassName="gap-4 p-4"
         style={{ marginBottom: Math.max(bottom, 12) }}
         showsVerticalScrollIndicator={false}
       >
@@ -254,13 +274,13 @@ export function CustomerOrders() {
             return (
               <View
                 key={order.id}
-                className="gap-3 rounded-card border border-border bg-card p-4 shadow-sm"
+                className="gap-3.5 rounded-card border border-border bg-card p-4 shadow-xs"
               >
                 {/* Order Top Bar: Shop info & status */}
                 <View className="flex-row items-center justify-between border-b border-border/40 pb-2.5">
                   <View className="flex-row items-center gap-1.5">
                     <Icon as={ShieldCheck} size={15} className="text-primary" />
-                    <Text className="text-[13.5px] font-semibold">{order.shopName || 'SkinSense Boutique'}</Text>
+                    <Text className="flex-1 text-[14px] font-semibold" numberOfLines={1}>{order.shopName || 'SkinSense Boutique'}</Text>
                   </View>
                   {renderStatusBadge(order.status)}
                 </View>

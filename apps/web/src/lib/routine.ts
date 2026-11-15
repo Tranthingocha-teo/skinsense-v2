@@ -9,33 +9,16 @@ export function fail(error: { message: string } | null) {
   if (error) throw new Error(error.message);
 }
 
-export async function loadRoutine(night: string, defaults: string[]) {
+export async function loadRoutine(night: string, _defaults?: string[]) {
   const supabase = createClient();
-  const [items, entry, entryCount] = await Promise.all([
+  const [items, entry] = await Promise.all([
     supabase.from("routine_items").select(ITEM_COLUMNS).order("position"),
     supabase.from("routine_entries").select("night,completed_labels,item_count").eq("night", night).maybeSingle(),
-    supabase.from("routine_entries").select("id", { count: "exact", head: true }),
   ]);
   fail(items.error);
   fail(entry.error);
-  fail(entryCount.error);
-  let list = items.data as RoutineItem[];
-  // ponytail: "no items and no entries" = new user. A user who deletes every
-  // item before their first tick gets the defaults back on reload; a DB
-  // trigger would fix that but can't know the locale. Concurrent loads
-  // (Strict Mode, two tabs) both seed; unique (user_id, label) dedupes them.
-  if (list.length === 0 && entryCount.count === 0) {
-    const seeded = await supabase
-      .from("routine_items")
-      .upsert(defaults.map((label, position) => ({ label, position })), {
-        onConflict: "user_id,label",
-        ignoreDuplicates: true,
-      });
-    fail(seeded.error);
-    const reread = await supabase.from("routine_items").select(ITEM_COLUMNS).order("position");
-    fail(reread.error);
-    list = reread.data as RoutineItem[];
-  }
+  // Strict Multi-tenancy: của ai hiển thị cái đó, chứ không tự chèn mẫu. Nếu chưa có thì để trống.
+  const list = (items.data || []) as RoutineItem[];
   return { items: list, entry: entry.data as RoutineEntry | null };
 }
 

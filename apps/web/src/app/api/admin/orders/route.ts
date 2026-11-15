@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { requireRoleActor } from "@/lib/session-auth";
+import { downloadStorageJson, uploadStorageJson } from "@/lib/supabase/storage-json";
 
 export interface OrderItem {
   id: string;
@@ -10,6 +12,8 @@ export interface OrderItem {
   createdAt: string;
   disputeReason?: string;
 }
+
+const ADMIN_ORDERS_STORAGE_PATH = "admin/admin_orders_registry.json";
 
 let ORDERS_STORE: OrderItem[] = [
   {
@@ -51,32 +55,52 @@ let ORDERS_STORE: OrderItem[] = [
   },
 ];
 
-export async function GET() {
-  return NextResponse.json({ ok: true, orders: ORDERS_STORE });
+async function loadAdminOrders(): Promise<OrderItem[]> {
+  const remote = await downloadStorageJson<OrderItem[]>(ADMIN_ORDERS_STORAGE_PATH);
+  if (Array.isArray(remote) && remote.length > 0) {
+    ORDERS_STORE = remote;
+    return remote;
+  }
+  return ORDERS_STORE;
+}
+
+export async function GET(request: Request) {
+  const auth = await requireRoleActor(request, ["admin"]);
+  if (!auth.ok) return auth.response;
+
+  const orders = await loadAdminOrders();
+  return NextResponse.json({ ok: true, orders });
 }
 
 export async function PATCH(request: Request) {
+  const auth = await requireRoleActor(request, ["admin"]);
+  if (!auth.ok) return auth.response;
+
   try {
     const body = await request.json();
-    const { orderId, action, disputeReason } = body; // action: "resolve" | "ship" | "complete"
+    const { orderId, action } = body; // action: "resolve" | "ship" | "complete"
 
     if (!orderId) {
       return NextResponse.json({ error: "Thiếu orderId." }, { status: 400 });
     }
 
-    ORDERS_STORE = ORDERS_STORE.map((o) => {
+    const current = await loadAdminOrders();
+    const updated = current.map((o) => {
       if (o.id !== orderId) return o;
       if (action === "resolve") {
-        return { ...o, status: "completed", disputeReason: undefined };
+        return { ...o, status: "completed" as const, disputeReason: undefined };
       }
       if (action === "ship") {
-        return { ...o, status: "shipping" };
+        return { ...o, status: "shipping" as const };
       }
       if (action === "complete") {
-        return { ...o, status: "completed" };
+        return { ...o, status: "completed" as const };
       }
       return o;
     });
+
+    ORDERS_STORE = updated;
+    await uploadStorageJson(ADMIN_ORDERS_STORAGE_PATH, updated);
 
     return NextResponse.json({ ok: true, message: "Đã cập nhật đơn hàng thành công" });
   } catch (err) {

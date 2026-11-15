@@ -1,5 +1,24 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
+interface MockAuthUser {
+  id: string;
+  email: string;
+  user_metadata?: Record<string, unknown>;
+}
+
+let currentAuthUser: MockAuthUser | null = null;
+
+vi.mock("@/lib/supabase/server", () => ({
+  createClient: vi.fn(async () => ({
+    auth: {
+      getUser: vi.fn(async () => ({
+        data: { user: currentAuthUser },
+        error: null,
+      })),
+    },
+  })),
+}));
+
 // Mock @supabase/supabase-js
 vi.mock("@supabase/supabase-js", () => {
   return {
@@ -56,13 +75,43 @@ vi.mock("@supabase/supabase-js", () => {
 
 describe("Specialist Cases API (/api/specialist/cases)", () => {
   beforeEach(() => {
+    currentAuthUser = {
+      id: "spec-01",
+      email: "bacsi.hoa@skinsense.vn",
+      user_metadata: { role: "specialist", full_name: "BS. Mai Hoa" },
+    };
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
     vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "mock-service-role-key");
   });
 
+  it("rejects unauthenticated (401) and non-specialist customer (403) callers", async () => {
+    const { GET, POST } = await import("./route");
+
+    currentAuthUser = null;
+    const unauthRes = await GET(new Request("http://localhost:3000/api/specialist/cases"));
+    expect(unauthRes.status).toBe(401);
+
+    currentAuthUser = {
+      id: "cust-01",
+      email: "customer@example.com",
+      user_metadata: { role: "customer" },
+    };
+    const forbiddenGet = await GET(new Request("http://localhost:3000/api/specialist/cases"));
+    expect(forbiddenGet.status).toBe(403);
+
+    const forbiddenPost = await POST(
+      new Request("http://localhost:3000/api/specialist/cases", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ products: [] }),
+      }),
+    );
+    expect(forbiddenPost.status).toBe(403);
+  });
+
   it("handles GET request and returns clinical cases list structure", async () => {
     const { GET } = await import("./route");
-    const res = await GET();
+    const res = await GET(new Request("http://localhost:3000/api/specialist/cases"));
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.ok).toBe(true);

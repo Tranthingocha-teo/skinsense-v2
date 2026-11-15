@@ -97,4 +97,23 @@ describe("Routine API Multi-Tenancy (/api/routine)", () => {
     expect(json.ok).toBe(true);
     expect(json.completedLabels).toContain("Làm sạch");
   });
+
+  it("returns empty steps array and 0 count when guest/unauthenticated without seeding fake data", async () => {
+    const { createClient } = await import("@/lib/supabase/server");
+    type ServerClient = Awaited<ReturnType<typeof createClient>>;
+    vi.mocked(createClient).mockResolvedValueOnce({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user: null } }),
+      },
+    } as unknown as ServerClient);
+
+    const { GET } = await import("./route");
+    const req = new Request("http://localhost:3000/api/routine");
+    const res = await GET(req);
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.ok).toBe(true);
+    expect(json.steps).toEqual([]);
+    expect(json.totalCount).toBe(0);
+  });
 });

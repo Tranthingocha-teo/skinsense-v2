@@ -88,6 +88,11 @@ export function Landing() {
               triggerLabel="🩺 Bác sĩ gửi duyệt"
               triggerClassName="flex h-10 items-center justify-center gap-1.5 rounded-lg border border-emerald-600/40 bg-emerald-500/10 px-3 text-xs font-semibold text-emerald-800 dark:text-emerald-300 transition hover:border-emerald-600 hover:bg-emerald-500/20 cursor-pointer whitespace-nowrap"
             />
+            <AuthModal
+              defaultTab="shop-approval"
+              triggerLabel="🏪 Đăng ký Gian hàng"
+              triggerClassName="flex h-10 items-center justify-center gap-1.5 rounded-lg border border-amber-600/40 bg-amber-500/10 px-3 text-xs font-semibold text-amber-800 dark:text-amber-300 transition hover:border-amber-600 hover:bg-amber-500/20 cursor-pointer whitespace-nowrap"
+            />
           </div>
         </SiteHeader>
         <span className={`relative mx-4 mt-2 self-end md:hidden ${ph}`}>Ảnh · placeholder</span>
@@ -108,6 +113,11 @@ export function Landing() {
                 defaultTab="doctor-approval"
                 triggerLabel={locale === "vi" ? "🩺 Bác sĩ: Gửi hồ sơ duyệt" : "🩺 Doctor registration"}
                 triggerClassName="flex h-[54px] w-full sm:w-auto items-center justify-center gap-2 rounded-xl border border-emerald-600/40 bg-emerald-500/10 px-6 text-[15px] font-semibold text-emerald-800 dark:text-emerald-300 transition hover:border-emerald-600 hover:bg-emerald-500/20 cursor-pointer shadow-md"
+              />
+              <AuthModal
+                defaultTab="shop-approval"
+                triggerLabel={locale === "vi" ? "🏪 Gian hàng: Gửi hồ sơ mở shop" : "🏪 Store registration"}
+                triggerClassName="flex h-[54px] w-full sm:w-auto items-center justify-center gap-2 rounded-xl border border-amber-600/40 bg-amber-500/10 px-6 text-[15px] font-semibold text-amber-800 dark:text-amber-300 transition hover:border-amber-600 hover:bg-amber-500/20 cursor-pointer shadow-md"
               />
             </div>
           </div>
@@ -266,6 +276,11 @@ export function Landing() {
             defaultTab="doctor-approval"
             triggerLabel={locale === "vi" ? "🩺 Bác sĩ: Gửi hồ sơ duyệt" : "🩺 Doctor registration"}
             triggerClassName="flex h-[52px] items-center justify-center gap-2 rounded-lg border border-emerald-600/40 bg-emerald-500/10 px-6 text-[15px] font-semibold text-emerald-800 dark:text-emerald-300 transition hover:border-emerald-600 hover:bg-emerald-500/20 cursor-pointer"
+          />
+          <AuthModal
+            defaultTab="shop-approval"
+            triggerLabel={locale === "vi" ? "🏪 Gian hàng: Gửi hồ sơ mở shop" : "🏪 Store registration"}
+            triggerClassName="flex h-[52px] items-center justify-center gap-2 rounded-lg border border-amber-600/40 bg-amber-500/10 px-6 text-[15px] font-semibold text-amber-800 dark:text-amber-300 transition hover:border-amber-600 hover:bg-amber-500/20 cursor-pointer"
           />
         </div>
       </section>
