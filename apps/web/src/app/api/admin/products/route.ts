@@ -1,8 +1,15 @@
 import { NextResponse } from "next/server";
-import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { getAuthenticatedActor, requireRoleActor } from "@/lib/session-auth";
 import { matchesShop } from "@/lib/shop-product-approval";
-import { downloadStorageJson } from "@/lib/supabase/storage-json";
+import { getSupabaseAdminClient, readStorageJsonList, updateStorageJsonList } from "@/lib/supabase/storage-json";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+const PRODUCTS_PATH = "products/products_registry.json";
+/** What the admin can set. "hidden" takes an approved product off the marketplace. */
+const MODERATION_STATUSES = ["approved", "pending", "rejected", "hidden"] as const;
+type ModerationStatus = (typeof MODERATION_STATUSES)[number];
 
 export interface ProductItem {
   id: string;
@@ -10,7 +17,7 @@ export interface ProductItem {
   shopName: string;
   price: number;
   category: string;
-  status: "approved" | "pending" | "rejected";
+  status: ModerationStatus;
   submittedAt: string;
   stock: number;
   brand?: string;
@@ -21,42 +28,15 @@ export interface ProductItem {
   origin?: string;
 }
 
-function getSupabaseAdmin() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !serviceKey) return null;
-  return createAdminClient(url, serviceKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
+function storageClient() {
+  const admin = getSupabaseAdminClient();
+  if (!admin) throw new Error("Máy chủ chưa cấu hình Supabase Service Key.");
+  return admin;
 }
 
-async function loadStorageProducts(): Promise<ProductItem[]> {
-  try {
-    const admin = getSupabaseAdmin();
-    if (!admin) return [];
-    // Cache-busted read: storage .download() can be stale, and saving a stale list lost products.
-    const list = await downloadStorageJson<ProductItem[]>("products/products_registry.json", admin);
-    if (Array.isArray(list)) return list;
-  } catch {}
-  return [];
-}
-
-async function saveStorageProducts(list: ProductItem[]): Promise<void> {
-  try {
-    const admin = getSupabaseAdmin();
-    if (!admin) return;
-    await admin.storage.from("photos").upload(
-      "products/products_registry.json",
-      Buffer.from(JSON.stringify(list, null, 2)),
-      { upsert: true, contentType: "application/json" }
-    );
-  } catch (err) {
-    console.warn("Lỗi lưu products_registry:", err);
-  }
-}
-
-// Initial verified products for core authentic flagship shops
-let PRODUCTS_STORE: ProductItem[] = [
+// Initial verified products for core authentic flagship shops. The stored registry overrides them
+// by id: an admin decision on a seed product is stored there, not in this instance's memory.
+const SEED_PRODUCTS: ProductItem[] = [
   {
     id: "prod_01",
     name: "Kem dưỡng giảm mụn phục hồi La Roche-Posay Effaclar Duo+M 40ml",
@@ -114,39 +94,45 @@ let PRODUCTS_STORE: ProductItem[] = [
   },
 ];
 
+function mergeWithSeeds(stored: ProductItem[]): ProductItem[] {
+  const merged = new Map<string, ProductItem>();
+  SEED_PRODUCTS.forEach((p) => merged.set(p.id, p));
+  stored.forEach((p) => merged.set(p.id, p));
+  return Array.from(merged.values());
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const targetShop = searchParams.get("shopName")?.trim();
   const targetStatus = searchParams.get("status")?.trim();
   const actor = await getAuthenticatedActor(request);
 
-  // Combine storage and in-memory store
-  const storageList = await loadStorageProducts();
-  const mergedMap = new Map<string, ProductItem>();
-  PRODUCTS_STORE.forEach((p) => mergedMap.set(p.id, p));
-  storageList.forEach((sp) => mergedMap.set(sp.id, sp));
-
-  let products = Array.from(mergedMap.values());
+  let products: ProductItem[];
+  try {
+    products = mergeWithSeeds(await readStorageJsonList<ProductItem>(PRODUCTS_PATH, storageClient()));
+  } catch (err) {
+    // The console must not show a partial list as if it were complete; buyers still get the
+    // built-in catalog rather than an empty storefront.
+    if (actor?.role === "admin") {
+      return NextResponse.json({ ok: false, error: err instanceof Error ? err.message : "Không tải được sản phẩm." }, { status: 503 });
+    }
+    products = SEED_PRODUCTS;
+  }
 
   // Enforce draft visibility: unauthenticated / customer visitors only browse approved products;
-  // shop owners also see their own pending/rejected submissions; admin sees everything.
+  // shop owners also see their own pending/rejected/hidden submissions; admin sees everything.
   if (actor?.role === "admin") {
     // Full visibility
   } else if (actor?.role === "shop") {
     const ownShop = actor.shopName || actor.shopId || "";
-    products = products.filter(
-      (p) => p.status === "approved" || (ownShop && matchesShop(p.shopName, ownShop)),
-    );
+    products = products.filter((p) => p.status === "approved" || (ownShop && matchesShop(p.shopName, ownShop)));
   } else {
     products = products.filter((p) => p.status === "approved");
   }
 
-  // Filter strictly to the specified shop if requested
   if (targetShop && targetShop !== "all") {
     products = products.filter((p) => matchesShop(p.shopName, targetShop));
   }
-
-  // Filter by approval status if requested
   if (targetStatus && targetStatus !== "all") {
     products = products.filter((p) => p.status === targetStatus);
   }
@@ -162,11 +148,12 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { name, shopName, price, category, stock, brand, sku, coverImage, images, description, origin } = body;
+    if (typeof name !== "string" || !name.trim()) {
+      return NextResponse.json({ ok: false, error: "Vui lòng nhập tên sản phẩm." }, { status: 400 });
+    }
 
     const effectiveShopName =
-      actor.role === "shop" && actor.shopName
-        ? actor.shopName
-        : shopName?.trim() || "Cửa Hàng Đối Tác SkinSense";
+      actor.role === "shop" && actor.shopName ? actor.shopName : shopName?.trim() || "Cửa Hàng Đối Tác SkinSense";
 
     const normalizedImages: string[] = Array.isArray(images)
       ? images
@@ -174,19 +161,15 @@ export async function POST(request: Request) {
           .map((item) => item.trim())
       : [];
     const resolvedCover = coverImage?.trim() || normalizedImages[0] || "";
-    const resolvedImages =
-      normalizedImages.length > 0
-        ? normalizedImages
-        : resolvedCover
-          ? [resolvedCover]
-          : [];
+    const resolvedImages = normalizedImages.length > 0 ? normalizedImages : resolvedCover ? [resolvedCover] : [];
 
     const newProd: ProductItem = {
-      id: `prod_${Date.now()}`,
-      name: name?.trim() || "Sản phẩm dược mỹ phẩm mới",
+      id: `prod_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      name: name.trim(),
       shopName: effectiveShopName,
       price: Number(price) || 350000,
       category: category?.trim() || "Chăm sóc da chuyên sâu",
+      // Every new product waits for the admin, whoever submits it.
       status: "pending",
       submittedAt: new Date().toISOString().split("T")[0],
       stock: Number(stock) || 100,
@@ -198,16 +181,16 @@ export async function POST(request: Request) {
       origin: origin?.trim() || "Pháp",
     };
 
-    PRODUCTS_STORE = [newProd, ...PRODUCTS_STORE];
-
-    // Sync to Supabase Storage
-    const storageList = await loadStorageProducts();
-    const updatedStorage = [newProd, ...storageList.filter((p) => p.id !== newProd.id)];
-    await saveStorageProducts(updatedStorage);
+    // Locked and checked: a failed save used to be logged and answered "ok", and a failed read
+    // was treated as an empty registry and written back over every product.
+    await updateStorageJsonList<ProductItem, void>(PRODUCTS_PATH, storageClient(), (list) => ({
+      next: [newProd, ...list.filter((p) => p.id !== newProd.id)],
+      result: undefined,
+    }));
 
     return NextResponse.json({ ok: true, product: newProd });
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Thêm sản phẩm thất bại" }, { status: 500 });
+    return NextResponse.json({ ok: false, error: err instanceof Error ? err.message : "Thêm sản phẩm thất bại" }, { status: 500 });
   }
 }
 
@@ -216,23 +199,27 @@ export async function PATCH(request: Request) {
   if (!auth.ok) return auth.response;
 
   try {
-    const body = await request.json();
-    const { productId, status } = body; // "approved" | "rejected" | "pending"
+    const { productId, status } = await request.json();
 
     if (!productId || !status) {
-      return NextResponse.json({ error: "Thiếu productId hoặc status." }, { status: 400 });
+      return NextResponse.json({ ok: false, error: "Thiếu productId hoặc status." }, { status: 400 });
+    }
+    if (!(MODERATION_STATUSES as readonly string[]).includes(status)) {
+      return NextResponse.json({ ok: false, error: "Trạng thái sản phẩm không hợp lệ." }, { status: 400 });
     }
 
-    PRODUCTS_STORE = PRODUCTS_STORE.map((p) => (p.id === productId ? { ...p, status } : p));
+    const product = await updateStorageJsonList<ProductItem, ProductItem | null>(PRODUCTS_PATH, storageClient(), (list) => {
+      const current = list.find((p) => p.id === productId) ?? SEED_PRODUCTS.find((p) => p.id === productId);
+      if (!current) return { next: null, result: null };
+      const updated = { ...current, status: status as ModerationStatus };
+      return { next: [updated, ...list.filter((p) => p.id !== productId)], result: updated };
+    });
+    if (!product) {
+      return NextResponse.json({ ok: false, error: "Không tìm thấy sản phẩm." }, { status: 404 });
+    }
 
-    // Sync to Supabase Storage
-    const storageList = await loadStorageProducts();
-    const updatedStorage = storageList.map((p) => (p.id === productId ? { ...p, status } : p));
-    await saveStorageProducts(updatedStorage);
-
-    return NextResponse.json({ ok: true, message: `Đã cập nhật trạng thái sản phẩm thành ${status}` });
+    return NextResponse.json({ ok: true, product, message: "Đã cập nhật trạng thái sản phẩm." });
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Cập nhật thất bại" }, { status: 500 });
+    return NextResponse.json({ ok: false, error: err instanceof Error ? err.message : "Cập nhật thất bại" }, { status: 500 });
   }
 }
-

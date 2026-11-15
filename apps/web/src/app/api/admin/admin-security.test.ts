@@ -38,6 +38,8 @@ vi.mock("@supabase/supabase-js", () => ({
         createSignedUrl: vi.fn().mockResolvedValue({ data: { signedUrl: "" } }),
         download: vi.fn().mockResolvedValue({ data: null }),
         upload: vi.fn().mockResolvedValue({ data: {} }),
+        // No stored file yet: the routes start from their seed data.
+        list: vi.fn().mockResolvedValue({ data: [], error: null }),
       })),
     },
     from: vi.fn(() => ({
@@ -388,11 +390,23 @@ describe("Server-side API auth & role guardrails", () => {
           new Request("http://localhost:3000/api/admin/routines", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ role: "customer", title: "Phác đồ chuẩn y khoa" }),
+            body: JSON.stringify({ role: "customer", title: "Phác đồ chuẩn y khoa", targetUser: "customer@example.com" }),
           }),
         )
       ).status,
     ).toBe(200);
+    // An unknown recipient is refused (it used to fall back to the super admin's own account).
+    expect(
+      (
+        await POST(
+          new Request("http://localhost:3000/api/admin/routines", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ role: "customer", steps: [], targetUser: "nobody@example.com" }),
+          }),
+        )
+      ).status,
+    ).toBe(404);
   });
 
   it("prevents unauthenticated email cache reads and role escalation on /api/profile", async () => {
