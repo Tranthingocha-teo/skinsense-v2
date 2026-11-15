@@ -134,6 +134,7 @@ describe("/api/chat security, isolation, and messaging", () => {
     currentUser = {
       id: "shop_hana",
       email: "hana@shop.vn",
+      app_metadata: { role: "shop", status: "active" },
       user_metadata: { role: "shop", shop_name: "Hana Clinic Store" },
     };
 
@@ -161,6 +162,7 @@ describe("/api/chat security, isolation, and messaging", () => {
     currentUser = {
       id: "shop_hana",
       email: "hana@shop.vn",
+      app_metadata: { role: "shop", status: "active" },
       user_metadata: { role: "shop", shop_name: "Hana Clinic Store" },
     };
 

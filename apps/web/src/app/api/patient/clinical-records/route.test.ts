@@ -3,6 +3,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 interface MockAuthUser {
   id: string;
   email: string;
+  app_metadata?: Record<string, unknown>;
   user_metadata?: Record<string, unknown>;
 }
 
@@ -95,6 +96,7 @@ describe("Patient Clinical Records API (/api/patient/clinical-records)", () => {
     currentAuthUser = {
       id: "spec_01",
       email: "bacsi@skinsense.vn",
+      app_metadata: { role: "specialist", status: "active" },
       user_metadata: { role: "specialist", full_name: "BS. Mai Hoa" },
     };
     const specRes = await GET(new Request("http://localhost:3000/api/patient/clinical-records"));

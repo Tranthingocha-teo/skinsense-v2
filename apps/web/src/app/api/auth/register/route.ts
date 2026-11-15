@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { getAuthenticatedActor } from "@/lib/session-auth";
+import { authzClaims, SUPER_ADMIN_EMAIL } from "@/lib/actor-role";
 
 export async function POST(request: Request) {
   try {
@@ -41,19 +43,18 @@ export async function POST(request: Request) {
     });
 
     const normalizedEmail = email.trim().toLowerCase();
-    const isAdminEmail = normalizedEmail === "hattn.23itb@vku.udn.vn";
-    const effectiveRole = isAdminEmail ? "admin" : role;
+    if (!["customer", "shop", "specialist"].includes(role)) {
+      return NextResponse.json({ error: "Vai trò không hợp lệ." }, { status: 400 });
+    }
+    if (normalizedEmail === SUPER_ADMIN_EMAIL) {
+      return NextResponse.json({ error: "Email này không thể đăng ký qua biểu mẫu." }, { status: 409 });
+    }
+    const effectiveRole = role as "customer" | "shop" | "specialist";
 
-    // Specialists & Shops start as "pending" approval unless it is the super admin
-    const status = isAdminEmail
-      ? "active"
-      : effectiveRole === "specialist" || effectiveRole === "shop"
-      ? "pending"
-      : "active";
+    // Specialists & Shops start as "pending" until an admin approves them.
+    const status = effectiveRole === "specialist" || effectiveRole === "shop" ? "pending" : "active";
 
-    const effectiveFullName = isAdminEmail
-      ? "Trần Thị Ngọc Hà (Super Admin)"
-      : (fullName || ownerName || doctorName || shopName || normalizedEmail.split("@")[0]).trim();
+    const effectiveFullName = (fullName || ownerName || doctorName || shopName || normalizedEmail.split("@")[0]).trim();
 
     const userMetadata = {
       full_name: effectiveFullName,
@@ -74,7 +75,6 @@ export async function POST(request: Request) {
         category: category?.trim() || specialty?.trim() || "Dược mỹ phẩm & Chăm sóc da",
         address: address?.trim() || hospital?.trim() || "Việt Nam",
       } : undefined,
-      is_super_admin: isAdminEmail,
       submitted_at: new Date().toISOString(),
     };
 
@@ -85,12 +85,24 @@ export async function POST(request: Request) {
     let savedUser = null;
 
     if (existingUser) {
-      // Update existing user's role and metadata
+      // Only the signed-in owner of this email may change its application. Without this check
+      // anyone could rewrite another account's role and profile by posting its email.
+      const actor = await getAuthenticatedActor(request);
+      if (!actor || actor.email !== normalizedEmail) {
+        return NextResponse.json(
+          { error: "Email đã được đăng ký. Vui lòng đăng nhập bằng email này rồi gửi lại hồ sơ." },
+          { status: 409 },
+        );
+      }
+      const currentApp = (existingUser.app_metadata || {}) as Record<string, unknown>;
+      const alreadyApproved = currentApp.role === effectiveRole && currentApp.status === "active";
       const { data: updated, error: updateErr } = await supabaseAdmin.auth.admin.updateUserById(existingUser.id, {
         user_metadata: {
           ...existingUser.user_metadata,
           ...userMetadata,
+          ...(alreadyApproved ? { status: "active" } : {}),
         },
+        ...(alreadyApproved ? {} : { app_metadata: authzClaims(effectiveRole, status) }),
       });
       if (updateErr) throw new Error(updateErr.message);
       savedUser = updated.user;
@@ -103,6 +115,7 @@ export async function POST(request: Request) {
         email: normalizedEmail,
         password,
         email_confirm: true,
+        app_metadata: authzClaims(effectiveRole, status),
         user_metadata: userMetadata,
       });
 
@@ -192,7 +205,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       ok: true,
-      user: savedUser,
+      user: savedUser ? { id: savedUser.id, email: savedUser.email } : null,
       status,
       message:
         effectiveRole === "specialist"

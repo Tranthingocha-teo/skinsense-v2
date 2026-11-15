@@ -116,18 +116,10 @@ export async function GET() {
     }
 
     const meta = (user.user_metadata || {}) as AuthUserMetadata;
-    const isDoctorEmail =
-      email.includes("doctor") ||
-      email.includes("bacsi") ||
-      email.startsWith("dr.") ||
-      email.includes("dr_") ||
-      email.includes("dr-") ||
-      email === "bacsi.hoa@skinsense.vn" ||
-      email === "dr.ha@gmail.com" ||
-      email === "dr.lananh@skinsense.vn" ||
-      email === "thuydung.doctor@gmail.com";
 
-    const isSpecialist = Boolean(specialistRecord) || meta.role === "specialist" || isDoctorEmail;
+    const appMeta = (user.app_metadata || {}) as Record<string, unknown>;
+    // Display only; API rights come from app_metadata (lib/actor-role.ts).
+    const isSpecialist = Boolean(specialistRecord) || appMeta.role === "specialist" || meta.role === "specialist";
     const isShop = Boolean(shopRecord) || meta.role === "shop";
 
     const role = isSpecialist ? "specialist" : isShop ? "shop" : (meta.role || "customer");
@@ -137,6 +129,7 @@ export async function GET() {
         : isShop
         ? shopRecord?.status
         : undefined) ||
+      (typeof appMeta.status === "string" ? appMeta.status : undefined) ||
       meta.status ||
       "active";
 

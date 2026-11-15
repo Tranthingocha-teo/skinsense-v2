@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { requireRoleActor } from "@/lib/session-auth";
+import { authzClaims } from "@/lib/actor-role";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -59,7 +60,7 @@ export async function GET(request: Request) {
     }
 
     const authSpecialists = data.users
-      .filter((u) => u.user_metadata?.role === "specialist")
+      .filter((u) => u.app_metadata?.role === "specialist" || u.user_metadata?.role === "specialist")
       .map((u) => ({
         id: u.id,
         email: u.email,
@@ -112,8 +113,13 @@ export async function PATCH(request: Request) {
 
     // 1. Update Supabase Auth user metadata
     try {
-      if (userId && userId.length === 36) {
-        const { data: userObj } = await supabaseAdmin.auth.admin.getUserById(userId);
+      let targetUserId: string | undefined = userId && userId.length === 36 ? userId : undefined;
+      if (!targetUserId && targetEmail) {
+        const { data: list } = await supabaseAdmin.auth.admin.listUsers();
+        targetUserId = list?.users.find((u) => u.email?.toLowerCase() === targetEmail)?.id;
+      }
+      if (targetUserId) {
+        const { data: userObj } = await supabaseAdmin.auth.admin.getUserById(targetUserId);
         const updatedMetadata = {
           ...(userObj?.user?.user_metadata || {}),
           status: newStatus,
@@ -122,8 +128,10 @@ export async function PATCH(request: Request) {
           approved_at: new Date().toISOString(),
         };
 
-        await supabaseAdmin.auth.admin.updateUserById(userId, {
+        // app_metadata is what grants specialist rights (see lib/actor-role.ts).
+        await supabaseAdmin.auth.admin.updateUserById(targetUserId, {
           user_metadata: updatedMetadata,
+          app_metadata: authzClaims("specialist", newStatus),
         });
       }
     } catch {}

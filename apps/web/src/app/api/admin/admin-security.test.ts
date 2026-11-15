@@ -89,12 +89,14 @@ const CUSTOMER_ACTOR: MockAuthUser = {
 const SPECIALIST_ACTOR: MockAuthUser = {
   id: "spec-01",
   email: "bacsi.hoa@skinsense.vn",
+  app_metadata: { role: "specialist", status: "active" },
   user_metadata: { role: "specialist", full_name: "BS. Mai Hoa" },
 };
 
 const CERAVE_SHOP_ACTOR: MockAuthUser = {
   id: "shop-cerave",
   email: "cerave@skinsense.vn",
+  app_metadata: { role: "shop", status: "active" },
   user_metadata: { role: "shop", shop_name: "CeraVe Skincare Official", full_name: "CeraVe Skincare Official" },
 };
 
