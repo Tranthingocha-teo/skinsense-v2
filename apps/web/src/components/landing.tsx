@@ -64,7 +64,7 @@ export function Landing() {
         <SiteHeader
           drawMark
           nav={
-            <nav className="hidden items-center justify-center gap-7 text-sm font-light md:flex">
+            <nav className="hidden items-center justify-center gap-7 text-sm font-light lg:flex">
               {navLinks.map(([href, label]) => (
                 <a key={href} href={href} className="flex min-h-11 items-center hover:text-muted-foreground">
                   {label}
@@ -73,24 +73,15 @@ export function Landing() {
             </nav>
           }
         >
-          <div className="flex items-center gap-2.5 md:justify-end md:gap-3">
+          <div className="flex items-center gap-2.5 justify-self-end md:gap-3">
             {/* PhoneLanding has no switch: the phone locale comes from Accept-Language (i18n/request.ts). */}
             <span className="hidden md:block">
               <LocaleSwitch />
             </span>
+            {/* Doctor and store applications live in the hero CTA just below, not in the header. */}
             <GoogleOAuthButton
-              label="Đăng nhập Gmail"
+              label={t("navSignIn")}
               className="flex h-10 items-center justify-center gap-2 rounded-lg border border-border bg-card px-3 text-xs font-semibold text-foreground shadow-xs transition hover:border-foreground/40 hover:bg-muted/50 cursor-pointer whitespace-nowrap"
-            />
-            <AuthModal
-              defaultTab="doctor-approval"
-              triggerLabel="🩺 Bác sĩ gửi duyệt"
-              triggerClassName="flex h-10 items-center justify-center gap-1.5 rounded-lg border border-emerald-600/40 bg-emerald-500/10 px-3 text-xs font-semibold text-emerald-800 dark:text-emerald-300 transition hover:border-emerald-600 hover:bg-emerald-500/20 cursor-pointer whitespace-nowrap"
-            />
-            <AuthModal
-              defaultTab="shop-approval"
-              triggerLabel="🏪 Đăng ký Gian hàng"
-              triggerClassName="flex h-10 items-center justify-center gap-1.5 rounded-lg border border-amber-600/40 bg-amber-500/10 px-3 text-xs font-semibold text-amber-800 dark:text-amber-300 transition hover:border-amber-600 hover:bg-amber-500/20 cursor-pointer whitespace-nowrap"
             />
           </div>
         </SiteHeader>
@@ -105,7 +96,7 @@ export function Landing() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center justify-center flex-wrap w-full max-w-2xl">
               <GoogleOAuthButton
                 className="flex h-[54px] w-full sm:w-auto items-center justify-center gap-2.5 rounded-xl border border-foreground/30 bg-card/90 px-6 text-[15px] font-semibold text-foreground shadow-md backdrop-blur-xs transition hover:scale-[1.02] hover:border-foreground active:scale-[0.98] cursor-pointer"
-                label={locale === "vi" ? "Đăng nhập bằng Gmail (Google / Supabase)" : "Sign in with Google"}
+                label={t("signInGoogle")}
               />
               <AuthModal
                 defaultTab="doctor-approval"
@@ -267,7 +258,7 @@ export function Landing() {
         <div className="flex flex-col gap-3 self-stretch pt-2 sm:flex-row sm:items-center sm:justify-center md:self-auto md:gap-3.5 md:pt-2.5">
           <GoogleOAuthButton
             className="flex h-[52px] items-center justify-center gap-2.5 rounded-lg border border-foreground/30 bg-card px-6 text-[15px] font-semibold text-foreground shadow-sm transition hover:border-foreground active:scale-[0.98] cursor-pointer"
-            label={locale === "vi" ? "Đăng nhập bằng Gmail (Google / Supabase)" : "Sign in with Google"}
+            label={t("signInGoogle")}
           />
           <AuthModal
             defaultTab="doctor-approval"
