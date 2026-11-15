@@ -44,6 +44,9 @@ jobs:
   eas-preview:
     name: EAS Internal Preview Build
     needs: mobile-verify
+    # Free-tier EAS builds are limited: PRs run the checks above, cloud builds run on demand
+    # (Actions → Mobile Preview Pipeline → Run workflow).
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
       contents: read
