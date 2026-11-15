@@ -1,6 +1,13 @@
 import fs from "fs";
 import path from "path";
 
+export interface OrderReview {
+  rating: number; // 1-5 sao
+  comment: string;
+  tags: string[];
+  createdAt: string;
+}
+
 export interface BackendOrder {
   id: string;
   orderCode: string;
@@ -22,6 +29,7 @@ export interface BackendOrder {
     variant: string;
     image?: string;
   }>;
+  review?: OrderReview;
   paidAt?: string;
   createdAt: string;
 }
@@ -206,6 +214,37 @@ export const ordersStore = {
     list[index].paymentStatus = "paid";
     list[index].status = "processing";
     list[index].paidAt = new Date().toISOString();
+    writeToDisk(list);
+    return list[index];
+  },
+
+  updateStatus(
+    codeOrId: string,
+    status: "pending" | "processing" | "delivering" | "delivered" | "cancelled",
+  ): BackendOrder | undefined {
+    const list = readFromDisk();
+    const clean = codeOrId.trim().toLowerCase();
+    const index = list.findIndex(
+      (o) => o.orderCode.toLowerCase() === clean || o.id.toLowerCase() === clean,
+    );
+    if (index === -1) return undefined;
+    list[index].status = status;
+    if (status === "delivered" && list[index].paymentStatus === "unpaid") {
+      list[index].paymentStatus = "paid";
+      if (!list[index].paidAt) list[index].paidAt = new Date().toISOString();
+    }
+    writeToDisk(list);
+    return list[index];
+  },
+
+  addReview(codeOrId: string, review: OrderReview): BackendOrder | undefined {
+    const list = readFromDisk();
+    const clean = codeOrId.trim().toLowerCase();
+    const index = list.findIndex(
+      (o) => o.orderCode.toLowerCase() === clean || o.id.toLowerCase() === clean,
+    );
+    if (index === -1) return undefined;
+    list[index].review = review;
     writeToDisk(list);
     return list[index];
   },

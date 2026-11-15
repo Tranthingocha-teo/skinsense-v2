@@ -29,3 +29,6 @@ supabase/.temp/
 *.orders-db.json
 .profiles-cache.json
 *.profiles-cache.json
+
+.chat-db.json
+*.chat-db.json

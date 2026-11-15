@@ -214,3 +214,46 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: false, error: err.message }, { status: 500 });
   }
 }
+
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+    const { action, orderCode, status, review } = body;
+
+    if (!orderCode) {
+      return NextResponse.json({ ok: false, error: "Thiếu mã đơn hàng" }, { status: 400 });
+    }
+
+    if (action === "update_status") {
+      if (!status) {
+        return NextResponse.json({ ok: false, error: "Thiếu trạng thái cập nhật" }, { status: 400 });
+      }
+      const updated = ordersStore.updateStatus(orderCode, status);
+      if (!updated) {
+        return NextResponse.json({ ok: false, error: "Không tìm thấy đơn hàng" }, { status: 404 });
+      }
+      return NextResponse.json({ ok: true, order: updated });
+    }
+
+    if (action === "add_review") {
+      if (!review || !review.rating) {
+        return NextResponse.json({ ok: false, error: "Vui lòng chọn số sao đánh giá" }, { status: 400 });
+      }
+      const reviewPayload = {
+        rating: Math.min(5, Math.max(1, Number(review.rating) || 5)),
+        comment: (review.comment || "").trim(),
+        tags: Array.isArray(review.tags) ? review.tags : [],
+        createdAt: new Date().toISOString(),
+      };
+      const updated = ordersStore.addReview(orderCode, reviewPayload);
+      if (!updated) {
+        return NextResponse.json({ ok: false, error: "Không tìm thấy đơn hàng" }, { status: 404 });
+      }
+      return NextResponse.json({ ok: true, order: updated });
+    }
+
+    return NextResponse.json({ ok: false, error: "Hành động không hợp lệ" }, { status: 400 });
+  } catch (err: any) {
+    return NextResponse.json({ ok: false, error: err.message }, { status: 500 });
+  }
+}
