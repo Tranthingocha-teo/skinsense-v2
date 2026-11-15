@@ -90,20 +90,14 @@ export async function GET() {
     const meta = (user.user_metadata || {}) as AuthUserMetadata;
 
     const appMeta = (user.app_metadata || {}) as Record<string, unknown>;
-    // Display only; API rights come from app_metadata (lib/actor-role.ts).
-    const isSpecialist = Boolean(specialistRecord) || appMeta.role === "specialist" || meta.role === "specialist";
-    const isShop = Boolean(shopRecord) || meta.role === "shop";
-
-    const role = isSpecialist ? "specialist" : isShop ? "shop" : (meta.role || "customer");
-    const status =
-      (isSpecialist
-        ? specialistRecord?.status
-        : isShop
-        ? shopRecord?.status
-        : undefined) ||
-      (typeof appMeta.status === "string" ? appMeta.status : undefined) ||
-      meta.status ||
-      "active";
+    // Role and status come from app_metadata, which is what grants the rights. They used to come
+    // from the registries (or user_metadata) first, so after an approval or a lock the app and
+    // the APIs disagreed about what the account could do. The registries only add details.
+    const appRole = typeof appMeta.role === "string" ? appMeta.role : "customer";
+    const role = appRole === "admin" || appRole === "shop" || appRole === "specialist" ? appRole : "customer";
+    const isSpecialist = role === "specialist";
+    const isShop = role === "shop";
+    const status = typeof appMeta.status === "string" ? appMeta.status : "active";
 
     const shopDetails = isShop
       ? {

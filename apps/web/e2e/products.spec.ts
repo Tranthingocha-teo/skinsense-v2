@@ -40,6 +40,40 @@ test("a visitor browses the storefront without seller tools or a sample persona"
   expect(errors).toEqual([]);
 });
 
+test("a partner shop's product shows up only once the admin approves it", async ({ browser, page }) => {
+  const errors = collectPageErrors(page);
+  const shop = await pool("shop");
+  const reviewer = await pool("admin");
+  const shopContext = await browser.newContext();
+  const adminContext = await browser.newContext();
+  try {
+    await signIn(shopContext, shop);
+    await signIn(adminContext, reviewer);
+    const name = `E2E Storefront Serum ${shop.userId.slice(0, 8)}`;
+    const posted = await shopContext.request.post("/api/admin/products", { data: { name, price: 210000, brand: "E2E Brand" } });
+    expect(posted.status()).toBe(200);
+    const productId = ((await posted.json()) as { product: { id: string } }).product.id;
+
+    // Pending: not on the storefront.
+    await page.goto("/products");
+    await expect(page.getByRole("heading", { name: /Danh Sách Sản Phẩm/ })).toBeVisible();
+    await expect(page.getByText(name)).toHaveCount(0);
+
+    const approved = await adminContext.request.patch("/api/admin/products", { data: { productId, status: "approved" } });
+    expect(approved.status()).toBe(200);
+
+    await page.reload();
+    const card = page.locator("div.group", { hasText: name });
+    await expect(card).toHaveCount(1, { timeout: 15_000 });
+    await card.getByRole("button", { name: "Mua Ngay", exact: true }).click();
+    await expect(page).toHaveURL(new RegExp(`/shop/checkout\\?productId=${productId}&`));
+  } finally {
+    await shopContext.close();
+    await adminContext.close();
+  }
+  expect(errors).toEqual([]);
+});
+
 test("a buyer picks a quantity on the detail view and checks out as themselves", async ({ context, page }) => {
   const errors = collectPageErrors(page);
   const buyer = await pool("customer");

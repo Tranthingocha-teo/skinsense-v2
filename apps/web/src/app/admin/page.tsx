@@ -24,10 +24,8 @@ import {
   TrendingUp,
   Settings,
   Clock,
-  ShieldAlert,
   Sliders,
   Truck,
-  RotateCcw,
   Server,
   Activity,
   Sparkles,
@@ -49,7 +47,7 @@ import {
 export type { RoutineStep, RoleRoutine };
 
 export type RoleType = "customer" | "shop" | "specialist" | "admin";
-export type UserStatus = "active" | "pending" | "suspended";
+export type UserStatus = "active" | "pending" | "rejected" | "suspended";
 
 export interface SystemUser {
   id: string;
@@ -79,230 +77,62 @@ export interface ProductItem {
   shopName: string;
   price: number;
   category: string;
-  status: "approved" | "pending" | "rejected";
+  status: "approved" | "pending" | "rejected" | "hidden";
   submittedAt: string;
   stock: number;
 }
 
+export type OrderStatus = "pending" | "processing" | "delivering" | "delivered" | "cancelled";
+
+/** One order from the real orders store (GET /api/admin/orders). */
 export interface OrderItem {
   id: string;
+  orderCode: string;
   customerName: string;
   shopName: string;
   totalAmount: number;
   commission: number; // 8% fee
-  status: "completed" | "shipping" | "disputed" | "processing";
+  status: OrderStatus;
+  paymentStatus: "unpaid" | "paid";
   createdAt: string;
-  disputeReason?: string;
 }
 
-const INITIAL_USERS: SystemUser[] = [
-  {
-    id: "usr_001",
-    name: "Trần Thị Ngọc Hà",
-    email: "khachhang@gmail.com",
-    phone: "0905 123 456",
-    role: "customer",
-    status: "active",
-    createdAt: "2026-10-15",
-  },
-  {
-    id: "usr_002",
-    name: "Nguyễn Văn Đinh",
-    email: "dinh.dev@gmail.com",
-    phone: "0912 888 999",
-    role: "customer",
-    status: "active",
-    createdAt: "2026-10-20",
-  },
-  {
-    id: "usr_003",
-    name: "La Roche-Posay Official Store",
-    email: "shop.laroche@skinsense.vn",
-    phone: "028 3822 5588",
-    role: "shop",
-    status: "active",
-    createdAt: "2026-10-10",
-    shopDetails: {
-      shopName: "La Roche-Posay VN Flagship",
-      license: "GPKD-882910-HCM",
-      category: "Dược mỹ phẩm trị mụn & phục hồi da",
-      address: "Quận 1, TP. Hồ Chí Minh",
-    },
-  },
-  {
-    id: "usr_004",
-    name: "CeraVe Vietnam Distribution",
-    email: "shop.cerave@skinsense.vn",
-    phone: "024 3944 6677",
-    role: "shop",
-    status: "pending",
-    createdAt: "2026-11-08",
-    shopDetails: {
-      shopName: "CeraVe Skincare Official",
-      license: "GPKD-991204-HN",
-      category: "Sữa rửa mặt & Phục hồi hàng rào ẩm",
-      address: "Hoàn Kiếm, Hà Nội",
-    },
-  },
-  {
-    id: "usr_005",
-    name: "Innisfree Natural Care",
-    email: "shop.innisfree@skinsense.vn",
-    phone: "0988 333 444",
-    role: "shop",
-    status: "pending",
-    createdAt: "2026-11-09",
-    shopDetails: {
-      shopName: "Innisfree Beauty Hub",
-      license: "GPKD-774411-DN",
-      category: "Mỹ phẩm thiên nhiên đảo Jeju",
-      address: "Hải Châu, Đà Nẵng",
-    },
-  },
-  {
-    id: "usr_006",
-    name: "BS. CKI Nguyễn Mai Hoa",
-    email: "bacsi.hoa@skinsense.vn",
-    phone: "0934 567 890",
-    role: "specialist",
-    status: "active",
-    createdAt: "2026-10-12",
-    specialistDetails: {
-      hospital: "Bệnh viện Da Liễu Trung Ương",
-      licenseId: "CCHN-003419/BYT",
-      specialty: "Da liễu thẩm mỹ & Trị mụn trứng cá",
-    },
-  },
-  {
-    id: "usr_007",
-    name: "ThS. BS Trần Quốc Tuấn",
-    email: "bacsi.tuan@skinsense.vn",
-    phone: "0918 222 333",
-    role: "specialist",
-    status: "pending",
-    createdAt: "2026-11-07",
-    specialistDetails: {
-      hospital: "Phòng khám Chuyên khoa Da liễu Sài Gòn",
-      licenseId: "CCHN-008812/BYT",
-      specialty: "Phục hồi da sau tổn thương & Corticoid",
-    },
-  },
-  {
-    id: "usr_010",
-    name: "BS. Lê Thị Bích Thảo",
-    email: "dr.thao.derma@gmail.com",
-    phone: "0944 555 666",
-    role: "specialist",
-    status: "pending",
-    createdAt: "2026-11-13",
-    specialistDetails: {
-      hospital: "Bệnh viện Da Liễu TP. Đà Nẵng",
-      licenseId: "CCHN-005621/BYT",
-      specialty: "Điều trị mụn nội khoa & Dị ứng da tiếp xúc",
-    },
-  },
-  {
-    id: "usr_admin_ha",
-    name: "Trần Thị Ngọc Hà (Super Admin)",
-    email: "hattn.23itb@vku.udn.vn",
-    phone: "0905 123 456",
-    role: "admin",
-    status: "active",
-    createdAt: "2026-09-01",
-  },
-  {
-    id: "usr_009",
-    name: "Ban Quản Trị Hệ Thống",
-    email: "admin@skinsense.vn",
-    phone: "028 9999 8888",
-    role: "admin",
-    status: "active",
-    createdAt: "2026-09-01",
-  },
-];
+/** The next steps the orders store accepts from each status (lib/orders-store.ts). */
+const ORDER_ACTIONS: Record<OrderStatus, Array<{ status: OrderStatus; label: string }>> = {
+  pending: [
+    { status: "processing", label: "Xác nhận đơn" },
+    { status: "cancelled", label: "Hủy đơn" },
+  ],
+  processing: [
+    { status: "delivering", label: "Giao hàng" },
+    { status: "cancelled", label: "Hủy đơn" },
+  ],
+  delivering: [{ status: "delivered", label: "Đã giao" }],
+  delivered: [],
+  cancelled: [],
+};
 
-const INITIAL_PRODUCTS: ProductItem[] = [
-  {
-    id: "prod_01",
-    name: "Kem dưỡng giảm mụn phục hồi La Roche-Posay Effaclar Duo+M 40ml",
-    shopName: "La Roche-Posay VN Flagship",
-    price: 495000,
-    category: "Trị mụn & Phục hồi",
-    status: "approved",
-    submittedAt: "2026-11-01",
-    stock: 150,
-  },
-  {
-    id: "prod_02",
-    name: "Sữa rửa mặt dưỡng ẩm chuyên sâu CeraVe Hydrating Cleanser 473ml",
-    shopName: "CeraVe Skincare Official",
-    price: 380000,
-    category: "Làm sạch & Cân bằng pH",
-    status: "pending",
-    submittedAt: "2026-11-08",
-    stock: 200,
-  },
-  {
-    id: "prod_03",
-    name: "Mặt nạ đất sét tro núi lửa Innisfree Super Volcanic Pore Clay 100ml",
-    shopName: "Innisfree Beauty Hub",
-    price: 290000,
-    category: "Mặt nạ hút dầu & Se khít lỗ chân lông",
-    status: "pending",
-    submittedAt: "2026-11-09",
-    stock: 80,
-  },
-  {
-    id: "prod_04",
-    name: "Serum chống oxy hóa phục hồi Vitamin C 15% Pure Active 30ml",
-    shopName: "La Roche-Posay VN Flagship",
-    price: 920000,
-    category: "Chống lão hóa & Sáng da mờ thâm",
-    status: "approved",
-    submittedAt: "2026-10-25",
-    stock: 65,
-  },
-];
+const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
+  pending: "Chờ xác nhận",
+  processing: "Shop đang đóng gói",
+  delivering: "Đang vận chuyển",
+  delivered: "Giao thành công",
+  cancelled: "Đã hủy",
+};
 
-const INITIAL_ORDERS: OrderItem[] = [
-  {
-    id: "ORD-9821",
-    customerName: "Trần Thị Ngọc Hà",
-    shopName: "La Roche-Posay VN Flagship",
-    totalAmount: 990000,
-    commission: 79200,
-    status: "completed",
-    createdAt: "2026-11-06",
-  },
-  {
-    id: "ORD-9822",
-    customerName: "Nguyễn Văn Đinh",
-    shopName: "La Roche-Posay VN Flagship",
-    totalAmount: 495000,
-    commission: 39600,
-    status: "shipping",
-    createdAt: "2026-11-08",
-  },
-  {
-    id: "ORD-9823",
-    customerName: "Lê Thị Bích Thảo",
-    shopName: "CeraVe Skincare Official",
-    totalAmount: 760000,
-    commission: 60800,
-    status: "disputed",
-    disputeReason: "Giao sai dung tích chai (đặt 473ml giao 236ml)",
-    createdAt: "2026-11-07",
-  },
-  {
-    id: "ORD-9824",
-    customerName: "Hoàng Minh Tuấn",
-    shopName: "Innisfree Beauty Hub",
-    totalAmount: 580000,
-    commission: 46400,
-    status: "processing",
-    createdAt: "2026-11-09",
-  },
-];
+/** Reads a JSON API answer; a non-2xx answer or `ok: false` becomes an Error with the server's message. */
+async function callApi<T = Record<string, unknown>>(url: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(url, {
+    cache: "no-store",
+    ...init,
+    headers: init?.body ? { "Content-Type": "application/json", ...init.headers } : init?.headers,
+  });
+  const json = (await res.json().catch(() => null)) as (T & { ok?: boolean; error?: string }) | null;
+  if (!res.ok || !json || json.ok === false) {
+    throw new Error(json?.error || `Máy chủ trả lỗi ${res.status}.`);
+  }
+  return json;
+}
 
 const ROLE_CONFIG: Record<
   RoleType,
@@ -347,24 +177,32 @@ export default function AdminDashboardPage() {
   const [routinesData, setRoutinesData] = useState<Record<string, RoleRoutine>>(EMPTY_ROLE_ROUTINES);
   const [activeRoutineRole, setActiveRoutineRole] = useState<RoleType>("customer");
   const [isTickingStep, setIsTickingStep] = useState<string | null>(null);
-  const [assignRoutineEmail, setAssignRoutineEmail] = useState("hattn.23itb@vku.udn.vn");
+  const [assignRoutineEmail, setAssignRoutineEmail] = useState("");
   const [isAllocatingRoutine, setIsAllocatingRoutine] = useState(false);
 
   // State for Users
-  const [users, setUsers] = useState<SystemUser[]>(INITIAL_USERS);
+  const [users, setUsers] = useState<SystemUser[]>([]);
+  // Per-dataset load state: the console used to show sample rows until (and whenever) a load failed.
+  const [loadState, setLoadState] = useState<Record<"users" | "products" | "orders", "loading" | "ready" | "error">>({
+    users: "loading",
+    products: "loading",
+    orders: "loading",
+  });
+  // Keys of the actions in flight, so their buttons are disabled until the server answers.
+  const [saving, setSaving] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRoleFilter, setSelectedRoleFilter] = useState<RoleType | "all" | "pending">("all");
 
   // State for Products
-  const [products, setProducts] = useState<ProductItem[]>(INITIAL_PRODUCTS);
-  const [productFilter, setProductFilter] = useState<"all" | "pending" | "approved">("all");
+  const [products, setProducts] = useState<ProductItem[]>([]);
+  const [productFilter, setProductFilter] = useState<"all" | "pending" | "approved">("pending");
 
   // State for Specialists
   const [specialistFilter, setSpecialistFilter] = useState<"all" | "pending" | "active">("all");
   const [inspectingSpecialist, setInspectingSpecialist] = useState<SystemUser | null>(null);
 
   // State for Orders
-  const [orders, setOrders] = useState<OrderItem[]>(INITIAL_ORDERS);
+  const [orders, setOrders] = useState<OrderItem[]>([]);
 
   // Platform Settings State
   const [commissionRate, setCommissionRate] = useState(8);
@@ -430,13 +268,13 @@ export default function AdminDashboardPage() {
   // Summary Metrics
   const summaryMetrics = useMemo(() => {
     const totalRevenue = orders
-      .filter((o) => o.status === "completed" || o.status === "shipping")
+      .filter((o) => o.status === "delivered" || o.status === "delivering")
       .reduce((sum, o) => sum + o.totalAmount, 0);
     const totalCommission = orders
-      .filter((o) => o.status === "completed" || o.status === "shipping")
+      .filter((o) => o.status === "delivered" || o.status === "delivering")
       .reduce((sum, o) => sum + o.commission, 0);
     const pendingProductsCount = products.filter((p) => p.status === "pending").length;
-    const disputedOrdersCount = orders.filter((o) => o.status === "disputed").length;
+    const pendingOrdersCount = orders.filter((o) => o.status === "pending").length;
     const pendingShopsCount = users.filter((u) => u.role === "shop" && u.status === "pending").length;
     const pendingSpecialistsCount = users.filter((u) => u.role === "specialist" && u.status === "pending").length;
 
@@ -444,55 +282,64 @@ export default function AdminDashboardPage() {
       totalRevenue,
       totalCommission,
       pendingProductsCount,
-      disputedOrdersCount,
+      pendingOrdersCount,
       pendingShopsCount,
       pendingSpecialistsCount,
       totalUsers: users.length,
     };
   }, [orders, products, users]);
 
-  // Load Real Data from Supabase Auth & Storage on mount
+  // Load the real data. A failed load shows an error state (it used to keep sample rows).
   useEffect(() => {
-    // 1. Fetch real users from Supabase Auth
-    fetch("/api/admin/users")
-      .then((res) => res.json())
-      .then((json) => {
-        if (json.ok && Array.isArray(json.users) && json.users.length > 0) {
-          setUsers(json.users);
-        }
-      })
-      .catch((err) => console.error("Failed to load real users from Supabase:", err));
+    const load = <T,>(key: "users" | "products" | "orders", url: string, pick: (json: Record<string, unknown>) => T[], set: (rows: T[]) => void) =>
+      callApi(url)
+        .then((json) => {
+          set(pick(json));
+          setLoadState((prev) => ({ ...prev, [key]: "ready" }));
+        })
+        .catch((err: Error) => {
+          setLoadState((prev) => ({ ...prev, [key]: "error" }));
+          toast.error(`Không tải được dữ liệu: ${err.message}`);
+        });
 
-    // 2. Fetch persistent products
-    fetch("/api/admin/products")
-      .then((res) => res.json())
-      .then((json) => {
-        if (json.ok && Array.isArray(json.products)) {
-          setProducts(json.products);
-        }
-      })
-      .catch((err) => console.error("Failed to load products:", err));
+    load<SystemUser>("users", "/api/admin/users", (j) => (j.users as SystemUser[]) ?? [], setUsers);
+    load<ProductItem>("products", "/api/admin/products", (j) => (j.products as ProductItem[]) ?? [], setProducts);
+    load<OrderItem>("orders", "/api/admin/orders", (j) => (j.orders as OrderItem[]) ?? [], setOrders);
 
-    // 3. Fetch persistent orders
-    fetch("/api/admin/orders")
-      .then((res) => res.json())
+    callApi<{ routines?: Record<string, RoleRoutine> }>("/api/admin/routines")
       .then((json) => {
-        if (json.ok && Array.isArray(json.orders)) {
-          setOrders(json.orders);
-        }
+        if (json.routines) setRoutinesData(json.routines);
       })
-      .catch((err) => console.error("Failed to load orders:", err));
-
-    // 4. Fetch persistent routines by role (Supabase backed)
-    fetch("/api/admin/routines")
-      .then((res) => res.json())
-      .then((json) => {
-        if (json.ok && json.routines) {
-          setRoutinesData(json.routines);
-        }
-      })
-      .catch((err) => console.error("Failed to load routines:", err));
+      .catch((err: Error) => toast.error(`Không tải được routine: ${err.message}`));
   }, []);
+
+  /**
+   * Runs one admin action: its buttons stay disabled until the server answers, the UI changes only
+   * after the server stored the change, and a failure shows the server's message. Every action
+   * used to update the screen and toast success first, then fire the request and ignore its
+   * result, so refused or failed approvals looked done until the next reload.
+   */
+  async function runAction(key: string, action: () => Promise<void>): Promise<boolean> {
+    if (saving.has(key)) return false;
+    setSaving((prev) => new Set(prev).add(key));
+    try {
+      await action();
+      return true;
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Thao tác thất bại, vui lòng thử lại.");
+      return false;
+    } finally {
+      setSaving((prev) => {
+        const next = new Set(prev);
+        next.delete(key);
+        return next;
+      });
+    }
+  }
+
+  function setUserFromServer(id: string, patch: Partial<SystemUser>) {
+    setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, ...patch } : u)));
+  }
 
   // Routine Actions: Ticking (Tích sau khi làm) & Allocating (Phân bổ)
   async function handleToggleRoutineStep(role: RoleType, step: RoutineStep) {
@@ -577,126 +424,103 @@ export default function AdminDashboardPage() {
   }
 
   // Actions
-  function handleApproveSpecialist(id: string, name: string) {
-    setUsers((prev) =>
-      prev.map((u) => (u.id === id ? { ...u, status: "active" } : u))
-    );
-    toast.success(`Đã phê duyệt CCHN & kích hoạt tài khoản Bác sĩ: "${name}"`);
-    setInspectingSpecialist(null);
+  function handleSpecialistDecision(id: string, name: string, action: "approve" | "reject") {
+    return runAction(`user:${id}`, async () => {
+      const json = await callApi<{ user: { status: UserStatus } }>("/api/admin/specialists", {
+        method: "PATCH",
+        body: JSON.stringify({ userId: id, action }),
+      });
+      setUserFromServer(id, { status: json.user.status });
+      setInspectingSpecialist(null);
+      if (action === "approve") toast.success(`Đã phê duyệt CCHN & kích hoạt tài khoản Bác sĩ: "${name}"`);
+      else toast.success(`Đã từ chối hồ sơ Bác sĩ: "${name}"`);
+    });
+  }
 
-    fetch("/api/admin/specialists", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: id, action: "approve" }),
-    }).catch(() => {});
+  function handleApproveSpecialist(id: string, name: string) {
+    return handleSpecialistDecision(id, name, "approve");
   }
 
   function handleRejectSpecialist(id: string, name: string) {
-    setUsers((prev) =>
-      prev.map((u) => (u.id === id ? { ...u, status: "suspended" } : u))
-    );
-    toast.error(`Đã từ chối cấp phép hồ sơ Bác sĩ: "${name}"`);
-    setInspectingSpecialist(null);
-
-    fetch("/api/admin/specialists", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: id, action: "reject" }),
-    }).catch(() => {});
+    return handleSpecialistDecision(id, name, "reject");
   }
 
-  // Actions
+  function handleProductStatus(id: string, name: string, status: ProductItem["status"]) {
+    return runAction(`product:${id}`, async () => {
+      const json = await callApi<{ product: ProductItem }>("/api/admin/products", {
+        method: "PATCH",
+        body: JSON.stringify({ productId: id, status }),
+      });
+      setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, status: json.product.status } : p)));
+      const done: Record<ProductItem["status"], string> = {
+        approved: "Đã phê duyệt sản phẩm",
+        rejected: "Đã từ chối sản phẩm",
+        hidden: "Đã ẩn sản phẩm khỏi sàn",
+        pending: "Đã chuyển sản phẩm về chờ duyệt",
+      };
+      toast.success(`${done[status]}: "${name}"`);
+    });
+  }
+
   function handleApproveProduct(id: string, name: string) {
-    setProducts((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, status: "approved" } : p))
-    );
-    toast.success(`Đã phê duyệt sản phẩm: "${name}"`);
-    fetch("/api/admin/products", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ productId: id, status: "approved" }),
-    }).catch(() => {});
+    return handleProductStatus(id, name, "approved");
   }
 
   function handleRejectProduct(id: string, name: string) {
-    setProducts((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, status: "rejected" } : p))
-    );
-    toast.error(`Đã từ chối cấp phép cho sản phẩm: "${name}"`);
-    fetch("/api/admin/products", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ productId: id, status: "rejected" }),
-    }).catch(() => {});
+    return handleProductStatus(id, name, "rejected");
   }
 
-  function handleResolveDispute(id: string) {
-    setOrders((prev) =>
-      prev.map((o) => (o.id === id ? { ...o, status: "completed", disputeReason: undefined } : o))
-    );
-    toast.success(`Đã xử lý khiếu nại đơn hàng ${id} và hoàn tất bồi hoàn cho khách.`);
-    fetch("/api/admin/orders", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orderId: id, action: "resolve" }),
-    }).catch(() => {});
+  function handleOrderStatus(order: OrderItem, status: OrderStatus) {
+    return runAction(`order:${order.orderCode}`, async () => {
+      const json = await callApi<{ order: { status: OrderStatus } }>("/api/admin/orders", {
+        method: "PATCH",
+        body: JSON.stringify({ orderCode: order.orderCode, status }),
+      });
+      setOrders((prev) => prev.map((o) => (o.orderCode === order.orderCode ? { ...o, status: json.order.status } : o)));
+      toast.success(`Đơn ${order.orderCode}: ${ORDER_STATUS_LABEL[json.order.status]}`);
+    });
   }
 
-  function handleApproveShop(id: string, name: string) {
-    setUsers((prev) =>
-      prev.map((u) => (u.id === id ? { ...u, status: "active" } : u))
-    );
-    toast.success(`Đã phê duyệt Cửa hàng: "${name}"`);
-    setInspectingShop(null);
-    fetch("/api/admin/users", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: id, status: "active" }),
-    }).catch(() => {});
+  function patchUser(
+    user: { id: string },
+    body: { role?: RoleType; status?: UserStatus; unlock?: true; expectRole?: RoleType },
+    success: string,
+  ) {
+    return runAction(`user:${user.id}`, async () => {
+      const json = await callApi<{ user: { role: RoleType; status: UserStatus } }>("/api/admin/users", {
+        method: "PATCH",
+        body: JSON.stringify({ userId: user.id, ...body }),
+      });
+      setUserFromServer(user.id, { role: json.user.role, status: json.user.status });
+      toast.success(success);
+    });
   }
 
-  function handleRejectShop(id: string, name: string) {
-    setUsers((prev) =>
-      prev.map((u) => (u.id === id ? { ...u, status: "suspended" } : u))
-    );
-    toast.error(`Đã từ chối cấp phép Cửa hàng: "${name}".`);
-    setInspectingShop(null);
-    fetch("/api/admin/users", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: id, status: "suspended" }),
-    }).catch(() => {});
+  async function handleApproveShop(id: string, name: string) {
+    if (await patchUser({ id }, { status: "active", expectRole: "shop" }, `Đã phê duyệt Cửa hàng: "${name}"`)) setInspectingShop(null);
+  }
+
+  async function handleRejectShop(id: string, name: string) {
+    if (await patchUser({ id }, { status: "rejected", expectRole: "shop" }, `Đã từ chối hồ sơ Cửa hàng: "${name}"`)) setInspectingShop(null);
   }
 
   function handleToggleStatus(user: SystemUser) {
-    const newStatus: UserStatus = user.status === "active" ? "suspended" : "active";
-    setUsers((prev) =>
-      prev.map((u) => (u.id === user.id ? { ...u, status: newStatus } : u))
-    );
-    if (newStatus === "active") {
-      toast.success(`Đã mở khóa tài khoản cho ${user.name}`);
-    } else {
-      toast.warning(`Đã tạm khóa tài khoản của ${user.name}`);
+    if (user.status === "suspended") {
+      return patchUser(user, { unlock: true }, `Đã mở khóa tài khoản cho ${user.name}`);
     }
-    fetch("/api/admin/users", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: user.id, status: newStatus }),
-    }).catch(() => {});
+    return patchUser(user, { status: "suspended" }, `Đã tạm khóa tài khoản của ${user.name}`);
   }
 
-  function handleChangeRoleSubmit() {
+  async function handleChangeRoleSubmit() {
     if (!editingUserRole) return;
-    setUsers((prev) =>
-      prev.map((u) => (u.id === editingUserRole.id ? { ...u, role: targetRole } : u))
-    );
-    toast.success(`Đã chuyển vai trò của "${editingUserRole.name}" thành: ${ROLE_CONFIG[targetRole].label}`);
-    fetch("/api/admin/users", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: editingUserRole.id, role: targetRole }),
-    }).catch(() => {});
-    setEditingUserRole(null);
+    if (targetRole === "admin") {
+      toast.error("Quyền quản trị viên không thể cấp từ bảng điều khiển.");
+      return;
+    }
+    const user = editingUserRole;
+    if (await patchUser(user, { role: targetRole }, `Đã chuyển vai trò của "${user.name}" thành: ${ROLE_CONFIG[targetRole].label}`)) {
+      setEditingUserRole(null);
+    }
   }
 
   async function handleAddUserSubmit(e: React.FormEvent) {
@@ -728,9 +552,9 @@ export default function AdminDashboardPage() {
         id: json.user?.id || `usr_${Date.now()}`,
         name: newUserName.trim(),
         email: newUserEmail.trim(),
-        phone: newUserPhone.trim() || "0905 123 456",
+        phone: newUserPhone.trim(),
         role: newUserRole,
-        status: newUserRole === "specialist" ? "pending" : "active",
+        status: (json.user?.status as UserStatus | undefined) ?? "active",
         createdAt: new Date().toISOString().split("T")[0],
       };
 
@@ -747,13 +571,12 @@ export default function AdminDashboardPage() {
   }
 
   function handleDeleteUser(id: string, name: string) {
-    if (confirm(`Bạn có chắc chắn muốn xóa tài khoản "${name}" khỏi hệ thống Supabase?`)) {
+    if (!confirm(`Bạn có chắc chắn muốn xóa tài khoản "${name}" khỏi hệ thống Supabase?`)) return;
+    return runAction(`user:${id}`, async () => {
+      await callApi(`/api/admin/users?userId=${encodeURIComponent(id)}`, { method: "DELETE" });
       setUsers((prev) => prev.filter((u) => u.id !== id));
       toast.success(`Đã xóa tài khoản "${name}" khỏi Supabase`);
-      fetch(`/api/admin/users?userId=${id}`, {
-        method: "DELETE",
-      }).catch(() => {});
-    }
+    });
   }
 
   return (
@@ -889,10 +712,10 @@ export default function AdminDashboardPage() {
               }`}
             >
               <ShoppingBag className="size-4" />
-              <span>Đơn hàng & Khiếu nại</span>
-              {summaryMetrics.disputedOrdersCount > 0 && (
+              <span>Đơn hàng</span>
+              {summaryMetrics.pendingOrdersCount > 0 && (
                 <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-rose-800 text-rose-50 font-bold">
-                  {summaryMetrics.disputedOrdersCount}
+                  {summaryMetrics.pendingOrdersCount}
                 </span>
               )}
             </button>
@@ -1175,6 +998,12 @@ export default function AdminDashboardPage() {
                                 Đã tạm khóa
                               </span>
                             )}
+                            {user.status === "rejected" && (
+                              <span className="inline-flex items-center gap-1.5 text-rose-800 dark:text-rose-300 text-xs font-semibold">
+                                <XCircle className="size-4" />
+                                Bị từ chối
+                              </span>
+                            )}
                           </td>
 
                           <td className="py-4.5 px-6 text-muted-foreground text-xs whitespace-nowrap">
@@ -1183,7 +1012,9 @@ export default function AdminDashboardPage() {
 
                           <td className="py-4.5 px-6 text-right whitespace-nowrap">
                             <div className="flex items-center justify-end gap-2">
-                              {user.role === "shop" && user.status === "pending" ? (
+                              {user.role === "admin" ? (
+                                <span className="text-muted-foreground text-xs italic">Quản trị viên</span>
+                              ) : user.role === "shop" && (user.status === "pending" || user.status === "rejected") ? (
                                 <>
                                   <button
                                     onClick={() => setInspectingShop(user)}
@@ -1191,15 +1022,25 @@ export default function AdminDashboardPage() {
                                   >
                                     Xem hồ sơ shop
                                   </button>
+                                  {user.status === "pending" && (
+                                    <button
+                                      onClick={() => handleRejectShop(user.id, user.name)}
+                                      disabled={saving.has(`user:${user.id}`)}
+                                      className="px-3 py-1.5 rounded-md text-xs font-semibold text-rose-800 dark:text-rose-300 hover:bg-rose-500/10 border border-rose-600/30 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                      Từ chối
+                                    </button>
+                                  )}
                                   <button
                                     onClick={() => handleApproveShop(user.id, user.name)}
-                                    className="px-3.5 py-1.5 rounded-md text-xs font-semibold bg-emerald-700 text-white hover:bg-emerald-600 transition cursor-pointer flex items-center gap-1"
+                                    disabled={saving.has(`user:${user.id}`)}
+                                    className="px-3.5 py-1.5 rounded-md text-xs font-semibold bg-emerald-700 text-white hover:bg-emerald-600 transition cursor-pointer flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
                                   >
                                     <Check className="size-3.5" />
-                                    Duyệt
+                                    {user.status === "pending" ? "Duyệt" : "Duyệt lại"}
                                   </button>
                                 </>
-                              ) : user.role === "specialist" && user.status === "pending" ? (
+                              ) : user.role === "specialist" && (user.status === "pending" || user.status === "rejected") ? (
                                 <>
                                   <button
                                     onClick={() => setInspectingSpecialist(user)}
@@ -1209,10 +1050,11 @@ export default function AdminDashboardPage() {
                                   </button>
                                   <button
                                     onClick={() => handleApproveSpecialist(user.id, user.name)}
-                                    className="px-3.5 py-1.5 rounded-md text-xs font-semibold bg-emerald-700 text-white hover:bg-emerald-600 transition cursor-pointer flex items-center gap-1"
+                                    disabled={saving.has(`user:${user.id}`)}
+                                    className="px-3.5 py-1.5 rounded-md text-xs font-semibold bg-emerald-700 text-white hover:bg-emerald-600 transition cursor-pointer flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
                                   >
                                     <Check className="size-3.5" />
-                                    Duyệt Bác sĩ
+                                    {user.status === "pending" ? "Duyệt Bác sĩ" : "Duyệt lại"}
                                   </button>
                                 </>
                               ) : (
@@ -1222,26 +1064,32 @@ export default function AdminDashboardPage() {
                                       setEditingUserRole(user);
                                       setTargetRole(user.role);
                                     }}
-                                    className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-surface-2 transition cursor-pointer"
-                                    title="Chuyển đổi vai trò (4 Role)"
+                                    disabled={saving.has(`user:${user.id}`)}
+                                    className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-surface-2 transition cursor-pointer disabled:opacity-50"
+                                    title="Chuyển đổi vai trò"
+                                    aria-label="Chuyển đổi vai trò"
                                   >
                                     <ArrowUpDown className="size-4" />
                                   </button>
                                   <button
                                     onClick={() => handleToggleStatus(user)}
-                                    className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-surface-2 transition cursor-pointer"
-                                    title={user.status === "active" ? "Khóa tài khoản" : "Mở khóa tài khoản"}
+                                    disabled={saving.has(`user:${user.id}`)}
+                                    className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-surface-2 transition cursor-pointer disabled:opacity-50"
+                                    title={user.status === "suspended" ? "Mở khóa tài khoản" : "Khóa tài khoản"}
+                                    aria-label={user.status === "suspended" ? "Mở khóa tài khoản" : "Khóa tài khoản"}
                                   >
-                                    {user.status === "active" ? (
-                                      <Lock className="size-4 text-muted-foreground hover:text-rose-700" />
-                                    ) : (
+                                    {user.status === "suspended" ? (
                                       <Unlock className="size-4 text-emerald-700 dark:text-emerald-300" />
+                                    ) : (
+                                      <Lock className="size-4 text-muted-foreground hover:text-rose-700" />
                                     )}
                                   </button>
                                   <button
                                     onClick={() => handleDeleteUser(user.id, user.name)}
-                                    className="p-2 rounded-lg text-muted-foreground hover:text-rose-700 hover:bg-surface-2 transition cursor-pointer"
+                                    disabled={saving.has(`user:${user.id}`)}
+                                    className="p-2 rounded-lg text-muted-foreground hover:text-rose-700 hover:bg-surface-2 transition cursor-pointer disabled:opacity-50"
                                     title="Xóa tài khoản"
+                                    aria-label="Xóa tài khoản"
                                   >
                                     <Trash2 className="size-4" />
                                   </button>
@@ -1252,6 +1100,17 @@ export default function AdminDashboardPage() {
                         </tr>
                       );
                     })}
+                    {filteredUsers.length === 0 && (
+                      <tr>
+                        <td colSpan={6} className="py-12 text-center text-muted-foreground">
+                          {loadState.users === "loading"
+                            ? "Đang tải danh sách tài khoản…"
+                            : loadState.users === "error"
+                              ? "Không tải được danh sách tài khoản. Vui lòng tải lại trang."
+                              : "Không có tài khoản nào phù hợp với bộ lọc."}
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -1346,7 +1205,11 @@ export default function AdminDashboardPage() {
                     {filteredSpecialists.length === 0 ? (
                       <tr>
                         <td colSpan={6} className="py-12 text-center text-muted-foreground">
-                          Không tìm thấy hồ sơ Bác sĩ nào phù hợp với bộ lọc.
+                          {loadState.users === "loading"
+                            ? "Đang tải hồ sơ Bác sĩ…"
+                            : loadState.users === "error"
+                              ? "Không tải được hồ sơ Bác sĩ. Vui lòng tải lại trang."
+                              : "Không tìm thấy hồ sơ Bác sĩ nào phù hợp với bộ lọc."}
                         </td>
                       </tr>
                     ) : (
@@ -1389,10 +1252,16 @@ export default function AdminDashboardPage() {
                                 Chờ xét duyệt
                               </span>
                             )}
+                            {doc.status === "rejected" && (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-700/10 text-rose-950 dark:text-rose-200 border border-rose-800/25">
+                                <XCircle className="size-3.5 text-rose-600" />
+                                Bị từ chối
+                              </span>
+                            )}
                             {doc.status === "suspended" && (
                               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-700/10 text-rose-950 dark:text-rose-200 border border-rose-800/25">
                                 <XCircle className="size-3.5 text-rose-600" />
-                                Đã từ chối / Khóa
+                                Đã tạm khóa
                               </span>
                             )}
                           </td>
@@ -1408,6 +1277,7 @@ export default function AdminDashboardPage() {
                                 <>
                                   <button
                                     onClick={() => handleApproveSpecialist(doc.id, doc.name)}
+                                    disabled={saving.has(`user:${doc.id}`)}
                                     className="px-3.5 py-1.5 rounded-md text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition cursor-pointer shadow-xs flex items-center gap-1"
                                   >
                                     <Check className="size-3.5" />
@@ -1415,6 +1285,7 @@ export default function AdminDashboardPage() {
                                   </button>
                                   <button
                                     onClick={() => handleRejectSpecialist(doc.id, doc.name)}
+                                    disabled={saving.has(`user:${doc.id}`)}
                                     className="px-3.5 py-1.5 rounded-md text-xs font-semibold bg-rose-600/10 text-rose-700 hover:bg-rose-600/20 border border-rose-600/30 transition cursor-pointer"
                                   >
                                     Từ chối
@@ -1423,16 +1294,19 @@ export default function AdminDashboardPage() {
                               ) : doc.status === "active" ? (
                                 <button
                                   onClick={() => handleRejectSpecialist(doc.id, doc.name)}
+                                    disabled={saving.has(`user:${doc.id}`)}
                                   className="px-3 py-1.5 rounded-md text-xs font-medium text-rose-700 hover:bg-rose-600/10 transition cursor-pointer"
                                 >
-                                  Khóa quyền
+                                  Thu hồi quyền
                                 </button>
                               ) : (
                                 <button
-                                  onClick={() => handleApproveSpecialist(doc.id, doc.name)}
-                                  className="px-3.5 py-1.5 rounded-md text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 transition cursor-pointer"
+                                  // A locked doctor is unlocked (back to its pre-lock status), not approved.
+                                  onClick={() => (doc.status === "suspended" ? handleToggleStatus(doc) : handleApproveSpecialist(doc.id, doc.name))}
+                                  disabled={saving.has(`user:${doc.id}`)}
+                                  className="px-3.5 py-1.5 rounded-md text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 transition cursor-pointer disabled:opacity-50"
                                 >
-                                  Kích hoạt lại
+                                  {doc.status === "rejected" ? "Duyệt lại" : "Mở khóa"}
                                 </button>
                               )}
                             </div>
@@ -1867,6 +1741,19 @@ export default function AdminDashboardPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
+                    {filteredProducts.length === 0 && (
+                      <tr>
+                        <td colSpan={6} className="py-12 text-center text-muted-foreground">
+                          {loadState.products === "loading"
+                            ? "Đang tải sản phẩm…"
+                            : loadState.products === "error"
+                              ? "Không tải được sản phẩm. Vui lòng tải lại trang."
+                              : productFilter === "pending"
+                                ? "Không có sản phẩm nào đang chờ duyệt."
+                                : "Chưa có sản phẩm nào."}
+                        </td>
+                      </tr>
+                    )}
                     {filteredProducts.map((p) => (
                       <tr key={p.id} className="hover:bg-surface-2/40 transition">
                         <td className="py-4.5 px-6 font-medium text-foreground">
@@ -1906,27 +1793,42 @@ export default function AdminDashboardPage() {
                               <XCircle className="size-4" /> Bị từ chối
                             </span>
                           )}
+                          {p.status === "hidden" && (
+                            <span className="inline-flex items-center gap-1.5 text-muted-foreground font-semibold text-xs">
+                              <XCircle className="size-4" /> Đã ẩn khỏi sàn
+                            </span>
+                          )}
                         </td>
                         <td className="py-4.5 px-6 text-right whitespace-nowrap">
-                          {p.status === "pending" ? (
-                            <div className="flex items-center justify-end gap-2">
+                          <div className="flex items-center justify-end gap-2">
+                            {p.status === "pending" && (
                               <button
                                 onClick={() => handleRejectProduct(p.id, p.name)}
-                                className="px-3 py-1.5 rounded-md text-xs font-semibold text-rose-800 dark:text-rose-300 hover:bg-rose-500/10 border border-rose-600/30 transition cursor-pointer"
+                                disabled={saving.has(`product:${p.id}`)}
+                                className="px-3 py-1.5 rounded-md text-xs font-semibold text-rose-800 dark:text-rose-300 hover:bg-rose-500/10 border border-rose-600/30 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 Từ chối
                               </button>
+                            )}
+                            {p.status === "approved" ? (
+                              <button
+                                onClick={() => handleProductStatus(p.id, p.name, "hidden")}
+                                disabled={saving.has(`product:${p.id}`)}
+                                className="px-3 py-1.5 rounded-md text-xs font-semibold text-rose-800 dark:text-rose-300 hover:bg-rose-500/10 border border-rose-600/30 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                Ẩn khỏi sàn
+                              </button>
+                            ) : (
                               <button
                                 onClick={() => handleApproveProduct(p.id, p.name)}
-                                className="px-3.5 py-1.5 rounded-md text-xs font-semibold bg-emerald-700 text-white hover:bg-emerald-600 transition cursor-pointer flex items-center gap-1"
+                                disabled={saving.has(`product:${p.id}`)}
+                                className="px-3.5 py-1.5 rounded-md text-xs font-semibold bg-emerald-700 text-white hover:bg-emerald-600 transition cursor-pointer flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 <Check className="size-3.5" />
-                                Phê duyệt
+                                {p.status === "pending" ? "Phê duyệt" : "Mở bán lại"}
                               </button>
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground text-xs italic">Đã xử lý</span>
-                          )}
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -1942,10 +1844,10 @@ export default function AdminDashboardPage() {
           <div className="space-y-6 animate-in fade-in-50 duration-200">
             <div>
               <h2 className="font-display text-base sm:text-lg font-bold text-foreground">
-                Quản Lý Đơn Hàng & Xử Lý Tranh Chấp Sàn
+                Quản Lý Đơn Hàng Toàn Sàn
               </h2>
               <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                Giám sát luồng giao dịch giữa Khách hàng và Nhà cung cấp, can thiệp khi có khiếu nại
+                Mọi đơn khách đặt trên sàn; cập nhật trạng thái theo đúng quy trình xử lý đơn
               </p>
             </div>
 
@@ -1964,10 +1866,21 @@ export default function AdminDashboardPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
+                    {orders.length === 0 && (
+                      <tr>
+                        <td colSpan={7} className="py-12 text-center text-muted-foreground">
+                          {loadState.orders === "loading"
+                            ? "Đang tải đơn hàng…"
+                            : loadState.orders === "error"
+                              ? "Không tải được đơn hàng. Vui lòng tải lại trang."
+                              : "Chưa có đơn hàng nào."}
+                        </td>
+                      </tr>
+                    )}
                     {orders.map((o) => (
-                      <tr key={o.id} className="hover:bg-surface-2/40 transition">
+                      <tr key={o.orderCode} className="hover:bg-surface-2/40 transition">
                         <td className="py-4.5 px-6 font-mono font-bold text-foreground text-sm whitespace-nowrap">
-                          {o.id}
+                          {o.orderCode}
                         </td>
                         <td className="py-4.5 px-6 font-semibold text-foreground whitespace-nowrap">
                           {o.customerName}
@@ -1982,43 +1895,52 @@ export default function AdminDashboardPage() {
                           +{o.commission.toLocaleString("vi-VN")}&nbsp;₫
                         </td>
                         <td className="py-4.5 px-6 whitespace-nowrap">
-                          {o.status === "completed" && (
-                            <span className="inline-flex items-center gap-1.5 text-emerald-800 dark:text-emerald-300 font-semibold text-xs">
-                              <CheckCircle2 className="size-4" /> Giao thành công
-                            </span>
-                          )}
-                          {o.status === "shipping" && (
-                            <span className="inline-flex items-center gap-1.5 text-sky-800 dark:text-sky-300 font-semibold text-xs">
-                              <Truck className="size-4" /> Đang vận chuyển
-                            </span>
-                          )}
-                          {o.status === "disputed" && (
-                            <div className="flex flex-col">
-                              <span className="inline-flex items-center gap-1.5 text-rose-800 dark:text-rose-300 font-bold text-xs">
-                                <ShieldAlert className="size-4" /> Có khiếu nại!
-                              </span>
-                              <span className="text-[11px] text-muted-foreground mt-1">
-                                Lý do: {o.disputeReason}
-                              </span>
-                            </div>
-                          )}
-                          {o.status === "processing" && (
-                            <span className="inline-flex items-center gap-1.5 text-amber-900 dark:text-amber-300 font-medium text-xs">
-                              <Clock className="size-4" /> Shop đang đóng gói
-                            </span>
-                          )}
+                          <span
+                            className={`inline-flex items-center gap-1.5 font-semibold text-xs ${
+                              o.status === "delivered"
+                                ? "text-emerald-800 dark:text-emerald-300"
+                                : o.status === "cancelled"
+                                  ? "text-rose-800 dark:text-rose-300"
+                                  : o.status === "delivering"
+                                    ? "text-sky-800 dark:text-sky-300"
+                                    : "text-amber-900 dark:text-amber-300"
+                            }`}
+                          >
+                            {o.status === "delivered" ? (
+                              <CheckCircle2 className="size-4" />
+                            ) : o.status === "cancelled" ? (
+                              <XCircle className="size-4" />
+                            ) : o.status === "delivering" ? (
+                              <Truck className="size-4" />
+                            ) : (
+                              <Clock className="size-4" />
+                            )}
+                            {ORDER_STATUS_LABEL[o.status]}
+                          </span>
+                          <span className="block text-[11px] text-muted-foreground mt-1">
+                            {o.paymentStatus === "paid" ? "Đã thanh toán" : "Chưa thanh toán"}
+                          </span>
                         </td>
                         <td className="py-4.5 px-6 text-right whitespace-nowrap">
-                          {o.status === "disputed" ? (
-                            <button
-                              onClick={() => handleResolveDispute(o.id)}
-                              className="px-3.5 py-1.5 rounded-md text-xs font-semibold bg-primary text-primary-foreground hover:opacity-90 transition cursor-pointer flex items-center gap-1.5 ml-auto shadow-xs"
-                            >
-                              <RotateCcw className="size-3.5" />
-                              Giải quyết & Hoàn tất
-                            </button>
+                          {ORDER_ACTIONS[o.status].length === 0 ? (
+                            <span className="text-muted-foreground text-xs italic">Đã kết thúc</span>
                           ) : (
-                            <span className="text-muted-foreground text-xs italic">Theo dõi</span>
+                            <div className="flex items-center justify-end gap-2">
+                              {ORDER_ACTIONS[o.status].map((next) => (
+                                <button
+                                  key={next.status}
+                                  onClick={() => handleOrderStatus(o, next.status)}
+                                  disabled={saving.has(`order:${o.orderCode}`)}
+                                  className={`px-3 py-1.5 rounded-md text-xs font-semibold transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+                                    next.status === "cancelled"
+                                      ? "text-rose-800 dark:text-rose-300 hover:bg-rose-500/10 border border-rose-600/30"
+                                      : "bg-primary text-primary-foreground hover:opacity-90"
+                                  }`}
+                                >
+                                  {next.label}
+                                </button>
+                              ))}
+                            </div>
                           )}
                         </td>
                       </tr>
@@ -2368,12 +2290,14 @@ export default function AdminDashboardPage() {
             <div className="flex items-center justify-end gap-3 pt-2">
               <button
                 onClick={() => handleRejectShop(inspectingShop.id, inspectingShop.name)}
+                disabled={saving.has(`user:${inspectingShop.id}`)}
                 className="px-4 py-2 rounded-lg text-xs font-semibold text-rose-800 dark:text-rose-300 hover:bg-rose-500/10 border border-rose-600/30 transition cursor-pointer"
               >
                 Từ chối cấp phép
               </button>
               <button
                 onClick={() => handleApproveShop(inspectingShop.id, inspectingShop.name)}
+                disabled={saving.has(`user:${inspectingShop.id}`)}
                 className="px-5 py-2 rounded-lg text-xs font-semibold bg-emerald-700 text-white hover:bg-emerald-600 transition shadow-xs cursor-pointer flex items-center gap-1.5"
               >
                 <Check className="size-4" />
@@ -2406,7 +2330,7 @@ export default function AdminDashboardPage() {
             </div>
 
             <div className="space-y-2.5 py-2">
-              {(["customer", "shop", "specialist", "admin"] as RoleType[]).map((r) => {
+              {(["customer", "shop", "specialist"] as RoleType[]).map((r) => {
                 const conf = ROLE_CONFIG[r];
                 const IconC = conf.icon;
                 const isSelected = targetRole === r;
@@ -2445,6 +2369,7 @@ export default function AdminDashboardPage() {
               </button>
               <button
                 onClick={handleChangeRoleSubmit}
+                disabled={saving.has(`user:${editingUserRole.id}`)}
                 className="px-5 py-2 rounded-lg text-xs font-semibold bg-primary text-primary-foreground hover:opacity-90 transition shadow-xs cursor-pointer"
               >
                 Lưu thay đổi quyền
@@ -2529,6 +2454,7 @@ export default function AdminDashboardPage() {
                   <button
                     type="button"
                     onClick={() => handleRejectSpecialist(inspectingSpecialist.id, inspectingSpecialist.name)}
+                disabled={saving.has(`user:${inspectingSpecialist.id}`)}
                     className="px-4 py-2 rounded-lg text-xs font-semibold bg-rose-600/10 text-rose-700 hover:bg-rose-600/20 border border-rose-600/30 transition cursor-pointer"
                   >
                     Từ chối
@@ -2536,6 +2462,7 @@ export default function AdminDashboardPage() {
                   <button
                     type="button"
                     onClick={() => handleApproveSpecialist(inspectingSpecialist.id, inspectingSpecialist.name)}
+                disabled={saving.has(`user:${inspectingSpecialist.id}`)}
                     className="px-5 py-2 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition shadow-xs cursor-pointer flex items-center gap-1.5"
                   >
                     <Check className="size-3.5" />

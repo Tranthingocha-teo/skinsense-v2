@@ -3,7 +3,6 @@
 import { useState, useMemo, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import Image from "next/image";
 import {
   ShoppingBag,
   Search,
@@ -42,6 +41,69 @@ function formatVnd(amount: number): string {
   }).format(amount);
 }
 
+// Một sản phẩm gian hàng đối tác đã được duyệt, như GET /api/admin/products trả về.
+interface MarketplaceApiProduct {
+  id: string;
+  name: string;
+  shopName: string;
+  brand?: string;
+  category?: string;
+  price: number;
+  stock?: number;
+  sku?: string;
+  status: string;
+  coverImage?: string;
+  images?: unknown;
+  description?: string;
+  origin?: string;
+}
+
+// Chỉ dùng những gì gian hàng đã khai; không bịa giá gốc, giảm giá hay lượt bán.
+function toStorefrontProduct(ap: MarketplaceApiProduct): ShopeeProduct {
+  const images = Array.isArray(ap.images)
+    ? ap.images.filter((img): img is string => typeof img === "string" && img.trim().length > 0)
+    : [];
+  const cover = (typeof ap.coverImage === "string" && ap.coverImage.trim()) || images[0] || "";
+  const sku = ap.sku || `SKU-${ap.id}`;
+  return {
+    id: ap.id,
+    shopName: ap.shopName,
+    sku,
+    name: ap.name,
+    category: ap.category || "Dược mỹ phẩm",
+    brand: ap.brand || ap.shopName,
+    origin: ap.origin || "Chưa cập nhật",
+    isMall: true,
+    isPreferredPlus: false,
+    images: images.length > 0 ? images : cover ? [cover] : [],
+    coverImage: cover,
+    priceVnd: ap.price,
+    originalPriceVnd: ap.price,
+    discountPercent: 0,
+    stock: ap.stock ?? 0,
+    soldCount: 0,
+    rating: 0,
+    reviewCount: 0,
+    shippingInfo: { freeShipExtra: false, shippingFrom: "Theo gian hàng", estimatedDelivery: "Theo gian hàng", shippingFeeVnd: 0 },
+    variants: [
+      { id: `var_${ap.id}`, name: "Dung tích tiêu chuẩn", priceVnd: ap.price, originalPriceVnd: ap.price, stock: ap.stock ?? 0, sku },
+    ],
+    vouchers: [],
+    specifications: {
+      skinType: "Chưa cập nhật",
+      volume: "Chưa cập nhật",
+      expiryMonths: 0,
+      actives: "Chưa cập nhật",
+      healthMinistryLicense: "Chưa cập nhật",
+      packagingWeightGram: 0,
+    },
+    description: ap.description || "",
+    howToUse: "",
+    status: "active",
+    createdAt: "",
+  };
+}
+
 // Sản phẩm chưa có ảnh: hiện ô trống trung thực, không lấy ảnh mẫu thay vào.
 function NoImage() {
   return (
@@ -64,9 +126,33 @@ function UserProductsMarketplaceContent() {
 
   // Danh sách sản phẩm đang bán (đã duyệt). Thêm sản phẩm thuộc Kênh Người Bán (/seller/products),
   // không phải trang mua hàng của khách.
+  // Gồm sản phẩm mẫu đang bán và sản phẩm của gian hàng đối tác đã được Admin duyệt
+  // (GET /api/admin/products chỉ trả về sản phẩm đã duyệt cho người mua; checkout mua đúng sản phẩm đó).
+  const [marketplaceProducts, setMarketplaceProducts] = useState<ShopeeProduct[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/admin/products", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data: { ok?: boolean; products?: MarketplaceApiProduct[] }) => {
+        if (cancelled || !data?.ok || !Array.isArray(data.products)) return;
+        const seedIds = new Set(INITIAL_SHOPEE_PRODUCTS.map((p) => p.id));
+        setMarketplaceProducts(
+          data.products
+            .filter((ap) => ap.status === "approved" && !seedIds.has(ap.id))
+            .map(toStorefrontProduct),
+        );
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const productsList = useMemo(
-    () => INITIAL_SHOPEE_PRODUCTS.filter((p) => p.status === "approved" || p.status === "active"),
-    [],
+    () => [
+      ...marketplaceProducts,
+      ...INITIAL_SHOPEE_PRODUCTS.filter((p) => p.status === "approved" || p.status === "active"),
+    ],
+    [marketplaceProducts],
   );
   // Bộ lọc thương hiệu lấy từ chính danh sách đang bán, để mỗi nút luôn có sản phẩm.
   const brands = useMemo(
@@ -275,13 +361,10 @@ function UserProductsMarketplaceContent() {
                 {/* Ảnh bìa chính lớn */}
                 <div className="relative aspect-square w-full overflow-hidden rounded-2xl border border-[#D8D4CA]/80 bg-[#F6F4EF] shadow-2xs">
                   {selectedProduct.images?.[activeImageIndex] || selectedProduct.coverImage ? (
-                    <Image
+                    <img
                       src={selectedProduct.images?.[activeImageIndex] || selectedProduct.coverImage}
                       alt={selectedProduct.name}
-                      fill
-                      sizes="(max-width: 1024px) 100vw, 40vw"
-                      className="object-cover"
-                      priority
+                      className="absolute inset-0 size-full object-cover"
                     />
                   ) : (
                     <NoImage />
@@ -292,9 +375,11 @@ function UserProductsMarketplaceContent() {
                     <span>Mall</span>
                   </div>
                   {/* Tag giảm giá vàng cam góc phải */}
-                  <span className="absolute top-3 right-3 rounded-md bg-[#FEF08A] px-2 py-0.5 text-xs font-bold text-[#854D0E] shadow-2xs">
-                    GIẢM {selectedProduct.discountPercent}%
-                  </span>
+                  {selectedProduct.discountPercent > 0 && (
+                    <span className="absolute top-3 right-3 rounded-md bg-[#FEF08A] px-2 py-0.5 text-xs font-bold text-[#854D0E] shadow-2xs">
+                      GIẢM {selectedProduct.discountPercent}%
+                    </span>
+                  )}
                 </div>
 
                 {/* Hàng ảnh thu nhỏ (Thumbnails) */}
@@ -315,12 +400,10 @@ function UserProductsMarketplaceContent() {
                           : "border-[#D8D4CA] opacity-75 hover:opacity-100"
                       }`}
                     >
-                      <Image
+                      <img
                         src={imgUrl}
                         alt={`Ảnh góc ${i + 1}`}
-                        fill
-                        sizes="64px"
-                        className="object-cover"
+                        className="absolute inset-0 size-full object-cover"
                       />
                     </button>
                   ))}
@@ -395,12 +478,16 @@ function UserProductsMarketplaceContent() {
                       <span className="text-2xl sm:text-3xl font-black text-[#191B19]">
                         {formatVnd(currentVariant.priceVnd)}
                       </span>
-                      <span className="text-sm text-[#8C8F8A] line-through">
-                        {formatVnd(currentVariant.originalPriceVnd || Math.round(currentVariant.priceVnd * 1.25))}
-                      </span>
-                      <span className="rounded bg-[#191B19] px-2 py-0.5 text-xs font-bold text-white shadow-xs">
-                        -{selectedProduct.discountPercent}% GIẢM
-                      </span>
+                      {(currentVariant.originalPriceVnd ?? 0) > currentVariant.priceVnd && (
+                        <span className="text-sm text-[#8C8F8A] line-through">
+                          {formatVnd(currentVariant.originalPriceVnd ?? 0)}
+                        </span>
+                      )}
+                      {selectedProduct.discountPercent > 0 && (
+                        <span className="rounded bg-[#191B19] px-2 py-0.5 text-xs font-bold text-white shadow-xs">
+                          -{selectedProduct.discountPercent}% GIẢM
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -694,7 +781,7 @@ function UserProductsMarketplaceContent() {
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 sm:gap-4">
                 {filteredProducts.map((prod) => {
                   const defaultVariant = prod.variants?.[0] || { name: "Mặc định", priceVnd: prod.priceVnd };
-                  const discountPercent = prod.discountPercent || Math.round(((prod.priceVnd * 1.25 - prod.priceVnd) / (prod.priceVnd * 1.25)) * 100);
+                  const discountPercent = prod.discountPercent;
 
                   return (
                     <div
@@ -707,12 +794,10 @@ function UserProductsMarketplaceContent() {
                         className="relative aspect-square w-full overflow-hidden rounded-xl bg-[#F6F4EF] cursor-pointer mb-2.5"
                       >
                         {prod.coverImage || prod.images?.[0] ? (
-                          <Image
+                          <img
                             src={prod.coverImage || prod.images[0]}
                             alt={prod.name}
-                            fill
-                            className="object-cover transition duration-300 group-hover:scale-105"
-                            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 20vw"
+                            className="absolute inset-0 size-full object-cover transition duration-300 group-hover:scale-105"
                           />
                         ) : (
                           <NoImage />
@@ -722,9 +807,11 @@ function UserProductsMarketplaceContent() {
                           Mall
                         </span>
                         {/* Tag giảm giá */}
-                        <span className="absolute top-2 right-2 rounded bg-[#FEF08A] px-1.5 py-0.5 text-[9px] font-bold text-[#854D0E] shadow-2xs">
-                          -{discountPercent}%
-                        </span>
+                        {discountPercent > 0 && (
+                          <span className="absolute top-2 right-2 rounded bg-[#FEF08A] px-1.5 py-0.5 text-[9px] font-bold text-[#854D0E] shadow-2xs">
+                            -{discountPercent}%
+                          </span>
+                        )}
                       </div>
 
                       {/* Thông tin sản phẩm */}
@@ -756,9 +843,11 @@ function UserProductsMarketplaceContent() {
                             <span className="text-sm font-bold text-[#191B19]">
                               {formatVnd(prod.priceVnd)}
                             </span>
-                            <span className="text-[10px] text-[#8C8F8A] line-through">
-                              {formatVnd(prod.originalPriceVnd || Math.round(prod.priceVnd * 1.25))}
-                            </span>
+                            {prod.originalPriceVnd > prod.priceVnd && (
+                              <span className="text-[10px] text-[#8C8F8A] line-through">
+                                {formatVnd(prod.originalPriceVnd)}
+                              </span>
+                            )}
                           </div>
 
                           <span className="text-[10px] text-[#5C605C] block truncate mt-0.5">

@@ -163,6 +163,18 @@ interface CheckoutItem {
   originalPriceVnd: number;
   quantity: number;
   selected: boolean;
+  /** The selling shop, for products partner shops listed (they are not in the built-in catalog). */
+  shopName?: string;
+}
+
+interface MarketplaceProduct {
+  id: string;
+  name: string;
+  shopName: string;
+  brand?: string;
+  price: number;
+  status: string;
+  coverImage?: string;
 }
 
 function formatMoney(amount: number) {
@@ -204,6 +216,10 @@ function CheckoutInner() {
         ];
       }
     }
+
+    // A product a partner shop listed is resolved from the marketplace below. It used to fall
+    // through to the default product, so "Mua Ngay" on an approved shop product bought another one.
+    if (productIdParam) return [];
 
     if (modeParam === "routine") {
       const routineProds = INITIAL_SHOPEE_PRODUCTS.slice(0, 4);
@@ -261,7 +277,50 @@ function CheckoutInner() {
             selected: true,
           },
         ]);
+        return;
       }
+      // Only approved products come back for a buyer (GET /api/admin/products), so a pending,
+      // rejected or hidden product cannot be bought through a saved link either.
+      let cancelled = false;
+      fetch("/api/admin/products", { cache: "no-store" })
+        .then((res) => res.json())
+        .then((data: { ok?: boolean; products?: MarketplaceProduct[] }) => {
+          if (cancelled) return;
+          const product = data.products?.find((p) => p.id === productIdParam && p.status === "approved");
+          if (!data.ok) {
+            setItems([]);
+            toast.error("Không tải được sản phẩm, vui lòng thử lại.");
+            return;
+          }
+          if (!product) {
+            // Nothing else may stay in the cart in its place.
+            setItems([]);
+            toast.error("Sản phẩm này không còn được bán trên sàn.");
+            return;
+          }
+          setItems([
+            {
+              id: `item_${product.id}`,
+              productId: product.id,
+              name: product.name,
+              brand: product.brand || product.shopName,
+              variant: "Dung tích tiêu chuẩn",
+              volume: "",
+              image: product.coverImage || "",
+              priceVnd: product.price,
+              originalPriceVnd: product.price,
+              quantity: qtyParam,
+              selected: true,
+              shopName: product.shopName,
+            },
+          ]);
+        })
+        .catch(() => {
+          if (!cancelled) toast.error("Không tải được sản phẩm, vui lòng thử lại.");
+        });
+      return () => {
+        cancelled = true;
+      };
     }
   }, [productIdParam, variantParam, qtyParam]);
 
@@ -474,8 +533,9 @@ function CheckoutInner() {
           shippingAddress: recipientAddress,
           totalAmount: finalTotal,
           paymentMethod,
-          shopName: activeShop.shopName,
-          brand: activeShop.brand,
+          // A partner shop's product is billed to that shop, so the order reaches its Seller Center.
+          shopName: selectedItems[0]?.shopName || activeShop.shopName,
+          brand: selectedItems[0]?.shopName ? selectedItems[0].brand : activeShop.brand,
           items: selectedItems.map((i) => ({
             id: i.id,
             name: i.name,

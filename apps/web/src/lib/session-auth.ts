@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { normalizeShopId } from "@/lib/shop-utils";
-import { resolveActorRole, type ActorRole } from "@/lib/actor-role";
+import { resolveActorRole, SUPER_ADMIN_EMAIL, type ActorRole } from "@/lib/actor-role";
 
 export type { ActorRole };
 
@@ -53,6 +53,10 @@ export async function getAuthenticatedActor(request?: Request): Promise<Authenti
     const meta = (user.user_metadata || {}) as Record<string, unknown>;
     const appMeta = (user.app_metadata || {}) as Record<string, unknown>;
     const shopDetails = (meta.shop_details as Record<string, unknown> | undefined) ?? undefined;
+
+    // An account the admin locked has no rights at all, even while its access token is still
+    // valid (Supabase's ban only stops new sign-ins and token refreshes).
+    if (appMeta.status === "suspended" && email !== SUPER_ADMIN_EMAIL) return null;
 
     // Role comes from app_metadata only (users can rewrite user_metadata themselves).
     const role: ActorRole = resolveActorRole(email, appMeta);
