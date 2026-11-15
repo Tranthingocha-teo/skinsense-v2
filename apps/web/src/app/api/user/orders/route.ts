@@ -210,8 +210,8 @@ export async function GET(req: Request) {
         phone: currentUserPhone,
       },
     });
-  } catch (err: any) {
-    return NextResponse.json({ ok: false, error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    return NextResponse.json({ ok: false, error: err instanceof Error ? err.message : "Failed to load orders" }, { status: 500 });
   }
 }
 

@@ -141,7 +141,7 @@ export async function PATCH(request: Request) {
     if (userEffectiveRole === "shop" && status) {
       try {
         const email = userRes.user.email?.toLowerCase();
-        let registry: any[] = [];
+        let registry: Array<{ id?: string; email?: string; status?: string }> = [];
         const { data: fileBlob } = await supabaseAdmin.storage
           .from("photos")
           .download("shops/shops_registry.json");

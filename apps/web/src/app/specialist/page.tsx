@@ -24,6 +24,10 @@ import { toast } from "sonner";
 import { LogoMark } from "@/components/site-header";
 import { SafeProductImage } from "@/components/safe-product-image";
 
+function computeFutureDateIso(daysAhead: number): string {
+  return new Date(Date.now() + daysAhead * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+}
+
 export type CaseStatus = "pending_routine" | "in_treatment" | "completed";
 export type SeverityLevel = "mild" | "moderate" | "severe";
 
@@ -432,7 +436,7 @@ function SpecialistContent() {
     } else {
       setRoutineTitleInput(`Phác đồ điều trị da liễu cho ${patientCase.patientName} (14 ngày)`);
       setStartDateInput(new Date().toISOString().split("T")[0]);
-      setRevisitDateInput(new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]);
+      setRevisitDateInput(computeFutureDateIso(14));
       setDoctorNotesInput("Tuân thủ đúng thứ tự bước thoa sáng và tối. Liên hệ bác sĩ nếu có dấu hiệu rát đỏ bất thường.");
       // Để trống khi bệnh nhân chưa có phác đồ (Không dùng dữ liệu mẫu)
       setModalProducts([]);

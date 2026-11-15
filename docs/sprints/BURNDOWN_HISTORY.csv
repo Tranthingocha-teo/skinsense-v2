@@ -1,0 +1,15 @@
+date,sprint,checkpoint,milestone_or_event,total_scope_sp,ideal_remaining_sp,actual_remaining_sp,closed_sp_cumulative,closed_or_active_refs,primary_author,is_retroactive_estimate,notes
+2026-09-14,Sprint 1,Start (W1),Sprint 1 Kickoff,102,102,102,0,"",Tranthingocha-teo,true,Reconstructed Sprint 1 start baseline from Milestones 1-4 WBS (#1-#23)
+2026-09-21,Sprint 1,End W1,Foundation Setup,102,85,96,6,"#1,#2",Tranthingocha-teo,true,Monorepo (@skinsense/tokens & build tooling) completed
+2026-09-28,Sprint 1,End W2,Milestone 1 Due,102,68,83,19,"#3,#4",Tranthingocha-teo,true,Domain engine & Drizzle/Supabase schema completed (cum 19 SP)
+2026-10-05,Sprint 1,End W3,Core Modules,102,51,62,40,"#5,#6,#7",Tranthingocha-teo,true,Routine checklist + camera capture + interactive spot marking
+2026-10-12,Sprint 1,End W4,Milestone 2 Due,102,34,30,72,"#8,#9,#10,#11,#12,#13",Tranthingocha-teo,true,Analytics + Auth/Demo + Shell + Web 3D Hero + Mobile UI Kit
+2026-10-19,Sprint 1,End W5,Milestone 3 Due,102,17,23,79,"#14,#15",Tranthingocha-teo,true,GitHub Actions CI (typecheck+test) & Handoff Audit docs
+2026-10-24,Sprint 1,Repo Batch Push,Tag v1.0.0 & Issues #1-#23 Closed on GitHub,102,6,0,102,"#16-#23",Tranthingocha-teo,false,Actual GitHub batch commit day (37 commits) & v1.0.0 APK release (d332492)
+2026-10-26,Sprint 1,End W6,Milestone 4 Planned Close,102,0,0,102,"All #1-#23",Tranthingocha-teo,false,Official Sprint 1 end date per Milestone 4 due_on
+2026-10-27,Sprint 2,W7 Start,Sprint 2 Kickoff (CR Re-baseline),97,97,97,0,"#75 in progress (from 10-25)",Tranthingocha-teo,true,Scope re-baselined to 97 SP under CR-01..CR-05; #75 already underway by Tranthingocha-teo on 10-25..10-26
+2026-11-03,Sprint 2,W8 Checkpoint,First Sprint 2 Baseline + Ruleset + Onboarding,97,78,89,8,"#75",Tranthingocha-teo,false,Tranthingocha-teo commits 0e7ea5f..ac70fab (4-role auth, luxury routine, CODEOWNERS, Only Owner Merge ruleset)
+2026-11-09,Sprint 2,W9 Checkpoint,Admin UI PR #32 Opened,97,58,89,8,"PR #32 (In Review)",thuyydung,false,First collaborator PR #32 opened for #31
+2026-11-14,Sprint 2,W10-W11 Merge Wave,Core APIs + Portals + Multi-Tenant Tests,97,24,48,49,"#31,#33,#35,#76,#77,#78,#82",Tranthingocha-teo+thuyydung,false,Merged PR #32,#34,#36 (thuyydung) & PR #37-#46,#50-#59 (Tranthingocha-teo); PR #49 opened (CI fail)
+2026-11-15,Sprint 2,11-15 Midday,Shop Moderation + Cloudinary 5 PRs + Checkout,97,8,11,86,"#30,#47,#60,#79,#80,#81,#83",Tranthingocha-teo+thuyydung+dinhthianhsang,false,Merged PR #48,#61,#62-#74 leaving #84,#85,#29 open (11 SP)
+2026-11-15,Sprint 2,11-15 End,CI Hardening + Governance Docs,97,0,3,94,"#84,#85",Tranthingocha-teo,false,Merged PR #86 & PR #87; #29 (3 SP) remains transparently OPEN in In Review awaiting EXPO_TOKEN secret

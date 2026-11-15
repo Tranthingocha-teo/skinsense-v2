@@ -100,11 +100,12 @@ describe("Routine API Multi-Tenancy (/api/routine)", () => {
 
   it("returns empty steps array and 0 count when guest/unauthenticated without seeding fake data", async () => {
     const { createClient } = await import("@/lib/supabase/server");
+    type ServerClient = Awaited<ReturnType<typeof createClient>>;
     vi.mocked(createClient).mockResolvedValueOnce({
       auth: {
         getUser: vi.fn().mockResolvedValue({ data: { user: null } }),
       },
-    } as any);
+    } as unknown as ServerClient);
 
     const { GET } = await import("./route");
     const req = new Request("http://localhost:3000/api/routine");

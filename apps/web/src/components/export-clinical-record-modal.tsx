@@ -49,7 +49,11 @@ export function ExportClinicalRecordModal({
   const [selectedDoctor, setSelectedDoctor] = useState("BS. CKI Nguyễn Mai Hoa");
 
   const [loading, setLoading] = useState(false);
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<{
+    id?: string;
+    fullName?: string;
+    email?: string;
+  } | null>(null);
   const [submittedCase, setSubmittedCase] = useState<{
     caseCode: string;
     message: string;

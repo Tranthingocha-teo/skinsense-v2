@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -10,7 +10,7 @@ function getSupabaseAdmin() {
   return createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
 }
 
-async function downloadJsonFromStorage<T = any>(supabase: any, path: string): Promise<T | null> {
+async function downloadJsonFromStorage<T = unknown>(supabase: SupabaseClient, path: string): Promise<T | null> {
   try {
     const { data: signData } = await supabase.storage.from("photos").createSignedUrl(path, 60);
     if (signData?.signedUrl) {
@@ -69,7 +69,7 @@ export async function POST(request: Request) {
     const supabase = getSupabaseAdmin();
 
     // 1. Download existing cases registry from Supabase Storage with cache busting
-    const existingCases = (await downloadJsonFromStorage<any[]>(supabase, "clinical_records/cases_registry.json")) || [];
+    const existingCases = (await downloadJsonFromStorage<Array<Record<string, unknown>>>(supabase, "clinical_records/cases_registry.json")) || [];
 
     const newCaseId = `case_${Date.now()}`;
     const caseIndex = existingCases.length + 1;

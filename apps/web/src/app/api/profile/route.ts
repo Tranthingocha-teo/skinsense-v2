@@ -39,16 +39,16 @@ interface ProfilePayload {
   };
 }
 
-function readCache(): Record<string, any> {
+function readCache(): Record<string, Record<string, unknown>> {
   try {
     if (fs.existsSync(CACHE_FILE)) {
-      return JSON.parse(fs.readFileSync(CACHE_FILE, "utf-8"));
+      return JSON.parse(fs.readFileSync(CACHE_FILE, "utf-8")) as Record<string, Record<string, unknown>>;
     }
   } catch {}
   return {};
 }
 
-function writeCache(data: Record<string, any>) {
+function writeCache(data: Record<string, Record<string, unknown>>) {
   try {
     fs.writeFileSync(CACHE_FILE, JSON.stringify(data, null, 2), "utf-8");
   } catch {}
@@ -67,8 +67,19 @@ function getSupabaseAdmin() {
   }
 }
 
+interface RoleProfileDefault extends Record<string, unknown> {
+  id: string;
+  email: string;
+  role: string;
+  fullName: string;
+  avatarUrl: string;
+  phone: string;
+  status: string;
+  createdAt: string;
+}
+
 // Dữ liệu mẫu chuẩn của hệ thống SkinSense v2 theo đúng 4 role
-const DEFAULT_ROLE_PROFILES: Record<string, any> = {
+const DEFAULT_ROLE_PROFILES: Record<string, RoleProfileDefault> = {
   admin: {
     id: "admin_super",
     email: "hattn.23itb@vku.udn.vn",
@@ -158,7 +169,7 @@ export async function GET(req: Request) {
     const cache = readCache();
 
     // 1. Kiểm tra session đăng nhập hiện tại từ Supabase
-    let authUser: any = null;
+    let authUser: Awaited<ReturnType<Awaited<ReturnType<typeof createServerClient>>["auth"]["getUser"]>>["data"]["user"] = null;
     try {
       const supabase = await createServerClient();
       const { data } = await supabase.auth.getUser();
@@ -234,8 +245,8 @@ export async function GET(req: Request) {
     // 4. Nếu chưa có trên DB hoặc đang ở chế độ xem role cụ thể, trả về dữ liệu mẫu tương ứng
     const fallback = DEFAULT_ROLE_PROFILES[activeRole] || DEFAULT_ROLE_PROFILES.customer;
     return NextResponse.json({ ok: true, user: fallback, source: "default" });
-  } catch (err: any) {
-    return NextResponse.json({ ok: false, error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    return NextResponse.json({ ok: false, error: err instanceof Error ? err.message : "Failed to load profile" }, { status: 500 });
   }
 }
 
@@ -353,7 +364,7 @@ export async function PUT(req: Request) {
       message: "Đã cập nhật hồ sơ thành công vào cơ sở dữ liệu!",
       user: updatedUser,
     });
-  } catch (err: any) {
-    return NextResponse.json({ ok: false, error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    return NextResponse.json({ ok: false, error: err instanceof Error ? err.message : "Failed to update profile" }, { status: 500 });
   }
 }

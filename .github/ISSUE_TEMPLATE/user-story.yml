@@ -1,0 +1,58 @@
+name: User Story / WBS Task
+description: Track a WBS task or user story with Acceptance Criteria, Story Points, Milestone, and Assignee
+title: "feat(<scope>): <short task summary>"
+labels: ["feature"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Every WBS task or user story must include Sprint allocation, Story Points, Assignee, Milestone, and verifiable Acceptance Criteria before moving to **Ready**.
+  - type: input
+    id: wbs
+    attributes:
+      label: WBS / Change Request Reference
+      description: Link WBS ID or Change Request (e.g., WBS 2.4 or CR-03)
+      placeholder: "WBS 2.x / CR-0x"
+  - type: dropdown
+    id: sprint
+    attributes:
+      label: Target Sprint
+      options:
+        - Sprint 1 (Weeks 1-6)
+        - Sprint 2 (Weeks 7-11)
+        - Future Backlog (v1.1.0)
+    validations:
+      required: true
+  - type: dropdown
+    id: story_points
+    attributes:
+      label: Story Points
+      options:
+        - "1"
+        - "2"
+        - "3"
+        - "5"
+        - "8"
+        - "13"
+    validations:
+      required: true
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objective & User Story
+      description: As a <role>, I want <capability> so that <outcome>.
+      placeholder: "As a ..., I want ... so that ..."
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: Acceptance Criteria & Definition of Done
+      description: Clear testable conditions required to move this item to Done.
+      value: |
+        - [ ] Feature behavior verified against specification
+        - [ ] Unit/integration tests added or updated
+        - [ ] `bun run lint`, `bun run typecheck`, `bun run test`, and `bun run build` pass in GitHub Actions CI
+        - [ ] PR reviewed and approved by >= 1 team member before merge
+    validations:
+      required: true
