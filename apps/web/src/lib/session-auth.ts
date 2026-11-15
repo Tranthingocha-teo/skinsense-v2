@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { normalizeShopId } from "@/lib/shop-utils";
+import { resolveActorRole, type ActorRole } from "@/lib/actor-role";
 
-export type ActorRole = "customer" | "specialist" | "shop" | "admin";
+export type { ActorRole };
 
 export interface AuthenticatedActor {
   userId: string;
@@ -14,8 +15,6 @@ export interface AuthenticatedActor {
   shopName?: string;
   shopId?: string;
 }
-
-const SUPER_ADMIN_EMAIL = "hattn.23itb@vku.udn.vn";
 
 /**
  * Xác thực người dùng hiện tại từ Supabase SSR cookie (hoặc Bearer token nếu có).
@@ -55,14 +54,8 @@ export async function getAuthenticatedActor(request?: Request): Promise<Authenti
     const appMeta = (user.app_metadata || {}) as Record<string, unknown>;
     const shopDetails = (meta.shop_details as Record<string, unknown> | undefined) ?? undefined;
 
-    let role: ActorRole = "customer";
-    if (email === SUPER_ADMIN_EMAIL || appMeta.role === "admin") {
-      role = "admin";
-    } else if (appMeta.role === "shop" || meta.role === "shop") {
-      role = "shop";
-    } else if (appMeta.role === "specialist" || meta.role === "specialist") {
-      role = "specialist";
-    }
+    // Role comes from app_metadata only (users can rewrite user_metadata themselves).
+    const role: ActorRole = resolveActorRole(email, appMeta);
 
     const fullName = String(
       meta.full_name || meta.name || email.split("@")[0] || "Khách hàng",

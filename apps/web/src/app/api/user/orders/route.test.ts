@@ -8,6 +8,7 @@ interface MockSessionUser {
   id: string;
   email: string;
   phone?: string;
+  app_metadata?: Record<string, unknown>;
   user_metadata?: Record<string, unknown>;
 }
 
@@ -278,6 +279,7 @@ describe("/api/user/orders POST security and workflow validation", () => {
     currentUser = {
       id: "shop_lrp",
       email: "lrp@shop.vn",
+      app_metadata: { role: "shop", status: "active" },
       user_metadata: { role: "shop", shop_name: "La Roche-Posay Flagship Store" },
     };
     const crossShop = await POST(
@@ -298,6 +300,7 @@ describe("/api/user/orders POST security and workflow validation", () => {
     currentUser = {
       id: "shop_lrp",
       email: "lrp@shop.vn",
+      app_metadata: { role: "shop", status: "active" },
       user_metadata: { role: "shop", shop_name: "La Roche-Posay Official Flagship Store" },
     };
     const { GET, POST } = await import("./route");

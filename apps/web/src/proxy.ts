@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { supabaseEnv } from "@/lib/env";
+import { resolveActorRole } from "@/lib/actor-role";
 
 // Refreshes the Supabase session cookie on every request (Server Components
 // can't write cookies) and gates /app and /seller behind a session.
@@ -37,6 +38,14 @@ export async function proxy(request: NextRequest) {
   // If not signed in and accessing either -> redirect to "/"
   if ((pathname.startsWith("/app") || pathname === "/seller" || pathname.startsWith("/seller/")) && !signedIn) {
     return redirectTo("/");
+  }
+
+  // The admin console is for admins only (the API checks again on every call).
+  if (pathname === "/admin" || pathname.startsWith("/admin/")) {
+    const claims = data?.claims as { email?: string; app_metadata?: Record<string, unknown> } | undefined;
+    if (!claims || resolveActorRole(claims.email ?? "", claims.app_metadata) !== "admin") {
+      return redirectTo("/");
+    }
   }
 
   return response;

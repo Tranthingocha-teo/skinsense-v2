@@ -3,6 +3,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 interface MockAuthUser {
   id: string;
   email: string;
+  app_metadata?: Record<string, unknown>;
   user_metadata?: Record<string, unknown>;
 }
 
@@ -78,10 +79,27 @@ describe("Specialist Cases API (/api/specialist/cases)", () => {
     currentAuthUser = {
       id: "spec-01",
       email: "bacsi.hoa@skinsense.vn",
+      app_metadata: { role: "specialist", status: "active" },
       user_metadata: { role: "specialist", full_name: "BS. Mai Hoa" },
     };
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
     vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "mock-service-role-key");
+  });
+
+  it("rejects a customer who wrote role specialist into their own user_metadata, or a pending specialist", async () => {
+    const { GET } = await import("./route");
+
+    // supabase.auth.updateUser({ data: { role: "specialist" } }) is open to every signed-in user.
+    currentAuthUser = { id: "cust-02", email: "xdoctor@gmail.com", user_metadata: { role: "specialist", status: "active" } };
+    expect((await GET(new Request("http://localhost:3000/api/specialist/cases"))).status).toBe(403);
+
+    currentAuthUser = {
+      id: "spec-02",
+      email: "new.doctor@example.com",
+      app_metadata: { role: "specialist", status: "pending" },
+      user_metadata: { role: "specialist" },
+    };
+    expect((await GET(new Request("http://localhost:3000/api/specialist/cases"))).status).toBe(403);
   });
 
   it("rejects unauthenticated (401) and non-specialist customer (403) callers", async () => {

@@ -19,7 +19,10 @@ import type * as routineLib from "@/lib/routine";
 import type { RoutineEntry, RoutineItem } from "@/lib/routine";
 
 // The route binds these: Supabase-backed when signed in, browser storage in the demo.
-export type RoutineApi = Pick<typeof routineLib, "loadRoutine" | "addItem" | "renameItem" | "deleteItem" | "swapPositions" | "saveEntry">;
+export type RoutineApi = Pick<typeof routineLib, "loadRoutine" | "addItem" | "renameItem" | "deleteItem" | "swapPositions" | "saveEntry"> & {
+  // false for the demo: browser-only data, so the signed-in /api/routine protocol must not override it.
+  remote?: boolean;
+};
 
 // Canvas WebRoutine / PhoneRoutine (screen) and WebToday (embedded card).
 const TINT =
@@ -81,9 +84,11 @@ export function RoutineChecklist({ api, embedded = false }: { api: RoutineApi; e
   const [showUsageTips, setShowUsageTips] = useState<boolean>(true);
   const defaults = t.raw("defaults") as string[];
 
+  const remote = api.remote !== false;
+
   // Fetch real routine data directly from Supabase API (/api/routine)
   useEffect(() => {
-    if (typeof window === "undefined" || !window.location) return;
+    if (!remote || typeof window === "undefined" || !window.location) return;
     fetch(`/api/routine?timeOfDay=${timeOfDay}`)
       .then((res) => {
         if (!res.ok) return null;
@@ -120,7 +125,7 @@ export function RoutineChecklist({ api, embedded = false }: { api: RoutineApi; e
         }
       })
       .catch(() => {});
-  }, [timeOfDay, night]);
+  }, [timeOfDay, night, remote]);
 
   const reload = useCallback(async (n: string) => {
     const loaded = await api.loadRoutine(n, defaults);
@@ -176,7 +181,7 @@ export function RoutineChecklist({ api, embedded = false }: { api: RoutineApi; e
     }
 
     // Also sync directly to Supabase Postgres routine_entries
-    fetch("/api/routine", {
+    if (remote) fetch("/api/routine", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -420,10 +425,11 @@ export function RoutineChecklist({ api, embedded = false }: { api: RoutineApi; e
     );
   });
 
-  const rawTitle = t("title");
+  const periodLabel = t(timeOfDay === "morning" ? "periodMorning" : "periodEvening");
+  const rawTitle = t(timeOfDay === "morning" ? "titleMorning" : "title");
   const titleParts = rawTitle.split(/\s+/);
-  const titleFirst = timeOfDay === "morning" ? (titleParts[0] === "Routine" ? "Routine" : "Morning") : (titleParts[0] ?? "Routine");
-  const titleSecond = timeOfDay === "morning" ? (titleParts[0] === "Routine" ? "sáng nay" : "routine") : (titleParts.slice(1).join(" ") || "tối nay");
+  const titleFirst = titleParts[0] ?? rawTitle;
+  const titleSecond = titleParts.slice(1).join(" ");
 
   const editLabel = t("edit");
   const editParts = editLabel.split(/\s+/);
@@ -462,7 +468,7 @@ export function RoutineChecklist({ api, embedded = false }: { api: RoutineApi; e
             }`}
           >
             <Sun className="size-3.5 text-amber-500" />
-            <span>Routine Sáng</span>
+            <span>{t("morning")}</span>
           </button>
           <button
             type="button"
@@ -474,7 +480,7 @@ export function RoutineChecklist({ api, embedded = false }: { api: RoutineApi; e
             }`}
           >
             <Moon className="size-3.5 text-indigo-400" />
-            <span>Routine Tối</span>
+            <span>{t("evening")}</span>
           </button>
         </div>
 
@@ -485,33 +491,33 @@ export function RoutineChecklist({ api, embedded = false }: { api: RoutineApi; e
               {supabaseProtocol?.isPrescribed ? (
                 <>
                   <ShieldCheck className="size-3.5" />
-                  <span>Phác đồ Y khoa {timeOfDay === "morning" ? "Buổi Sáng" : "Buổi Tối"}</span>
+                  <span>{t("protocolPrescribed", { period: periodLabel })}</span>
                 </>
               ) : (
                 <>
                   <Sparkles className="size-3.5 text-primary" />
-                  <span>Routine Cá Nhân {timeOfDay === "morning" ? "Buổi Sáng" : "Buổi Tối"}</span>
+                  <span>{t("protocolPersonal", { period: periodLabel })}</span>
                 </>
               )}
             </span>
             <span className="text-[10px] text-muted-foreground font-medium">
-              {supabaseProtocol?.allocatedBy || "Dữ liệu riêng tư của bạn"}
+              {supabaseProtocol?.allocatedBy || t("privateData")}
             </span>
           </div>
           <h3 className="font-display text-xs sm:text-sm font-bold text-foreground">
-            {supabaseProtocol?.title || (timeOfDay === "morning" ? "Routine Sáng: Cấp Ẩm & Bảo Vệ Da" : "Routine Tối: Làm Sạch Sâu & Phục Hồi")}
+            {supabaseProtocol?.title || t(timeOfDay === "morning" ? "defaultTitleMorning" : "defaultTitleEvening")}
           </h3>
           <p className="text-[11px] text-muted-foreground leading-snug">
-            {supabaseProtocol?.description || (timeOfDay === "morning" ? "Làm sạch dịu nhẹ pH 5.5, cấp nước phục hồi và chống nắng bảo vệ da." : "Hòa tan bụi bẩn dầu nhờn, kháng khuẩn ngừa mụn và tái tạo màng ẩm tự nhiên ban đêm.")}
+            {supabaseProtocol?.description || t(timeOfDay === "morning" ? "defaultDescMorning" : "defaultDescEvening")}
           </p>
         </div>
 
         {progress}
         {items.length === 0 ? (
           <div className="py-6 px-3 text-center rounded-xl border border-dashed border-border bg-surface-2/30 my-2">
-            <p className="text-xs font-semibold text-foreground">Chưa có bước routine nào</p>
+            <p className="text-xs font-semibold text-foreground">{t("emptyTitle")}</p>
             <p className="text-[11px] text-muted-foreground mt-0.5">
-              Chưa có dữ liệu phác đồ (để trống). Nhấn &quot;Sửa&quot; để thêm bước chăm sóc da.
+              {t("emptyEmbedded")}
             </p>
           </div>
         ) : (
@@ -551,7 +557,7 @@ export function RoutineChecklist({ api, embedded = false }: { api: RoutineApi; e
               }`}
             >
               <Sun className="size-3.5 text-amber-500" />
-              <span>Routine Sáng</span>
+              <span>{t("morning")}</span>
             </button>
             <button
               type="button"
@@ -563,7 +569,7 @@ export function RoutineChecklist({ api, embedded = false }: { api: RoutineApi; e
               }`}
             >
               <Moon className="size-3.5 text-indigo-400" />
-              <span>Routine Tối</span>
+              <span>{t("evening")}</span>
             </button>
           </div>
 
@@ -574,24 +580,24 @@ export function RoutineChecklist({ api, embedded = false }: { api: RoutineApi; e
                 {supabaseProtocol?.isPrescribed ? (
                   <>
                     <ShieldCheck className="size-3.5" />
-                    <span>Phác đồ Y khoa {timeOfDay === "morning" ? "Buổi Sáng" : "Buổi Tối"}</span>
+                    <span>{t("protocolPrescribed", { period: periodLabel })}</span>
                   </>
                 ) : (
                   <>
                     <Sparkles className="size-3.5 text-primary" />
-                    <span>Routine Cá Nhân {timeOfDay === "morning" ? "Buổi Sáng" : "Buổi Tối"}</span>
+                    <span>{t("protocolPersonal", { period: periodLabel })}</span>
                   </>
                 )}
               </span>
               <span className="text-[10px] text-muted-foreground font-medium">
-                {supabaseProtocol?.allocatedBy || "Dữ liệu riêng tư của bạn"}
+                {supabaseProtocol?.allocatedBy || t("privateData")}
               </span>
             </div>
             <h3 className="font-display text-sm sm:text-base font-bold text-foreground">
-              {supabaseProtocol?.title || (timeOfDay === "morning" ? "Routine Sáng: Cấp Ẩm & Bảo Vệ Da" : "Routine Tối: Làm Sạch Sâu & Phục Hồi")}
+              {supabaseProtocol?.title || t(timeOfDay === "morning" ? "defaultTitleMorning" : "defaultTitleEvening")}
             </h3>
             <p className="text-[11.5px] text-muted-foreground leading-snug">
-              {supabaseProtocol?.description || (timeOfDay === "morning" ? "Làm sạch dịu nhẹ pH 5.5, cấp nước phục hồi và chống nắng bảo vệ da." : "Hòa tan bụi bẩn dầu nhờn, kháng khuẩn ngừa mụn và tái tạo màng ẩm tự nhiên ban đêm.")}
+              {supabaseProtocol?.description || t(timeOfDay === "morning" ? "defaultDescMorning" : "defaultDescEvening")}
             </p>
           </div>
 
@@ -600,9 +606,9 @@ export function RoutineChecklist({ api, embedded = false }: { api: RoutineApi; e
 
         {items.length === 0 ? (
           <div className="py-10 px-4 text-center rounded-xl border border-dashed border-foreground/20 bg-card/60 my-2 space-y-1.5">
-            <p className="text-sm font-semibold text-foreground">Chưa có bước routine nào</p>
+            <p className="text-sm font-semibold text-foreground">{t("emptyTitle")}</p>
             <p className="text-xs text-muted-foreground">
-              Tài khoản này chưa có bước chăm sóc da nào (để trống). Bạn có thể tự thêm bước bên dưới.
+              {t("emptyFull")}
             </p>
           </div>
         ) : (
