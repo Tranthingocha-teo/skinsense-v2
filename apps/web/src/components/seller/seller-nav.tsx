@@ -27,12 +27,12 @@ import {
 import { Badge } from "@/components/ui/badge";
 
 const SELLER_NAV_ITEMS = [
-  { key: "dashboard", href: "/seller/dashboard", icon: LayoutDashboard, label: "Bảng điều khiển" },
-  { key: "products", href: "/seller/products", icon: Package, label: "Quản lý sản phẩm" },
-  { key: "orders", href: "/seller/orders", icon: ShoppingBag, label: "Quản lý đơn hàng" },
-  { key: "analytics", href: "/seller/analytics", icon: TrendingUp, label: "Phân tích doanh thu" },
-  { key: "shop", href: "/seller/shop", icon: Store, label: "Hồ sơ cửa hàng" },
-  { key: "wallet", href: "/seller/wallet", icon: Wallet, label: "Ví người bán" },
+  { key: "dashboard", href: "/seller/dashboard", icon: LayoutDashboard, label: "Bảng điều khiển", short: "Tổng quan" },
+  { key: "products", href: "/seller/products", icon: Package, label: "Quản lý sản phẩm", short: "Sản phẩm" },
+  { key: "orders", href: "/seller/orders", icon: ShoppingBag, label: "Quản lý đơn hàng", short: "Đơn hàng" },
+  { key: "analytics", href: "/seller/analytics", icon: TrendingUp, label: "Phân tích doanh thu", short: "Doanh thu" },
+  { key: "shop", href: "/seller/shop", icon: Store, label: "Hồ sơ cửa hàng", short: "Cửa hàng" },
+  { key: "wallet", href: "/seller/wallet", icon: Wallet, label: "Ví người bán", short: "Ví" },
 ] as const;
 
 function DesktopSellerNav() {
@@ -102,7 +102,7 @@ function PhoneSellerTabs() {
   return (
     <nav aria-label="Seller Mobile Tabs" className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/90 pb-2 backdrop-blur-md md:hidden">
       <ul className="grid h-[64px] grid-cols-5 items-center">
-        {SELLER_NAV_ITEMS.slice(0, 5).map(({ key, href, icon: Icon, label }) => {
+        {SELLER_NAV_ITEMS.slice(0, 5).map(({ key, href, icon: Icon, label, short }) => {
           const active = pathname === href || (href !== "/seller/dashboard" && pathname.startsWith(href));
           return (
             <li key={key}>
@@ -114,7 +114,7 @@ function PhoneSellerTabs() {
                 }`}
               >
                 <Icon className="size-5" />
-                <span className="truncate max-w-[64px] text-center">{label}</span>
+                <span className="truncate max-w-[64px] text-center" title={label}>{short}</span>
               </Link>
             </li>
           );
@@ -129,6 +129,11 @@ export function SellerShell({ children }: { children: ReactNode }) {
     <SidebarProvider className="flex-1 flex-col md:flex-row min-h-screen bg-background" style={{ "--sidebar-width": "250px" } as CSSProperties}>
       <DesktopSellerNav />
       <div className="flex min-w-0 flex-1 flex-col pb-[72px] md:pb-6 px-4 md:px-8 pt-6 max-w-7xl mx-auto w-full">
+        {/* Every page here runs on built-in sample data (INITIAL_SHOPS, sample orders): say so. */}
+        <p role="note" className="mb-5 rounded-card border border-border bg-muted px-4 py-3 text-[13px] leading-relaxed text-muted-foreground">
+          <strong className="font-medium text-foreground">Bản trình diễn.</strong> Các số liệu, đơn hàng và khách hàng ở đây là dữ liệu mẫu, không phải giao dịch thật. Gian hàng thật của bạn nằm ở{" "}
+          <Link href="/shop" className="underline underline-offset-4 text-foreground">Kênh người bán</Link>.
+        </p>
         {children}
       </div>
       <PhoneSellerTabs />

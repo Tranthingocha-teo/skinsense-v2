@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatVnd, PRODUCTS, type DateRangePreset, type Shop } from "@skinsense/domain";
+import { InitialsAvatar } from "@/components/initials-avatar";
+import { SafeProductImage } from "@/components/safe-product-image";
 
 export function SellerDashboard({
   shop,
@@ -40,10 +42,12 @@ export function SellerDashboard({
         <CardContent className="p-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <img
+              <InitialsAvatar
+                name={shop.shopName}
+                seed={shop.id}
                 src={shop.avatarUrl}
-                alt={shop.shopName}
-                className="size-16 rounded-2xl object-cover border-2 border-background shadow-md shrink-0"
+                label={shop.shopName}
+                className="size-16 rounded-2xl border-2 border-background shadow-md text-lg"
               />
               <div>
                 <div className="flex items-center gap-2">
@@ -163,7 +167,7 @@ export function SellerDashboard({
             <div key={product.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border">
               <div className="flex items-center gap-3">
                 <span className="font-bold text-xs text-muted-foreground w-5 text-center">#{idx + 1}</span>
-                <img src={product.imageUrl} alt={product.name} className="size-10 rounded object-cover border shrink-0" />
+                <SafeProductImage src={product.imageUrl} alt={product.name} brand={product.brand} category={product.category} seed={product.id} className="size-10 rounded object-cover border shrink-0" />
                 <div>
                   <p className="font-semibold text-xs text-foreground line-clamp-1">{product.name}</p>
                   <p className="text-[11px] text-muted-foreground">{product.brand} • {formatVnd(product.priceVnd)}</p>

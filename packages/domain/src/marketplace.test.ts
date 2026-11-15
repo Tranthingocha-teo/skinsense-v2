@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   formatVnd,
-  generateVietQrUrl,
+  generateVietQrPayload,
   getListingsForProduct,
   getShopById,
   INITIAL_LISTINGS,
@@ -40,17 +40,14 @@ describe("Marketplace Domain Entity & VietQR generator", () => {
     expect(formatVnd(1200000)).toBe("1.200.000₫");
   });
 
-  it("generates a valid VietQR payment URL", () => {
-    const qrUrl = generateVietQrUrl({
-      bankId: "MB",
-      accountNo: "999988886666",
-      amount: 385000,
-      memo: "SKINSENSE-ORD-001",
-    });
+  it("builds the VietQR text locally, with the amount and memo", () => {
+    const payload = generateVietQrPayload({ amount: 385000, memo: "SKINSENSE-ORD-001" });
 
-    expect(qrUrl).toContain("https://img.vietqr.io/image/MB-999988886666-compact2.png");
-    expect(qrUrl).toContain("amount=385000");
-    expect(qrUrl).toContain("addInfo=SKINSENSE-ORD-001");
+    expect(payload).toContain("0006970422");
+    expect(payload).toContain("0112999988886666");
+    expect(payload).toContain("5406385000");
+    expect(payload).toContain("SKINSENSE-ORD-001");
+    expect(payload).not.toContain("http");
   });
 
   it("retrieves shop by id and listings for product", () => {

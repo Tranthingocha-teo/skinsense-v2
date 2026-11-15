@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { formatVnd, PRODUCTS, type Product } from "@skinsense/domain";
+import { SafeProductImage } from "@/components/safe-product-image";
 
 export interface ExtendedProduct extends Product {
   stock?: number;
@@ -64,8 +65,8 @@ export function ProductList({
     <div className="space-y-4">
       {/* Search & Filter Header */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-2 flex-1">
-          <div className="relative flex-1 max-w-sm">
+        <div className="flex flex-wrap items-center gap-2 flex-1">
+          <div className="relative basis-full sm:basis-auto sm:flex-1 max-w-sm">
             <Search className="absolute left-3 top-2.5 size-4 text-muted-foreground" />
             <Input
               value={search}
@@ -78,7 +79,8 @@ export function ProductList({
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            aria-label="Lọc theo danh mục"
+            className="h-10 min-w-0 flex-1 sm:flex-none rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           >
             <option value="all">Tất cả danh mục</option>
             {categories.map((c) => (
@@ -91,7 +93,8 @@ export function ProductList({
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
-            className="h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            aria-label="Lọc theo trạng thái"
+            className="h-10 min-w-0 flex-1 sm:flex-none rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           >
             <option value="all">Tất cả trạng thái</option>
             <option value="active">Hoạt động (Active)</option>
@@ -138,9 +141,12 @@ export function ProductList({
                   <TableRow key={product.id}>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-3">
-                        <img
+                        <SafeProductImage
                           src={product.imageUrl}
                           alt={product.name}
+                          brand={product.brand}
+                          category={product.category}
+                          seed={product.id}
                           className="size-12 rounded-lg object-cover bg-muted border shrink-0"
                         />
                         <div>

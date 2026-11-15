@@ -280,7 +280,7 @@ function MarketplaceSection({ role = 'customer' }: { role?: UserRole }) {
           <View className="gap-0.5">
             <Text className="text-[14.5px] font-medium">Đơn mua của tôi</Text>
             <Text className="text-[12px] font-light text-muted-foreground">
-              Theo dõi vận đơn SPX Express & đánh giá nhận hàng
+              Theo dõi vận đơn Giao nhanh & đánh giá nhận hàng
             </Text>
           </View>
         </View>

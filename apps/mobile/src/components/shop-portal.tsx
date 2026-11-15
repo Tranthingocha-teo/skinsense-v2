@@ -71,6 +71,7 @@ import {
   updateOrderStatus,
   updateShopStatus,
 } from '@/lib/marketplace';
+import { ProductImage } from '@/components/artwork';
 
 export type ShopPortalTab = 'orders' | 'inventory' | 'wallet' | 'profile';
 export type ShopOrderFilter = 'all' | 'pending' | 'processing' | 'shipping' | 'completed' | 'cancelled';
@@ -266,7 +267,7 @@ export function ShopPortal() {
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     await shipShopOrder(orderId);
     await refreshData();
-    Alert.alert('Đã bàn giao ĐVVC', 'Kiện hàng đã được bàn giao cho SPX Express và sinh mã vận đơn.');
+    Alert.alert('Đã bàn giao ĐVVC', 'Kiện hàng đã được bàn giao cho Giao nhanh và sinh mã vận đơn.');
   }
 
   async function handleCancelOrder(orderId: string) {
@@ -291,7 +292,7 @@ export function ShopPortal() {
     setEditPriceStr(existing ? existing.priceVnd.toString() : product.priceVnd.toString());
     setEditStockStr(existing ? existing.stock.toString() : '50');
     setEditRichDesc(existing?.richDescription || product.description || '');
-    setEditImages(existing?.images && existing.images.length > 0 ? [...existing.images] : [product.imageUrl]);
+    setEditImages(existing?.images && existing.images.length > 0 ? [...existing.images] : product.imageUrl ? [product.imageUrl] : []);
     setNewImageUrl('');
   }
 
@@ -406,7 +407,7 @@ export function ShopPortal() {
         </Pressable>
         <View className="items-center">
           <Text className="font-display text-[17px] font-semibold">Kênh Người Bán</Text>
-          <Text className="text-[11.5px] text-muted-foreground">Shopee Seller Center</Text>
+          <Text className="text-[11.5px] text-muted-foreground">Kênh người bán SkinSense</Text>
         </View>
         <Pressable
           role="button"
@@ -421,7 +422,7 @@ export function ShopPortal() {
         </Pressable>
       </View>
 
-      {/* 4 Shopee Seller Center Tab Bar (Fixed beneath header) */}
+      {/* 4 Kênh người bán SkinSense Tab Bar (Fixed beneath header) */}
       <View className="px-4 py-2 border-b border-border/40 bg-background">
         <View className="flex-row rounded-control border border-border/80 bg-surface-1 p-1">
           <Pressable
@@ -706,7 +707,7 @@ export function ShopPortal() {
                 <Icon as={ShoppingBag} size={32} className="text-muted-foreground/60" />
                 <Text className="mt-2 text-[14px] font-medium">Không có đơn hàng nào</Text>
                 <Text className="text-[12px] text-muted-foreground text-center mt-1">
-                  Mọi đơn đặt từ người mua chọn shop bạn sẽ xuất hiện tại đây để đóng gói & gửi SPX.
+                  Mọi đơn đặt từ người mua chọn shop bạn sẽ xuất hiện tại đây để đóng gói & giao đi.
                 </Text>
               </View>
             ) : (
@@ -738,11 +739,7 @@ export function ShopPortal() {
 
                     {/* Product & Qty */}
                     <View className="flex-row gap-2.5">
-                      <Image
-                        source={{ uri: order.productImage }}
-                        className="size-14 rounded-control bg-surface-2 border border-border/80"
-                        contentFit="cover"
-                      />
+                      <ProductImage uri={order.productImage} name={order.productName} seed={order.productId} className="size-14 rounded-control border border-border/80" />
                       <View className="flex-1 justify-between">
                         <Text numberOfLines={2} className="text-[13px] font-medium leading-[17px]">
                           {order.productName}
@@ -780,7 +777,7 @@ export function ShopPortal() {
                         <View className="flex-row items-center gap-1 pt-1 border-t border-border/20">
                           <Icon as={Truck} size={12} className="text-primary" />
                           <Text className="text-[11.5px] font-mono text-primary">
-                            Mã SPX: {order.trackingCode}
+                            Mã vận đơn: {order.trackingCode}
                           </Text>
                         </View>
                       )}
@@ -824,13 +821,13 @@ export function ShopPortal() {
                       {isProcessing && (
                         <Pressable
                           role="button"
-                          accessibilityLabel="Bàn giao cho ĐVVC SPX"
+                          accessibilityLabel="Bàn giao cho đơn vị vận chuyển"
                           onPress={() => handleShipOrder(order.id)}
                           className="min-h-11 flex-row items-center gap-1.5 rounded-control bg-primary px-3.5 py-2 active:scale-[0.98]"
                         >
                           <Icon as={Truck} size={13} className="text-white" />
                           <Text className="text-[12px] text-white font-semibold">
-                            Bàn giao ĐVVC (SPX)
+                            Bàn giao vận chuyển
                           </Text>
                         </Pressable>
                       )}
@@ -879,11 +876,7 @@ export function ShopPortal() {
                   className="rounded-card border border-border/80 bg-card p-3.5 gap-3 shadow-xs"
                 >
                   <View className="flex-row gap-3">
-                    <Image
-                      source={{ uri: prod.imageUrl }}
-                      className="size-16 rounded-control bg-surface-2 border border-border/80"
-                      contentFit="cover"
-                    />
+                    <ProductImage uri={prod.imageUrl} name={prod.name} brand={prod.brand} category={prod.category} seed={prod.id} className="size-16 rounded-control border border-border/80" />
                     <View className="flex-1 justify-center gap-1">
                       <Text numberOfLines={1} className="text-[11px] font-bold text-primary uppercase tracking-wider">
                         {prod.brand}
@@ -955,7 +948,7 @@ export function ShopPortal() {
                   </View>
                   <View>
                     <Text className="text-[11.5px] text-muted-foreground font-medium uppercase tracking-[0.06em]">
-                      Số Dư Ví Người Bán (Shopee Balance)
+                      Số Dư Ví Người Bán
                     </Text>
                     <Text className="font-display text-[26px] font-bold text-primary">
                       {walletInfo.balanceFormatted}
@@ -1095,7 +1088,7 @@ export function ShopPortal() {
                 <View className="flex-row items-start gap-2">
                   <Icon as={MapPin} size={14} className="text-rose-500 shrink-0 mt-0.5" />
                   <Text className="text-[12.5px] text-muted-foreground flex-1">
-                    Kho lấy hàng SPX: {activeShop.address}
+                    Kho lấy hàng: {activeShop.address}
                   </Text>
                 </View>
               </View>
@@ -1103,12 +1096,12 @@ export function ShopPortal() {
 
             <View className="rounded-card border border-border bg-card p-4 gap-2">
               <Text className="text-[14px] font-semibold text-foreground">
-                Tiêu chuẩn vận hành Shopee Mall
+                Tiêu chuẩn vận hành SkinSense Mall
               </Text>
               <Text className="text-[12px] text-muted-foreground leading-4">
                 • 100% sản phẩm có hóa đơn chứng từ chính hãng.{'\n'}
                 • Thời gian đóng gói chuẩn bị hàng dưới 24h.{'\n'}
-                • Bàn giao đúng hẹn cho đơn vị vận chuyển SPX Express.{'\n'}
+                • Bàn giao đúng hẹn cho đơn vị vận chuyển.{'\n'}
                 • Tỷ lệ phản hồi tin nhắn khách hàng trên 90%.
               </Text>
             </View>
@@ -1364,30 +1357,6 @@ export function ShopPortal() {
                     </Pressable>
                   </View>
 
-                  <View className="flex-row gap-1.5 pt-1">
-                    <Pressable
-                      onPress={() => {
-                        setEditImages([
-                          ...editImages,
-                          'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=600&q=80',
-                        ]);
-                      }}
-                      className="rounded-pill bg-surface-2 px-2.5 py-1 border border-border/80 active:scale-[0.98]"
-                    >
-                      <Text className="text-[10px] text-muted-foreground">+ Ảnh mẫu Serum</Text>
-                    </Pressable>
-                    <Pressable
-                      onPress={() => {
-                        setEditImages([
-                          ...editImages,
-                          'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=600&q=80',
-                        ]);
-                      }}
-                      className="rounded-pill bg-surface-2 px-2.5 py-1 border border-border/80 active:scale-[0.98]"
-                    >
-                      <Text className="text-[10px] text-muted-foreground">+ Ảnh mẫu Tem Phụ</Text>
-                    </Pressable>
-                  </View>
                 </View>
               </ScrollView>
 

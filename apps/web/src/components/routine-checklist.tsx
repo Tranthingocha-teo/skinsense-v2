@@ -305,24 +305,24 @@ export function RoutineChecklist({ api, embedded = false }: { api: RoutineApi; e
                 {stepTime === "evening" && (
                   <span className="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
                     <Moon className="size-2.5" />
-                    <span>Tối</span>
+                    <span>{t("stepEvening")}</span>
                   </span>
                 )}
                 {stepTime === "morning" && (
                   <span className="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-amber-500/10 text-amber-500 border border-amber-500/20">
                     <Sun className="size-2.5" />
-                    <span>Sáng</span>
+                    <span>{t("stepMorning")}</span>
                   </span>
                 )}
                 {stepTime === "both" && (
                   <span className="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-sky-500/10 text-sky-400 border border-sky-500/20">
                     <Sun className="size-2.5" />
-                    <span>Sáng & Tối</span>
+                    <span>{t("stepBoth")}</span>
                   </span>
                 )}
                 {isTicked && (
                   <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-1.5 py-0.2 rounded-md">
-                    Đã làm ✓
+                    {t("doneBadge")}
                   </span>
                 )}
               </div>
@@ -393,6 +393,8 @@ export function RoutineChecklist({ api, embedded = false }: { api: RoutineApi; e
             <SafeProductImage
               src={product.imageUrl}
               alt={product.productName}
+              brand={product.brand ?? undefined}
+              category={product.category ?? undefined}
               className="size-14 sm:size-16 rounded-lg object-cover border border-border shrink-0 self-start"
             />
             <div className="flex-1 space-y-1.5 text-xs">
@@ -406,15 +408,15 @@ export function RoutineChecklist({ api, embedded = false }: { api: RoutineApi; e
                 </span>
               </div>
               <p className="text-[11px] text-muted-foreground">
-                <strong className="text-foreground/80">Hoạt chất:</strong> {product.activeIngredients}
+                <strong className="text-foreground/80">{t("actives")}</strong> {product.activeIngredients}
               </p>
               <div className="pt-1 grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[11px]">
                 <div className="bg-card/70 px-2.5 py-1.5 rounded-lg border border-border/50">
-                  <span className="font-bold text-primary">Liều lượng: </span>
+                  <span className="font-bold text-primary">{t("dosage")}</span>
                   <span className="text-foreground">{product.dosage}</span>
                 </div>
                 <div className="bg-card/70 px-2.5 py-1.5 rounded-lg border border-border/50">
-                  <span className="font-bold text-primary">Cách dùng: </span>
+                  <span className="font-bold text-primary">{t("howToUse")}</span>
                   <span className="text-foreground">{product.usageGuide}</span>
                 </div>
               </div>
@@ -426,6 +428,9 @@ export function RoutineChecklist({ api, embedded = false }: { api: RoutineApi; e
   });
 
   const periodLabel = t(timeOfDay === "morning" ? "periodMorning" : "periodEvening");
+  // The API writes its own Vietnamese text for a personal routine; only a prescription's
+  // prescriber, title and notes are real content worth showing as sent.
+  const prescribed = supabaseProtocol?.isPrescribed ? supabaseProtocol : null;
   const rawTitle = t(timeOfDay === "morning" ? "titleMorning" : "title");
   const titleParts = rawTitle.split(/\s+/);
   const titleFirst = titleParts[0] ?? rawTitle;
@@ -501,14 +506,14 @@ export function RoutineChecklist({ api, embedded = false }: { api: RoutineApi; e
               )}
             </span>
             <span className="text-[10px] text-muted-foreground font-medium">
-              {supabaseProtocol?.allocatedBy || t("privateData")}
+              {prescribed?.allocatedBy || t("privateData")}
             </span>
           </div>
           <h3 className="font-display text-xs sm:text-sm font-bold text-foreground">
-            {supabaseProtocol?.title || t(timeOfDay === "morning" ? "defaultTitleMorning" : "defaultTitleEvening")}
+            {prescribed?.title || t(timeOfDay === "morning" ? "defaultTitleMorning" : "defaultTitleEvening")}
           </h3>
           <p className="text-[11px] text-muted-foreground leading-snug">
-            {supabaseProtocol?.description || t(timeOfDay === "morning" ? "defaultDescMorning" : "defaultDescEvening")}
+            {prescribed?.description || t(timeOfDay === "morning" ? "defaultDescMorning" : "defaultDescEvening")}
           </p>
         </div>
 
@@ -590,14 +595,14 @@ export function RoutineChecklist({ api, embedded = false }: { api: RoutineApi; e
                 )}
               </span>
               <span className="text-[10px] text-muted-foreground font-medium">
-                {supabaseProtocol?.allocatedBy || t("privateData")}
+                {prescribed?.allocatedBy || t("privateData")}
               </span>
             </div>
             <h3 className="font-display text-sm sm:text-base font-bold text-foreground">
-              {supabaseProtocol?.title || t(timeOfDay === "morning" ? "defaultTitleMorning" : "defaultTitleEvening")}
+              {prescribed?.title || t(timeOfDay === "morning" ? "defaultTitleMorning" : "defaultTitleEvening")}
             </h3>
             <p className="text-[11.5px] text-muted-foreground leading-snug">
-              {supabaseProtocol?.description || t(timeOfDay === "morning" ? "defaultDescMorning" : "defaultDescEvening")}
+              {prescribed?.description || t(timeOfDay === "morning" ? "defaultDescMorning" : "defaultDescEvening")}
             </p>
           </div>
 

@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Store, User, Phone, Mail, MapPin, Tag, FileText, CheckCircle2, AlertCircle, Loader2, Upload } from "lucide-react";
+import { Store, User, Phone, Mail, MapPin, Tag, FileText, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { validateSellerRegistration, type SellerRegistrationInput } from "@skinsense/domain";
+import { ImageUploader } from "@/components/cloudinary-product-uploader";
 
 const CATEGORIES = [
   "Dược mỹ phẩm & Chăm sóc da liễu",
@@ -43,6 +44,7 @@ export function SellerRegistrationModal({
     onOpenChange?.(next);
   }
   const [submitting, setSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [submittedSuccess, setSubmittedSuccess] = useState(false);
@@ -276,19 +278,15 @@ export function SellerRegistrationModal({
 
             {/* Avatar URL */}
             <div className="space-y-1.5">
-              <Label htmlFor="avatarUrl" className="font-medium text-xs uppercase tracking-wider text-muted-foreground">
-                Logo / Avatar Gian Hàng (Link hình ảnh)
-              </Label>
-              <div className="relative">
-                <Upload className="absolute left-3 top-3 size-4 text-muted-foreground" />
-                <Input
-                  id="avatarUrl"
-                  value={avatarUrl}
-                  onChange={(e) => setAvatarUrl(e.target.value)}
-                  placeholder="https://images.unsplash.com/..."
-                  className="pl-9"
-                />
-              </div>
+              <ImageUploader
+                onUploadingChange={setUploading}
+                images={avatarUrl ? [avatarUrl] : []}
+                onChange={(next) => setAvatarUrl(next[0] ?? "")}
+                folder="shops"
+                shape="round"
+                label="Logo / ảnh đại diện gian hàng"
+                emptyHint="Chưa có logo. Chọn ảnh từ máy hoặc chụp bằng camera (không bắt buộc)."
+              />
             </div>
 
             {/* Description */}
@@ -309,7 +307,7 @@ export function SellerRegistrationModal({
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                 Hủy
               </Button>
-              <Button type="submit" disabled={submitting} className="bg-emerald-600 hover:bg-emerald-700 text-white min-w-32">
+              <Button type="submit" disabled={submitting || uploading} className="bg-emerald-600 hover:bg-emerald-700 text-white min-w-32">
                 {submitting ? (
                   <>
                     <Loader2 className="size-4 animate-spin mr-2" />

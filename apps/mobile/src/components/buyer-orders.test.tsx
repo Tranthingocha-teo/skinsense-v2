@@ -22,8 +22,8 @@ jest.mock('expo-haptics', () => ({
   NotificationFeedbackType: { Success: 'success' },
 }));
 
-describe('BuyerOrdersModal Component (Shopee My Orders)', () => {
-  it('renders Shopee order tabs and active orders list', async () => {
+describe('BuyerOrdersModal Component (My Orders)', () => {
+  it('renders order tabs and active orders list', async () => {
     await render(<BuyerOrdersModal visible={true} onClose={jest.fn()} />);
 
     await waitFor(() => {
@@ -35,28 +35,28 @@ describe('BuyerOrdersModal Component (Shopee My Orders)', () => {
     });
   });
 
-  it('displays SPX Express tracking and order details', async () => {
+  it('displays shipping tracking and order details', async () => {
     await render(<BuyerOrdersModal visible={true} onClose={jest.fn()} />);
 
     await waitFor(() => {
-      expect(screen.getAllByText('SPX Express').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Giao nhanh').length).toBeGreaterThan(0);
       expect(screen.getAllByText('MALL').length).toBeGreaterThan(0);
       expect(screen.getAllByText(/Tổng thanh toán:/i).length).toBeGreaterThan(0);
     });
   });
 
-  it('opens SPX tracking timeline modal when tapping Theo dõi SPX', async () => {
+  it('opens SPX tracking timeline modal when tapping Theo dõi vận đơn', async () => {
     await render(<BuyerOrdersModal visible={true} onClose={jest.fn()} />);
 
     await waitFor(() => {
-      expect(screen.getAllByText('Theo dõi SPX').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Theo dõi vận đơn').length).toBeGreaterThan(0);
     });
 
-    const trackingBtns = screen.getAllByText('Theo dõi SPX');
+    const trackingBtns = screen.getAllByText('Theo dõi vận đơn');
     fireEvent.press(trackingBtns[0]);
 
     await waitFor(() => {
-      expect(screen.getByText('Hành Trình Vận Đơn SPX')).toBeTruthy();
+      expect(screen.getByText('Hành Trình Vận Đơn')).toBeTruthy();
       expect(screen.getByText(/Trạng thái di chuyển kiện hàng/i)).toBeTruthy();
       expect(screen.getByText('Đã Hiểu')).toBeTruthy();
     });

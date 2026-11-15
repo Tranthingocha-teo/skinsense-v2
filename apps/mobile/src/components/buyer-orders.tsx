@@ -4,7 +4,6 @@ import {
   type OrderStatus,
   type OrderTrackingEvent,
 } from '@skinsense/domain';
-import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import {
@@ -46,6 +45,7 @@ import {
   loadOrders,
   onMarketplaceChange,
 } from '@/lib/marketplace';
+import { ProductImage } from '@/components/artwork';
 
 export type BuyerTab = 'all' | 'pending' | 'processing' | 'shipping' | 'completed' | 'cancelled';
 
@@ -166,7 +166,7 @@ export function BuyerOrdersModal({
         };
       case 'shipping':
         return {
-          label: 'Đang vận chuyển (SPX)',
+          label: 'Đang vận chuyển',
           bg: 'bg-indigo-500/10 dark:bg-indigo-500/20',
           text: 'text-indigo-600 dark:text-indigo-400',
           border: 'border-indigo-500/30',
@@ -223,7 +223,7 @@ export function BuyerOrdersModal({
               Đơn Mua Của Tôi
             </Text>
             <Text className="text-[11.5px] text-muted-foreground">
-              Theo dõi & quản lý đơn hàng chuẩn Shopee
+              Theo dõi & quản lý đơn hàng
             </Text>
           </View>
           <View className="size-9 items-center justify-center">
@@ -349,11 +349,7 @@ export function BuyerOrdersModal({
 
                   {/* Product Details Row */}
                   <View className="flex-row gap-3">
-                    <Image
-                      source={{ uri: order.productImage }}
-                      className="size-16 rounded-control bg-surface-2 border border-border"
-                      contentFit="cover"
-                    />
+                    <ProductImage uri={order.productImage} name={order.productName} seed={order.productId} className="size-16 rounded-control border border-border" />
                     <View className="flex-1 justify-center gap-1">
                       <Text
                         numberOfLines={2}
@@ -392,7 +388,7 @@ export function BuyerOrdersModal({
                           </Text>
                         </View>
                         <Text className="text-[11px] text-muted-foreground">
-                          SPX Express
+                          Giao nhanh
                         </Text>
                       </View>
                     )}
@@ -465,7 +461,7 @@ export function BuyerOrdersModal({
                         >
                           <Icon as={Truck} size={14} className="text-foreground" />
                           <Text className="text-[12px] font-medium text-foreground">
-                            Theo dõi SPX
+                            Theo dõi vận đơn
                           </Text>
                         </Pressable>
 
@@ -518,7 +514,7 @@ export function BuyerOrdersModal({
         )}
 
         {/* ------------------------------------------------------------- */}
-        {/* SPX Express Live Tracking Timeline Overlay                    */}
+        {/* Giao nhanh Live Tracking Timeline Overlay                    */}
         {/* ------------------------------------------------------------- */}
         {trackingOrder && (
           <View className="absolute inset-0 z-50 justify-end bg-black/60">
@@ -534,10 +530,10 @@ export function BuyerOrdersModal({
                   </View>
                   <View>
                     <Text className="text-[16px] font-semibold text-foreground">
-                      Hành Trình Vận Đơn SPX
+                      Hành Trình Vận Đơn
                     </Text>
                     <Text className="text-[11.5px] font-mono text-muted-foreground">
-                      {trackingOrder.trackingCode} · SPX Express
+                      {trackingOrder.trackingCode} · Giao nhanh
                     </Text>
                   </View>
                 </View>
@@ -661,11 +657,7 @@ export function BuyerOrdersModal({
 
               {/* Product Summary */}
               <View className="flex-row items-center gap-3 rounded-control bg-surface-2 p-3">
-                <Image
-                  source={{ uri: ratingOrder.productImage }}
-                  className="size-12 rounded-control bg-surface-3"
-                  contentFit="cover"
-                />
+                <ProductImage uri={ratingOrder.productImage} name={ratingOrder.productName} seed={ratingOrder.productId} className="size-12 rounded-control" />
                 <View className="flex-1">
                   <Text numberOfLines={1} className="text-[13px] font-semibold text-foreground">
                     {ratingOrder.productName}

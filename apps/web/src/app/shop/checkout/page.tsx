@@ -27,8 +27,10 @@ import {
   Smartphone,
   ExternalLink,
   Zap,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { SafeProductImage } from "@/components/safe-product-image";
 import { LogoMark } from "@/components/site-header";
 import { INITIAL_SHOPEE_PRODUCTS, ShopeeProduct } from "@/app/shop/page";
 
@@ -53,8 +55,8 @@ export const SHOP_MOMO_PROFILES: Record<string, ShopMoMoProfile> = {
     brand: "La Roche-Posay",
     momoReceiver: "L'OREAL VIETNAM - LA ROCHE-POSAY",
     momoPhone: "0901 234 567",
-    momoCode: "MOMO-LRP-MALL",
-    badge: "Shopee Mall Chính Hãng",
+    momoCode: "DEMO-LRP",
+    badge: "SkinSense Mall chính hãng",
     address: "Tòa nhà L'Oreal, Quận 1, TP. Hồ Chí Minh",
   },
   "CeraVe": {
@@ -63,8 +65,8 @@ export const SHOP_MOMO_PROFILES: Record<string, ShopMoMoProfile> = {
     brand: "CeraVe",
     momoReceiver: "CERAVE OFFICIAL STORE VN",
     momoPhone: "0902 345 678",
-    momoCode: "MOMO-CERAVE-MALL",
-    badge: "Shopee Mall Chính Hãng",
+    momoCode: "DEMO-CERAVE",
+    badge: "SkinSense Mall chính hãng",
     address: "Tòa nhà CentrePoint, Quận Phú Nhuận, TP. HCM",
   },
   "Paula's Choice": {
@@ -73,8 +75,8 @@ export const SHOP_MOMO_PROFILES: Record<string, ShopMoMoProfile> = {
     brand: "Paula's Choice",
     momoReceiver: "PAULA CHOICE VN CO., LTD",
     momoPhone: "0903 456 789",
-    momoCode: "MOMO-PAULA-MALL",
-    badge: "Shopee Mall Chính Hãng",
+    momoCode: "DEMO-PAULA",
+    badge: "SkinSense Mall chính hãng",
     address: "Phường Thảo Điền, TP. Thủ Đức, TP. HCM",
   },
   "Skin1004": {
@@ -83,8 +85,8 @@ export const SHOP_MOMO_PROFILES: Record<string, ShopMoMoProfile> = {
     brand: "Skin1004",
     momoReceiver: "SKIN1004 VIETNAM STORE",
     momoPhone: "0905 678 901",
-    momoCode: "MOMO-SKIN1004-MALL",
-    badge: "Shopee Mall Chính Hãng",
+    momoCode: "DEMO-SKIN1004",
+    badge: "SkinSense Mall chính hãng",
     address: "Phường 2, Quận Tân Bình, TP. HCM",
   },
   "The Ordinary": {
@@ -93,8 +95,8 @@ export const SHOP_MOMO_PROFILES: Record<string, ShopMoMoProfile> = {
     brand: "The Ordinary",
     momoReceiver: "DECIEM BEAUTY VIETNAM",
     momoPhone: "0906 789 012",
-    momoCode: "MOMO-TO-MALL",
-    badge: "Shopee Mall Chính Hãng",
+    momoCode: "DEMO-TO",
+    badge: "SkinSense Mall chính hãng",
     address: "Tòa nhà Bitexco, Quận 1, TP. HCM",
   },
   "Anua": {
@@ -103,8 +105,8 @@ export const SHOP_MOMO_PROFILES: Record<string, ShopMoMoProfile> = {
     brand: "Anua",
     momoReceiver: "ANUA KOREA & VIETNAM",
     momoPhone: "0907 890 123",
-    momoCode: "MOMO-ANUA-MALL",
-    badge: "Shopee Mall Chính Hãng",
+    momoCode: "DEMO-ANUA",
+    badge: "SkinSense Mall chính hãng",
     address: "Quận Hoàn Kiếm, Hà Nội",
   },
   "Dear Klairs": {
@@ -113,8 +115,8 @@ export const SHOP_MOMO_PROFILES: Record<string, ShopMoMoProfile> = {
     brand: "Dear Klairs",
     momoReceiver: "KLAIRS OFFICIAL VIETNAM",
     momoPhone: "0908 901 234",
-    momoCode: "MOMO-KLAIRS-MALL",
-    badge: "Shopee Mall Chính Hãng",
+    momoCode: "DEMO-KLAIRS",
+    badge: "SkinSense Mall chính hãng",
     address: "Phường Đa Kao, Quận 1, TP. HCM",
   },
   "COSRX": {
@@ -123,8 +125,8 @@ export const SHOP_MOMO_PROFILES: Record<string, ShopMoMoProfile> = {
     brand: "COSRX",
     momoReceiver: "COSRX VIETNAM STORE",
     momoPhone: "0909 012 345",
-    momoCode: "MOMO-COSRX-MALL",
-    badge: "Shopee Mall Chính Hãng",
+    momoCode: "DEMO-COSRX",
+    badge: "SkinSense Mall chính hãng",
     address: "Quận Cầu Giấy, Hà Nội",
   },
   default: {
@@ -133,8 +135,8 @@ export const SHOP_MOMO_PROFILES: Record<string, ShopMoMoProfile> = {
     brand: "SkinSense",
     momoReceiver: "SKINSENSE CLINIC & PHARMACY",
     momoPhone: "0901 888 999",
-    momoCode: "MOMO-SKINSENSE-MALL",
-    badge: "Shopee Mall Chính Hãng",
+    momoCode: "DEMO-SKINSENSE",
+    badge: "SkinSense Mall chính hãng",
     address: "Tòa nhà Landmark 72, Nam Từ Liêm, Hà Nội",
   },
 };
@@ -369,14 +371,14 @@ function CheckoutInner() {
   const coinDiscountVnd = 20000;
   const shopVoucherDiscountVnd = 50000;
   const shippingFeeVnd = 40000;
-  const shippingDiscountVnd = 40000; // Freeship Xtra
+  const shippingDiscountVnd = 40000; // Miễn phí ship
 
   // Mã đơn hàng được sinh ra khi thanh toán (Khởi tạo sẵn để mã QR luôn luôn có mã chuẩn xác, không bao giờ rỗng)
   // Generated in the browser only: a random value in the initial state differs between the
   // server render and hydration. Every submit makes its own fresh code anyway.
   const [orderCode, setOrderCode] = useState("");
   useEffect(() => {
-    setOrderCode((code) => code || `SHOPEE-SS-${Math.floor(100000 + Math.random() * 900000)}`);
+    setOrderCode((code) => code || `SS-${Math.floor(100000 + Math.random() * 900000)}`);
   }, []);
   const [modalOpenedAt, setModalOpenedAt] = useState<number>(0);
 
@@ -440,8 +442,12 @@ function CheckoutInner() {
 
   // Tạo mã QR bằng thư viện qrcode nội bộ, đảm bảo 100% offline, sắc nét, không bị trễ hay lỗi mạng ngoài
   const [qrBase64, setQrBase64] = useState<string>("");
+  const [qrFailed, setQrFailed] = useState(false);
 
   useEffect(() => {
+    // A new order must never show the previous order's QR while its own is drawn.
+    setQrBase64("");
+    setQrFailed(false);
     if (!mobilePayUrl) return;
     import("qrcode")
       .then((QRCode) => {
@@ -455,9 +461,9 @@ function CheckoutInner() {
           },
         })
           .then(setQrBase64)
-          .catch(() => {});
+          .catch(() => setQrFailed(true));
       })
-      .catch(() => {});
+      .catch(() => setQrFailed(true));
   }, [mobilePayUrl]);
 
   // Quantity helpers
@@ -514,7 +520,7 @@ function CheckoutInner() {
     }
 
     // A fresh code per order: reusing the previous one would collide with the order just placed.
-    const activeOrderCode = `SHOPEE-SS-${Math.floor(100000 + Math.random() * 900000)}`;
+    const activeOrderCode = `SS-${Math.floor(100000 + Math.random() * 900000)}`;
     setOrderCode(activeOrderCode);
     const nowTimestamp = Date.now();
     setModalOpenedAt(nowTimestamp);
@@ -564,7 +570,7 @@ function CheckoutInner() {
       setMomoScanningState("waiting");
       setMomoCountdown(300);
       setIsMomoModalOpen(true);
-      toast.info(`Đang mở mã QR MoMo của Shop ${activeShop.shopName}...`);
+      toast.info(`Đang mở mã QR thanh toán mô phỏng của shop ${activeShop.shopName}...`);
     } else {
       // Với COD hoặc Thẻ: Thành công ngay lập tức
       setIsSuccessModalOpen(true);
@@ -620,7 +626,7 @@ function CheckoutInner() {
           hasHandledSuccess = true;
           clearInterval(pollingInterval);
           setMomoScanningState("success");
-          toast.success("🎉 Điện thoại đã thanh toán MoMo thành công!");
+          toast.success("Điện thoại đã xác nhận thanh toán mô phỏng.");
 
           // "SAU QUÉT TỰ TẮT": Đợi 1.2 giây để thấy thông báo thành công rồi tự động đóng popup!
           setTimeout(() => {
@@ -649,7 +655,7 @@ function CheckoutInner() {
 
   return (
     <div className="min-h-screen bg-[#E8E5DE] text-[#191B19] antialiased">
-      {/* Header - Shopee Mall Checkout Style */}
+      {/* Header - SkinSense Mall Checkout Style */}
       <header className="sticky top-0 z-40 border-b border-[#D8D4CA] bg-[#E8E5DE]/95 backdrop-blur-md">
         <div className="mx-auto flex max-w-[1280px] items-center justify-between px-4 py-3.5 sm:px-6">
           <div className="flex items-center gap-3">
@@ -657,7 +663,7 @@ function CheckoutInner() {
               <LogoMark className="size-8 transition group-hover:scale-105" />
               <div className="flex flex-col">
                 <span className="font-serif text-lg font-bold tracking-tight text-[#191B19] leading-tight">
-                  SkinSense <span className="text-[#C2410C] font-sans text-xs font-bold tracking-wider">SHOPEE MALL</span>
+                  SkinSense <span className="text-[#C2410C] font-sans text-xs font-bold tracking-wider">MALL</span>
                 </span>
                 <span className="text-[11px] font-medium text-[#5C605C]">
                   Thanh Toán Đơn Hàng An Toàn
@@ -669,7 +675,7 @@ function CheckoutInner() {
 
             <div className="hidden sm:flex items-center gap-2 text-xs font-bold text-[#C2410C]">
               <span className="rounded-full bg-[#C2410C]/10 px-3 py-1">
-                Thanh Toán MoMo & Dược Mỹ Phẩm Chính Hãng
+                Thanh Toán Mô Phỏng & Dược Mỹ Phẩm Chính Hãng
               </span>
             </div>
           </div>
@@ -726,11 +732,11 @@ function CheckoutInner() {
 
         {/* KHỐI 2: DANH SÁCH SẢN PHẨM THANH TOÁN (THEO TỪNG GIAN HÀNG) */}
         <div className="rounded-3xl border border-[#D8D4CA] bg-white overflow-hidden shadow-xs">
-          {/* Header Shop Shopee Mall & Mã Cố Định */}
+          {/* Header Shop SkinSense Mall & Mã Cố Định */}
           <div className="border-b border-[#D8D4CA] bg-[#FAF8F5] px-5 py-3.5 sm:px-6 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
               <span className="rounded-md bg-[#C2410C] px-2 py-0.5 text-[11px] font-bold text-white">
-                Shopee Mall
+                SkinSense Mall
               </span>
               <Store className="size-4 text-[#5C605C]" />
               <span className="font-serif font-bold text-sm text-[#191B19]">
@@ -744,9 +750,9 @@ function CheckoutInner() {
 
             {/* Thông tin mã MoMo cố định của shop */}
             <div className="flex items-center gap-2 text-xs">
-              <span className="rounded-lg bg-pink-50 border border-pink-200 px-2.5 py-1 text-[11px] font-bold text-[#A50064] flex items-center gap-1.5">
+              <span className="rounded-lg bg-stone-50 border border-stone-200 px-2.5 py-1 text-[11px] font-bold text-[#1C1F1C] flex items-center gap-1.5">
                 <Smartphone className="size-3.5" />
-                <span>Mã MoMo Shop: <strong className="font-mono">{activeShop.momoCode}</strong></span>
+                <span>Mã thanh toán demo: <strong className="font-mono">{activeShop.momoCode}</strong></span>
               </span>
             </div>
           </div>
@@ -757,13 +763,13 @@ function CheckoutInner() {
               <Sparkles className="size-4 text-amber-600 shrink-0" />
               <span>Đang thanh toán cho gian hàng <strong>{activeShop.brand}</strong>. Muốn đổi món khác?</span>
             </div>
-            <div className="flex items-center gap-2">
-              <label htmlFor="prodSelect" className="text-amber-800 font-semibold text-[11px]">Đổi sản phẩm:</label>
+            <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto">
+              <label htmlFor="prodSelect" className="shrink-0 text-amber-800 font-semibold text-[11px]">Đổi sản phẩm:</label>
               <select
                 id="prodSelect"
                 value={selectedItems[0]?.productId || ""}
                 onChange={(e) => handleSelectAnotherProduct(e.target.value)}
-                className="rounded-lg border border-amber-300 bg-white px-2 py-1 text-xs text-[#191B19] focus:outline-none focus:ring-1 focus:ring-amber-500 font-medium cursor-pointer"
+                className="min-h-9 min-w-0 flex-1 truncate rounded-lg border border-amber-300 bg-white px-2 py-1 text-xs text-[#191B19] focus:outline-none focus:ring-1 focus:ring-amber-500 font-medium cursor-pointer sm:max-w-xs"
               >
                 {INITIAL_SHOPEE_PRODUCTS.map((p) => (
                   <option key={p.id} value={p.id}>
@@ -790,17 +796,13 @@ function CheckoutInner() {
                     className="size-4 rounded border-[#D8D4CA] text-[#C2410C] focus:ring-[#C2410C] cursor-pointer"
                   />
 
-                  {item.image ? (
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className="size-20 rounded-2xl border border-[#D8D4CA] object-cover bg-white shrink-0"
-                    />
-                  ) : (
-                    <div className="flex size-20 shrink-0 items-center justify-center rounded-2xl border border-[#D8D4CA] bg-white px-1 text-center text-[10px] font-medium text-neutral-400">
-                      Chưa có ảnh
-                    </div>
-                  )}
+                  <SafeProductImage
+                    src={item.image}
+                    alt={item.name}
+                    brand={item.brand}
+                    seed={item.productId}
+                    className="size-20 rounded-2xl border border-[#D8D4CA] object-cover shrink-0"
+                  />
 
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
@@ -892,14 +894,14 @@ function CheckoutInner() {
               <span>Phương Thức Vận Chuyển</span>
             </div>
             <span className="rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
-              Freeship Xtra
+              Miễn phí ship
             </span>
           </div>
 
           <div className="rounded-2xl border border-emerald-200 bg-emerald-50/40 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="space-y-1">
               <div className="flex items-center gap-2 font-bold text-xs text-[#191B19]">
-                <span>Nhanh - SPX Express (Giao Tiết Kiệm)</span>
+                <span>Giao nhanh (tiết kiệm)</span>
                 <span className="rounded bg-emerald-600 px-1.5 py-0.2 text-[9px] font-bold text-white uppercase">
                   Miễn phí
                 </span>
@@ -921,7 +923,7 @@ function CheckoutInner() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 font-bold text-sm text-[#191B19]">
               <Tag className="size-4.5 text-[#C2410C]" />
-              <span>Shopee Voucher & Khuyến Mãi Shop</span>
+              <span>Voucher của shop</span>
             </div>
 
             <span className="text-xs font-semibold text-[#C2410C]">
@@ -970,7 +972,7 @@ function CheckoutInner() {
                   <Coins className="size-4" />
                 </div>
                 <div>
-                  <div className="font-bold text-[#191B19]">Dùng 20.000 Xu Shopee</div>
+                  <div className="font-bold text-[#191B19]">Dùng 20.000 điểm thưởng</div>
                   <div className="text-[11px] text-[#5C605C]">Giảm trực tiếp 20.000₫</div>
                 </div>
               </div>
@@ -988,13 +990,13 @@ function CheckoutInner() {
         <div className="rounded-3xl border border-[#D8D4CA] bg-white p-5 sm:p-6 shadow-xs space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2 font-bold text-sm text-[#191B19]">
-              <Wallet className="size-4.5 text-[#A50064]" />
+              <Wallet className="size-4.5 text-[#1C1F1C]" />
               <span>Phương Thức Thanh Toán</span>
             </div>
 
-            <span className="text-xs font-semibold text-[#A50064] bg-pink-50 border border-pink-200 rounded-full px-3 py-0.5 flex items-center gap-1">
+            <span className="text-xs font-semibold text-[#1C1F1C] bg-stone-50 border border-stone-200 rounded-full px-3 py-0.5 flex items-center gap-1">
               <Zap className="size-3" />
-              <span>Quét MoMo - Tự động tắt sau khi quét</span>
+              <span>Thanh toán mô phỏng (demo) - tự tắt sau khi quét</span>
             </span>
           </div>
 
@@ -1005,26 +1007,26 @@ function CheckoutInner() {
               onClick={() => setPaymentMethod("momo")}
               className={`rounded-2xl border p-3.5 text-left transition cursor-pointer flex flex-col justify-between space-y-2 relative overflow-hidden ${
                 paymentMethod === "momo"
-                  ? "border-[#A50064] bg-pink-50/70 ring-2 ring-[#A50064]/25"
+                  ? "border-[#1C1F1C] bg-stone-50/70 ring-2 ring-[#1C1F1C]/25"
                   : "border-[#D8D4CA] bg-[#FAF8F5] hover:bg-white"
               }`}
             >
               <div className="flex items-center justify-between">
-                <span className="font-bold text-[#A50064] flex items-center gap-1.5">
-                  <Smartphone className="size-4 text-[#A50064]" />
-                  <span>Ví Điện Tử MoMo</span>
+                <span className="font-bold text-[#1C1F1C] flex items-center gap-1.5">
+                  <Smartphone className="size-4 text-[#1C1F1C]" />
+                  <span>Thanh toán mô phỏng (demo)</span>
                 </span>
                 <span className={`size-4 rounded-full border flex items-center justify-center ${
-                  paymentMethod === "momo" ? "border-[#A50064] bg-[#A50064]" : "border-[#D8D4CA]"
+                  paymentMethod === "momo" ? "border-[#1C1F1C] bg-[#1C1F1C]" : "border-[#D8D4CA]"
                 }`}>
                   {paymentMethod === "momo" && <span className="size-1.5 rounded-full bg-white" />}
                 </span>
               </div>
               <p className="text-[11px] text-[#5C605C]">
-                Hiện mã QR MoMo cố định của shop, quét xong tự tắt và tạo đơn hàng.
+                Hiện mã QR mô phỏng của shop (không trừ tiền thật), quét xong tự tắt và tạo đơn hàng.
               </p>
-              <div className="flex items-center gap-1 text-[10px] font-bold text-[#A50064] pt-1">
-                <span className="rounded bg-pink-200/60 px-1.5 py-0.5">Khuyên dùng</span>
+              <div className="flex items-center gap-1 text-[10px] font-bold text-[#1C1F1C] pt-1">
+                <span className="rounded bg-stone-200/60 px-1.5 py-0.5">Khuyên dùng</span>
                 <span>{activeShop.momoCode}</span>
               </div>
             </button>
@@ -1098,14 +1100,14 @@ function CheckoutInner() {
 
           {/* Banner hướng dẫn thanh toán MoMo cố định theo lời Hà */}
           {paymentMethod === "momo" && (
-            <div className="rounded-2xl border border-pink-200 bg-gradient-to-r from-pink-50 to-white p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+            <div className="rounded-2xl border border-stone-200 bg-gradient-to-r from-stone-50 to-white p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
               <div className="flex items-center gap-3">
-                <div className="size-10 rounded-2xl bg-[#A50064] text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-xs">
-                  M
+                <div className="size-10 rounded-2xl bg-[#1C1F1C] text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-xs">
+                  <QrCode className="size-5" aria-hidden />
                 </div>
                 <div>
-                  <h5 className="font-bold text-[#A50064] flex items-center gap-1.5">
-                    <span>Mã QR MoMo Cố Định - {activeShop.shopName}</span>
+                  <h5 className="font-bold text-[#1C1F1C] flex items-center gap-1.5">
+                    <span>Mã QR thanh toán mô phỏng - {activeShop.shopName}</span>
                   </h5>
                   <p className="text-[11px] text-[#5C605C]">
                     Số tài khoản: <strong>{activeShop.momoPhone}</strong> ({activeShop.momoReceiver}) • Mã nhận diện: <strong>{activeShop.momoCode}</strong>
@@ -1113,7 +1115,7 @@ function CheckoutInner() {
                 </div>
               </div>
 
-              <div className="text-[11px] text-pink-700 bg-pink-100/70 border border-pink-300 rounded-xl px-3 py-1 font-medium">
+              <div className="text-[11px] text-stone-700 bg-stone-100/70 border border-stone-300 rounded-xl px-3 py-1 font-medium">
                 ⚡ Khi bấm &quot;Thanh Toán&quot;, quét bằng điện thoại và bấm xác nhận để màn hình tự động tắt mã.
               </div>
             </div>
@@ -1148,7 +1150,7 @@ function CheckoutInner() {
 
               {useCoins && (
                 <div className="flex justify-between text-amber-700">
-                  <span>Dùng Xu Shopee:</span>
+                  <span>Dùng điểm thưởng:</span>
                   <span>-{formatMoney(coinsDeduction)}</span>
                 </div>
               )}
@@ -1166,7 +1168,7 @@ function CheckoutInner() {
           <div className="pt-2 border-t border-[#D8D4CA]/60 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="text-xs text-[#5C605C] hidden sm:block">
               Phương thức: <strong>{
-                paymentMethod === "momo" ? `Ví MoMo (QR Shop ${activeShop.brand})` :
+                paymentMethod === "momo" ? `Thanh toán mô phỏng (QR shop ${activeShop.brand})` :
                 paymentMethod === "cod" ? "Thanh toán khi nhận hàng (COD)" :
                 paymentMethod === "vietqr" ? "Quét mã VietQR" : "Thẻ Visa / Master"
               }</strong>
@@ -1177,14 +1179,14 @@ function CheckoutInner() {
               onClick={handlePlaceOrder}
               className={`w-full sm:w-auto h-12 px-10 flex items-center justify-center gap-2 rounded-2xl text-sm font-bold text-white shadow-md active:scale-[0.98] transition cursor-pointer ${
                 paymentMethod === "momo"
-                  ? "bg-[#A50064] hover:bg-[#880052] shadow-pink-900/20"
+                  ? "bg-[#1C1F1C] hover:bg-[#2C302C] shadow-stone-900/20"
                   : "bg-[#C2410C] hover:bg-[#9A3412]"
               }`}
             >
               {paymentMethod === "momo" ? (
                 <>
                   <Smartphone className="size-5" />
-                  <span>Thanh Toán MoMo ({formatMoney(finalTotal)})</span>
+                  <span>Thanh toán mô phỏng ({formatMoney(finalTotal)})</span>
                 </>
               ) : (
                 <>
@@ -1204,14 +1206,14 @@ function CheckoutInner() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-xs animate-in fade-in duration-200">
           <div className="w-full max-w-md rounded-3xl border border-[#D8D4CA] bg-white overflow-hidden shadow-2xl space-y-0 text-center">
             {/* Header MoMo chuẩn nhận diện thương hiệu */}
-            <div className="bg-gradient-to-r from-[#A50064] via-[#C2185B] to-[#D82D8B] p-5 text-white flex items-center justify-between">
+            <div className="bg-[#1C1F1C] p-5 text-white flex items-center justify-between">
               <div className="flex items-center gap-2.5 text-left">
-                <div className="size-9 rounded-2xl bg-white text-[#A50064] flex items-center justify-center font-bold text-base shadow-sm">
-                  M
+                <div className="size-9 rounded-2xl bg-white text-[#1C1F1C] flex items-center justify-center font-bold text-base shadow-sm">
+                  <QrCode className="size-5" aria-hidden />
                 </div>
                 <div>
-                  <h4 className="font-bold text-sm tracking-wide leading-tight">Thanh Toán Ví MoMo</h4>
-                  <p className="text-[11px] text-pink-100">Quét Camera Điện Thoại • {activeShop.shopName}</p>
+                  <h4 className="font-bold text-sm tracking-wide leading-tight">Quét mã QR thanh toán (demo)</h4>
+                  <p className="text-[11px] text-stone-300">Quét Camera Điện Thoại • {activeShop.shopName}</p>
                 </div>
               </div>
 
@@ -1227,50 +1229,53 @@ function CheckoutInner() {
             {/* Nội dung Popup QR */}
             <div className="p-6 space-y-3.5">
               {/* Thẻ thông tin Shop & Số tiền */}
-              <div className="rounded-2xl bg-pink-50/60 border border-pink-100 p-3.5 text-xs text-left space-y-1.5">
+              <div className="rounded-2xl bg-stone-50/60 border border-stone-100 p-3.5 text-xs text-left space-y-1.5">
                 <div className="flex justify-between items-center">
                   <span className="text-[#5C605C]">Gian hàng nhận tiền:</span>
                   <span className="font-bold text-[#191B19]">{activeShop.shopName}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-[#5C605C]">Chủ tài khoản MoMo:</span>
+                  <span className="text-[#5C605C]">Người nhận (demo):</span>
                   <span className="font-semibold text-[#191B19]">{activeShop.momoReceiver}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-[#5C605C]">Số điện thoại MoMo:</span>
-                  <span className="font-mono font-bold text-[#A50064]">{activeShop.momoPhone}</span>
+                  <span className="text-[#5C605C]">Số điện thoại (demo):</span>
+                  <span className="font-mono font-bold text-[#1C1F1C]">{activeShop.momoPhone}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-[#5C605C]">Mã đơn hàng:</span>
                   <span className="font-mono font-bold text-[#191B19]">{orderCode}</span>
                 </div>
-                <div className="pt-1 border-t border-pink-200/80 flex justify-between items-center text-sm">
+                <div className="pt-1 border-t border-stone-200/80 flex justify-between items-center text-sm">
                   <span className="font-bold text-[#191B19]">Số tiền cần thanh toán:</span>
-                  <span className="font-serif font-bold text-lg text-[#A50064]">
+                  <span className="font-serif font-bold text-lg text-[#1C1F1C]">
                     {formatMoney(finalTotal)}
                   </span>
                 </div>
               </div>
 
               {/* Khung hiển thị Mã QR MoMo + Tia Laser quét */}
-              <div className="relative mx-auto w-64 h-64 rounded-3xl border-2 border-pink-300 bg-white p-3 shadow-inner flex flex-col items-center justify-center overflow-hidden">
+              <div className="relative mx-auto w-64 h-64 rounded-3xl border-2 border-stone-300 bg-white p-3 shadow-inner flex flex-col items-center justify-center overflow-hidden">
                 {/* Tia Laser Quét Động */}
                 {momoScanningState === "waiting" && (
-                  <div className="absolute inset-x-3 h-1 bg-gradient-to-r from-transparent via-[#D82D8B] to-transparent shadow-[0_0_12px_#D82D8B] animate-bounce pointer-events-none z-10 opacity-80" />
+                  <div className="absolute inset-x-3 h-1 bg-gradient-to-r from-transparent via-[#3A6537] to-transparent shadow-[0_0_12px_#3A6537] animate-bounce pointer-events-none z-10 opacity-80" />
                 )}
 
                 {/* Mã QR dẫn trực tiếp tới trang xác nhận điện thoại pay-demo (Base64 nội bộ cực nét, quét nhạy 100%) */}
-                <img
-                  src={
-                    qrBase64 ||
-                    `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(mobilePayUrl || `http://${hostIp}:${port}/pay-demo?orderCode=${orderCode}&amount=${finalTotal}`)}`
-                  }
-                  alt="Mã QR Quét MoMo"
-                  className="w-full h-full object-contain rounded-xl select-none"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = `https://quickchart.io/qr?text=${encodeURIComponent(mobilePayUrl || `http://${hostIp}:${port}/pay-demo?orderCode=${orderCode}&amount=${finalTotal}`)}&size=260&margin=1`;
-                  }}
-                />
+                {qrBase64 ? (
+                  // Drawn in the browser by the qrcode package: no QR image service is called.
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={qrBase64} alt="Mã QR thanh toán mô phỏng" className="w-full h-full object-contain rounded-xl select-none" />
+                ) : qrFailed ? (
+                  <div role="alert" className="flex flex-col items-center gap-2 px-3 text-center text-xs text-destructive">
+                    <span>Không tạo được mã QR. Mở liên kết bên dưới trên điện thoại hoặc tải lại trang.</span>
+                  </div>
+                ) : (
+                  <div role="status" className="flex flex-col items-center gap-2 text-xs text-muted-foreground">
+                    <Loader2 className="size-6 animate-spin" aria-hidden />
+                    <span>Đang tạo mã QR…</span>
+                  </div>
+                )}
 
                 {/* Lớp phủ thông báo khi quét xong ("SAU QUÉT TỰ TẮT") */}
                 {momoScanningState === "success" && (
@@ -1285,14 +1290,14 @@ function CheckoutInner() {
               </div>
 
               {/* Nút bấm test mở nhanh trang điện thoại trên tab mới (không cần điện thoại vẫn test được) */}
-              <div className="rounded-2xl bg-pink-50 border border-pink-200 p-2.5 flex items-center justify-between gap-2 text-left">
-                <div className="text-[11px] text-[#A50064] font-medium leading-tight">
+              <div className="rounded-2xl bg-stone-50 border border-stone-200 p-2.5 flex items-center justify-between gap-2 text-left">
+                <div className="text-[11px] text-[#1C1F1C] font-medium leading-tight">
                   <span className="font-bold">📱 Test trực tiếp:</span> Dùng camera điện thoại quét QR hoặc:
                 </div>
                 <button
                   type="button"
                   onClick={() => window.open(payDemoPath, "_blank")}
-                  className="rounded-xl bg-[#A50064] hover:bg-[#880052] active:scale-95 text-white text-[11px] font-bold px-3 py-1.5 transition shrink-0 flex items-center gap-1.5 cursor-pointer shadow-xs"
+                  className="rounded-xl bg-[#1C1F1C] hover:bg-[#2C302C] active:scale-95 text-white text-[11px] font-bold px-3 py-1.5 transition shrink-0 flex items-center gap-1.5 cursor-pointer shadow-xs"
                 >
                   <ExternalLink className="size-3" />
                   <span>Mở Tab Điện Thoại</span>
@@ -1302,8 +1307,8 @@ function CheckoutInner() {
               {/* Trạng thái quét & Thời gian đếm ngược */}
               <div className="space-y-1">
                 {momoScanningState === "waiting" ? (
-                  <div className="flex items-center justify-center gap-2 text-xs font-semibold text-[#A50064]">
-                    <span className="size-2 rounded-full bg-[#A50064] animate-ping" />
+                  <div className="flex items-center justify-center gap-2 text-xs font-semibold text-[#1C1F1C]">
+                    <span className="size-2 rounded-full bg-[#1C1F1C] animate-ping" />
                     <span>Đang chờ điện thoại quét mã & bấm xác nhận...</span>
                   </div>
                 ) : (
@@ -1346,7 +1351,7 @@ function CheckoutInner() {
 
             <div className="space-y-1">
               <span className="rounded-md bg-rose-600 px-2.5 py-0.5 text-xs font-bold text-white">
-                Shopee Mall Chính Hãng
+                SkinSense Mall chính hãng
               </span>
               <h3 className="font-serif text-2xl font-bold text-[#191B19] mt-2">
                 Đặt Hàng Thành Công!
@@ -1358,7 +1363,7 @@ function CheckoutInner() {
 
             <div className="rounded-2xl bg-white border border-[#D8D4CA] p-4 text-xs space-y-2 text-left">
               <div className="flex justify-between">
-                <span className="text-[#5C605C]">Mã vận đơn Shopee:</span>
+                <span className="text-[#5C605C]">Mã vận đơn:</span>
                 <strong className="font-mono text-[#C2410C] text-sm">{orderCode}</strong>
               </div>
               <div className="flex justify-between">
@@ -1369,7 +1374,7 @@ function CheckoutInner() {
                 <span className="text-[#5C605C]">Hình thức thanh toán:</span>
                 <span className="font-semibold text-[#191B19]">
                   {paymentMethod === "momo" ? (
-                    <span className="text-[#A50064] font-bold">Ví MoMo (Đã thanh toán qua mã QR của shop)</span>
+                    <span className="text-[#1C1F1C] font-bold">Thanh toán mô phỏng (đã quét mã QR của shop)</span>
                   ) : paymentMethod === "cod" ? (
                     "Thanh toán khi nhận hàng (COD)"
                   ) : (
@@ -1379,7 +1384,7 @@ function CheckoutInner() {
               </div>
               <div className="flex justify-between">
                 <span className="text-[#5C605C]">Đơn vị vận chuyển:</span>
-                <span className="text-[#191B19]">SPX Express (Freeship Xtra)</span>
+                <span className="text-[#191B19]">Giao nhanh (miễn phí vận chuyển)</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-[#5C605C]">Dự kiến nhận hàng:</span>
@@ -1494,7 +1499,7 @@ export default function ShopCheckoutPage() {
         <div className="min-h-screen bg-[#E8E5DE] flex items-center justify-center p-6">
           <div className="rounded-2xl border border-[#D8D4CA] bg-white p-6 shadow-sm flex items-center gap-3">
             <span className="size-5 rounded-full border-2 border-[#C2410C] border-t-transparent animate-spin" />
-            <span className="text-sm font-semibold text-[#191B19]">Đang tải trang thanh toán Shopee...</span>
+            <span className="text-sm font-semibold text-[#191B19]">Đang tải trang thanh toán...</span>
           </div>
         </div>
       }

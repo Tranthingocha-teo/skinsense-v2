@@ -16,6 +16,7 @@ import {
   Image as ImageIcon,
 } from "lucide-react";
 import { toast } from "sonner";
+import { PatientPhoto } from "@/components/patient-photo";
 
 export interface ExportClinicalRecordModalProps {
   isOpen: boolean;
@@ -29,7 +30,7 @@ export interface ExportClinicalRecordModalProps {
 export function ExportClinicalRecordModal({
   isOpen,
   onClose,
-  defaultSkinPhotoUrl = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80",
+  defaultSkinPhotoUrl,
   defaultRednessIndex = 52,
   defaultSpotsCount = 8,
   onSuccess,
@@ -100,7 +101,7 @@ export function ExportClinicalRecordModal({
           skinType,
           symptoms: symptoms.trim(),
           allergies: allergies.trim(),
-          skinPhotoUrl: defaultSkinPhotoUrl,
+          skinPhotoUrl: defaultSkinPhotoUrl ?? "",
           rednessIndex: defaultRednessIndex,
           spotsCount: defaultSpotsCount,
           affectedZones: ["Má trái", "Má phải", "Cằm"],
@@ -205,10 +206,12 @@ export function ExportClinicalRecordModal({
 
             {/* AI Scan Inspection Card */}
             <div className="p-4 rounded-2xl border border-primary/20 bg-primary/5 flex flex-col sm:flex-row gap-4 items-center">
-              <img
+              <PatientPhoto
                 src={defaultSkinPhotoUrl}
-                alt="Ảnh soi da bệnh nhân"
-                className="size-20 sm:size-24 rounded-xl object-cover border border-border shadow-xs shrink-0"
+                name={patientName || "Bạn"}
+                large
+                emptyLabel="Chưa có ảnh"
+                className="size-20 sm:size-24 rounded-xl border border-border shadow-xs shrink-0 text-center [&_span]:px-1 [&_span]:text-[10px]"
               />
               <div className="flex-1 w-full space-y-2 text-xs">
                 <div className="flex items-center justify-between">

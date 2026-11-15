@@ -23,8 +23,8 @@ describe("Landing", () => {
   it("offers Google sign-in, Doctor approval, and Shop approval in the hero", () => {
     renderLanding();
     expect(screen.getAllByText(vi.Landing.signInGoogle)[0]).toBeInTheDocument();
-    expect(screen.getAllByText("🩺 Bác sĩ: Gửi hồ sơ duyệt")[0]).toBeInTheDocument();
-    expect(screen.getAllByText("🏪 Gian hàng: Gửi hồ sơ mở shop")[0]).toBeInTheDocument();
+    expect(screen.getAllByText("Bác sĩ: Gửi hồ sơ duyệt")[0]).toBeInTheDocument();
+    expect(screen.getAllByText("Gian hàng: Gửi hồ sơ mở shop")[0]).toBeInTheDocument();
   });
 
   it("renders the three stage scenes and the data cards' final values before any motion loads", () => {

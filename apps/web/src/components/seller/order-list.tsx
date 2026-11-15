@@ -7,15 +7,16 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatVnd, validateOrderStatusTransition, type Order, type OrderStatus } from "@skinsense/domain";
+import { SafeProductImage } from "@/components/safe-product-image";
 
 const DEMO_ORDERS: Order[] = [
   {
-    id: "ORD-982104-SPX1",
+    id: "ORD-982104-SS1",
     shopId: "shop-skinsense-official",
     shopName: "SkinSense Official Store",
     productId: "lrp-effaclar-duo-m",
     productName: "Effaclar Duo+M Giảm Mụn & Ngừa Thâm 40ml",
-    productImage: "https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=400&q=80",
+    productImage: "",
     priceVnd: 375000,
     quantity: 1,
     totalVnd: 375000,
@@ -26,19 +27,19 @@ const DEMO_ORDERS: Order[] = [
     note: "Giao giờ hành chính giúp em",
     paymentMethod: "cod",
     status: "processing",
-    trackingCode: "SPX-VN982104",
-    shippingProvider: "SPX Express",
+    trackingCode: "SS-VN982104",
+    shippingProvider: "Giao nhanh",
     shopEarningsVnd: 356250,
     platformFeeVnd: 18750,
     createdAt: new Date(Date.now() - 3600000 * 5).toISOString(),
   },
   {
-    id: "ORD-639201-SPX2",
+    id: "ORD-639201-SS2",
     shopId: "shop-skinsense-official",
     shopName: "SkinSense Official Store",
     productId: "skin1004-centella-ampoule",
     productName: "Tinh Chất Rau Má Madagascar Centella Ampoule 100ml",
-    productImage: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=400&q=80",
+    productImage: "",
     priceVnd: 330000,
     quantity: 2,
     totalVnd: 660000,
@@ -48,19 +49,19 @@ const DEMO_ORDERS: Order[] = [
     customerAddress: "158 Nguyễn Thái Học, Ba Đình, Hà Nội",
     paymentMethod: "vietqr",
     status: "pending",
-    trackingCode: "SPX-VN639201",
-    shippingProvider: "SPX Express",
+    trackingCode: "SS-VN639201",
+    shippingProvider: "Giao nhanh",
     shopEarningsVnd: 627000,
     platformFeeVnd: 33000,
     createdAt: new Date(Date.now() - 3600000 * 12).toISOString(),
   },
   {
-    id: "ORD-119832-SPX3",
+    id: "ORD-119832-SS3",
     shopId: "shop-skinsense-official",
     shopName: "SkinSense Official Store",
     productId: "lrp-cicaplast-b5-plus",
     productName: "Cicaplast Baume B5+ Phục Hồi & Làm Dịu Da 40ml",
-    productImage: "https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?auto=format&fit=crop&w=400&q=80",
+    productImage: "",
     priceVnd: 365000,
     quantity: 1,
     totalVnd: 365000,
@@ -70,8 +71,8 @@ const DEMO_ORDERS: Order[] = [
     customerAddress: "45 Hai Bà Trưng, Quận 1, TP. Hồ Chí Minh",
     paymentMethod: "vietqr",
     status: "completed",
-    trackingCode: "SPX-VN119832",
-    shippingProvider: "SPX Express",
+    trackingCode: "SS-VN119832",
+    shippingProvider: "Giao nhanh",
     shopEarningsVnd: 346750,
     platformFeeVnd: 18250,
     createdAt: new Date(Date.now() - 3600000 * 48).toISOString(),
@@ -179,7 +180,7 @@ export function OrderList({
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <img src={order.productImage} alt={order.productName} className="size-9 rounded object-cover border shrink-0" />
+                      <SafeProductImage src={order.productImage} alt={order.productName} seed={order.productId} className="size-9 rounded object-cover border shrink-0" />
                       <div>
                         <p className="text-xs font-medium line-clamp-1">{order.productName}</p>
                         <p className="text-[11px] text-muted-foreground">x{order.quantity}</p>
