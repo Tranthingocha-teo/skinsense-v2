@@ -66,7 +66,7 @@ Build, verify, and ship **SkinSense v1.0.0** end-to-end across Web (**Next.js 16
 | **End W5 (`2026-10-19`)** | Milestone 3 | `#14–#15` closed (`7 SP`; cum. `79 SP`) | `17` | `23` | GitHub Actions CI (`typecheck` + `test`) & Audit docs |
 | **End W6 (`2026-10-26` / Git `10-24`)** | Milestone 4 | `#16–#23` closed (`23 SP`; cum. `102 SP`) | `0` | `0` | Cloud Supabase, OAuth, Vercel, Signed APK `v1.0.0`, QA |
 
-> *Repository Timestamp Reality*: Because git commits were squashed/batched onto GitHub on `2026-10-24` (`37` commits), all 23 Sprint 1 Issues officially carry GitHub close date `2026-10-24`. Weekly remaining SP above reflects reconstructed milestone burn-down rather than literal live GitHub Project #2 clicks during Weeks 1–5.
+> *Repository Timestamp Reality*: Because git commits were squashed/batched onto GitHub on `2026-10-24` (`37` commits), all 23 Sprint 1 Issues officially carry GitHub close date `2026-10-24`. Weekly remaining SP above reflects reconstructed milestone burn-down rather than literal live GitHub Project #2 clicks during Weeks 1–5. Machine-readable series exported in [`docs/sprints/BURNDOWN_HISTORY.csv`](BURNDOWN_HISTORY.csv).
 
 ### Sprint 1 Burndown Chart
 

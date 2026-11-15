@@ -168,6 +168,7 @@ Khi truy cập [**GitHub Project #2**](https://github.com/users/Tranthingocha-te
 ### Bộ Tài Liệu Scrum & Quản Trị Rủi Ro
 - [Sprint 1 Plan, Burndown, Review & Retrospective](docs/sprints/SPRINT_1.md)
 - [Sprint 2 Plan, Burndown, Review & Final Retrospective](docs/sprints/SPRINT_2.md)
+- [Burndown Checkpoint History Dataset (`BURNDOWN_HISTORY.csv`)](docs/sprints/BURNDOWN_HISTORY.csv)
 - [Dynamic Risk Register (Week 6 ➔ Week 11) & GitHub Evidence Index](docs/governance/RISK_REGISTER.md)
 - [Formal Change Request Log (`CR-01`..`CR-05`)](docs/governance/CHANGE_REQUESTS.md)
 - [Requirements & WBS Traceability Matrix](docs/governance/TRACEABILITY_MATRIX.md)
