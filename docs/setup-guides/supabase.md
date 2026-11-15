@@ -24,10 +24,11 @@ SkinSense maintains version-controlled Drizzle migrations under `packages/domain
 - `0002_photos_storage_owner_policy.sql`: Storage RLS owner policy.
 - `0003_feedback.sql`: Feedback submission table.
 - `0004_notes_and_tags.sql`: Photo diary notes, tags, and junction table.
+- `0005_profiles_specialists.sql`: `profiles` (owner may read, only the service role writes, so users cannot change their role) and `specialists` (service role only), used by `/api/profile`.
 
 ### Option A: SQL Editor (Recommended for Quick Setup)
 1. In your Supabase Dashboard, open the **SQL Editor**.
-2. Run the SQL files in numeric order from `packages/domain/drizzle/0000_init.sql` through `0004_notes_and_tags.sql`.
+2. Run the SQL files in numeric order from `packages/domain/drizzle/0000_init.sql` through `0005_profiles_specialists.sql`.
 
 ### Option B: Drizzle CLI
 ```bash

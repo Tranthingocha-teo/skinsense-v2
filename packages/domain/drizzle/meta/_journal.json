@@ -36,6 +36,13 @@
       "when": 1789457564559,
       "tag": "0004_notes_and_tags",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794760000000,
+      "tag": "0005_profiles_specialists",
+      "breakpoints": true
     }
   ]
 }

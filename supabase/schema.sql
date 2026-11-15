@@ -1,3 +1,5 @@
+-- DEMO ONLY. Do not run on a real Supabase project: the routine_* policies below use `using (true)` and open every
+-- user's rows to everyone. The production schema is packages/domain/drizzle/0000-0005 (see docs/HANDOFF.md).
 -- ==============================================================================
 -- SkinSense v2 Database Schema (Supabase PostgreSQL)
 -- Thiết kế & Cấu hình: Trần Thị Ngọc Hà (Super Admin - hattn.23itb@vku.udn.vn)
