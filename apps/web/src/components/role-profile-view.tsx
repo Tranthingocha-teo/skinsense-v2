@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -370,6 +370,130 @@ export function RoleProfileView({ role }: { role: RoleType }) {
     } catch {}
   }
 
+  // Cross-tab & Realtime sync trigger
+  function triggerChatRealtimeSync(data?: { shopId?: string; userId?: string }) {
+    try {
+      if (typeof window !== "undefined") {
+        const payload = { ...data, timestamp: Date.now() };
+        if ("BroadcastChannel" in window) {
+          const bc = new BroadcastChannel("skinsense_realtime_chat");
+          bc.postMessage(payload);
+          bc.close();
+        }
+        localStorage.setItem("skinsense_realtime_chat_ping", JSON.stringify(payload));
+      }
+    } catch {}
+  }
+
+  const customerChatEndRef = useRef<HTMLDivElement | null>(null);
+  const shopChatEndRef = useRef<HTMLDivElement | null>(null);
+
+  // Tự động cuộn xuống cuối khi có tin nhắn mới phía Khách hàng
+  useEffect(() => {
+    if (isChatOpen) {
+      customerChatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [chatMessages, isChatOpen]);
+
+  // Tự động cuộn xuống cuối khi có tin nhắn mới phía Shop
+  useEffect(() => {
+    if (role === "shop" && activeTab === "messages") {
+      shopChatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [shopThreads, selectedThreadId, activeTab, role]);
+
+  // Realtime Live Chat Listener cho Khách Hàng (Customer) - không cần F5
+  useEffect(() => {
+    if (!isChatOpen) return;
+
+    const syncCustomer = async () => {
+      try {
+        const res = await fetch(`/api/chat?shopId=${activeChatShopId}&userId=thuy_dung&_t=${Date.now()}`);
+        const data = await res.json();
+        if (data.ok && data.thread && Array.isArray(data.thread.messages)) {
+          setChatMessages((prev) => {
+            if (prev.length !== data.thread.messages.length) return data.thread.messages;
+            const lastP = prev[prev.length - 1];
+            const lastN = data.thread.messages[data.thread.messages.length - 1];
+            if (lastP?.id !== lastN?.id || lastP?.text !== lastN?.text) {
+              return data.thread.messages;
+            }
+            return prev;
+          });
+        }
+      } catch {}
+    };
+
+    let bc: BroadcastChannel | null = null;
+    if (typeof window !== "undefined" && "BroadcastChannel" in window) {
+      bc = new BroadcastChannel("skinsense_realtime_chat");
+      bc.onmessage = () => syncCustomer();
+    }
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === "skinsense_realtime_chat_ping") {
+        syncCustomer();
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+
+    const timer = setInterval(syncCustomer, 1000);
+
+    return () => {
+      if (bc) bc.close();
+      window.removeEventListener("storage", handleStorage);
+      clearInterval(timer);
+    };
+  }, [isChatOpen, activeChatShopId]);
+
+  // Realtime Live Chat Listener cho Chủ Shop (Shop Owner) - không cần F5
+  useEffect(() => {
+    if (role !== "shop" || activeTab !== "messages") return;
+
+    loadShopThreads();
+
+    const syncShop = async () => {
+      try {
+        const res = await fetch(`/api/chat?forShop=true&_t=${Date.now()}`);
+        const data = await res.json();
+        if (data.ok && Array.isArray(data.threads)) {
+          setShopThreads((prev) => {
+            const prevTotal = prev.reduce((acc, t) => acc + (t.messages?.length || 0), 0);
+            const newTotal = data.threads.reduce((acc: number, t: any) => acc + (t.messages?.length || 0), 0);
+            if (prevTotal !== newTotal || prev.length !== data.threads.length) {
+              return data.threads;
+            }
+            return prev;
+          });
+          if (data.threads.length > 0) {
+            setSelectedThreadId((prev) => prev || data.threads[0].id);
+          }
+        }
+      } catch {}
+    };
+
+    let bc: BroadcastChannel | null = null;
+    if (typeof window !== "undefined" && "BroadcastChannel" in window) {
+      bc = new BroadcastChannel("skinsense_realtime_chat");
+      bc.onmessage = () => syncShop();
+    }
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === "skinsense_realtime_chat_ping") {
+        syncShop();
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+
+    const timer = setInterval(syncShop, 1000);
+
+    return () => {
+      if (bc) bc.close();
+      window.removeEventListener("storage", handleStorage);
+      clearInterval(timer);
+    };
+  }, [role, activeTab]);
+
   // Shop gửi phản hồi trực tiếp cho khách hàng
   async function handleSendShopReply() {
     if (!shopReplyInput.trim() || !selectedThreadId) return;
@@ -398,6 +522,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
         setShopThreads((prev) =>
           prev.map((t) => (t.id === activeThread.id ? data.thread : t))
         );
+        triggerChatRealtimeSync({ shopId: activeThread.shopId, userId: activeThread.userId });
       }
     } catch {
       toast.error("Lỗi khi gửi phản hồi.");
@@ -577,6 +702,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
     setIsShopTyping(true);
 
     try {
+      triggerChatRealtimeSync({ shopId: activeChatShopId, userId: "thuy_dung" });
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -597,6 +723,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
         if (data.ok && data.thread && Array.isArray(data.thread.messages)) {
           setChatMessages(data.thread.messages);
         }
+        triggerChatRealtimeSync({ shopId: activeChatShopId, userId: "thuy_dung" });
       }, 700);
     } catch {
       setIsShopTyping(false);
@@ -1524,6 +1651,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                                   </div>
                                 );
                               })}
+                              <div ref={shopChatEndRef} />
                             </div>
 
                             {/* Khung Shop gõ phản hồi */}
@@ -2535,6 +2663,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                 </div>
               </div>
             )}
+            <div ref={customerChatEndRef} />
           </div>
 
           {/* Quick Questions (Gợi ý câu hỏi nhanh) */}
