@@ -37,7 +37,7 @@ export function CanvasIcon({ name, size }: { name: keyof typeof ICONS; size: num
 export function SiteHeader({ nav, drawMark, children }: { nav?: ReactNode; drawMark?: boolean; children?: ReactNode }) {
   return (
     <header
-      className={`relative flex h-[72px] items-center justify-between pr-3 pl-5 md:h-24 md:px-14 ${nav ? "md:grid md:grid-cols-3" : ""}`}
+      className={`relative flex h-[72px] items-center justify-between pr-3 pl-5 md:h-24 md:px-14 ${nav ? "lg:grid lg:grid-cols-[1fr_auto_1fr] lg:gap-6" : ""}`}
     >
       <Link href="/" className="flex items-center gap-2.5 md:gap-3" aria-label="SkinSense Home">
         <LogoMark className="size-[26px] md:size-[30px]" draw={drawMark} />
