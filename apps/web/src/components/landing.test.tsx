@@ -20,10 +20,11 @@ function renderLanding() {
 }
 
 describe("Landing", () => {
-  it("offers Supabase Gmail login and Doctor approval in the hero", () => {
+  it("offers Supabase Gmail login, Doctor approval, and Shop approval in the hero", () => {
     renderLanding();
     expect(screen.getAllByText("Đăng nhập bằng Gmail (Google / Supabase)")[0]).toBeInTheDocument();
     expect(screen.getAllByText("🩺 Bác sĩ: Gửi hồ sơ duyệt")[0]).toBeInTheDocument();
+    expect(screen.getAllByText("🏪 Gian hàng: Gửi hồ sơ mở shop")[0]).toBeInTheDocument();
   });
 
   it("renders the three stage scenes and the data cards' final values before any motion loads", () => {

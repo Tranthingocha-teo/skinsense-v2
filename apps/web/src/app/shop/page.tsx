@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { LogoMark } from "@/components/site-header";
+import { AuthModal } from "@/components/auth-modal";
 
 // Shopee Product Variant
 export interface ProductVariant {
@@ -725,6 +726,12 @@ export default function ShopProductPage() {
                 <span>Mua Hàng</span>
               </button>
             </div>
+
+            <AuthModal
+              defaultTab="shop-approval"
+              triggerLabel="🏪 Đăng ký mở Gian hàng"
+              triggerClassName="flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-amber-600/40 bg-amber-500/10 px-3.5 py-2 text-xs font-semibold text-amber-800 dark:text-amber-300 transition hover:border-amber-600 hover:bg-amber-500/20 cursor-pointer shadow-2xs whitespace-nowrap"
+            />
 
             <Link
               href="/app"
