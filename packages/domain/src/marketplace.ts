@@ -323,8 +323,8 @@ export function generateTrackingTimeline(
     },
     {
       time: formatTime(90),
-      title: `Đã bàn giao cho ĐVVC SPX Express (${trackingCode})`,
-      desc: "Bưu tá SPX Express đã nhận kiện hàng tại kho xuất hàng và quét mã vận đơn.",
+      title: `Đã bàn giao cho ĐVVC Giao nhanh (${trackingCode})`,
+      desc: "Bưu tá Giao nhanh đã nhận kiện hàng tại kho xuất hàng và quét mã vận đơn.",
       completed: isShipped,
     },
     {
@@ -336,7 +336,7 @@ export function generateTrackingTimeline(
     {
       time: formatTime(720),
       title: "Đang phát hàng đến bạn",
-      desc: "Shipper SPX Express đang liên hệ để giao hàng tận tay khách hàng.",
+      desc: "Shipper đang liên hệ để giao hàng tận tay khách hàng.",
       completed: isDelivered,
     },
     {

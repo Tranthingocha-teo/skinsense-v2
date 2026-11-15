@@ -413,7 +413,7 @@ export function AuthModal({
       }
 
       setSuccess(
-        "✅ Hồ sơ mở Gian hàng đã được gửi thành công! Super Admin Trần Thị Ngọc Hà sẽ xét duyệt Giấy phép kinh doanh & Danh mục sản phẩm. Sau khi duyệt, bạn có thể đăng nhập vào Kênh Người Bán (Shopee Mall).",
+        "✅ Hồ sơ mở Gian hàng đã được gửi thành công! Super Admin Trần Thị Ngọc Hà sẽ xét duyệt Giấy phép kinh doanh & Danh mục sản phẩm. Sau khi duyệt, bạn có thể đăng nhập vào Kênh Người Bán (SkinSense Mall).",
       );
       setLoading(false);
     } catch (err) {
@@ -944,7 +944,7 @@ export function AuthModal({
                   <div className="rounded-xl border border-amber-600/30 bg-amber-500/10 p-3 text-xs text-foreground">
                     <div className="flex items-center gap-1.5 font-semibold text-amber-800 dark:text-amber-300">
                       <Store className="size-4" />
-                      <span>Quy trình xét duyệt Mở Gian Hàng Đối Tác (Shopee Mall / Partner)</span>
+                      <span>Quy trình xét duyệt Mở Gian Hàng Đối Tác (SkinSense Mall / đối tác)</span>
                     </div>
                     <p className="mt-1 text-[11.5px] leading-relaxed text-muted-foreground">
                       Chủ shop gửi thông tin Giấy phép ĐKKD / Mã số thuế và địa chỉ kho hàng để được Super Admin Trần Thị Ngọc Hà kiểm duyệt và cấp quyền đăng bán sản phẩm.
@@ -1094,7 +1094,7 @@ export function AuthModal({
                     className="mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-sm font-semibold text-white transition disabled:opacity-50 cursor-pointer shadow-md"
                   >
                     <Store className="size-4" />
-                    <span>{loading ? "Đang gửi hồ sơ..." : "Gửi yêu cầu mở Gian hàng Shopee"}</span>
+                    <span>{loading ? "Đang gửi hồ sơ..." : "Gửi yêu cầu mở gian hàng"}</span>
                   </button>
                 </form>
               )}

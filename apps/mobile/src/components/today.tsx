@@ -667,7 +667,7 @@ function ShopTodayWorkstation({ user, date }: { user: AuthUser; date: string }) 
               </Text>
             </View>
             <Text className="text-[12px] text-muted-foreground leading-4">
-              Sau khi được Admin phê duyệt, gian hàng sẽ được mở bán chính thức trên sàn Shopee Mall và hiển thị cho khách mua.
+              Sau khi được Admin phê duyệt, gian hàng sẽ được mở bán chính thức trên sàn SkinSense Mall và hiển thị cho khách mua.
             </Text>
           </View>
         )}
@@ -833,10 +833,10 @@ function CustomerToday() {
             </View>
             <View>
               <Text className="text-[14px] font-semibold text-foreground">
-                Đơn Mua Của Tôi (Shopee Mall)
+                Đơn Mua Của Tôi (SkinSense Mall)
               </Text>
               <Text className="text-[11.5px] text-muted-foreground">
-                Theo dõi vận đơn SPX, đánh giá 5 sao & quản lý đơn
+                Theo dõi vận đơn, đánh giá 5 sao & quản lý đơn
               </Text>
             </View>
           </View>

@@ -73,11 +73,11 @@ export function OrderDetailModal({
             </p>
             <div className="flex items-center justify-between text-muted-foreground">
               <span>Đơn vị vận chuyển:</span>
-              <span className="font-semibold text-foreground">{order.shippingProvider || "SPX Express"}</span>
+              <span className="font-semibold text-foreground">{order.shippingProvider || "Giao nhanh"}</span>
             </div>
             <div className="flex items-center justify-between text-muted-foreground">
               <span>Mã vận đơn (Tracking Code):</span>
-              <span className="font-mono font-bold text-emerald-600">{order.trackingCode || "SPX-VN982104"}</span>
+              <span className="font-mono font-bold text-emerald-600">{order.trackingCode || "SS-VN982104"}</span>
             </div>
           </div>
 

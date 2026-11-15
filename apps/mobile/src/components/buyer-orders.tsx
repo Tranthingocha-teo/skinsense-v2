@@ -166,7 +166,7 @@ export function BuyerOrdersModal({
         };
       case 'shipping':
         return {
-          label: 'Đang vận chuyển (SPX)',
+          label: 'Đang vận chuyển',
           bg: 'bg-indigo-500/10 dark:bg-indigo-500/20',
           text: 'text-indigo-600 dark:text-indigo-400',
           border: 'border-indigo-500/30',
@@ -223,7 +223,7 @@ export function BuyerOrdersModal({
               Đơn Mua Của Tôi
             </Text>
             <Text className="text-[11.5px] text-muted-foreground">
-              Theo dõi & quản lý đơn hàng chuẩn Shopee
+              Theo dõi & quản lý đơn hàng
             </Text>
           </View>
           <View className="size-9 items-center justify-center">
@@ -388,7 +388,7 @@ export function BuyerOrdersModal({
                           </Text>
                         </View>
                         <Text className="text-[11px] text-muted-foreground">
-                          SPX Express
+                          Giao nhanh
                         </Text>
                       </View>
                     )}
@@ -461,7 +461,7 @@ export function BuyerOrdersModal({
                         >
                           <Icon as={Truck} size={14} className="text-foreground" />
                           <Text className="text-[12px] font-medium text-foreground">
-                            Theo dõi SPX
+                            Theo dõi vận đơn
                           </Text>
                         </Pressable>
 
@@ -514,7 +514,7 @@ export function BuyerOrdersModal({
         )}
 
         {/* ------------------------------------------------------------- */}
-        {/* SPX Express Live Tracking Timeline Overlay                    */}
+        {/* Giao nhanh Live Tracking Timeline Overlay                    */}
         {/* ------------------------------------------------------------- */}
         {trackingOrder && (
           <View className="absolute inset-0 z-50 justify-end bg-black/60">
@@ -530,10 +530,10 @@ export function BuyerOrdersModal({
                   </View>
                   <View>
                     <Text className="text-[16px] font-semibold text-foreground">
-                      Hành Trình Vận Đơn SPX
+                      Hành Trình Vận Đơn
                     </Text>
                     <Text className="text-[11.5px] font-mono text-muted-foreground">
-                      {trackingOrder.trackingCode} · SPX Express
+                      {trackingOrder.trackingCode} · Giao nhanh
                     </Text>
                   </View>
                 </View>

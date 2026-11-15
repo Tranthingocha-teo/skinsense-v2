@@ -169,7 +169,7 @@ export function AdminPortal() {
   async function handleApproveShop(shopId: string, shopName: string) {
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     await updateShopStatus(shopId, 'approved');
-    Alert.alert('Đã duyệt mở bán', `Gian hàng "${shopName}" đã được phê duyệt và mở bán chính thức trên sàn Shopee Mall.`);
+    Alert.alert('Đã duyệt mở bán', `Gian hàng "${shopName}" đã được phê duyệt và mở bán chính thức trên sàn SkinSense Mall.`);
     await refreshData();
   }
 
@@ -184,9 +184,9 @@ export function AdminPortal() {
     void Haptics.selectionAsync().catch(() => {});
     const isNowOfficial = await toggleShopOfficial(shopId);
     Alert.alert(
-      isNowOfficial ? 'Đã cấp Shopee Mall' : 'Đã gỡ Shopee Mall',
+      isNowOfficial ? 'Đã cấp SkinSense Mall' : 'Đã gỡ SkinSense Mall',
       isNowOfficial
-        ? 'Gian hàng đã được gắn huy hiệu Shopee Mall chính hãng.'
+        ? 'Gian hàng đã được gắn huy hiệu SkinSense Mall chính hãng.'
         : 'Gian hàng đã chuyển về shop tiêu chuẩn.',
     );
     await refreshData();
@@ -964,7 +964,7 @@ export function AdminPortal() {
                       Có {pendingShops.length} hồ sơ gian hàng mới chờ bạn duyệt!
                     </Text>
                     <Text className="text-[11.5px] text-muted-foreground">
-                      Duyệt để shop xuất hiện trên sàn Shopee Mall và bắt đầu bán hàng.
+                      Duyệt để shop xuất hiện trên sàn SkinSense Mall và bắt đầu bán hàng.
                     </Text>
                   </View>
                 </View>
@@ -1004,7 +1004,7 @@ export function AdminPortal() {
                               {s.isOfficial ? (
                                 <View className="rounded-pill bg-destructive/15 px-1.5 py-0.5">
                                   <Text className="text-[10px] font-bold text-destructive uppercase">
-                                    Shopee Mall
+                                    SkinSense Mall
                                   </Text>
                                 </View>
                               ) : (
@@ -1116,7 +1116,7 @@ export function AdminPortal() {
                                   s.isOfficial ? 'text-destructive' : 'text-amber-500'
                                 }`}
                               >
-                                {s.isOfficial ? 'Gỡ Shopee Mall' : 'Cấp Shopee Mall'}
+                                {s.isOfficial ? 'Gỡ SkinSense Mall' : 'Cấp SkinSense Mall'}
                               </Text>
                             </Pressable>
 

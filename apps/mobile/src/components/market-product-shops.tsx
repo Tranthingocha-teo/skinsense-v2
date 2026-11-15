@@ -275,7 +275,7 @@ export function MarketProductShops({ productId }: { productId: string }) {
             </View>
             <View className="flex-row items-center gap-1.5 bg-primary/10 border border-primary/20 px-2.5 py-1 rounded-pill">
               <Icon as={Truck} size={12} className="text-primary" />
-              <Text className="text-[11px] font-semibold text-primary">Giao Nhanh SPX</Text>
+              <Text className="text-[11px] font-semibold text-primary">Giao nhanh</Text>
             </View>
             <View className="flex-row items-center gap-1.5 bg-surface-2 border border-border/40 px-2.5 py-1 rounded-pill">
               <Icon as={CheckCircle2} size={12} className="text-muted-foreground" />
@@ -840,7 +840,7 @@ export function MarketProductShops({ productId }: { productId: string }) {
                       {viewingShopModal.isOfficial && (
                         <View className="rounded-pill bg-destructive/15 px-2 py-0.5">
                           <Text className="text-[10px] font-bold text-destructive uppercase">
-                            Shopee Mall
+                            SkinSense Mall
                           </Text>
                         </View>
                       )}

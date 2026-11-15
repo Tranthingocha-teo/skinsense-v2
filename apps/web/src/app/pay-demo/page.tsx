@@ -11,6 +11,7 @@ import {
   Clock,
   ArrowRight,
   Sparkles,
+  QrCode,
 } from "lucide-react";
 
 function formatMoney(amount: number) {
@@ -46,7 +47,7 @@ function PayDemoInner() {
       const s = sp.get("shop");
       if (s) return s;
     }
-    return searchParams.get("shop") || "Shopee Mall Flagship";
+    return searchParams.get("shop") || "SkinSense Mall Flagship";
   });
 
   // Tự động đồng bộ với Backend: Lấy chính xác giá và mã đơn hàng vừa bấm trên máy tính
@@ -62,7 +63,7 @@ function PayDemoInner() {
         const a = sp.get("amount");
         if (a) amt = parseInt(a, 10);
       }
-      if (!shop || shop === "Shopee Mall Flagship") {
+      if (!shop || shop === "SkinSense Mall Flagship") {
         const s = sp.get("shop");
         if (s) shop = s;
       }
@@ -185,14 +186,14 @@ function PayDemoInner() {
     <div className="min-h-screen bg-[#F3F4F6] flex flex-col items-center justify-start sm:justify-center p-4">
       <div className="w-full max-w-sm rounded-3xl bg-white shadow-xl overflow-hidden border border-neutral-200">
         {/* Header MoMo chuẩn mobile app */}
-        <div className="bg-gradient-to-r from-[#A50064] via-[#C2185B] to-[#D82D8B] p-5 text-white text-center space-y-1">
-          <div className="size-12 rounded-2xl bg-white text-[#A50064] flex items-center justify-center font-bold text-xl mx-auto shadow-md">
-            M
+        <div className="bg-[#1C1F1C] p-5 text-white text-center space-y-1">
+          <div className="size-12 rounded-2xl bg-white text-[#1C1F1C] flex items-center justify-center font-bold text-xl mx-auto shadow-md">
+            <QrCode className="size-5" aria-hidden />
           </div>
-          <h2 className="font-bold text-base tracking-wide">Ví Điện Tử MoMo</h2>
-          <p className="text-[11px] text-pink-100 flex items-center justify-center gap-1">
+          <h2 className="font-bold text-base tracking-wide">Thanh toán mô phỏng (demo)</h2>
+          <p className="text-[11px] text-stone-300 flex items-center justify-center gap-1">
             <ShieldCheck className="size-3.5" />
-            <span>Cổng Thanh Toán An Toàn PCI-DSS</span>
+            <span>Không trừ tiền thật</span>
           </p>
         </div>
 
@@ -201,9 +202,9 @@ function PayDemoInner() {
           {!success ? (
             <>
               {/* Thẻ số tiền */}
-              <div className="rounded-2xl bg-pink-50/70 border border-pink-100 p-4 text-center space-y-1">
+              <div className="rounded-2xl bg-stone-50/70 border border-stone-100 p-4 text-center space-y-1">
                 <span className="text-xs text-[#5C605C] font-medium">Số tiền thanh toán:</span>
-                <div className="font-serif font-bold text-3xl text-[#A50064]">
+                <div className="font-serif font-bold text-3xl text-[#1C1F1C]">
                   {amount > 0 ? formatMoney(amount) : "..."}
                 </div>
                 <div className="text-[11px] text-[#5C605C] font-mono">
@@ -228,7 +229,7 @@ function PayDemoInner() {
                     <Wallet className="size-3.5 text-neutral-400" />
                     <span>Nguồn tiền:</span>
                   </span>
-                  <span className="font-semibold text-neutral-800">Ví MoMo (Số dư: 5.250.000₫)</span>
+                  <span className="font-semibold text-neutral-800">Ví demo (số dư mô phỏng: 5.250.000₫)</span>
                 </div>
 
                 <div className="flex justify-between items-center">
@@ -257,7 +258,7 @@ function PayDemoInner() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full min-h-[52px] rounded-2xl bg-[#A50064] hover:bg-[#880052] active:bg-[#700043] active:scale-[0.98] text-white font-bold text-sm shadow-md shadow-pink-900/25 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 select-none touch-manipulation"
+                  className="w-full min-h-[52px] rounded-2xl bg-[#1C1F1C] hover:bg-[#2C302C] active:bg-black active:scale-[0.98] text-white font-bold text-sm shadow-md shadow-black/20 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 select-none touch-manipulation"
                 >
                   {loading ? (
                     <>
@@ -323,8 +324,8 @@ export default function PayDemoPage() {
       fallback={
         <div className="min-h-screen bg-[#F3F4F6] flex items-center justify-center p-4">
           <div className="rounded-2xl bg-white p-6 shadow-sm flex items-center gap-3">
-            <span className="size-5 rounded-full border-2 border-[#A50064] border-t-transparent animate-spin" />
-            <span className="text-sm font-semibold text-neutral-800">Đang tải MoMo Pay...</span>
+            <span className="size-5 rounded-full border-2 border-[#1C1F1C] border-t-transparent animate-spin" />
+            <span className="text-sm font-semibold text-neutral-800">Đang tải thanh toán mô phỏng...</span>
           </div>
         </div>
       }

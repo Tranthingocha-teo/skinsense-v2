@@ -76,7 +76,7 @@ export interface ShopeeProduct {
   category: string;
   brand: string;
   origin: string;
-  isMall: boolean; // Shopee Mall badge
+  isMall: boolean; // SkinSense Mall badge
   isPreferredPlus: boolean; // Yêu thích+
   images: string[];
   coverImage: string;
@@ -118,7 +118,7 @@ export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
     id: "sp_01",
     shopName: "La Roche-Posay Official Store",
     sku: "LRP-DUO-PLUS-M-40ML",
-    name: "Kem Dưỡng Giảm Mụn & Ngừa Thâm La Roche-Posay Effaclar Duo+M 40ml (Shopee Mall)",
+    name: "Kem Dưỡng Giảm Mụn & Ngừa Thâm La Roche-Posay Effaclar Duo+M 40ml",
     category: "Chăm sóc da mặt > Kem dưỡng & Trị mụn",
     brand: "La Roche-Posay",
     origin: "Pháp (L'Oréal Vietnam phân phối)",
@@ -556,7 +556,7 @@ interface AdminProductApiRecord {
 
 export default function ShopProductPage() {
   const router = useRouter();
-  // Page mode: "seller" (Shopee Seller Center) vs "buyer" (Shopee Marketplace Storefront)
+  // Page mode: "seller" (Kênh người bán SkinSense) vs "buyer" (Shopee Marketplace Storefront)
   const [viewMode, setViewMode] = useState<"seller" | "buyer">("seller");
 
   // User session & approval state
@@ -1095,7 +1095,7 @@ export default function ShopProductPage() {
                   <Store className="size-7" />
                 </div>
                 <h2 className="font-display text-xl sm:text-2xl font-bold text-foreground">
-                  Kênh Quản Lý Người Bán Shopee Mall
+                  Kênh Quản Lý Người Bán SkinSense Mall
                 </h2>
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   Kênh Người Bán chỉ dành cho các Gian hàng Dược mỹ phẩm đối tác đã được Super Admin Trần Thị Ngọc Hà kiểm duyệt và cấp phép. Vui lòng đăng nhập tài khoản Gian hàng hoặc nộp hồ sơ xin mở gian hàng để bắt đầu.
@@ -1174,7 +1174,7 @@ export default function ShopProductPage() {
                 </div>
                 <div>
                   <span className="block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    Vận chuyển Shopee
+                    Vận chuyển
                   </span>
                   <div className="font-display text-xl font-medium text-foreground sm:text-2xl">
                     100% <span className="font-sans text-xs font-normal text-primary">Freeship</span>
@@ -1340,7 +1340,7 @@ export default function ShopProductPage() {
                         title="Bấm để xem trang chi tiết sản phẩm trên sàn"
                       >
                         <SafeProductImage src={prod.coverImage} alt={prod.name} brand={prod.brand} category={prod.category} seed={prod.id} className="size-full object-cover transition-transform duration-300 group-hover:scale-105" />
-                        {/* Overlay Badges Shopee Mall & Freeship & Approval Status */}
+                        {/* Overlay Badges SkinSense Mall & Freeship & Approval Status */}
                         <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 items-start">
                           {prod.status === "pending" && (
                             <span className="flex items-center gap-1 rounded bg-amber-600 px-2 py-0.5 text-[9px] font-bold text-white shadow-xs">
@@ -1469,7 +1469,7 @@ export default function ShopProductPage() {
                               <div className="flex items-baseline justify-between rounded-xl border border-border bg-background p-3">
                                 <div>
                                   <span className="block text-[9px] font-semibold uppercase text-muted-foreground">
-                                    Giá Shopee:
+                                    Giá bán:
                                   </span>
                                   <div className="font-display text-base font-semibold text-primary">
                                     {formatMoney(prod.priceVnd)}
@@ -1555,7 +1555,7 @@ export default function ShopProductPage() {
                         type="button"
                         onClick={() => setInspectingProduct(prod)}
                         className="flex min-h-11 flex-1 items-center justify-center gap-1 rounded-xl border border-border bg-background text-[11px] font-semibold text-foreground transition hover:bg-surface-2 cursor-pointer"
-                        title="Xem đầy đủ mọi trường thông số Shopee"
+                        title="Xem đầy đủ thông số sản phẩm"
                       >
                         <FileText className="size-3 text-muted-foreground" />
                         <span>Thông Số</span>
@@ -1570,7 +1570,7 @@ export default function ShopProductPage() {
                           setViewMode("buyer");
                         }}
                         className="flex min-h-11 flex-1 items-center justify-center gap-1 rounded-xl border border-primary/30 bg-primary/5 text-primary text-[11px] font-semibold hover:bg-primary/10 transition cursor-pointer"
-                        title="Xem giao diện mua hàng chuẩn sàn Shopee"
+                        title="Xem giao diện mua hàng"
                       >
                         <Eye className="size-3" />
                         <span>Chi Tiết</span>
@@ -1621,7 +1621,7 @@ export default function ShopProductPage() {
               </button>
 
               <div className="hidden text-xs text-muted-foreground sm:block">
-                Shopee {">"} {selectedProduct.category} {">"} <strong className="text-foreground">{selectedProduct.brand}</strong>
+                SkinSense Mall {">"} {selectedProduct.category} {">"} <strong className="text-foreground">{selectedProduct.brand}</strong>
               </div>
             </div>
 
@@ -1669,7 +1669,7 @@ export default function ShopProductPage() {
                     {selectedProduct.isMall && (
                       <div className="absolute top-3 left-3 rounded-md bg-rose-600 px-2 py-0.5 text-xs font-bold text-white shadow-xs flex items-center gap-1">
                         <BadgeCheck className="size-3.5" />
-                        <span>Shopee Mall</span>
+                        <span>SkinSense Mall</span>
                       </div>
                     )}
                     <span className="absolute top-3 right-3 rounded-md bg-amber-500 px-2 py-0.5 text-xs font-bold text-white shadow-xs">
@@ -1697,7 +1697,7 @@ export default function ShopProductPage() {
                   <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-surface-2/50 p-3 text-xs text-muted-foreground">
                     <span className="flex items-center gap-1.5 font-semibold text-foreground">
                       <ShieldCheck className="size-4 text-success" />
-                      <span>Shopee Đảm Bảo</span>
+                      <span>SkinSense Đảm Bảo</span>
                     </span>
                     <span>3 Ngày Trả Hàng / Hoàn Tiền 100%</span>
                   </div>
@@ -1756,7 +1756,7 @@ export default function ShopProductPage() {
                   <div className="space-y-1.5 rounded-2xl border border-primary/25 bg-surface-2/50 p-4 sm:p-5">
                   <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-primary">
                       <Sparkles className="size-3.5" />
-                      <span>Giá Khuyến Mãi Shopee Mall</span>
+                      <span>Giá khuyến mãi</span>
                     </div>
                     <div className="flex flex-wrap items-baseline gap-3">
                       <span className="font-display text-2xl font-semibold text-primary sm:text-3xl">
@@ -1794,7 +1794,7 @@ export default function ShopProductPage() {
                     </div>
                   </div>
 
-                  {/* Vận chuyển Shopee */}
+                  {/* Vận chuyển */}
                   <div className="space-y-1.5 rounded-xl border border-border bg-surface-2/50 p-3 text-xs">
                     <div className="flex items-center gap-1.5 font-semibold text-success">
                       <Truck className="size-4" />
@@ -1867,7 +1867,7 @@ export default function ShopProductPage() {
                     <button
                       type="button"
                       disabled={selectedProduct.status === "pending" || selectedProduct.status === "rejected"}
-                      onClick={() => toast.success(`Đã thêm ${buyerQuantity} sản phẩm vào Giỏ Hàng Shopee!`)}
+                      onClick={() => toast.success(`Đã thêm ${buyerQuantity} sản phẩm vào giỏ hàng!`)}
                       className="min-h-12 w-full flex-1 flex items-center justify-center gap-2 rounded-xl border border-primary bg-primary/5 px-5 text-sm font-semibold text-primary transition hover:bg-primary/10 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <ShoppingBag className="size-4.5" />
@@ -1902,7 +1902,7 @@ export default function ShopProductPage() {
                   </div>
                   <div className="grid grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)] gap-2 py-2 sm:grid-cols-3">
                     <span className="text-muted-foreground">Thương Hiệu</span>
-                    <span className="font-semibold text-primary sm:col-span-2">{selectedProduct.brand} (Shopee Mall)</span>
+                    <span className="font-semibold text-primary sm:col-span-2">{selectedProduct.brand} (SkinSense Mall)</span>
                   </div>
                   <div className="grid grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)] gap-2 py-2 sm:grid-cols-3">
                     <span className="text-muted-foreground">Xuất Xứ</span>
@@ -2022,7 +2022,7 @@ export default function ShopProductPage() {
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="rounded bg-rose-600 px-1.5 py-0.2 text-[9px] font-bold text-white">
-                      Shopee Mall
+                      SkinSense Mall
                     </span>
                     <span className="font-mono text-[11px] text-muted-foreground">{inspectingProduct.sku}</span>
                   </div>
@@ -2046,7 +2046,7 @@ export default function ShopProductPage() {
               <div className="space-y-2.5 rounded-xl border border-border bg-background p-4">
                 <h4 className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-primary">
                   <ShieldCheck className="size-3.5" />
-                  <span>1. Thông số kỹ thuật & Pháp lý Y tế (Shopee Standards)</span>
+                  <span>1. Thông số kỹ thuật & Pháp lý Y tế (tiêu chuẩn SkinSense)</span>
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                   <div className="rounded-lg bg-surface-2 p-2">
@@ -2112,7 +2112,7 @@ export default function ShopProductPage() {
               <div className="space-y-1.5 rounded-xl border border-border bg-background p-4 text-xs">
                 <h4 className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-primary">
                   <Truck className="size-3.5" />
-                  <span>3. Vận chuyển & Cam kết Shopee Mall</span>
+                  <span>3. Vận chuyển & Cam kết SkinSense Mall</span>
                 </h4>
                 <div className="space-y-0.5 rounded-lg bg-surface-2 p-2.5 text-xs">
                   <div>Vận chuyển: <strong className="text-success">Freeship Xtra (Miễn phí toàn quốc)</strong></div>
@@ -2142,7 +2142,7 @@ export default function ShopProductPage() {
                 className="flex min-h-11 items-center justify-center gap-1 rounded-xl bg-primary px-5 py-2 text-xs font-semibold text-primary-foreground shadow-xs transition hover:bg-primary/90 cursor-pointer"
               >
                 <Eye className="size-3" />
-                <span>Xem Trên Sàn Shopee</span>
+                <span>Xem trang sản phẩm</span>
               </button>
             </div>
           </div>
@@ -2257,7 +2257,7 @@ export default function ShopProductPage() {
               <div className="space-y-3 rounded-2xl border border-border bg-background p-4">
                 <h4 className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-primary">
                   <Percent className="size-3.5" />
-                  <span>2. Thông tin bán hàng & Giá Shopee</span>
+                  <span>2. Thông tin bán hàng & giá</span>
                 </h4>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -2405,7 +2405,7 @@ export default function ShopProductPage() {
                   type="submit"
                   className="min-h-11 rounded-xl bg-primary px-6 py-2 text-xs font-semibold text-primary-foreground shadow-xs transition hover:bg-primary/90 active:scale-[0.98] cursor-pointer"
                 >
-                  Xác Nhận Đăng Bán Lên Shopee
+                  Xác Nhận Đăng Bán Lên SkinSense Mall
                 </button>
               </div>
             </form>

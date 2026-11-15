@@ -30,7 +30,7 @@ test("a customer chats with the shop of an order and the shop replies", async ({
     const shopErrors = collectPageErrors(shopPage);
 
     // Setup: an order from this shop, placed by the customer through the API the checkout uses.
-    const orderCode = `SHOPEE-SS-E2E${tag}`;
+    const orderCode = `SS-E2E${tag}`;
     orderCodes.push(orderCode);
     const created = await customerPage.request.post("/api/orders", {
       data: {

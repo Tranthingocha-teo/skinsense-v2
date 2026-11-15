@@ -119,7 +119,7 @@ const ROLE_SETTINGS: Record<RoleType, RoleConfig> = {
     badgeClass: "bg-[#2D5A43]/10 text-[#2D5A43] border-[#2D5A43]/30",
     primaryColor: "#2D5A43",
     backHref: "/shop",
-    backLabel: "Cửa hàng Shopee",
+    backLabel: "Cửa hàng SkinSense",
     portalHref: "/user/routine",
     portalLabel: "Xem Phác Đồ Routine",
     icon: User,
@@ -139,7 +139,7 @@ const ROLE_SETTINGS: Record<RoleType, RoleConfig> = {
   shop: {
     role: "shop",
     title: "Hồ Sơ Cửa Hàng (Shop)",
-    roleBadge: "Shopee Mall Flagship",
+    roleBadge: "SkinSense Mall",
     badgeClass: "bg-[#C2410C]/10 text-[#C2410C] border-[#C2410C]/30",
     primaryColor: "#C2410C",
     backHref: "/shop",
@@ -333,7 +333,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatOrder, setChatOrder] = useState<UserOrder | null>(null);
   const [activeChatShopId, setActiveChatShopId] = useState<string>("skinsense_mall");
-  const [activeChatShopName, setActiveChatShopName] = useState<string>("Gian Hàng Shopee Mall");
+  const [activeChatShopName, setActiveChatShopName] = useState<string>("Gian hàng SkinSense Mall");
   const [chatMessages, setChatMessages] = useState<ChatMessageItem[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [isShopTyping, setIsShopTyping] = useState(false);
@@ -491,7 +491,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
         } else if (newStatus === "processing") {
           toast.success("Shop đã phê duyệt và bắt đầu đóng gói đơn hàng.");
         } else if (newStatus === "delivering") {
-          toast.success("Đã bàn giao đơn hàng cho đơn vị vận chuyển SPX Express.");
+          toast.success("Đã bàn giao đơn hàng cho đơn vị vận chuyển.");
         } else {
           toast.success("Cập nhật trạng thái đơn hàng thành công!");
         }
@@ -670,7 +670,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
 
   // Mở chat với Shop (TÁCH BIỆT THEO TỪNG SHOP)
   async function openChatWithShop(order?: UserOrder) {
-    const sName = order?.shopName || "Shopee Mall Flagship";
+    const sName = order?.shopName || "SkinSense Mall";
     const sId = normalizeShopId(sName);
     setChatOrder(order || null);
     setIsChatOpen(true);
@@ -1108,7 +1108,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                       <ShoppingBag className="size-12 text-[#D8D4CA] mx-auto stroke-1" />
                       <h4 className="text-sm font-bold text-[#191B19]">Chưa có đơn hàng nào</h4>
                       <p className="text-xs text-[#5C605C] max-w-sm mx-auto">
-                        Bạn chưa có đơn hàng nào trong mục này. Hãy ghé qua cửa hàng Shopee Mall để chọn mua sản phẩm chăm sóc da nhé!
+                        Bạn chưa có đơn hàng nào trong mục này. Hãy ghé qua SkinSense Mall để chọn mua sản phẩm chăm sóc da nhé!
                       </p>
                       <Link
                         href="/shop"
@@ -1148,7 +1148,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                               <div className="flex items-center gap-2.5 font-bold text-[#191B19]">
                                 <div className="flex items-center gap-1.5">
                                   <Store className="size-3.5 text-[#C2410C]" />
-                                  <span>{order.shopName || "Gian Hàng Shopee Mall"}</span>
+                                  <span>{order.shopName || "Gian hàng SkinSense Mall"}</span>
                                   <span className="rounded bg-rose-600 px-1.5 py-0.2 text-[9px] text-white font-bold">
                                     Mall
                                   </span>
@@ -1206,7 +1206,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                                   ) : (
                                     <>
                                       <Clock className="size-3 animate-pulse text-amber-600" />
-                                      <span>Chờ Thanh Toán MoMo</span>
+                                      <span>Chờ thanh toán</span>
                                     </>
                                   )}
                                 </span>
@@ -1219,10 +1219,10 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                                 <div className="text-[11px] font-bold text-[#5C605C] uppercase tracking-wider mb-3 flex items-center justify-between">
                                   <span className="flex items-center gap-1.5 text-[#2D5A43]">
                                     <Truck className="size-3.5" />
-                                    Tiến trình vận đơn Shopee
+                                    Tiến trình vận đơn
                                   </span>
                                   <span className="font-mono text-[10px] text-[#5C605C]">
-                                    Mã vận đơn: SPX-VN{order.orderCode.replace(/\D/g, "") || "982101"}
+                                    Mã vận đơn: SS-VN{order.orderCode.replace(/\D/g, "") || "982101"}
                                   </span>
                                 </div>
 
@@ -1247,7 +1247,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                                   {[
                                     { key: "pending", label: "Đã Đặt Đơn", desc: "Chờ xác nhận", icon: Package, activeIf: ["pending", "processing", "delivering", "delivered"] },
                                     { key: "processing", label: "Chuẩn Bị Hàng", desc: "Shop đóng gói", icon: Store, activeIf: ["processing", "delivering", "delivered"] },
-                                    { key: "delivering", label: "Đang Giao", desc: "SPX vận chuyển", icon: Truck, activeIf: ["delivering", "delivered"] },
+                                    { key: "delivering", label: "Đang Giao", desc: "Đang vận chuyển", icon: Truck, activeIf: ["delivering", "delivered"] },
                                     { key: "delivered", label: "Đã Nhận Hàng", desc: "Giao thành công", icon: CheckCircle2, activeIf: ["delivered"] },
                                   ].map((step, sIdx) => {
                                     const isReached = step.activeIf.includes(order.status);
@@ -1357,7 +1357,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                               <div className="mx-5 mb-3 rounded-xl border border-rose-200 bg-rose-50/80 px-3.5 py-2 text-xs font-medium text-rose-900 flex items-center gap-2">
                                 <XCircle className="size-4 text-rose-600 shrink-0" />
                                 <span>
-                                  Đơn hàng này đã <strong>tự động hủy</strong> do quá thời hạn 3 ngày chưa quét thanh toán MoMo.
+                                  Đơn hàng này đã <strong>tự động hủy</strong> do quá thời hạn 3 ngày chưa thanh toán.
                                 </span>
                               </div>
                             )}
@@ -1366,7 +1366,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                             <div className="border-t border-[#D8D4CA] bg-white px-5 py-3.5 flex items-center justify-between flex-wrap gap-3">
                               <div className="text-xs text-[#5C605C] flex items-center gap-2">
                                 <Truck className="size-3.5 text-[#2D5A43]" />
-                                <span>{order.carrier || "Shopee Express"}</span>
+                                <span>{order.carrier || "Giao nhanh"}</span>
                                 <span className="text-[11px] text-[#9CA3AF]">•</span>
                                 <span className="text-[11px] text-[#5C605C]">{formatDate(order.createdAt)}</span>
                               </div>
@@ -1479,7 +1479,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                                         className="flex items-center gap-1 h-8.5 px-3.5 rounded-xl bg-[#C2410C] text-xs font-bold text-white shadow-2xs hover:bg-[#9A3412] transition"
                                       >
                                         <QrCode className="size-3" />
-                                        <span>Thanh Toán MoMo</span>
+                                        <span>Thanh toán</span>
                                       </Link>
                                     )}
 
@@ -1514,7 +1514,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                     <div>
                       <h3 className="text-sm font-bold text-[#191B19] flex items-center gap-2">
                         <MessageSquare className="size-4 text-[#2D5A43]" />
-                        <span>Kênh Chat Trực Tiếp Khách Hàng (Shopee Seller Live Chat)</span>
+                        <span>Kênh Chat Trực Tiếp Khách Hàng (chat trực tiếp)</span>
                       </h3>
                       <p className="text-[11px] text-[#5C605C] mt-0.5">
                         Nhận tin nhắn, xem đơn hàng liên quan và phản hồi khách hàng theo thời gian thực
@@ -1894,7 +1894,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                               <span>Đặc quyền Quản trị Toàn quyền (Super Admin)</span>
                             </div>
                             <p className="text-xs text-[#5C605C] leading-relaxed">
-                              Toàn quyền kiểm soát cơ sở dữ liệu Supabase, kiểm duyệt phê duyệt tài khoản Bác sĩ, cấp phép gian hàng Shopee Mall và cấu hình luồng thanh toán.
+                              Toàn quyền kiểm soát cơ sở dữ liệu Supabase, kiểm duyệt phê duyệt tài khoản Bác sĩ, cấp phép gian hàng SkinSense Mall và cấu hình luồng thanh toán.
                             </p>
                             <div className="pt-2 text-xs text-[#191B19] font-medium">
                               <strong>Đơn vị trực thuộc:</strong> Viện CNTT & Y tế Số VKU

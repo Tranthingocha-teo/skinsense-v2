@@ -70,7 +70,7 @@ test("a shop applies from the landing page and stays pending", async ({ page }) 
   await page.getByPlaceholder("shop.laroche@skinsense.vn").fill(email);
   await page.getByPlaceholder("028 3822 5588").fill("0900000004");
   await page.getByPlaceholder("••••••••").fill(`${randomUUID()}Aa1!`);
-  await page.getByRole("button", { name: "Gửi yêu cầu mở Gian hàng Shopee" }).click();
+  await page.getByRole("button", { name: "Gửi yêu cầu mở gian hàng" }).click();
   await expect(page.getByText(/Hồ sơ mở Gian hàng đã được gửi thành công/)).toBeVisible({ timeout: 20_000 });
 
   const tracked = await trackUser(email, owner, shopName);

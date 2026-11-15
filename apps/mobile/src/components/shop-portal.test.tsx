@@ -22,13 +22,13 @@ jest.mock('expo-haptics', () => ({
   NotificationFeedbackType: { Success: 'success' },
 }));
 
-describe('ShopPortal Component (Shopee Seller Center)', () => {
+describe('ShopPortal Component (Seller Center)', () => {
   it('renders shop portal header and active shop details', async () => {
     await render(<ShopPortal />);
 
     await waitFor(() => {
       expect(screen.getByText('Kênh Người Bán')).toBeTruthy();
-      expect(screen.getByText('Shopee Seller Center')).toBeTruthy();
+      expect(screen.getByText('Kênh người bán SkinSense')).toBeTruthy();
       expect(screen.getByText(/Gian hàng đang quản lý/i)).toBeTruthy();
       expect(screen.getByText('SkinSense Official Store')).toBeTruthy();
       expect(screen.getByText(/Đơn \(/i)).toBeTruthy();
@@ -79,7 +79,7 @@ describe('ShopPortal Component (Shopee Seller Center)', () => {
     });
   });
 
-  it('switches to Ví Shop tab and displays Shopee Balance & Withdraw button', async () => {
+  it('switches to Ví Shop tab and displays the balance & Withdraw button', async () => {
     await render(<ShopPortal />);
 
     await waitFor(() => {
@@ -89,7 +89,7 @@ describe('ShopPortal Component (Shopee Seller Center)', () => {
     fireEvent.press(screen.getByText('Ví Shop'));
 
     await waitFor(() => {
-      expect(screen.getByText('Số Dư Ví Người Bán (Shopee Balance)')).toBeTruthy();
+      expect(screen.getByText('Số Dư Ví Người Bán')).toBeTruthy();
       expect(screen.getByText('Rút Tiền Về Tài Khoản Ngân Hàng')).toBeTruthy();
       expect(screen.getByText(/Lịch sử yêu cầu rút tiền/i)).toBeTruthy();
     });
