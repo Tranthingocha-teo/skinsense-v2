@@ -786,6 +786,15 @@ export default function AdminDashboardPage() {
 
           <div className="flex items-center gap-3">
             <Link
+              href="/admin/profile"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-md text-xs font-semibold border border-purple-800/30 bg-purple-500/10 hover:bg-purple-500/20 text-purple-950 dark:text-purple-200 transition shadow-2xs"
+              title="Hồ sơ Super Admin"
+            >
+              <User className="size-3.5 text-purple-600 dark:text-purple-400" />
+              <span>Hồ Sơ Admin</span>
+            </Link>
+
+            <Link
               href="/app"
               className="flex items-center gap-1.5 px-3.5 py-2 rounded-md text-xs font-medium border border-border bg-card hover:bg-surface-2 transition text-muted-foreground hover:text-foreground"
               title="Về trang soi da (Hôm nay)"

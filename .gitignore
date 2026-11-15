@@ -22,3 +22,10 @@ graphify-out/
 *.pem
 *.apk
 supabase/.temp/
+
+# IDE & local runtime database
+.idea/
+.orders-db.json
+*.orders-db.json
+.profiles-cache.json
+*.profiles-cache.json
