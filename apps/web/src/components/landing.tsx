@@ -15,7 +15,6 @@ type Item = { title: string; body: string };
 // Canvas classes (design-2/build.mjs) as token utilities.
 const lbl = "text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground";
 const h2 = "font-display text-4xl leading-[1.18] font-light md:text-[48px] md:leading-[1.15]";
-const ph = "rounded-4xl border border-dashed border-foreground/45 px-2.5 py-1 text-[11px]";
 const btn = "flex h-[52px] items-center justify-center gap-2.5 rounded-lg bg-primary px-6 text-[15px] font-medium text-primary-foreground";
 const btnO = "flex h-[52px] items-center justify-center gap-2.5 rounded-lg border border-foreground/55 px-6 text-[15px]";
 const card = "rounded-xl border border-foreground/10 bg-card";
@@ -95,7 +94,6 @@ export function Landing() {
             />
           </div>
         </SiteHeader>
-        <span className={`relative mx-4 mt-2 self-end md:hidden ${ph}`}>Ảnh · placeholder</span>
 
         <div className="relative mt-auto flex flex-col gap-[22px] px-6 pb-9 md:mt-0 md:items-center md:gap-[26px] md:px-24 md:pt-[130px] md:pb-0 md:text-center">
           <h1 className="font-display text-[40px] leading-[1.14] font-light tracking-[0.01em] uppercase text-balance md:max-w-[1080px] md:text-[clamp(36px,5.2vw,74px)]">
@@ -128,7 +126,6 @@ export function Landing() {
             </a>
           </div>
         </div>
-        <span className={`absolute right-14 bottom-10 hidden md:block ${ph}`}>Ảnh full-bleed · placeholder</span>
       </section>
 
       <ScrollStage />

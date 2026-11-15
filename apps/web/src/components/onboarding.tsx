@@ -12,15 +12,11 @@ const POINTS = ["light", "webcam", "diagnosis"] as const;
 // photo under a scrim). Both widths keep the ticket's one screen; the phone shows the points, not a pager.
 export function Onboarding({ onDone }: { onDone: () => void }) {
   const t = useTranslations("Onboarding");
-  const photo = useTranslations("Today")("photoPlaceholder");
   return (
     <main className="relative isolate flex min-h-svh flex-col md:h-svh md:flex-row md:overflow-hidden">
       <div aria-hidden className="absolute inset-0 -z-10 bg-photo md:relative md:z-auto md:w-[680px] md:shrink-0">
         <div className="absolute inset-0 bg-linear-to-b from-background/25 via-background/30 via-40% to-background to-74% md:hidden" />
         <div className="absolute inset-0 hidden bg-linear-to-r from-transparent from-60% to-background md:block" />
-        <span className="absolute top-4 left-5 rounded-4xl border border-dashed border-foreground/45 px-2.5 py-1 text-[11px] md:top-auto md:bottom-8 md:left-8">
-          {photo}
-        </span>
       </div>
 
       <div className="mt-auto flex flex-col gap-[22px] px-6 pt-20 pb-9 md:my-0 md:flex-1 md:justify-center md:gap-8 md:pt-0 md:pr-[120px] md:pb-0 md:pl-[72px]">

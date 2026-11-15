@@ -23,7 +23,7 @@ export function DemoBanner() {
           {t("reset")}
         </button>
         <Link href="/" className="flex min-h-11 items-center rounded-[10px] bg-primary px-4 text-[13.5px] font-semibold text-primary-foreground">
-          Trang chủ
+          {t("home")}
         </Link>
       </div>
     </div>
