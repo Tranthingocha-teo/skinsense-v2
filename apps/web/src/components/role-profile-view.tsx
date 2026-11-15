@@ -95,7 +95,7 @@ function createLocalMessageId(prefix: string): string {
 }
 
 function formatCurrentTimeHHMM(): string {
-  return new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+  return new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Ho_Chi_Minh" });
 }
 
 interface RoleConfig {
@@ -202,7 +202,7 @@ function formatMoney(amount: number) {
 function formatDate(iso: string) {
   try {
     const d = new Date(iso);
-    return `${d.toLocaleDateString("vi-VN")} ${d.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}`;
+    return `${d.toLocaleDateString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" })} ${d.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Ho_Chi_Minh" })}`;
   } catch {
     return iso;
   }

@@ -131,7 +131,7 @@ export async function POST(request: Request) {
       phone: phone?.trim() || "0905 123 456",
       skinType: skinType || "Hỗn hợp thiên dầu",
       fitzpatrickScale: "Loại III (Châu Á)",
-      submittedDate: new Date().toLocaleDateString("vi-VN"),
+      submittedDate: new Date().toLocaleDateString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" }),
       severity: (Number(rednessIndex) > 55 ? "severe" : Number(rednessIndex) > 30 ? "moderate" : "mild"),
       status: "pending_routine",
       treatmentDay: "Ngày 1/14",
