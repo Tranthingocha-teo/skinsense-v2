@@ -62,4 +62,20 @@ describe("committed migrations", () => {
     const seen = await as(db, A, "SELECT name FROM storage.objects");
     expect(seen.rows.map((r) => r.name)).toEqual([`${A}/a.jpg`]);
   }, 60_000);
+
+  it("let a user read only their own profile and never write it (role stays server-controlled)", async () => {
+    const db = await freshDb();
+    await db.exec(`INSERT INTO profiles (id, email) VALUES ('${A}', 'a@x'), ('${B}', 'b@x')`);
+    await db.exec(`INSERT INTO specialists (id, full_name, license_number, specialty) VALUES ('s1', 'Dr', 'L1', 'Derm')`);
+
+    const seen = await as(db, A, "SELECT id FROM profiles");
+    expect(seen.rows.map((r) => r.id)).toEqual([A]);
+
+    await as(db, A, `UPDATE profiles SET role = 'admin' WHERE id = '${A}'`);
+    const role = await db.query<{ role: string }>(`SELECT role FROM profiles WHERE id = '${A}'`);
+    expect(role.rows[0].role).toBe("customer");
+
+    await expect(as(db, A, `INSERT INTO profiles (id, email) VALUES ('${A}', 'z')`)).rejects.toThrow(/row-level security|duplicate/);
+    expect((await as(db, A, "SELECT id FROM specialists")).rows).toEqual([]);
+  }, 60_000);
 });

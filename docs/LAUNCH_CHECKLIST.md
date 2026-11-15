@@ -15,7 +15,7 @@ This checklist is the ultimate step-by-step master plan to take your fork from c
 
 ## Phase 2: Supabase Backend Provisioning
 - [ ] **2.1 Create Supabase Project**: Create a new project at [database.new](https://database.new).
-- [ ] **2.2 Apply Migrations**: In the SQL Editor, apply `0000_init.sql` through `0004_notes_and_tags.sql` from `packages/domain/drizzle/`.
+- [ ] **2.2 Apply Migrations**: In the SQL Editor, apply `0000_init.sql` through `0005_profiles_specialists.sql` from `packages/domain/drizzle/`.
 - [ ] **2.3 Create Private Storage Bucket**: Create a private bucket named `photos` and verify the RLS storage owner policy.
 - [ ] **2.4 Deploy Edge Function**: Deploy `supabase/functions/delete-account` using the Supabase CLI (`supabase functions deploy delete-account`).
 - [ ] **2.5 Configure Env Files**:

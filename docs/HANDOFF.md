@@ -38,7 +38,7 @@ For the recipient's production rollout, dedicated operational runbooks and check
 
 You need free accounts at Supabase, Google Cloud, and (to deploy) Vercel and Expo.
 
-1. **Supabase project.** Create one. In the SQL editor (or with the Supabase CLI) run the files in `packages/domain/drizzle/` in numeric order (`0000` to `0004`). `0002` creates the access policy on the private `photos` storage bucket, so first create a **private** bucket named `photos` in Storage.
+1. **Supabase project.** Create one. In the SQL editor (or with the Supabase CLI) run the files in `packages/domain/drizzle/` in numeric order (`0000` to `0005`). Do not run `supabase/schema.sql` on a real project: its policies open every user's routine rows to everyone. `0002` creates the access policy on the private `photos` storage bucket, so first create a **private** bucket named `photos` in Storage.
 2. **Auth.** Enable the Google provider in Supabase Auth. Sign-in is Google only (`signInWithIdToken`). Details: `docs/research/auth-google-idtoken.md` and `docs/research/supabase-expo-nextjs.md`.
 3. **Google Cloud OAuth clients.** Create a Web client and an Android client. The Android client needs the package name from `apps/mobile/app.json` and the SHA-1 of the keystore that signs your build (the debug keystore for development builds, your release keystore for release APKs). Put the web client in Supabase Auth and the client ids in the env files.
 4. **Edge Function.** Deploy `supabase/functions/delete-account` to your project (Supabase CLI: `supabase functions deploy delete-account`). It needs the project's service-role key as a function secret.
