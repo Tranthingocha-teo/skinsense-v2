@@ -34,7 +34,7 @@ import { canShopSignIn } from "@/lib/shop-product-approval";
 export type UserRole = "customer" | "shop" | "specialist" | "admin";
 export type AuthModalTab = "sign-in" | "register" | "doctor-approval" | "shop-approval";
 
-export const DEMO_ACCOUNTS: any[] = [];
+export const DEMO_ACCOUNTS: Array<{ email: string; role: UserRole; label?: string }> = [];
 
 export function AuthModal({
   triggerLabel,

@@ -1639,7 +1639,7 @@ export default function AdminDashboardPage() {
                     <span>Danh Sách Sản Phẩm & Quy Chuẩn Hướng Dẫn Sử Dụng ({totalSteps} Bước)</span>
                   </h4>
                   <span className="text-xs text-muted-foreground">
-                    Nhấp vào <strong>"Tích sau khi làm"</strong> để đánh dấu
+                    Nhấp vào <strong>&quot;Tích sau khi làm&quot;</strong> để đánh dấu
                   </span>
                 </div>
 

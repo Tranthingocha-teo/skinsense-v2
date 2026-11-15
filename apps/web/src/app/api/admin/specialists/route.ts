@@ -1,8 +1,22 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+
+interface SpecialistRegistryItem {
+  id?: string;
+  email?: string;
+  name?: string;
+  phone?: string;
+  status?: string;
+  specialty?: string;
+  licenseId?: string;
+  hospital?: string;
+  submittedAt?: string;
+  approvedAt?: string;
+  approvedBy?: string;
+}
 
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -10,7 +24,7 @@ function getSupabaseAdmin() {
   return createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
 }
 
-async function downloadJsonFromStorage<T = any>(supabase: any, path: string): Promise<T | null> {
+async function downloadJsonFromStorage<T = unknown>(supabase: SupabaseClient, path: string): Promise<T | null> {
   try {
     const { data: signData } = await supabase.storage.from("photos").createSignedUrl(path, 60);
     if (signData?.signedUrl) {
@@ -32,7 +46,7 @@ export async function GET() {
     const supabaseAdmin = getSupabaseAdmin();
 
     // 1. Fetch from Supabase Storage registry
-    const storageSpecialists: any[] = (await downloadJsonFromStorage<any[]>(supabaseAdmin, "specialists/specialists_registry.json")) || [];
+    const storageSpecialists: SpecialistRegistryItem[] = (await downloadJsonFromStorage<SpecialistRegistryItem[]>(supabaseAdmin, "specialists/specialists_registry.json")) || [];
 
     // 2. Fetch from Supabase Auth
     const { data, error } = await supabaseAdmin.auth.admin.listUsers();
@@ -109,7 +123,7 @@ export async function PATCH(request: Request) {
 
     // 2. Update Supabase Storage specialists_registry.json
     try {
-      const list = (await downloadJsonFromStorage<any[]>(supabaseAdmin, "specialists/specialists_registry.json")) || [];
+      const list = (await downloadJsonFromStorage<SpecialistRegistryItem[]>(supabaseAdmin, "specialists/specialists_registry.json")) || [];
       if (list.length > 0) {
         const updatedList = list.map((s) => {
           if (s.id === userId || (targetEmail && s.email?.toLowerCase() === targetEmail)) {

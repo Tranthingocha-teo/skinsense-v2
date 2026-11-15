@@ -15,7 +15,7 @@ function getSupabaseAdmin() {
 }
 
 // Persistent master store for routines categorized by 4 roles (Strict Multi-tenant, No Mock Data)
-let ROUTINES_STORE: Record<string, RoleRoutine> = JSON.parse(
+const ROUTINES_STORE: Record<string, RoleRoutine> = JSON.parse(
   JSON.stringify(EMPTY_ROLE_ROUTINES)
 );
 

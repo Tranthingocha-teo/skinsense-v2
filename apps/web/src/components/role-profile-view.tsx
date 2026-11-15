@@ -272,7 +272,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
 
     try {
       setSaving(true);
-      const payload: any = {
+      const payload: Record<string, unknown> = {
         id: userId,
         email,
         role,

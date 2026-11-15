@@ -1,10 +1,57 @@
 import { NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
-import { createClient as createAdminClient } from "@supabase/supabase-js";
-import { isPatientAliasOfHa, filterProductsByTimeOfDay } from "@/lib/prescription-sync";
+import { createClient as createAdminClient, type SupabaseClient } from "@supabase/supabase-js";
+import { isPatientAliasOfHa } from "@/lib/prescription-sync";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+
+interface RoutineProductItem {
+  id?: string;
+  name?: string;
+  productName?: string;
+  label?: string;
+  brand?: string;
+  category?: string;
+  imageUrl?: string;
+  activeIngredients?: string;
+  stepTime?: string;
+  dosage?: string;
+  usageGuide?: string;
+}
+
+interface RoutineProtocolRecord {
+  routineTitle?: string;
+  doctorNotes?: string;
+  prescribedBy?: string;
+  products?: RoutineProductItem[];
+}
+
+interface ClinicalCaseEntry {
+  id?: string;
+  userId?: string;
+  patientUserId?: string;
+  alternateUserId?: string;
+  patientEmail?: string;
+  alternateEmail?: string;
+  patientName?: string;
+  currentRoutine?: RoutineProtocolRecord;
+}
+
+interface RoutineStepOutput {
+  id: string;
+  stepNumber: number;
+  label: string;
+  productName: string | null;
+  brand: string | null;
+  category: string | null;
+  imageUrl: string | null;
+  activeIngredients: string | null;
+  stepTime: string;
+  dosage: string | null;
+  usageGuide: string | null;
+  isCompleted: boolean;
+}
 
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -12,7 +59,7 @@ function getSupabaseAdmin() {
   return createAdminClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
 }
 
-async function downloadJsonFromStorage<T = any>(supabase: any, path: string): Promise<T | null> {
+async function downloadJsonFromStorage<T = unknown>(supabase: SupabaseClient, path: string): Promise<T | null> {
   try {
     const { data: signData } = await supabase.storage.from("photos").createSignedUrl(path, 60);
     if (signData?.signedUrl) {
@@ -75,7 +122,7 @@ export async function GET(request: Request) {
 
     const userId = user.id;
     const userEmail = user.email?.trim().toLowerCase() || "";
-    const meta = (user.user_metadata || {}) as Record<string, any>;
+    const meta = (user.user_metadata || {}) as Record<string, string | undefined>;
     const userName = meta.full_name || meta.name || userEmail.split("@")[0];
 
     // 2. Fetch today's completed ticks strictly for THIS USER from routine_entries
@@ -89,11 +136,11 @@ export async function GET(request: Request) {
     const completedSet = new Set<string>(userEntry?.completed_labels || []);
 
     // 3. Find if this user has a personalized clinical prescription from specialist
-    let prescribedRoutine: any = null;
+    let prescribedRoutine: RoutineProtocolRecord | null = null;
     let prescriberName = "BS. CKI Nguyễn Mai Hoa";
 
     // Priority A: Check clinical records registry
-    const registryCases = (await downloadJsonFromStorage<any[]>(supabaseAdmin, "clinical_records/cases_registry.json")) || [];
+    const registryCases = (await downloadJsonFromStorage<ClinicalCaseEntry[]>(supabaseAdmin, "clinical_records/cases_registry.json")) || [];
     
     const userRole = meta.role || (userEmail === "hattn.23itb@vku.udn.vn" ? "admin" : "customer");
     const isDoctor = userRole === "specialist" || userEmail.includes("doctor") || userEmail.includes("bacsi") || userEmail.includes("lananh");
@@ -119,14 +166,15 @@ export async function GET(request: Request) {
     }) : null;
 
     if (matchedCase?.currentRoutine && Array.isArray(matchedCase.currentRoutine.products) && matchedCase.currentRoutine.products.length > 0) {
+      const matchedProducts = matchedCase.currentRoutine.products;
       prescribedRoutine = matchedCase.currentRoutine;
       if (prescribedRoutine.prescribedBy) prescriberName = prescribedRoutine.prescribedBy;
 
       // Sync Postgres routine_items for THIS USER so that direct client queries are also updated
       try {
         await supabaseAdmin.from("routine_items").delete().eq("user_id", userId);
-        for (let i = 0; i < prescribedRoutine.products.length; i++) {
-          const p = prescribedRoutine.products[i];
+        for (let i = 0; i < matchedProducts.length; i++) {
+          const p = matchedProducts[i];
           await supabaseAdmin.from("routine_items").insert({
             user_id: userId,
             label: p.name || p.label || p.productName,
@@ -138,14 +186,14 @@ export async function GET(request: Request) {
 
     // Priority B: Check user-specific protocol in storage (chỉ dành cho tài khoản bệnh nhân)
     if (!prescribedRoutine && isPatientUser) {
-      const userProtocol = await downloadJsonFromStorage<any>(supabaseAdmin, `routines/protocol_${userId}.json`);
+      const userProtocol = await downloadJsonFromStorage<RoutineProtocolRecord>(supabaseAdmin, `routines/protocol_${userId}.json`);
       if (userProtocol?.products && Array.isArray(userProtocol.products) && userProtocol.products.length > 0) {
         prescribedRoutine = userProtocol;
         if (userProtocol.prescribedBy) prescriberName = userProtocol.prescribedBy;
       }
     }
 
-    let finalSteps: any[] = [];
+    let finalSteps: RoutineStepOutput[] = [];
     let routineTitle = "";
     let routineDescription = "";
     let isPrescribed = false;
@@ -155,7 +203,7 @@ export async function GET(request: Request) {
       routineTitle = prescribedRoutine.routineTitle || (timeOfDay === "morning" ? "Phác đồ Điều trị Chuyên khoa (Buổi Sáng)" : "Phác đồ Điều trị Chuyên khoa (Buổi Tối)");
       routineDescription = prescribedRoutine.doctorNotes || "Tuân thủ đều đặn theo phác đồ chỉ định của bác sĩ chuyên khoa da liễu.";
 
-      const allProducts: any[] = prescribedRoutine.products;
+      const allProducts: RoutineProductItem[] = prescribedRoutine.products ?? [];
       // Filter by time of day
       const filtered = allProducts.filter((p) => {
         const time = p.stepTime || "both";
@@ -164,7 +212,7 @@ export async function GET(request: Request) {
       const selectedProducts = filtered.length > 0 ? filtered : allProducts;
 
       finalSteps = selectedProducts.map((p, idx) => {
-        const label = p.name || p.productName || p.label;
+        const label = p.name || p.productName || p.label || `Bước ${idx + 1}`;
         const isCompleted = completedSet.has(label) || (p.productName && completedSet.has(p.productName));
         return {
           id: p.id || `step-${timeOfDay}-${idx}`,
