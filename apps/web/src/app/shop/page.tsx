@@ -931,6 +931,9 @@ export default function ShopProductPage() {
               </div>
             </Link>
 
+            {/* Only a shop (or the admin) has a shop and an approval status to show. */}
+            {(currentUser?.role === "shop" || currentUser?.isSuperAdmin) && (
+            <>
             <span className="hidden h-4 w-px bg-border lg:inline-block" />
 
             <div className="hidden items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary lg:flex">
@@ -953,6 +956,8 @@ export default function ShopProductPage() {
                 </span>
               )}
             </div>
+            </>
+            )}
           </div>
 
           {/* One wrapping row on phones: the toggle takes the first line, the actions share the next. */}
