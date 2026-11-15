@@ -7,14 +7,13 @@ describe("CloudinaryProductUploader", () => {
     vi.restoreAllMocks();
   });
 
-  it("renders file picker and camera buttons without forcing a preset image URL", async () => {
+  it("renders device picker and camera buttons without exposing Cloudinary branding or requiring URLs", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       new Response(
         JSON.stringify({
           ok: true,
           configured: true,
           mode: "signed",
-          cloudName: "skinsense-demo",
         }),
         { status: 200, headers: { "Content-Type": "application/json" } },
       ),
@@ -31,19 +30,18 @@ describe("CloudinaryProductUploader", () => {
     expect(screen.getByText(/Chưa có ảnh sản phẩm/i)).toBeInTheDocument();
 
     await waitFor(() => {
-      expect(screen.getByText(/Cloudinary: skinsense-demo/i)).toBeInTheDocument();
+      expect(screen.queryByText(/cloudinary/i)).not.toBeInTheDocument();
+      expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
     });
   });
 
-  it("shows configuration warning when Cloudinary env vars are not set yet", async () => {
+  it("shows generic unavailable warning without exposing env/Cloudinary details when upload service is not ready", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       new Response(
         JSON.stringify({
           ok: true,
           configured: false,
           mode: "none",
-          cloudName: null,
-          missingKeys: ["CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY"],
         }),
         { status: 200, headers: { "Content-Type": "application/json" } },
       ),
@@ -53,12 +51,14 @@ describe("CloudinaryProductUploader", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText(/Cần điền thông tin Cloudinary trong apps\/web\/\.env\.local/i),
+        screen.getByText(/Dịch vụ tải ảnh tạm thời chưa sẵn sàng/i),
       ).toBeInTheDocument();
     });
+    expect(screen.queryByText(/cloudinary/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/\.env\.local/i)).not.toBeInTheDocument();
   });
 
-  it("uploads device-selected image file to Cloudinary API and adds returned URL", async () => {
+  it("uploads device-selected image file in the background and adds returned URL without Cloudinary badge", async () => {
     const fetchSpy = vi
       .spyOn(globalThis, "fetch")
       .mockResolvedValueOnce(
@@ -67,7 +67,6 @@ describe("CloudinaryProductUploader", () => {
             ok: true,
             configured: true,
             mode: "signed",
-            cloudName: "skinsense-demo",
           }),
           { status: 200, headers: { "Content-Type": "application/json" } },
         ),
@@ -91,7 +90,7 @@ describe("CloudinaryProductUploader", () => {
       />,
     );
 
-    const fileInput = screen.getByTestId("cloudinary-file-input");
+    const fileInput = screen.getByTestId("product-file-input");
     const file = new File(["image-bytes"], "kem-duong.jpg", {
       type: "image/jpeg",
     });
@@ -108,14 +107,13 @@ describe("CloudinaryProductUploader", () => {
     expect(fetchSpy.mock.calls[1][0]).toBe("/api/upload/cloudinary");
   });
 
-  it("allows setting a secondary image as cover and removing images", async () => {
+  it("allows setting a secondary image as cover and removing images without showing Cloudinary badge", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       new Response(
         JSON.stringify({
           ok: true,
           configured: true,
           mode: "signed",
-          cloudName: "skinsense-demo",
         }),
         { status: 200, headers: { "Content-Type": "application/json" } },
       ),
@@ -128,6 +126,8 @@ describe("CloudinaryProductUploader", () => {
       "https://res.cloudinary.com/skinsense-demo/image/upload/v1/second.jpg";
 
     render(<CloudinaryProductUploader images={[img1, img2]} onChange={onChange} />);
+
+    expect(screen.queryByText(/cloudinary/i)).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /Đặt làm ảnh bìa/i }));
     expect(onChange).toHaveBeenCalledWith([img2, img1]);

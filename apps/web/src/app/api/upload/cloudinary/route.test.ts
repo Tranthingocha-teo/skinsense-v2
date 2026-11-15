@@ -25,7 +25,9 @@ describe("/api/upload/cloudinary", () => {
     const json = await res.json();
     expect(json.ok).toBe(true);
     expect(json.configured).toBe(false);
-    expect(json.missingKeys).toContain("CLOUDINARY_CLOUD_NAME");
+    expect(json.mode).toBe("none");
+    expect(json.cloudName).toBeUndefined();
+    expect(json.consoleUrl).toBeUndefined();
   });
 
   it("POST returns 503 CLOUDINARY_NOT_CONFIGURED when env vars are missing", async () => {

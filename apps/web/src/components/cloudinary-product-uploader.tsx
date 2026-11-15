@@ -2,31 +2,20 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  AlertTriangle,
   Camera,
-  CheckCircle2,
-  CloudUpload,
   FolderOpen,
   ImagePlus,
-  Link2,
+  Loader2,
   RefreshCw,
   Star,
   Trash2,
-  AlertTriangle,
   X,
-  ExternalLink,
-  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 
-export const CLOUDINARY_CONSOLE_URL =
-  "https://console.cloudinary.com/app/c-b0b4e93af564efab17bf3e2dccd238/image/home";
-
-interface CloudinaryStatusInfo {
+interface UploadServiceStatus {
   configured: boolean;
-  mode: "signed" | "unsigned" | "none";
-  cloudName: string | null;
-  missingKeys: string[];
-  consoleUrl?: string;
 }
 
 export interface CloudinaryProductUploaderProps {
@@ -47,8 +36,8 @@ export function CloudinaryProductUploader({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  const [cloudinaryStatus, setCloudinaryStatus] =
-    useState<CloudinaryStatusInfo | null>(null);
+  const [uploadStatus, setUploadStatus] =
+    useState<UploadServiceStatus | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgressLabel, setUploadProgressLabel] = useState("");
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -60,33 +49,25 @@ export function CloudinaryProductUploader({
     "environment",
   );
 
-  // Optional external URL drawer (NOT required)
-  const [showUrlDrawer, setShowUrlDrawer] = useState(false);
-  const [manualUrlInput, setManualUrlInput] = useState("");
-
   useEffect(() => {
     onUploadingChange?.(isUploading);
   }, [isUploading, onUploadingChange]);
 
-  // Check Cloudinary server configuration status
+  // Check image upload service readiness silently
   useEffect(() => {
     let cancelled = false;
     fetch("/api/upload/cloudinary", { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
         if (!cancelled && data?.ok) {
-          setCloudinaryStatus({
+          setUploadStatus({
             configured: Boolean(data.configured),
-            mode: data.mode || "none",
-            cloudName: data.cloudName || null,
-            missingKeys: Array.isArray(data.missingKeys) ? data.missingKeys : [],
-            consoleUrl: data.consoleUrl || CLOUDINARY_CONSOLE_URL,
           });
         }
       })
       .catch(() => {
         if (!cancelled) {
-          setCloudinaryStatus(null);
+          setUploadStatus(null);
         }
       });
     return () => {
@@ -146,7 +127,7 @@ export function CloudinaryProductUploader({
             ? err.message
             : "Không thể truy cập camera hoặc bị từ chối quyền.";
         setCameraError(
-          `Không thể mở webcam (${msg}). Bạn có thể bấm "Chụp bằng Camera thiết bị" hoặc chọn ảnh từ máy.`,
+          `Không thể mở webcam (${msg}). Bạn có thể bấm "Mở Camera thiết bị" hoặc chọn ảnh từ máy.`,
         );
         return false;
       }
@@ -157,7 +138,7 @@ export function CloudinaryProductUploader({
   async function uploadSingleFile(file: File | Blob, label?: string) {
     setUploadError(null);
     setIsUploading(true);
-    setUploadProgressLabel(label || "Đang đẩy ảnh lên Cloudinary...");
+    setUploadProgressLabel(label || "Đang tải ảnh lên...");
 
     try {
       const form = new FormData();
@@ -178,7 +159,7 @@ export function CloudinaryProductUploader({
 
       if (!res.ok || !json?.ok || !json?.url) {
         const errMsg =
-          json?.error || "Không thể đẩy ảnh lên Cloudinary. Vui lòng thử lại.";
+          json?.error || "Không thể tải ảnh lên. Vui lòng thử lại.";
         setUploadError(errMsg);
         toast.error(errMsg, { duration: 5000 });
         return null;
@@ -189,7 +170,7 @@ export function CloudinaryProductUploader({
       const errMsg =
         err instanceof Error
           ? err.message
-          : "Lỗi kết nối khi đẩy ảnh lên Cloudinary.";
+          : "Lỗi kết nối khi tải ảnh lên.";
       setUploadError(errMsg);
       toast.error(errMsg);
       return null;
@@ -210,8 +191,8 @@ export function CloudinaryProductUploader({
       const url = await uploadSingleFile(
         f,
         files.length > 1
-          ? `Đang đẩy ảnh ${i + 1}/${files.length} lên Cloudinary...`
-          : `Đang đẩy "${f.name}" lên Cloudinary...`,
+          ? `Đang tải ảnh ${i + 1}/${files.length}...`
+          : `Đang tải "${f.name}"...`,
       );
       if (url) {
         uploadedUrls.push(url);
@@ -220,18 +201,13 @@ export function CloudinaryProductUploader({
 
     if (uploadedUrls.length > 0) {
       onChange([...images, ...uploadedUrls]);
-      toast.success(
-        `Đã đẩy ${uploadedUrls.length} ảnh lên Cloudinary và lấy link về thành công!`,
-      );
+      toast.success(`Đã tải lên ${uploadedUrls.length} ảnh thành công!`);
     }
   }
 
   async function handleOpenCamera() {
     setIsCameraOpen(true);
-    const ok = await startCameraStream(facingMode);
-    if (!ok && mobileCameraInputRef.current) {
-      // Allow user to still see error + click native device camera fallback inside modal
-    }
+    await startCameraStream(facingMode);
   }
 
   async function handleSwitchCamera() {
@@ -262,13 +238,10 @@ export function CloudinaryProductUploader({
     });
 
     if (blob) {
-      const url = await uploadSingleFile(
-        blob,
-        "Đang đẩy ảnh vừa chụp từ Camera lên Cloudinary...",
-      );
+      const url = await uploadSingleFile(blob, "Đang lưu ảnh vừa chụp...");
       if (url) {
         onChange([...images, url]);
-        toast.success("Đã chụp ảnh và đẩy lên Cloudinary thành công!");
+        toast.success("Đã chụp và tải ảnh lên thành công!");
         stopCameraStream();
         setIsCameraOpen(false);
       }
@@ -278,7 +251,7 @@ export function CloudinaryProductUploader({
     // Fallback JSON dataUrl if canvas.toBlob returns null
     const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
     setIsUploading(true);
-    setUploadProgressLabel("Đang đẩy ảnh chụp lên Cloudinary...");
+    setUploadProgressLabel("Đang lưu ảnh chụp...");
     try {
       const res = await fetch("/api/upload/cloudinary", {
         method: "POST",
@@ -290,13 +263,13 @@ export function CloudinaryProductUploader({
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok || !json?.ok || !json?.url) {
-        const msg = json?.error || "Không thể đẩy ảnh chụp lên Cloudinary.";
+        const msg = json?.error || "Không thể lưu ảnh chụp. Vui lòng thử lại.";
         setUploadError(msg);
         toast.error(msg);
         return;
       }
       onChange([...images, String(json.url)]);
-      toast.success("Đã chụp ảnh và đẩy lên Cloudinary thành công!");
+      toast.success("Đã chụp và tải ảnh lên thành công!");
       stopCameraStream();
       setIsCameraOpen(false);
     } finally {
@@ -317,73 +290,21 @@ export function CloudinaryProductUploader({
     onChange(images.filter((_, idx) => idx !== index));
   }
 
-  function handleAddManualUrl() {
-    const trimmed = manualUrlInput.trim();
-    if (!trimmed) return;
-    if (!/^https?:\/\/.+/i.test(trimmed)) {
-      toast.error("Link ảnh phải bắt đầu bằng http:// hoặc https://");
-      return;
-    }
-    onChange([...images, trimmed]);
-    setManualUrlInput("");
-    setShowUrlDrawer(false);
-    toast.success("Đã thêm ảnh vào danh sách sản phẩm.");
-  }
-
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <label className="block font-medium text-foreground">
           Hình Ảnh Sản Phẩm (Tự chọn từ máy hoặc chụp Camera)
         </label>
-
-        {cloudinaryStatus?.configured ? (
-          <a
-            href={cloudinaryStatus.consoleUrl || CLOUDINARY_CONSOLE_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 hover:underline"
-          >
-            <CheckCircle2 className="size-3" />
-            <span>Cloudinary: {cloudinaryStatus.cloudName}</span>
-            <ExternalLink className="size-2.5" />
-          </a>
-        ) : cloudinaryStatus ? (
-          <a
-            href={cloudinaryStatus.consoleUrl || CLOUDINARY_CONSOLE_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2.5 py-0.5 text-[10px] font-semibold text-amber-800 dark:text-amber-300 hover:underline"
-          >
-            <AlertTriangle className="size-3" />
-            <span>Chưa cấu hình khóa Cloudinary (.env.local)</span>
-            <ExternalLink className="size-2.5" />
-          </a>
-        ) : null}
       </div>
 
-      {/* Warning banner if Cloudinary env vars are not set yet */}
-      {cloudinaryStatus && !cloudinaryStatus.configured && (
-        <div className="rounded-xl border border-amber-600/30 bg-amber-500/10 p-3 text-[11px] leading-relaxed text-amber-950 dark:text-amber-200 space-y-1">
-          <div className="font-semibold flex items-center gap-1.5">
-            <AlertTriangle className="size-3.5 text-amber-700 shrink-0" />
-            <span>Cần điền thông tin Cloudinary trong apps/web/.env.local để lưu ảnh thật</span>
-          </div>
-          <p className="text-muted-foreground">
-            Vào{" "}
-            <a
-              href={CLOUDINARY_CONSOLE_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-semibold text-primary underline"
-            >
-              Cloudinary Console
-            </a>{" "}
-            (Settings &rarr; API Keys), lấy <code>CLOUDINARY_CLOUD_NAME</code>,{" "}
-            <code>CLOUDINARY_API_KEY</code>, <code>CLOUDINARY_API_SECRET</code>{" "}
-            (hoặc <code>CLOUDINARY_UPLOAD_PRESET</code>) điền vào{" "}
-            <code>apps/web/.env.local</code>.
-          </p>
+      {/* Warning banner only when server image service is unavailable */}
+      {uploadStatus && !uploadStatus.configured && (
+        <div className="rounded-xl border border-amber-600/30 bg-amber-500/10 p-3 text-[11px] leading-relaxed text-amber-950 dark:text-amber-200 flex items-center gap-2">
+          <AlertTriangle className="size-3.5 text-amber-700 shrink-0" />
+          <span>
+            Dịch vụ tải ảnh tạm thời chưa sẵn sàng. Bạn vẫn có thể lưu sản phẩm và bổ sung ảnh sau.
+          </span>
         </div>
       )}
 
@@ -416,7 +337,7 @@ export function CloudinaryProductUploader({
         type="file"
         accept="image/*"
         multiple
-        data-testid="cloudinary-file-input"
+        data-testid="product-file-input"
         className="hidden"
         onChange={(e) => {
           void handleFilesSelected(e.target.files);
@@ -428,7 +349,7 @@ export function CloudinaryProductUploader({
         type="file"
         accept="image/*"
         capture="environment"
-        data-testid="cloudinary-camera-input"
+        data-testid="product-camera-input"
         className="hidden"
         onChange={(e) => {
           void handleFilesSelected(e.target.files);
@@ -440,7 +361,7 @@ export function CloudinaryProductUploader({
       {isUploading && (
         <div className="flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2.5 text-xs font-medium text-primary">
           <Loader2 className="size-4 animate-spin shrink-0" />
-          <span>{uploadProgressLabel || "Đang đẩy ảnh lên Cloudinary..."}</span>
+          <span>{uploadProgressLabel || "Đang tải ảnh lên..."}</span>
         </div>
       )}
 
@@ -458,7 +379,7 @@ export function CloudinaryProductUploader({
           <div className="flex items-center justify-between">
             <span className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
               <Camera className="size-4 text-emerald-600" />
-              <span>Chụp ảnh sản phẩm gửi lên Cloudinary</span>
+              <span>Chụp ảnh sản phẩm</span>
             </span>
             <button
               type="button"
@@ -522,7 +443,7 @@ export function CloudinaryProductUploader({
                   className="inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-emerald-700 disabled:opacity-50 cursor-pointer"
                 >
                   <Camera className="size-3.5" />
-                  <span>Chụp &amp; Tải lên Cloudinary</span>
+                  <span>Chụp &amp; Tải ảnh lên</span>
                 </button>
               </div>
             </div>
@@ -539,107 +460,57 @@ export function CloudinaryProductUploader({
             </span>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-            {images.map((imgUrl, idx) => {
-              const isCloudinary = imgUrl.includes("res.cloudinary.com");
-              return (
-                <div
-                  key={`${imgUrl}-${idx}`}
-                  className="group relative overflow-hidden rounded-xl border border-border bg-surface-2"
-                >
-                  <div className="aspect-square w-full overflow-hidden">
-                    <img
-                      src={imgUrl}
-                      alt={`Ảnh sản phẩm ${idx + 1}`}
-                      className="size-full object-cover"
-                    />
+            {images.map((imgUrl, idx) => (
+              <div
+                key={`${imgUrl}-${idx}`}
+                className="group relative overflow-hidden rounded-xl border border-border bg-surface-2"
+              >
+                <div className="aspect-square w-full overflow-hidden">
+                  <img
+                    src={imgUrl}
+                    alt={`Ảnh sản phẩm ${idx + 1}`}
+                    className="size-full object-cover"
+                  />
+                </div>
+                {idx === 0 && (
+                  <div className="absolute top-1.5 left-1.5">
+                    <span className="rounded bg-primary px-1.5 py-0.5 text-[9px] font-bold text-primary-foreground shadow-xs">
+                      Ảnh bìa
+                    </span>
                   </div>
-                  <div className="absolute top-1.5 left-1.5 flex flex-col gap-1">
-                    {idx === 0 && (
-                      <span className="rounded bg-primary px-1.5 py-0.5 text-[9px] font-bold text-primary-foreground shadow-xs">
-                        Ảnh bìa
-                      </span>
-                    )}
-                    {isCloudinary && (
-                      <span className="inline-flex items-center gap-0.5 rounded bg-emerald-600/90 px-1.5 py-0.5 text-[9px] font-semibold text-white shadow-xs">
-                        <CloudUpload className="size-2.5" />
-                        <span>Cloudinary</span>
-                      </span>
-                    )}
-                  </div>
+                )}
 
+                <button
+                  type="button"
+                  onClick={() => handleRemoveImage(idx)}
+                  aria-label={`Xóa ảnh ${idx + 1}`}
+                  className="absolute top-1.5 right-1.5 flex size-6 items-center justify-center rounded-full bg-black/65 text-white hover:bg-rose-600 transition cursor-pointer"
+                >
+                  <Trash2 className="size-3" />
+                </button>
+
+                {idx > 0 && (
                   <button
                     type="button"
-                    onClick={() => handleRemoveImage(idx)}
-                    aria-label={`Xóa ảnh ${idx + 1}`}
-                    className="absolute top-1.5 right-1.5 flex size-6 items-center justify-center rounded-full bg-black/65 text-white hover:bg-rose-600 transition cursor-pointer"
+                    onClick={() => handleSetAsCover(idx)}
+                    className="w-full border-t border-border bg-card py-1 text-[10px] font-semibold text-foreground hover:bg-primary/10 hover:text-primary transition flex items-center justify-center gap-1 cursor-pointer"
                   >
-                    <Trash2 className="size-3" />
+                    <Star className="size-2.5" />
+                    <span>Đặt làm ảnh bìa</span>
                   </button>
-
-                  {idx > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => handleSetAsCover(idx)}
-                      className="w-full border-t border-border bg-card py-1 text-[10px] font-semibold text-foreground hover:bg-primary/10 hover:text-primary transition flex items-center justify-center gap-1 cursor-pointer"
-                    >
-                      <Star className="size-2.5" />
-                      <span>Đặt làm ảnh bìa</span>
-                    </button>
-                  )}
-                </div>
-              );
-            })}
+                )}
+              </div>
+            ))}
           </div>
         </div>
       ) : (
         <div className="rounded-xl border border-border bg-surface-2/50 px-3.5 py-3 text-[11px] text-muted-foreground flex items-center gap-2">
           <ImagePlus className="size-4 shrink-0 text-muted-foreground/70" />
           <span>
-            Chưa có ảnh sản phẩm. Bạn có thể chọn ảnh từ máy hoặc chụp từ camera để đẩy lên Cloudinary (không bắt buộc dán link sẵn).
+            Chưa có ảnh sản phẩm. Bạn có thể chọn ảnh từ máy hoặc chụp từ camera (không bắt buộc).
           </span>
         </div>
       )}
-
-      {/* Optional manual URL toggle (non-required) */}
-      <div>
-        <button
-          type="button"
-          onClick={() => setShowUrlDrawer((prev) => !prev)}
-          className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-primary transition cursor-pointer"
-        >
-          <Link2 className="size-3" />
-          <span>
-            {showUrlDrawer
-              ? "Ẩn nhập URL thủ công"
-              : "Hoặc dán link URL ảnh có sẵn (tùy chọn, không bắt buộc)"}
-          </span>
-        </button>
-
-        {showUrlDrawer && (
-          <div className="mt-2 flex gap-2">
-            <input
-              type="url"
-              value={manualUrlInput}
-              onChange={(e) => setManualUrlInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  handleAddManualUrl();
-                }
-              }}
-              placeholder="https://res.cloudinary.com/..."
-              className="min-h-10 flex-1 rounded-xl border border-border bg-background px-3 py-1.5 text-xs text-foreground outline-none focus:border-primary"
-            />
-            <button
-              type="button"
-              onClick={handleAddManualUrl}
-              className="min-h-10 rounded-xl border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20 cursor-pointer"
-            >
-              Thêm link
-            </button>
-          </div>
-        )}
-      </div>
     </div>
   );
 }
