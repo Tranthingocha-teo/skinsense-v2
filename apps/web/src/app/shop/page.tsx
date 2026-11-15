@@ -38,6 +38,8 @@ import {
   canShopSignIn,
   isProductVisibleToBuyer,
   getProductApprovalBadge,
+  matchesShop,
+  filterProductsByShop,
 } from "@/lib/shop-product-approval";
 
 // Shopee Product Variant
@@ -63,6 +65,7 @@ export type ShopeeProductStatus = "active" | "pending" | "approved" | "rejected"
 
 export interface ShopeeProduct {
   id: string;
+  shopName: string;
   sku: string;
   name: string;
   category: string;
@@ -108,6 +111,7 @@ const PRODUCT_FORM_FIELD_CLASS =
 export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
   {
     id: "sp_01",
+    shopName: "La Roche-Posay Official Store",
     sku: "LRP-DUO-PLUS-M-40ML",
     name: "Kem Dưỡng Giảm Mụn & Ngừa Thâm La Roche-Posay Effaclar Duo+M 40ml (Shopee Mall)",
     category: "Chăm sóc da mặt > Kem dưỡng & Trị mụn",
@@ -156,6 +160,7 @@ export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
   },
   {
     id: "sp_02",
+    shopName: "CeraVe Skincare Official",
     sku: "CERAVE-HYDRATING-473ML",
     name: "Sữa Rửa Mặt Dưỡng Ẩm Cho Da Khô CeraVe Hydrating Cleanser 473ml",
     category: "Chăm sóc da mặt > Sữa rửa mặt",
@@ -204,6 +209,7 @@ export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
   },
   {
     id: "sp_03",
+    shopName: "La Roche-Posay Official Store",
     sku: "LRP-HYALU-B5-SERUM-30ML",
     name: "Tinh Chất Phục Hồi & Cấp Nước Đa Tầng La Roche-Posay Hyalu B5 Serum 30ml",
     category: "Chăm sóc da mặt > Serum & Tinh chất",
@@ -252,6 +258,7 @@ export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
   },
   {
     id: "sp_04",
+    shopName: "La Roche-Posay Official Store",
     sku: "LRP-ANTHELIOS-UVMUNE-50ML",
     name: "Kem Chống Nắng Kiểm Soát Dầu 12H La Roche-Posay Anthelios UVMune 400 50ml",
     category: "Chăm sóc da mặt > Kem chống nắng",
@@ -299,6 +306,7 @@ export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
   },
   {
     id: "sp_05",
+    shopName: "La Roche-Posay Official Store",
     sku: "LRP-CICAPLAST-B5-PLUS-40ML",
     name: "Kem Dưỡng Làm Dịu & Phục Hồi Biểu Bì La Roche-Posay Cicaplast Baume B5+ 40ml",
     category: "Chăm sóc da mặt > Kem dưỡng & Trị mụn",
@@ -347,6 +355,7 @@ export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
   },
   {
     id: "sp_06",
+    shopName: "La Roche-Posay Official Store",
     sku: "LRP-MICELLAR-OILY-400ML",
     name: "Nước Tẩy Trang Sạch Sâu Kiềm Dầu La Roche-Posay Effaclar Micellar Water 400ml",
     category: "Chăm sóc da mặt > Nước tẩy trang",
@@ -394,6 +403,7 @@ export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
   },
   {
     id: "sp_07",
+    shopName: "SkinCeuticals Vietnam Flagship",
     sku: "SKINCEUT-B5-GEL-30ML",
     name: "Serum Cấp Nước Phục Hồi Chuyên Sâu SkinCeuticals Hydrating B5 Gel 30ml",
     category: "Chăm sóc da mặt > Serum & Tinh chất",
@@ -441,6 +451,7 @@ export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
   },
   {
     id: "sp_08",
+    shopName: "Obagi Medical Vietnam Flagship",
     sku: "OBAGI-CLENZIDERM-148ML",
     name: "Dung Dịch Giảm Bã Nhờn & Mụn Obagi Medical Clenziderm MD Pore Therapy 148ml",
     category: "Chăm sóc da mặt > Kem dưỡng & Trị mụn",
@@ -488,6 +499,7 @@ export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
   },
   {
     id: "sp_09",
+    shopName: "Glenmark Pharma Store",
     sku: "KLENZIT-MS-15G",
     name: "Gel Giảm Mụn Ẩn & Gom Cồi Nhanh Klenzit-MS Adapalene 0.1% 15g",
     category: "Chăm sóc da mặt > Kem dưỡng & Trị mụn",
@@ -594,6 +606,7 @@ export default function ShopProductPage() {
               if (!existingNames.has(ap.name.toLowerCase())) {
                 newAdminItems.push({
                   id: ap.id,
+                  shopName: ap.shopName || "SkinSense Flagship",
                   sku: ap.sku || `SKU-${ap.id}`,
                   name: ap.name,
                   category: ap.category || "Chăm sóc da mặt > Kem dưỡng & Trị mụn",
@@ -680,13 +693,48 @@ export default function ShopProductPage() {
   const [formHowToUse, setFormHowToUse] = useState("");
   const [formWeight, setFormWeight] = useState<number>(120);
 
-  // Filtered products list
+  const isSuperAdmin = currentUser?.role === "super_admin" || currentUser?.role === "admin";
+  const isShopUser = currentUser?.role === "shop";
+  const currentShopName =
+    currentUser?.shopDetails?.shopName?.trim() ||
+    (isShopUser ? currentUser?.fullName?.trim() : "") ||
+    "";
+
+  // Super Admin shop inspection filter
+  const [adminShopFilter, setAdminShopFilter] = useState<string>("all");
+
+  // Unique registered & verified shops
+  const availableShops = useMemo(() => {
+    const set = new Set<string>();
+    products.forEach((p) => {
+      if (p.shopName?.trim()) set.add(p.shopName.trim());
+    });
+    if (currentShopName) set.add(currentShopName);
+    return Array.from(set);
+  }, [products, currentShopName]);
+
+  // Seller products strictly filtered to the active shop account
+  const sellerProducts = useMemo(() => {
+    if (isSuperAdmin) {
+      if (adminShopFilter && adminShopFilter !== "all") {
+        return filterProductsByShop(products, adminShopFilter, false);
+      }
+      return products;
+    }
+    if (currentShopName) {
+      return filterProductsByShop(products, currentShopName, false);
+    }
+    return [];
+  }, [products, isSuperAdmin, adminShopFilter, currentShopName]);
+
+  // Filtered products list for Seller Center
   const filteredProducts = useMemo(() => {
-    return products.filter((p) => {
+    return sellerProducts.filter((p) => {
       const matchSearch =
         p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.brand.toLowerCase().includes(searchTerm.toLowerCase());
+        p.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.shopName.toLowerCase().includes(searchTerm.toLowerCase());
       const matchCat = categoryFilter === "all" || p.category.includes(categoryFilter);
       const matchStatus =
         statusFilter === "all"
@@ -696,7 +744,7 @@ export default function ShopProductPage() {
           : p.status === statusFilter;
       return matchSearch && matchCat && matchStatus;
     });
-  }, [products, searchTerm, categoryFilter, statusFilter]);
+  }, [sellerProducts, searchTerm, categoryFilter, statusFilter]);
 
   // Buyer products: strictly only approved or active products!
   const buyerProducts = useMemo(() => {
@@ -740,6 +788,7 @@ export default function ShopProductPage() {
 
     const newShopeeProduct: ShopeeProduct = {
       id: `sp_${Date.now()}`,
+      shopName: currentShopName || formBrand.trim() || "Gian Hàng Đối Tác SkinSense",
       sku: formSku.trim() || `SKU-${Date.now().toString().slice(-6)}`,
       name: formName.trim(),
       category: formCategory,
@@ -798,7 +847,7 @@ export default function ShopProductPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name: newShopeeProduct.name,
-        shopName: currentUser?.shopDetails?.shopName || "Cửa Hàng Đối Tác SkinSense",
+        shopName: newShopeeProduct.shopName,
         price: newShopeeProduct.priceVnd,
         category: newShopeeProduct.category,
         stock: newShopeeProduct.stock,
@@ -806,6 +855,7 @@ export default function ShopProductPage() {
         sku: newShopeeProduct.sku,
         coverImage: newShopeeProduct.coverImage,
         description: newShopeeProduct.description,
+        origin: newShopeeProduct.origin,
       }),
     }).catch(() => {});
 
@@ -1037,7 +1087,7 @@ export default function ShopProductPage() {
                     Sản phẩm đang bán
                   </span>
                   <div className="font-display text-xl font-medium text-foreground sm:text-2xl">
-                    {products.length} <span className="font-sans text-xs font-normal text-muted-foreground">mặt hàng</span>
+                    {sellerProducts.length} <span className="font-sans text-xs font-normal text-muted-foreground">mặt hàng</span>
                   </div>
                 </div>
               </div>
@@ -1051,7 +1101,7 @@ export default function ShopProductPage() {
                     Tổng lượt đã bán
                   </span>
                   <div className="font-display text-xl font-medium text-success sm:text-2xl">
-                    {products.reduce((acc, p) => acc + p.soldCount, 0).toLocaleString()} <span className="font-sans text-xs font-normal text-muted-foreground">đã giao</span>
+                    {sellerProducts.reduce((acc, p) => acc + p.soldCount, 0).toLocaleString()} <span className="font-sans text-xs font-normal text-muted-foreground">đã giao</span>
                   </div>
                 </div>
               </div>
@@ -1088,14 +1138,22 @@ export default function ShopProductPage() {
             {/* Action Bar: Title, Search & "+ Thêm Sản Phẩm Mới" */}
             <div className="flex flex-col justify-between gap-3 border-b border-border pb-4 sm:flex-row sm:items-center">
               <div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <Grid3X3 className="size-5 text-primary" />
                   <h2 className="font-display text-lg font-medium text-foreground sm:text-xl">
                     Danh Mục Sản Phẩm ({filteredProducts.length} mặt hàng)
                   </h2>
+                  {currentShopName && !isSuperAdmin && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
+                      <Store className="size-3" />
+                      <span>{currentShopName}</span>
+                    </span>
+                  )}
                 </div>
                 <p className="mt-0.5 text-sm text-muted-foreground">
-                  Bố cục dạng Khối vừa vặn, gọn gàng, tách biệt các trường thông tin chuẩn sàn Shopee.
+                  {isSuperAdmin
+                    ? "Chế độ Super Admin: Kiểm soát kho hàng thật của từng gian hàng đối tác."
+                    : `Sản phẩm thật của gian hàng ${currentShopName || "bạn"}. Đúng tên shop mới lấy về hiển thị.`}
                 </p>
               </div>
 
@@ -1110,7 +1168,7 @@ export default function ShopProductPage() {
             </div>
 
             {/* Filter and Search Bar */}
-            <div className="flex flex-col justify-between gap-3 rounded-2xl border border-border bg-card p-3 shadow-xs sm:flex-row sm:items-center">
+            <div className="flex flex-col justify-between gap-3 rounded-2xl border border-border bg-card p-3 shadow-xs lg:flex-row lg:items-center">
               <div className="relative flex-1">
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                 <input
@@ -1122,7 +1180,30 @@ export default function ShopProductPage() {
                 />
               </div>
 
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2.5">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+                {/* Super Admin Shop Filter Dropdown */}
+                {isSuperAdmin && (
+                  <div className="flex min-h-11 min-w-0 items-center gap-1.5 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2 text-xs">
+                    <Store className="size-3.5 text-primary" />
+                    <span className="font-semibold text-primary hidden md:inline">Shop:</span>
+                    <select
+                      value={adminShopFilter}
+                      onChange={(e) => setAdminShopFilter(e.target.value)}
+                      className="min-w-0 flex-1 bg-transparent text-xs font-semibold text-foreground focus:outline-none cursor-pointer"
+                    >
+                      <option value="all">Tất cả gian hàng ({products.length} SP)</option>
+                      {availableShops.map((sn) => {
+                        const count = filterProductsByShop(products, sn, false).length;
+                        return (
+                          <option key={sn} value={sn}>
+                            🏪 {sn} ({count} SP)
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+                )}
+
                 <div className="flex min-h-11 min-w-0 items-center gap-1.5 rounded-xl border border-border bg-background px-3 py-2 text-xs">
                   <Filter className="size-3.5 text-muted-foreground" />
                   <select
@@ -1145,17 +1226,50 @@ export default function ShopProductPage() {
                     onChange={(e) => setStatusFilter(e.target.value)}
                     className="min-w-0 flex-1 bg-transparent text-xs font-medium text-foreground focus:outline-none cursor-pointer"
                   >
-                    <option value="all">Tất cả trạng thái ({products.length})</option>
-                    <option value="pending">🟡 Chờ Admin duyệt ({products.filter((p) => p.status === "pending").length})</option>
-                    <option value="active">🟢 Đang bán trên sàn ({products.filter((p) => p.status === "active" || p.status === "approved").length})</option>
-                    <option value="rejected">🔴 Bị từ chối ({products.filter((p) => p.status === "rejected").length})</option>
+                    <option value="all">Tất cả trạng thái ({sellerProducts.length})</option>
+                    <option value="pending">🟡 Chờ Admin duyệt ({sellerProducts.filter((p) => p.status === "pending").length})</option>
+                    <option value="active">🟢 Đang bán trên sàn ({sellerProducts.filter((p) => p.status === "active" || p.status === "approved").length})</option>
+                    <option value="rejected">🔴 Bị từ chối ({sellerProducts.filter((p) => p.status === "rejected").length})</option>
                     <option value="out_of_stock">Tạm hết hàng</option>
                   </select>
                 </div>
               </div>
             </div>
 
-            {/* PRODUCT GRID - 4 CỘT VỪA VẶN, BỎ VẠCH ĐEN, 3 NÚT ĐỒNG NHẤT, BỎ GẠCH DƯỚI */}
+            {/* PRODUCT GRID OR EMPTY STATE */}
+            {sellerProducts.length === 0 ? (
+              <div className="rounded-3xl border border-dashed border-border bg-card/60 p-8 sm:p-12 text-center space-y-4">
+                <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <Store className="size-7" />
+                </div>
+                <div className="space-y-1.5 max-w-md mx-auto">
+                  <h3 className="font-display text-lg font-bold text-foreground">
+                    Gian hàng chưa có sản phẩm thật nào
+                  </h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Hệ thống lọc chính xác theo gian hàng <strong>{currentShopName || "của bạn"}</strong>. Đúng tên shop mới lấy về là sản phẩm thật. Hiện tại gian hàng chưa đăng tải sản phẩm nào.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsAddModalOpen(true)}
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-semibold text-primary-foreground shadow-xs transition hover:bg-primary/90 cursor-pointer"
+                >
+                  <Plus className="size-4" />
+                  <span>+ Đăng Bán Sản Phẩm Thật Cho Gian Hàng</span>
+                </button>
+              </div>
+            ) : filteredProducts.length === 0 ? (
+              <div className="rounded-3xl border border-border bg-card p-8 sm:p-12 text-center space-y-3">
+                <Search className="size-8 mx-auto text-muted-foreground" />
+                <h3 className="text-base font-semibold text-foreground">
+                  Không tìm thấy sản phẩm nào
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Không có sản phẩm nào khớp với bộ lọc hoặc từ khóa tìm kiếm hiện tại của bạn.
+                </p>
+              </div>
+            ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {filteredProducts.map((prod) => {
                 const activeTab = cardActiveTab[prod.id] || "sales";
@@ -1213,8 +1327,9 @@ export default function ShopProductPage() {
                       {/* KHỐI 2: BRAND, SKU, TIÊU ĐỀ & ĐÁNH GIÁ (Sạch sẽ, không bị màu đen che) */}
                       <div className="p-3.5 space-y-2.5">
                         <div className="flex items-center justify-between gap-2 text-[10px] text-muted-foreground">
-                          <span className="max-w-[150px] truncate font-semibold uppercase tracking-wider text-primary">
-                            {prod.brand}
+                          <span className="max-w-[150px] truncate font-semibold uppercase tracking-wider text-primary flex items-center gap-1" title={prod.shopName || prod.brand}>
+                            <Store className="size-2.5 shrink-0" />
+                            <span className="truncate">{prod.shopName || prod.brand}</span>
                           </span>
                           <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
                             {prod.sku}
@@ -1415,6 +1530,7 @@ export default function ShopProductPage() {
                 );
               })}
             </div>
+            )}
           </div>
           )
         )}
@@ -1524,12 +1640,16 @@ export default function ShopProductPage() {
                 <div className="space-y-5 lg:col-span-7">
                   {/* Title & Brand */}
                   <div className="space-y-1.5">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="rounded bg-rose-600 px-2 py-0.5 text-xs font-bold text-white">
                         Mall
                       </span>
                       <span className="rounded bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
                         {selectedProduct.brand} Chính Hãng
+                      </span>
+                      <span className="rounded bg-primary/5 border border-primary/20 px-2 py-0.5 text-xs font-semibold text-primary flex items-center gap-1">
+                        <Store className="size-3" />
+                        <span>Gian hàng: {selectedProduct.shopName || selectedProduct.brand}</span>
                       </span>
                       <span className="font-mono text-xs text-muted-foreground">
                         SKU: {selectedProduct.sku}
@@ -1803,7 +1923,13 @@ export default function ShopProductPage() {
                         </div>
                         <div className="p-3 space-y-1.5 flex-1 flex flex-col justify-between">
                           <div className="space-y-1">
-                            <span className="text-[9px] font-semibold uppercase text-primary line-clamp-1">{bp.brand}</span>
+                            <div className="flex items-center justify-between gap-1 text-[9px]">
+                              <span className="font-semibold uppercase text-primary truncate">{bp.brand}</span>
+                              <span className="text-muted-foreground truncate flex items-center gap-0.5 shrink-0 max-w-[100px]" title={bp.shopName || bp.brand}>
+                                <Store className="size-2.5 shrink-0" />
+                                <span className="truncate">{bp.shopName || bp.brand}</span>
+                              </span>
+                            </div>
                             <h4 className="text-xs font-semibold text-foreground line-clamp-2 leading-snug">{bp.name}</h4>
                           </div>
                           <div className="pt-1 flex items-baseline justify-between">
@@ -1861,6 +1987,13 @@ export default function ShopProductPage() {
                   <span>1. Thông số kỹ thuật & Pháp lý Y tế (Shopee Standards)</span>
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  <div className="rounded-lg bg-surface-2 p-2">
+                    <span className="block text-[10px] text-muted-foreground">Gian hàng sở hữu:</span>
+                    <strong className="text-primary flex items-center gap-1">
+                      <Store className="size-3" />
+                      <span>{inspectingProduct.shopName || inspectingProduct.brand}</span>
+                    </strong>
+                  </div>
                   <div className="rounded-lg bg-surface-2 p-2">
                     <span className="block text-[10px] text-muted-foreground">Thương hiệu & Xuất xứ:</span>
                     <strong className="text-foreground">{inspectingProduct.brand} • {inspectingProduct.origin}</strong>
