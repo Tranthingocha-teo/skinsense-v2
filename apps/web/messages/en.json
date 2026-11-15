@@ -249,7 +249,9 @@
     "downloadAndroid": "Download for Android (APK)",
     "privacyPolicy": "Privacy policy",
     "tryDemo": "Try it, no sign-in needed",
-    "tryDemoShort": "Try the demo"
+    "tryDemoShort": "Try the demo",
+    "authErrorTitle": "Sign-in didn't complete.",
+    "authErrorBody": "Please try again. If it keeps failing, close other SkinSense tabs and sign in again."
   },
   "Capture": {
     "title": "Tonight's photo",
