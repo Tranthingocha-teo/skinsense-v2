@@ -183,6 +183,7 @@ describe("committed migrations", () => {
     it("re-apply cleanly over tables and policies that already exist, replacing the old broad ones", async () => {
       const db = await sellerDb();
       await db.exec(`CREATE POLICY "shops: owner select & update" ON shops FOR ALL TO authenticated USING (true) WITH CHECK (true)`);
+      await db.exec(`CREATE POLICY "shops_update_policy" ON shops FOR UPDATE TO authenticated USING (true)`);
       await db.exec("GRANT ALL ON shops TO authenticated");
       await applyMigration(db, "0006_seller_system");
       const policies = await db.query<{ policyname: string }>("SELECT policyname FROM pg_policies WHERE tablename = 'shops' ORDER BY 1");

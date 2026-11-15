@@ -189,6 +189,23 @@ DROP POLICY IF EXISTS "seller_withdrawals_select" ON "seller_withdrawals";--> st
 DROP POLICY IF EXISTS "seller_withdrawals_insert" ON "seller_withdrawals";--> statement-breakpoint
 DROP POLICY IF EXISTS "seller_withdrawals_update" ON "seller_withdrawals";--> statement-breakpoint
 DROP POLICY IF EXISTS "seller_withdrawals_delete" ON "seller_withdrawals";--> statement-breakpoint
+-- Production's out-of-band names (pg_policies on 2026-11-16).
+DROP POLICY IF EXISTS "shops_select_policy" ON "shops";--> statement-breakpoint
+DROP POLICY IF EXISTS "shops_insert_policy" ON "shops";--> statement-breakpoint
+DROP POLICY IF EXISTS "shops_update_policy" ON "shops";--> statement-breakpoint
+DROP POLICY IF EXISTS "shops_delete_policy" ON "shops";--> statement-breakpoint
+DROP POLICY IF EXISTS "seller_products_select_policy" ON "seller_products";--> statement-breakpoint
+DROP POLICY IF EXISTS "seller_products_insert_policy" ON "seller_products";--> statement-breakpoint
+DROP POLICY IF EXISTS "seller_products_update_policy" ON "seller_products";--> statement-breakpoint
+DROP POLICY IF EXISTS "seller_products_delete_policy" ON "seller_products";--> statement-breakpoint
+DROP POLICY IF EXISTS "seller_orders_select_policy" ON "seller_orders";--> statement-breakpoint
+DROP POLICY IF EXISTS "seller_orders_insert_policy" ON "seller_orders";--> statement-breakpoint
+DROP POLICY IF EXISTS "seller_orders_update_policy" ON "seller_orders";--> statement-breakpoint
+DROP POLICY IF EXISTS "seller_orders_delete_policy" ON "seller_orders";--> statement-breakpoint
+DROP POLICY IF EXISTS "seller_withdrawals_select_policy" ON "seller_withdrawals";--> statement-breakpoint
+DROP POLICY IF EXISTS "seller_withdrawals_insert_policy" ON "seller_withdrawals";--> statement-breakpoint
+DROP POLICY IF EXISTS "seller_withdrawals_update_policy" ON "seller_withdrawals";--> statement-breakpoint
+DROP POLICY IF EXISTS "seller_withdrawals_delete_policy" ON "seller_withdrawals";--> statement-breakpoint
 CREATE POLICY "shops_select" ON "shops" AS PERMISSIVE FOR SELECT TO "anon", "authenticated" USING (status = 'approved' or user_id = (select auth.uid()));--> statement-breakpoint
 CREATE POLICY "shops_insert" ON "shops" AS PERMISSIVE FOR INSERT TO "authenticated" WITH CHECK (user_id = (select auth.uid()) and status = 'pending' and is_official = false and wallet_balance_vnd = 0);--> statement-breakpoint
 CREATE POLICY "shops_update" ON "shops" AS PERMISSIVE FOR UPDATE TO "authenticated" USING (user_id = (select auth.uid())) WITH CHECK (user_id = (select auth.uid()));--> statement-breakpoint
