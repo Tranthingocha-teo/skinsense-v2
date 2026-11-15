@@ -100,14 +100,22 @@ async function readJson<T>(path: string): Promise<T | null> {
 
 /** Removes exactly the entries `isOurs` matches from a JSON array store; leaves the rest untouched. */
 export async function pruneJsonStore(path: string, isOurs: (entry: Record<string, unknown>) => boolean): Promise<void> {
-  const list = await readJson<Array<Record<string, unknown>>>(path);
-  if (!Array.isArray(list)) return;
-  const kept = list.filter((entry) => !isOurs(entry));
-  if (kept.length === list.length) return;
-  const { error } = await admin.storage
-    .from(BUCKET)
-    .upload(path, Buffer.from(JSON.stringify(kept, null, 2)), { upsert: true, contentType: "application/json" });
-  if (error) throw error;
+  // The app writes these stores under its own lock, which this process cannot take. Re-read right
+  // before writing and start over if the store changed meanwhile: writing back a list read before
+  // a concurrent approval undid that approval in a parallel spec.
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const list = await readJson<Array<Record<string, unknown>>>(path);
+    if (!Array.isArray(list)) return;
+    const kept = list.filter((entry) => !isOurs(entry));
+    if (kept.length === list.length) return;
+    const again = await readJson<Array<Record<string, unknown>>>(path);
+    if (JSON.stringify(again) !== JSON.stringify(list)) continue;
+    const { error } = await admin.storage
+      .from(BUCKET)
+      .upload(path, Buffer.from(JSON.stringify(kept, null, 2)), { upsert: true, contentType: "application/json" });
+    if (error) throw error;
+    return;
+  }
 }
 
 export async function readJsonStore(path: string): Promise<Array<Record<string, unknown>>> {

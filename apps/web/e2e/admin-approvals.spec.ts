@@ -62,7 +62,8 @@ async function openUserRow(page: Page, email: string) {
   await page.goto("/admin");
   await page.getByPlaceholder("Tìm tên, email, SĐT, cửa hàng...").fill(email);
   const row = page.getByRole("row").filter({ hasText: email });
-  await expect(row).toHaveCount(1, { timeout: 20_000 });
+  // The list is every auth user; under parallel workers it can take a while.
+  await expect(row).toHaveCount(1, { timeout: 45_000 });
   return row;
 }
 
