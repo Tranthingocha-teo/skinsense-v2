@@ -64,8 +64,8 @@ const ROLE_SETTINGS: Record<RoleType, RoleConfig> = {
     roleBadge: "Khách Hàng Thân Thiết",
     badgeClass: "bg-[#2D5A43]/10 text-[#2D5A43] border-[#2D5A43]/30",
     primaryColor: "#2D5A43",
-    backHref: "/shop",
-    backLabel: "Cửa hàng Shopee",
+    backHref: "/products",
+    backLabel: "Cửa Hàng Mall",
     portalHref: "/user/routine",
     portalLabel: "Xem Phác Đồ Routine",
     icon: User,
@@ -85,7 +85,7 @@ const ROLE_SETTINGS: Record<RoleType, RoleConfig> = {
   shop: {
     role: "shop",
     title: "Hồ Sơ Cửa Hàng (Shop)",
-    roleBadge: "Shopee Mall Flagship",
+    roleBadge: "Mall Flagship",
     badgeClass: "bg-[#C2410C]/10 text-[#C2410C] border-[#C2410C]/30",
     primaryColor: "#C2410C",
     backHref: "/shop",
@@ -343,7 +343,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatOrder, setChatOrder] = useState<UserOrder | null>(null);
   const [activeChatShopId, setActiveChatShopId] = useState<string>("skinsense_mall");
-  const [activeChatShopName, setActiveChatShopName] = useState<string>("Gian Hàng Shopee Mall");
+  const [activeChatShopName, setActiveChatShopName] = useState<string>("Gian Hàng Mall");
   const [chatMessages, setChatMessages] = useState<
     Array<{ id: string; sender: "shop" | "user"; text: string; time: string }>
   >([]);
@@ -651,7 +651,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
 
   // Mở chat với Shop (TÁCH BIỆT THEO TỪNG SHOP)
   async function openChatWithShop(order?: UserOrder) {
-    const sName = order?.shopName || "Shopee Mall Flagship";
+    const sName = order?.shopName || "Mall Flagship";
     let sId = "skinsense_mall";
     const lower = sName.toLowerCase();
     if (lower.includes("roche") || lower.includes("laroche")) sId = "larocheposay";
@@ -835,6 +835,26 @@ export function RoleProfileView({ role }: { role: RoleType }) {
           </div>
 
           <div className="flex items-center gap-2.5">
+            {role === "customer" && (
+              <Link
+                href="/products"
+                className="flex items-center gap-1.5 h-9 rounded-xl border border-[#C2410C]/40 bg-[#C2410C]/10 px-3.5 text-xs font-bold text-[#C2410C] hover:bg-[#C2410C] hover:text-white transition shadow-2xs"
+                title="Khám phá danh sách dược mỹ phẩm chính hãng"
+              >
+                <ShoppingBag className="size-3.5" />
+                <span>Cửa Hàng Mua Sắm</span>
+              </Link>
+            )}
+            {role === "shop" && (
+              <Link
+                href="/shop"
+                className="flex items-center gap-1.5 h-9 rounded-xl border border-[#C2410C]/40 bg-[#C2410C]/10 px-3.5 text-xs font-bold text-[#C2410C] hover:bg-[#C2410C] hover:text-white transition shadow-2xs"
+                title="Xem danh sách quản lý sản phẩm của gian hàng"
+              >
+                <Package className="size-3.5" />
+                <span>Danh Sách Sản Phẩm Shop</span>
+              </Link>
+            )}
             {activeTab === "profile" && (
               <>
                 {!isEditing ? (
@@ -1111,10 +1131,10 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                       <ShoppingBag className="size-12 text-[#D8D4CA] mx-auto stroke-1" />
                       <h4 className="text-sm font-bold text-[#191B19]">Chưa có đơn hàng nào</h4>
                       <p className="text-xs text-[#5C605C] max-w-sm mx-auto">
-                        Bạn chưa có đơn hàng nào trong mục này. Hãy ghé qua cửa hàng Shopee Mall để chọn mua sản phẩm chăm sóc da nhé!
+                        Bạn chưa có đơn hàng nào trong mục này. Hãy ghé qua cửa hàng Mall để chọn mua sản phẩm chăm sóc da nhé!
                       </p>
                       <Link
-                        href="/shop"
+                        href="/products"
                         className="inline-flex items-center gap-1.5 h-9 px-4 rounded-xl bg-[#2D5A43] text-xs font-bold text-white shadow-xs hover:bg-[#214332] transition"
                       >
                         <ShoppingBag className="size-3.5" />
@@ -1148,7 +1168,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                               <div className="flex items-center gap-2.5 font-bold text-[#191B19]">
                                 <div className="flex items-center gap-1.5">
                                   <Store className="size-3.5 text-[#C2410C]" />
-                                  <span>{order.shopName || "Gian Hàng Shopee Mall"}</span>
+                                  <span>{order.shopName || "Gian Hàng Mall"}</span>
                                   <span className="rounded bg-rose-600 px-1.5 py-0.2 text-[9px] text-white font-bold">
                                     Mall
                                   </span>
@@ -1485,7 +1505,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                                     {/* 5. NÚT MUA LẠI / ĐẶT LẠI */}
                                     {(order.status === "delivered" || isCancelled) && (
                                       <Link
-                                        href="/shop"
+                                        href="/products"
                                         className="flex items-center gap-1 h-8.5 px-3.5 rounded-xl border border-[#D8D4CA] bg-[#FAF8F5] text-xs font-bold text-[#191B19] hover:bg-white transition"
                                       >
                                         <span>{isCancelled ? "Đặt Lại Đơn Mới" : "Mua Lại"}</span>

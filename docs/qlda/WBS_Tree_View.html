@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sơ Đồ Cây Phân Rã Công Việc WBS — Nhóm WinX (SkinSense v2)</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    body {
+      background-color: #F8F9FA;
+      padding: 40px 20px;
+      color: #191B19;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .container {
+      max-width: 1200px;
+      width: 100%;
+      background: #FFFFFF;
+      padding: 35px 30px;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border: 1px solid #E5E7EB;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid #E5E7EB;
+    }
+    .header h1 {
+      font-size: 24px;
+      color: #2D5A43;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .header p {
+      font-size: 14px;
+      color: #6B7280;
+    }
+    .legend {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 15px;
+      font-size: 13px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .badge-ha { background: #E0E7FF; color: #3730A3; border: 1px solid #C7D2FE; }
+    .badge-sang { background: #FFEDD5; color: #9A3412; border: 1px solid #FED7AA; }
+    .badge-dung { background: #DCFCE7; color: #166534; border: 1px solid #BBF7D0; }
+
+    /* ROOT NODE */
+    .root-node {
+      background: #2D5A43;
+      color: #FFFFFF;
+      padding: 16px 24px;
+      border-radius: 12px;
+      text-align: center;
+      font-size: 18px;
+      font-weight: bold;
+      max-width: 550px;
+      margin: 0 auto 35px auto;
+      box-shadow: 0 4px 12px rgba(45, 90, 67, 0.25);
+    }
+
+    /* GRID OF 5 BRANCHES */
+    .branches-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 16px;
+    }
+    .branch-card {
+      background: #FAFAFA;
+      border: 1px solid #E5E7EB;
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      position: relative;
+    }
+    .branch-card::before {
+      content: "";
+      position: absolute;
+      top: -15px;
+      left: 50%;
+      width: 2px;
+      height: 15px;
+      background: #D1D5DB;
+    }
+    .branch-header {
+      padding: 10px;
+      border-radius: 8px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 800;
+      line-height: 1.4;
+    }
+    .card-ha .branch-header { background: #EEF2FF; color: #3730A3; border: 1px solid #C7D2FE; }
+    .card-sang .branch-header { background: #FFF7ED; color: #9A3412; border: 1px solid #FED7AA; }
+    .card-dung .branch-header { background: #F0FDF4; color: #166534; border: 1px solid #BBF7D0; }
+
+    .tasks-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .task-item {
+      background: #FFFFFF;
+      border: 1px solid #E5E7EB;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 12px;
+      line-height: 1.4;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+      transition: transform 0.15s ease, border-color 0.15s ease;
+    }
+    .task-item:hover {
+      transform: translateY(-2px);
+      border-color: #9CA3AF;
+    }
+    .task-code {
+      font-family: monospace;
+      font-weight: bold;
+      color: #4B5563;
+      margin-bottom: 2px;
+      display: block;
+    }
+    .task-name {
+      font-weight: 600;
+      color: #111827;
+    }
+
+    .btn-print {
+      margin-top: 25px;
+      padding: 10px 24px;
+      background: #2D5A43;
+      color: #FFFFFF;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.2s;
+    }
+    .btn-print:hover {
+      background: #1E3D2D;
+    }
+
+    @media print {
+      body { background: #FFFFFF; padding: 0; }
+      .container { box-shadow: none; border: none; padding: 10px; }
+      .btn-print { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="header">
+      <h1>Sơ Đồ Cây Phân Rã Công Việc (WBS 100% Rule)</h1>
+      <p>Dự án: <strong>SkinSense v2 (VKU-SPM-SKINSENSE02)</strong> · Nhóm WinX (VKU)</p>
+      <div class="legend">
+        <div class="legend-item"><span class="badge badge-ha">Trần Thị Ngọc Hà (33.3%)</span> CSDL, Cổng Bác sĩ & Super Admin</div>
+        <div class="legend-item"><span class="badge badge-sang">Phan Ánh Sáng (33.3%)</span> Sàn Dược Mỹ phẩm & Kênh Seller</div>
+        <div class="legend-item"><span class="badge badge-dung">Thùy Dung (33.4%)</span> Profile 4 Role, MoMo QR, Đơn mua & QA</div>
+      </div>
+    </div>
+
+    <!-- ROOT -->
+    <div class="root-node">
+      1.0 DỰ ÁN SKINSENSE V2 (NHÓM WINX)
+    </div>
+
+    <!-- 5 BRANCHES -->
+    <div class="branches-grid">
+
+      <!-- NHÁNH 1.1 -->
+      <div class="branch-card card-dung">
+        <div class="branch-header">
+          1.1 Quản Trị Dự Án & Quy Trình SPM<br>
+          <span style="font-size: 11px; font-weight: normal;">(Thùy Dung)</span>
+        </div>
+        <div class="tasks-list">
+          <div class="task-item">
+            <span class="task-code">1.1.1</span>
+            <span class="task-name">Lập Project Charter & Thiết lập GitHub Projects Board</span>
+          </div>
+          <div class="task-item">
+            <span class="task-code">1.1.2</span>
+            <span class="task-name">Thiết kế Cây WBS & Bảng Từ điển WBS 100% Rule</span>
+          </div>
+          <div class="task-item">
+            <span class="task-code">1.1.3</span>
+            <span class="task-name">Quản trị rủi ro & Tổ chức họp Sprint Retrospectives</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- NHÁNH 1.2 -->
+      <div class="branch-card card-ha">
+        <div class="branch-header">
+          1.2 CSDL & Phân Hệ Bác Sĩ / Admin<br>
+          <span style="font-size: 11px; font-weight: normal;">(Ngọc Hà)</span>
+        </div>
+        <div class="tasks-list">
+          <div class="task-item">
+            <span class="task-code">1.2.1</span>
+            <span class="task-name">Thiết kế Schema CSDL Supabase PostgreSQL & RLS</span>
+          </div>
+          <div class="task-item">
+            <span class="task-code">1.2.2</span>
+            <span class="task-name">Cổng Bác sĩ /specialist & Quản lý bệnh án da liễu</span>
+          </div>
+          <div class="task-item">
+            <span class="task-code">1.2.3</span>
+            <span class="task-name">Dashboard Admin /admin duyệt CCHN & Gian hàng</span>
+          </div>
+          <div class="task-item">
+            <span class="task-code">1.2.4</span>
+            <span class="task-name">Chuẩn hóa thanh điều hướng Site Header & Layout</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- NHÁNH 1.3 -->
+      <div class="branch-card card-sang">
+        <div class="branch-header">
+          1.3 Sàn Dược Mỹ Phẩm & Seller 4 Bảng<br>
+          <span style="font-size: 11px; font-weight: normal;">(Ánh Sáng)</span>
+        </div>
+        <div class="tasks-list">
+          <div class="task-item">
+            <span class="task-code">1.3.1</span>
+            <span class="task-name">Sàn Dược Mỹ phẩm /shop & Phân loại biến thể dung tích</span>
+          </div>
+          <div class="task-item">
+            <span class="task-code">1.3.2</span>
+            <span class="task-name">Thiết kế 4 bảng Seller: shops, seller_products...</span>
+          </div>
+          <div class="task-item">
+            <span class="task-code">1.3.3</span>
+            <span class="task-name">Kênh quản trị gian hàng & Đăng bán sản phẩm</span>
+          </div>
+          <div class="task-item">
+            <span class="task-code">1.3.4</span>
+            <span class="task-name">Quản lý đơn bán hàng & Yêu cầu rút tiền doanh thu</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- NHÁNH 1.4 -->
+      <div class="branch-card card-dung">
+        <div class="branch-header">
+          1.4 Profile 4 Role & Đơn Mua Tự Hủy<br>
+          <span style="font-size: 11px; font-weight: normal;">(Thùy Dung)</span>
+        </div>
+        <div class="tasks-list">
+          <div class="task-item">
+            <span class="task-code">1.4.1</span>
+            <span class="task-name">Tách riêng 4 URL Profile độc lập cho từng Role</span>
+          </div>
+          <div class="task-item">
+            <span class="task-code">1.4.2</span>
+            <span class="task-name">Chế độ xem Label & Chỉnh sửa lưu CSDL không thêm cột</span>
+          </div>
+          <div class="task-item">
+            <span class="task-code">1.4.3</span>
+            <span class="task-name">Quản lý đơn mua cá nhân & Cách ly dữ liệu khách hàng</span>
+          </div>
+          <div class="task-item">
+            <span class="task-code">1.4.4</span>
+            <span class="task-name">Gắn ảnh sản phẩm thật & Quy tắc tự hủy đơn sau 3 ngày</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- NHÁNH 1.5 -->
+      <div class="branch-card card-dung">
+        <div class="branch-header">
+          1.5 MoMo QR & Bộ Test Vitest<br>
+          <span style="font-size: 11px; font-weight: normal;">(Thùy Dung)</span>
+        </div>
+        <div class="tasks-list">
+          <div class="task-item">
+            <span class="task-code">1.5.1</span>
+            <span class="task-name">Engine tạo mã MoMo QR Base64 offline tương thích LAN</span>
+          </div>
+          <div class="task-item">
+            <span class="task-code">1.5.2</span>
+            <span class="task-name">Màn hình thanh toán di động /pay-demo thời gian thực</span>
+          </div>
+          <div class="task-item">
+            <span class="task-code">1.5.3</span>
+            <span class="task-name">Bộ kiểm thử tự động Vitest 28 files, 118 unit tests</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <button class="btn-print" onclick="window.print()">
+    🖨️ In hoặc Lưu Sơ Đồ PDF Nền Trắng Sắc Nét
+  </button>
+
+</body>
+</html>

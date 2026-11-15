@@ -54,7 +54,7 @@ export const SHOP_MOMO_PROFILES: Record<string, ShopMoMoProfile> = {
     momoReceiver: "L'OREAL VIETNAM - LA ROCHE-POSAY",
     momoPhone: "0901 234 567",
     momoCode: "MOMO-LRP-MALL",
-    badge: "Shopee Mall Chính Hãng",
+    badge: "Mall Chính Hãng",
     address: "Tòa nhà L'Oreal, Quận 1, TP. Hồ Chí Minh",
   },
   "CeraVe": {
@@ -64,7 +64,7 @@ export const SHOP_MOMO_PROFILES: Record<string, ShopMoMoProfile> = {
     momoReceiver: "CERAVE OFFICIAL STORE VN",
     momoPhone: "0902 345 678",
     momoCode: "MOMO-CERAVE-MALL",
-    badge: "Shopee Mall Chính Hãng",
+    badge: "Mall Chính Hãng",
     address: "Tòa nhà CentrePoint, Quận Phú Nhuận, TP. HCM",
   },
   "Paula's Choice": {
@@ -74,7 +74,7 @@ export const SHOP_MOMO_PROFILES: Record<string, ShopMoMoProfile> = {
     momoReceiver: "PAULA CHOICE VN CO., LTD",
     momoPhone: "0903 456 789",
     momoCode: "MOMO-PAULA-MALL",
-    badge: "Shopee Mall Chính Hãng",
+    badge: "Mall Chính Hãng",
     address: "Phường Thảo Điền, TP. Thủ Đức, TP. HCM",
   },
   "Skin1004": {
@@ -84,7 +84,7 @@ export const SHOP_MOMO_PROFILES: Record<string, ShopMoMoProfile> = {
     momoReceiver: "SKIN1004 VIETNAM STORE",
     momoPhone: "0905 678 901",
     momoCode: "MOMO-SKIN1004-MALL",
-    badge: "Shopee Mall Chính Hãng",
+    badge: "Mall Chính Hãng",
     address: "Phường 2, Quận Tân Bình, TP. HCM",
   },
   "The Ordinary": {
@@ -94,7 +94,7 @@ export const SHOP_MOMO_PROFILES: Record<string, ShopMoMoProfile> = {
     momoReceiver: "DECIEM BEAUTY VIETNAM",
     momoPhone: "0906 789 012",
     momoCode: "MOMO-TO-MALL",
-    badge: "Shopee Mall Chính Hãng",
+    badge: "Mall Chính Hãng",
     address: "Tòa nhà Bitexco, Quận 1, TP. HCM",
   },
   "Anua": {
@@ -104,7 +104,7 @@ export const SHOP_MOMO_PROFILES: Record<string, ShopMoMoProfile> = {
     momoReceiver: "ANUA KOREA & VIETNAM",
     momoPhone: "0907 890 123",
     momoCode: "MOMO-ANUA-MALL",
-    badge: "Shopee Mall Chính Hãng",
+    badge: "Mall Chính Hãng",
     address: "Quận Hoàn Kiếm, Hà Nội",
   },
   "Dear Klairs": {
@@ -114,7 +114,7 @@ export const SHOP_MOMO_PROFILES: Record<string, ShopMoMoProfile> = {
     momoReceiver: "KLAIRS OFFICIAL VIETNAM",
     momoPhone: "0908 901 234",
     momoCode: "MOMO-KLAIRS-MALL",
-    badge: "Shopee Mall Chính Hãng",
+    badge: "Mall Chính Hãng",
     address: "Phường Đa Kao, Quận 1, TP. HCM",
   },
   "COSRX": {
@@ -124,7 +124,7 @@ export const SHOP_MOMO_PROFILES: Record<string, ShopMoMoProfile> = {
     momoReceiver: "COSRX VIETNAM STORE",
     momoPhone: "0909 012 345",
     momoCode: "MOMO-COSRX-MALL",
-    badge: "Shopee Mall Chính Hãng",
+    badge: "Mall Chính Hãng",
     address: "Quận Cầu Giấy, Hà Nội",
   },
   default: {
@@ -134,7 +134,7 @@ export const SHOP_MOMO_PROFILES: Record<string, ShopMoMoProfile> = {
     momoReceiver: "SKINSENSE CLINIC & PHARMACY",
     momoPhone: "0901 888 999",
     momoCode: "MOMO-SKINSENSE-MALL",
-    badge: "Shopee Mall Chính Hãng",
+    badge: "Mall Chính Hãng",
     address: "Tòa nhà Landmark 72, Nam Từ Liêm, Hà Nội",
   },
 };
@@ -521,11 +521,11 @@ function CheckoutInner() {
       <header className="sticky top-0 z-40 border-b border-[#D8D4CA] bg-[#E8E5DE]/95 backdrop-blur-md">
         <div className="mx-auto flex max-w-[1280px] items-center justify-between px-4 py-3.5 sm:px-6">
           <div className="flex items-center gap-3">
-            <Link href="/shop" className="flex items-center gap-2.5 group">
+            <Link href="/products" className="flex items-center gap-2.5 group">
               <LogoMark className="size-8 transition group-hover:scale-105" />
               <div className="flex flex-col">
                 <span className="font-serif text-lg font-bold tracking-tight text-[#191B19] leading-tight">
-                  SkinSense <span className="text-[#C2410C] font-sans text-xs font-bold tracking-wider">SHOPEE MALL</span>
+                  SkinSense <span className="text-[#C2410C] font-sans text-xs font-bold tracking-wider">MALL</span>
                 </span>
                 <span className="text-[11px] font-medium text-[#5C605C]">
                   Thanh Toán Đơn Hàng An Toàn
@@ -544,11 +544,11 @@ function CheckoutInner() {
 
           <div className="flex items-center gap-2">
             <Link
-              href="/shop"
+              href="/products"
               className="flex items-center gap-1.5 rounded-xl border border-[#D8D4CA] bg-[#F6F4EF] px-3.5 py-1.5 text-xs font-semibold text-[#5C605C] hover:text-[#191B19] transition"
             >
               <ArrowLeft className="size-3.5" />
-              <span>Quay lại Shop</span>
+              <span>Quay lại Mua Sắm</span>
             </Link>
           </div>
         </div>
@@ -597,7 +597,7 @@ function CheckoutInner() {
           <div className="border-b border-[#D8D4CA] bg-[#FAF8F5] px-5 py-3.5 sm:px-6 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
               <span className="rounded-md bg-[#C2410C] px-2 py-0.5 text-[11px] font-bold text-white">
-                Shopee Mall
+                Mall
               </span>
               <Store className="size-4 text-[#5C605C]" />
               <span className="font-serif font-bold text-sm text-[#191B19]">
@@ -657,17 +657,11 @@ function CheckoutInner() {
                     className="size-4 rounded border-[#D8D4CA] text-[#C2410C] focus:ring-[#C2410C] cursor-pointer"
                   />
 
-                  {item.image ? (
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className="size-20 rounded-2xl border border-[#D8D4CA] object-cover bg-white shrink-0"
-                    />
-                  ) : (
-                    <div className="flex size-20 shrink-0 items-center justify-center rounded-2xl border border-[#D8D4CA] bg-white px-1 text-center text-[10px] font-medium text-neutral-400">
-                      Chưa có ảnh
-                    </div>
-                  )}
+                  <img
+                    src={item.image || "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=600&auto=format&fit=crop&q=80"}
+                    alt={item.name}
+                    className="size-20 rounded-2xl border border-[#D8D4CA] object-cover bg-white shrink-0"
+                  />
 
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
@@ -788,7 +782,7 @@ function CheckoutInner() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 font-bold text-sm text-[#191B19]">
               <Tag className="size-4.5 text-[#C2410C]" />
-              <span>Shopee Voucher & Khuyến Mãi Shop</span>
+              <span>Voucher & Khuyến Mãi Gian Hàng</span>
             </div>
 
             <span className="text-xs font-semibold text-[#C2410C]">
@@ -837,7 +831,7 @@ function CheckoutInner() {
                   <Coins className="size-4" />
                 </div>
                 <div>
-                  <div className="font-bold text-[#191B19]">Dùng 20.000 Xu Shopee</div>
+                  <div className="font-bold text-[#191B19]">Dùng 20.000 Xu Thưởng</div>
                   <div className="text-[11px] text-[#5C605C]">Giảm trực tiếp 20.000₫</div>
                 </div>
               </div>
@@ -1015,7 +1009,7 @@ function CheckoutInner() {
 
               {useCoins && (
                 <div className="flex justify-between text-amber-700">
-                  <span>Dùng Xu Shopee:</span>
+                  <span>Dùng Xu Thưởng:</span>
                   <span>-{formatMoney(coinsDeduction)}</span>
                 </div>
               )}
@@ -1213,7 +1207,7 @@ function CheckoutInner() {
 
             <div className="space-y-1">
               <span className="rounded-md bg-rose-600 px-2.5 py-0.5 text-xs font-bold text-white">
-                Shopee Mall Chính Hãng
+                Mall Chính Hãng
               </span>
               <h3 className="font-serif text-2xl font-bold text-[#191B19] mt-2">
                 Đặt Hàng Thành Công!
@@ -1225,7 +1219,7 @@ function CheckoutInner() {
 
             <div className="rounded-2xl bg-white border border-[#D8D4CA] p-4 text-xs space-y-2 text-left">
               <div className="flex justify-between">
-                <span className="text-[#5C605C]">Mã vận đơn Shopee:</span>
+                <span className="text-[#5C605C]">Mã vận đơn:</span>
                 <strong className="font-mono text-[#C2410C] text-sm">{orderCode}</strong>
               </div>
               <div className="flex justify-between">
@@ -1260,21 +1254,18 @@ function CheckoutInner() {
 
             <div className="flex flex-col sm:flex-row gap-3">
               <Link
-                href="/shop"
-                className="flex-1 rounded-2xl bg-[#C2410C] py-3 text-xs font-bold text-white shadow-xs hover:bg-[#9A3412] text-center"
+                href="/user/profile"
+                className="flex-1 rounded-2xl bg-[#2D5A43] py-3 text-xs font-bold text-white shadow-xs hover:bg-[#214332] text-center flex items-center justify-center gap-1.5"
               >
-                Tiếp Tục Mua Sắm
+                <Package className="size-4" />
+                <span>Theo Dõi Đơn Hàng</span>
               </Link>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsSuccessModalOpen(false);
-                  router.push("/shop");
-                }}
-                className="flex-1 rounded-2xl border border-[#D8D4CA] bg-white py-3 text-xs font-semibold text-[#191B19] hover:bg-[#FAF8F5]"
+              <Link
+                href="/products"
+                className="flex-1 rounded-2xl border border-[#D8D4CA] bg-white py-3 text-xs font-semibold text-[#191B19] hover:bg-[#FAF8F5] text-center flex items-center justify-center gap-1.5"
               >
-                Về Trang Chủ
-              </button>
+                <span>Tiếp Tục Mua Sắm</span>
+              </Link>
             </div>
           </div>
         </div>
@@ -1361,7 +1352,7 @@ export default function ShopCheckoutPage() {
         <div className="min-h-screen bg-[#E8E5DE] flex items-center justify-center p-6">
           <div className="rounded-2xl border border-[#D8D4CA] bg-white p-6 shadow-sm flex items-center gap-3">
             <span className="size-5 rounded-full border-2 border-[#C2410C] border-t-transparent animate-spin" />
-            <span className="text-sm font-semibold text-[#191B19]">Đang tải trang thanh toán Shopee...</span>
+            <span className="text-sm font-semibold text-[#191B19]">Đang tải trang thanh toán...</span>
           </div>
         </div>
       }

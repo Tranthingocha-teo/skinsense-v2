@@ -69,6 +69,10 @@ let PRODUCTS_STORE: ProductItem[] = [
     status: "approved",
     submittedAt: "2026-11-01",
     stock: 150,
+    coverImage: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=600&auto=format&fit=crop&q=80",
+    images: [
+      "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=600&auto=format&fit=crop&q=80",
+    ],
   },
   {
     id: "prod_02",
@@ -80,6 +84,10 @@ let PRODUCTS_STORE: ProductItem[] = [
     status: "pending",
     submittedAt: "2026-11-08",
     stock: 200,
+    coverImage: "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=600&auto=format&fit=crop&q=80",
+    images: [
+      "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=600&auto=format&fit=crop&q=80",
+    ],
   },
   {
     id: "prod_03",
@@ -91,6 +99,10 @@ let PRODUCTS_STORE: ProductItem[] = [
     status: "pending",
     submittedAt: "2026-11-09",
     stock: 80,
+    coverImage: "https://images.unsplash.com/photo-1567928815117-6b45d2906df9?w=600&auto=format&fit=crop&q=80",
+    images: [
+      "https://images.unsplash.com/photo-1567928815117-6b45d2906df9?w=600&auto=format&fit=crop&q=80",
+    ],
   },
   {
     id: "prod_04",
@@ -102,6 +114,10 @@ let PRODUCTS_STORE: ProductItem[] = [
     status: "approved",
     submittedAt: "2026-10-25",
     stock: 65,
+    coverImage: "https://images.unsplash.com/photo-1617897903246-719242758050?w=600&auto=format&fit=crop&q=80",
+    images: [
+      "https://images.unsplash.com/photo-1617897903246-719242758050?w=600&auto=format&fit=crop&q=80",
+    ],
   },
   {
     id: "prod_05",
@@ -113,6 +129,10 @@ let PRODUCTS_STORE: ProductItem[] = [
     status: "approved",
     submittedAt: "2026-11-05",
     stock: 120,
+    coverImage: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600&auto=format&fit=crop&q=80",
+    images: [
+      "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600&auto=format&fit=crop&q=80",
+    ],
   },
 ];
 
