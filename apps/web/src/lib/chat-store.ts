@@ -28,7 +28,7 @@ const FALLBACK_CHAT_FILE = path.join(os.tmpdir(), ".skinsense-chat-db.json");
 
 function getInitialThreads(): ChatThread[] {
   const formatTime = (d: Date) =>
-    d.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+    d.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Ho_Chi_Minh" });
 
   return [
     {

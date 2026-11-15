@@ -53,43 +53,17 @@ export async function GET() {
       address?: string;
       phone?: string;
     }
+    // Both registries are read in parallel: each read is a round trip to Supabase Storage.
     let specialistRecord: SpecialistRecord | null = null;
-
-    if (url && serviceKey) {
-      try {
-        const adminClient = createAdminClient(url, serviceKey);
-        const { data: signData } = await adminClient.storage
-          .from("photos")
-          .createSignedUrl("specialists/specialists_registry.json", 60);
-        if (signData?.signedUrl) {
-          const res = await fetch(signData.signedUrl + `&_t=${Date.now()}`, { cache: "no-store" });
-          if (res.ok) {
-            const list = (await res.json()) as SpecialistRecord[];
-            specialistRecord = list.find((s) => s.email?.toLowerCase() === email) ?? null;
-          }
-        }
-        if (!specialistRecord) {
-          const { data: fileBlob } = await adminClient.storage
-            .from("photos")
-            .download("specialists/specialists_registry.json");
-          if (fileBlob) {
-            const list = JSON.parse(await fileBlob.text()) as SpecialistRecord[];
-            specialistRecord = list.find((s) => s.email?.toLowerCase() === email) ?? null;
-          }
-        }
-      } catch {}
-    }
-
-    // 3. Check Shop registry from Supabase Storage
     let shopRecord: ShopRecord | null = null;
     if (url && serviceKey) {
-      try {
-        const adminClient = createAdminClient(url, serviceKey);
-        const list = await downloadStorageJson<ShopRecord[]>("shops/shops_registry.json", adminClient);
-        if (Array.isArray(list)) {
-          shopRecord = list.find((s) => s.email?.toLowerCase() === email) ?? null;
-        }
-      } catch {}
+      const adminClient = createAdminClient(url, serviceKey);
+      const [specialists, shops] = await Promise.all([
+        downloadStorageJson<SpecialistRecord[]>("specialists/specialists_registry.json", adminClient).catch(() => null),
+        downloadStorageJson<ShopRecord[]>("shops/shops_registry.json", adminClient).catch(() => null),
+      ]);
+      if (Array.isArray(specialists)) specialistRecord = specialists.find((s) => s.email?.toLowerCase() === email) ?? null;
+      if (Array.isArray(shops)) shopRecord = shops.find((s) => s.email?.toLowerCase() === email) ?? null;
     }
 
     interface AuthUserMetadata {

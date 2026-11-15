@@ -154,7 +154,7 @@ export function SellerWallet({ shop }: { shop: Shop }) {
                       Rút tiền về {req.bankName} ({req.accountNumber.slice(-4)})
                     </div>
                     <div className="text-xs text-muted-foreground pt-0.5">
-                      {req.accountHolder} • {new Date(req.createdAt).toLocaleDateString("vi-VN")}
+                      {req.accountHolder} • {new Date(req.createdAt).toLocaleDateString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" })}
                     </div>
                   </div>
                 </div>

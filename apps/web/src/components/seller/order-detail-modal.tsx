@@ -33,7 +33,7 @@ export function OrderDetailModal({
             </Badge>
           </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
-            Đặt ngày: {new Date(order.createdAt).toLocaleString("vi-VN")}
+            Đặt ngày: {new Date(order.createdAt).toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" })}
           </DialogDescription>
         </DialogHeader>
 

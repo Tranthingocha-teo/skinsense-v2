@@ -170,7 +170,7 @@ export function OrderList({
                   <TableCell className="font-medium">
                     <p className="font-semibold text-xs text-foreground">{order.id}</p>
                     <p className="text-[11px] text-muted-foreground">
-                      {new Date(order.createdAt).toLocaleDateString("vi-VN")}
+                      {new Date(order.createdAt).toLocaleDateString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" })}
                     </p>
                   </TableCell>
                   <TableCell>
