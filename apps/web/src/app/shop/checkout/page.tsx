@@ -719,11 +719,17 @@ function CheckoutInner() {
                     className="size-4 rounded border-[#D8D4CA] text-[#C2410C] focus:ring-[#C2410C] cursor-pointer"
                   />
 
-                  <img
-                    src={item.image || "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=600&auto=format&fit=crop&q=80"}
-                    alt={item.name}
-                    className="size-20 rounded-2xl border border-[#D8D4CA] object-cover bg-white shrink-0"
-                  />
+                  {item.image ? (
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      className="size-20 rounded-2xl border border-[#D8D4CA] object-cover bg-white shrink-0"
+                    />
+                  ) : (
+                    <div className="flex size-20 shrink-0 items-center justify-center rounded-2xl border border-[#D8D4CA] bg-white px-1 text-center text-[10px] font-medium text-neutral-400">
+                      Chưa có ảnh
+                    </div>
+                  )}
 
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">

@@ -19,21 +19,13 @@ import {
   Eye,
   Store,
   BadgeCheck,
-  Plus,
+  User,
 } from "lucide-react";
 import { toast } from "sonner";
 import { LogoMark } from "@/components/site-header";
 import { INITIAL_SHOPEE_PRODUCTS, type ShopeeProduct } from "@/app/shop/page";
 
-const BRANDS = [
-  "Tất cả",
-  "La Roche-Posay",
-  "Bioderma",
-  "CeraVe",
-  "Skin1004",
-  "The Ordinary",
-  "SkinSense Clinic",
-];
+const ALL_BRANDS = "Tất cả";
 
 const SKIN_TYPES = [
   { id: "all", label: "Tất Cả Loại Da" },
@@ -50,37 +42,37 @@ function formatVnd(amount: number): string {
   }).format(amount);
 }
 
+// Sản phẩm chưa có ảnh: hiện ô trống trung thực, không lấy ảnh mẫu thay vào.
+function NoImage() {
+  return (
+    <div className="flex size-full flex-col items-center justify-center gap-1.5 text-[#8C8F8A]">
+      <Package className="size-8 opacity-40" />
+      <span className="text-[11px] font-medium">Chưa có ảnh</span>
+    </div>
+  );
+}
+
 function UserProductsMarketplaceContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryProductId = searchParams.get("productId");
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedBrand, setSelectedBrand] = useState("Tất cả");
+  const [selectedBrand, setSelectedBrand] = useState(ALL_BRANDS);
   const [selectedSkinType, setSelectedSkinType] = useState("all");
   const [sortBy, setSortBy] = useState<"popular" | "price-asc" | "price-desc" | "sales">("popular");
 
-  // Danh sách sản phẩm mua hàng (Approved / Active)
-  const [productsList, setProductsList] = useState<ShopeeProduct[]>(() => {
-    return INITIAL_SHOPEE_PRODUCTS.filter((p) => p.status === "approved" || p.status === "active");
-  });
-
-  // Modal Thêm Sản Phẩm Mới (Sử dụng đúng các trường có sẵn trong database public.products)
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [formName, setFormName] = useState("");
-  const [formBrand, setFormBrand] = useState("La Roche-Posay");
-  const [formCategory, setFormCategory] = useState("Chăm sóc da mặt > Kem dưỡng & Trị mụn");
-  const [formPrice, setFormPrice] = useState<number>(395000);
-  const [formOriginalPrice, setFormOriginalPrice] = useState<number>(495000);
-  const [formImageUrl, setFormImageUrl] = useState("https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=600&auto=format&fit=crop&q=80");
-  const [formStockCount, setFormStockCount] = useState<number>(100);
-  const [formSku, setFormSku] = useState("");
-  const [formVolume, setFormVolume] = useState("40ml");
-  const [formOrigin, setFormOrigin] = useState("Pháp (L'Oréal Vietnam phân phối)");
-  const [formSkinType, setFormSkinType] = useState("Da dầu mụn, da dễ bùng viêm");
-  const [formLicenseNo, setFormLicenseNo] = useState("18294/23/CBMP-QLD");
-  const [formDescription, setFormDescription] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  // Danh sách sản phẩm đang bán (đã duyệt). Thêm sản phẩm thuộc Kênh Người Bán (/seller/products),
+  // không phải trang mua hàng của khách.
+  const productsList = useMemo(
+    () => INITIAL_SHOPEE_PRODUCTS.filter((p) => p.status === "approved" || p.status === "active"),
+    [],
+  );
+  // Bộ lọc thương hiệu lấy từ chính danh sách đang bán, để mỗi nút luôn có sản phẩm.
+  const brands = useMemo(
+    () => [ALL_BRANDS, ...Array.from(new Set(productsList.map((p) => p.brand)))],
+    [productsList],
+  );
 
   // ĐẦU TIÊN Ở TRANG USER SẼ CÓ CÁC SẢN PHẨM (selectedProduct ban đầu là null)
   // Chỉ khi bấm vào nút "Chi Tiết" thì phần chi tiết sản phẩm mới hiển thị ra
@@ -108,97 +100,6 @@ function UserProductsMarketplaceContent() {
     }
   }, [queryProductId, productsList]);
 
-  // Xử lý thêm sản phẩm mới chuẩn các trường database public.products
-  const handleCreateProduct = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formName.trim()) {
-      toast.error("Vui lòng nhập tên sản phẩm.");
-      return;
-    }
-
-    setIsSubmitting(true);
-    const newId = `prod_${Date.now()}`;
-    const generatedSku = formSku.trim() || `SKU-${Date.now().toString().slice(-6)}`;
-    const resolvedImage = formImageUrl.trim() || "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=600&auto=format&fit=crop&q=80";
-
-    const newProd: ShopeeProduct = {
-      id: newId,
-      name: formName.trim(),
-      brand: formBrand.trim(),
-      category: formCategory.trim(),
-      priceVnd: Number(formPrice) || 350000,
-      originalPriceVnd: Number(formOriginalPrice) || Math.round((Number(formPrice) || 350000) * 1.25),
-      discountPercent: Math.max(0, Math.round((((Number(formOriginalPrice) || (Number(formPrice) || 350000) * 1.25) - (Number(formPrice) || 350000)) / (Number(formOriginalPrice) || (Number(formPrice) || 350000) * 1.25)) * 100)),
-      stock: Number(formStockCount) || 100,
-      soldCount: 0,
-      rating: 5.0,
-      reviewCount: 0,
-      sku: generatedSku,
-      coverImage: resolvedImage,
-      images: [resolvedImage],
-      isMall: true,
-      status: "approved",
-      specifications: {
-        volume: formVolume.trim() || "40ml",
-        skinType: formSkinType.trim() || "Mọi loại da",
-        healthMinistryLicense: formLicenseNo.trim() || "18294/23/CBMP-QLD",
-        expiryMonths: 36,
-        packagingWeightGram: 150,
-        actives: "Hoạt chất tiêu chuẩn y tế",
-      },
-      shippingInfo: {
-        shippingFrom: "Quận 1, TP. Hồ Chí Minh",
-        estimatedDelivery: "Giao từ 1 - 2 ngày (Có Hỏa Tốc)",
-        freeshipLabel: "Miễn Phí Vận Chuyển (Freeship Xtra)",
-      },
-      variants: [
-        {
-          id: `var_${Date.now()}`,
-          name: `Tuýp ${formVolume.trim() || "40ml"}`,
-          priceVnd: Number(formPrice) || 350000,
-          originalPriceVnd: Number(formOriginalPrice) || Math.round((Number(formPrice) || 350000) * 1.25),
-          stock: Number(formStockCount) || 100,
-        },
-      ],
-      description: formDescription.trim() || "Sản phẩm dược mỹ phẩm chính hãng 100% đã được kiểm định chất lượng.",
-      origin: formOrigin.trim() || "Pháp",
-      shopName: `${formBrand.trim()} Official Store`,
-    };
-
-    setProductsList((prev) => [newProd, ...prev]);
-
-    try {
-      await fetch("/api/admin/products", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: newProd.name,
-          brand: newProd.brand,
-          category: newProd.category,
-          price: newProd.priceVnd,
-          original_price: newProd.originalPriceVnd,
-          stock: newProd.stock,
-          sku: newProd.sku,
-          coverImage: newProd.coverImage,
-          images: newProd.images,
-          description: newProd.description,
-          origin: newProd.origin,
-          volume: formVolume.trim() || "40ml",
-          skin_type: formSkinType.trim() || "Mọi loại da",
-          license_no: formLicenseNo.trim() || "18294/23/CBMP-QLD",
-        }),
-      });
-    } catch (err) {
-      console.warn("Lỗi đồng bộ sản phẩm:", err);
-    }
-
-    setIsSubmitting(false);
-    setIsAddModalOpen(false);
-    toast.success(`Đã thêm sản phẩm "${newProd.name}" thành công!`);
-    setFormName("");
-    setFormDescription("");
-  };
-
   // Lọc sản phẩm trong danh sách
   const filteredProducts = useMemo(() => {
     return productsList
@@ -209,7 +110,7 @@ function UserProductsMarketplaceContent() {
           p.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
           p.category.toLowerCase().includes(searchTerm.toLowerCase());
 
-        const matchBrand = selectedBrand === "Tất cả" || p.brand.toLowerCase() === selectedBrand.toLowerCase();
+        const matchBrand = selectedBrand === ALL_BRANDS || p.brand === selectedBrand;
 
         const matchSkin =
           selectedSkinType === "all" ||
@@ -246,7 +147,7 @@ function UserProductsMarketplaceContent() {
   // 2. Khi bấm vào "Mua Ngay": Chuyển ngay sang trang thanh toán của khách hàng
   const handleBuyNow = (productId: string, variantIdx: number, qty: number) => {
     toast.success("Đang chuyển sang trang Thanh toán của Khách hàng...");
-    router.push(`/checkout?productId=${productId}&variant=${variantIdx}&quantity=${qty}`);
+    router.push(`/shop/checkout?productId=${encodeURIComponent(productId)}&variant=${variantIdx}&quantity=${qty}`);
   };
 
   const currentVariant = selectedProduct
@@ -260,7 +161,7 @@ function UserProductsMarketplaceContent() {
 
   return (
     <div className="min-h-screen bg-[#F6F4EF] text-[#191B19]">
-      {/* 1. HEADER CHUẨN SHOPEE MALL DÀNH CHO KHÁCH HÀNG (KHÔNG CÓ GIỎ HÀNG, KHÔNG LINK SANG SHOP) */}
+      {/* 1. HEADER DÀNH CHO KHÁCH HÀNG (KHÔNG CÓ GIỎ HÀNG, KHÔNG LINK SANG SHOP) */}
       <header className="sticky top-0 z-40 border-b border-[#D8D4CA] bg-[#E8E5DE]/95 backdrop-blur-md">
         <div className="mx-auto flex max-w-[1360px] items-center justify-between px-4 py-3 sm:px-6">
           {/* Logo & Slogan */}
@@ -321,18 +222,7 @@ function UserProductsMarketplaceContent() {
 
           {/* Actions Người Mua: Thêm Sản Phẩm, Đơn Mua, Profile */}
           <div className="flex items-center gap-2 sm:gap-2.5">
-            {/* Nút Thêm Sản Phẩm Mới (Theo chuẩn các trường Database) */}
-            <button
-              type="button"
-              onClick={() => setIsAddModalOpen(true)}
-              className="flex items-center gap-1.5 rounded-xl bg-[#2D5A43] px-3.5 py-1.5 text-xs font-bold text-white hover:bg-[#214332] transition shadow-2xs cursor-pointer active:scale-95"
-              title="Thêm sản phẩm mới chuẩn các trường database"
-            >
-              <Plus className="size-3.5" />
-              <span>Thêm Sản Phẩm</span>
-            </button>
-
-            {/* Link vào xem đơn hàng của Thùy Dung */}
+            {/* Đơn mua của người đang đăng nhập */}
             <Link
               href="/user/profile"
               className="flex items-center gap-1.5 rounded-xl border border-[#D8D4CA] bg-white px-3.5 py-1.5 text-xs font-bold text-[#191B19] hover:border-[#2D5A43] hover:text-[#2D5A43] transition shadow-2xs"
@@ -342,16 +232,15 @@ function UserProductsMarketplaceContent() {
               <span>Đơn Mua Của Tôi</span>
             </Link>
 
-            {/* Avatar & Tên User */}
+            {/* Tài khoản: hồ sơ dựng từ phiên đăng nhập (lib/profile-from-user.ts) */}
             <Link
               href="/user/profile"
               className="flex items-center gap-1.5 rounded-xl border border-[#D8D4CA] bg-[#FAF8F5] p-1.5 sm:px-2.5 sm:py-1 text-xs font-semibold text-[#191B19] hover:bg-white transition"
-              title="Tài khoản: Thùy Dung"
+              title="Tài khoản của tôi"
+              aria-label="Tài khoản của tôi"
             >
-              <div className="size-6 rounded-full bg-[#2D5A43] text-white flex items-center justify-center text-[10px] font-bold">
-                TD
-              </div>
-              <span className="hidden md:inline font-bold">Thùy Dung</span>
+              <User className="size-4 text-[#2D5A43]" />
+              <span className="hidden md:inline font-bold">Tài khoản</span>
             </Link>
           </div>
         </div>
@@ -385,17 +274,18 @@ function UserProductsMarketplaceContent() {
               <div className="space-y-4 lg:col-span-5">
                 {/* Ảnh bìa chính lớn */}
                 <div className="relative aspect-square w-full overflow-hidden rounded-2xl border border-[#D8D4CA]/80 bg-[#F6F4EF] shadow-2xs">
-                  <Image
-                    src={
-                      selectedProduct.images?.[activeImageIndex] ||
-                      selectedProduct.coverImage ||
-                      "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=800"
-                    }
-                    alt={selectedProduct.name}
-                    fill
-                    className="object-cover"
-                    priority
-                  />
+                  {selectedProduct.images?.[activeImageIndex] || selectedProduct.coverImage ? (
+                    <Image
+                      src={selectedProduct.images?.[activeImageIndex] || selectedProduct.coverImage}
+                      alt={selectedProduct.name}
+                      fill
+                      sizes="(max-width: 1024px) 100vw, 40vw"
+                      className="object-cover"
+                      priority
+                    />
+                  ) : (
+                    <NoImage />
+                  )}
                   {/* Badge Mall đỏ góc trái */}
                   <div className="absolute top-3 left-3 rounded-md bg-[#D0011B] px-2.5 py-1 text-xs font-bold text-white shadow-xs flex items-center gap-1">
                     <BadgeCheck className="size-3.5" />
@@ -412,7 +302,9 @@ function UserProductsMarketplaceContent() {
                   {(selectedProduct.images && selectedProduct.images.length > 0
                     ? selectedProduct.images
                     : [selectedProduct.coverImage]
-                  ).map((imgUrl, i) => (
+                  )
+                    .filter((imgUrl): imgUrl is string => Boolean(imgUrl))
+                    .map((imgUrl, i) => (
                     <button
                       key={i}
                       type="button"
@@ -424,9 +316,10 @@ function UserProductsMarketplaceContent() {
                       }`}
                     >
                       <Image
-                        src={imgUrl || selectedProduct.coverImage}
+                        src={imgUrl}
                         alt={`Ảnh góc ${i + 1}`}
                         fill
+                        sizes="64px"
                         className="object-cover"
                       />
                     </button>
@@ -481,13 +374,13 @@ function UserProductsMarketplaceContent() {
                     <span className="text-[#D8D4CA]">•</span>
                     <div>
                       <strong className="border-b border-[#191B19] text-[#191B19]">
-                        {selectedProduct.reviewCount.toLocaleString()}
+                        {selectedProduct.reviewCount.toLocaleString("vi-VN")}
                       </strong>{" "}
                       <span className="text-[#5C605C]">Đánh Giá</span>
                     </div>
                     <span className="text-[#D8D4CA]">•</span>
                     <div>
-                      <strong className="text-[#191B19]">{selectedProduct.soldCount.toLocaleString()}</strong>{" "}
+                      <strong className="text-[#191B19]">{selectedProduct.soldCount.toLocaleString("vi-VN")}</strong>{" "}
                       <span className="text-[#5C605C]">Đã Bán</span>
                     </div>
                   </div>
@@ -532,7 +425,7 @@ function UserProductsMarketplaceContent() {
                     </div>
                   )}
 
-                  {/* Vận chuyển Shopee */}
+                  {/* Vận chuyển */}
                   <div className="space-y-1.5 rounded-xl border border-[#D8D4CA]/80 bg-[#FAF8F5] p-3 text-xs">
                     <div className="flex items-center gap-1.5 font-bold text-[#2D5A43]">
                       <Truck className="size-4" />
@@ -713,7 +606,7 @@ function UserProductsMarketplaceContent() {
                 <Tag className="size-3.5 text-[#C2410C]" />
                 Thương hiệu:
               </span>
-              {BRANDS.map((brand) => (
+              {brands.map((brand) => (
                 <button
                   key={brand}
                   type="button"
@@ -756,7 +649,7 @@ function UserProductsMarketplaceContent() {
                 <span className="text-[#5C605C] font-medium">Sắp xếp:</span>
                 <select
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as any)}
+                  onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
                   className="h-8 rounded-lg border border-[#D8D4CA] bg-white px-2.5 text-xs font-bold text-[#191B19] focus:outline-none focus:border-[#2D5A43]"
                 >
                   <option value="popular">⭐ Đánh giá cao nhất</option>
@@ -778,14 +671,6 @@ function UserProductsMarketplaceContent() {
                 </span>
               </h2>
 
-              <button
-                type="button"
-                onClick={() => setIsAddModalOpen(true)}
-                className="flex items-center gap-1.5 rounded-xl bg-[#2D5A43] px-3.5 py-1.5 text-xs font-bold text-white hover:bg-[#214332] transition shadow-2xs cursor-pointer active:scale-95"
-              >
-                <Plus className="size-3.5" />
-                <span>+ Thêm Sản Phẩm Mới</span>
-              </button>
             </div>
 
             {filteredProducts.length === 0 ? (
@@ -797,7 +682,7 @@ function UserProductsMarketplaceContent() {
                   type="button"
                   onClick={() => {
                     setSearchTerm("");
-                    setSelectedBrand("Tất cả");
+                    setSelectedBrand(ALL_BRANDS);
                     setSelectedSkinType("all");
                   }}
                   className="px-4 py-2 rounded-xl bg-[#2D5A43] text-white text-xs font-bold hover:bg-[#214332] transition"
@@ -821,14 +706,18 @@ function UserProductsMarketplaceContent() {
                         onClick={() => handleOpenDetail(prod)}
                         className="relative aspect-square w-full overflow-hidden rounded-xl bg-[#F6F4EF] cursor-pointer mb-2.5"
                       >
-                        <Image
-                          src={prod.coverImage || prod.images?.[0] || "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=600"}
-                          alt={prod.name}
-                          fill
-                          className="object-cover transition duration-300 group-hover:scale-105"
-                          sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 20vw"
-                        />
-                        {/* Badge Mall đỏ Shopee */}
+                        {prod.coverImage || prod.images?.[0] ? (
+                          <Image
+                            src={prod.coverImage || prod.images[0]}
+                            alt={prod.name}
+                            fill
+                            className="object-cover transition duration-300 group-hover:scale-105"
+                            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 20vw"
+                          />
+                        ) : (
+                          <NoImage />
+                        )}
+                        {/* Badge Mall */}
                         <span className="absolute top-2 left-2 rounded-md bg-[#D0011B] px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-white shadow-xs">
                           Mall
                         </span>
@@ -858,7 +747,7 @@ function UserProductsMarketplaceContent() {
                             <span className="font-bold ml-0.5">{prod.rating.toFixed(1)}</span>
                           </div>
                           <span>•</span>
-                          <span>Đã bán {prod.soldCount || "1.2k"}</span>
+                          <span>Đã bán {prod.soldCount.toLocaleString("vi-VN")}</span>
                         </div>
 
                         {/* Giá tiền */}
@@ -911,255 +800,6 @@ function UserProductsMarketplaceContent() {
         </>
       )}
 
-      {/* MODAL THÊM SẢN PHẨM MỚI (CHỈ SỬ DỤNG CÁC TRƯỜNG CÓ SẴN TRONG BẢNG PUBLIC.PRODUCTS CỦA DATABASE) */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs overflow-y-auto">
-          <div className="my-8 max-h-[90vh] w-full max-w-2xl space-y-5 overflow-y-auto rounded-3xl border border-[#D8D4CA] bg-white p-6 shadow-2xl">
-            <div className="flex items-start justify-between border-b border-[#D8D4CA] pb-3.5">
-              <div>
-                <span className="rounded bg-rose-600 px-2 py-0.5 text-[10px] font-bold text-white uppercase tracking-wider">
-                  Mall Flagship
-                </span>
-                <h3 className="text-lg font-bold text-[#191B19] mt-1 flex items-center gap-2">
-                  <Plus className="size-5 text-[#2D5A43]" />
-                  <span>Thêm Sản Phẩm Mới Vào Hệ Thống</span>
-                </h3>
-                <p className="text-xs text-[#5C605C]">
-                  Form chuẩn 100% theo các trường có sẵn trong database (Bảng: <code className="font-mono text-[#2D5A43] font-bold">public.products</code>)
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setIsAddModalOpen(false)}
-                className="rounded-full p-1.5 text-[#5C605C] hover:bg-[#FAF8F5] hover:text-[#191B19] transition cursor-pointer"
-              >
-                <X className="size-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateProduct} className="space-y-4 text-xs">
-              {/* NHÓM 1: THÔNG TIN CƠ BẢN */}
-              <div className="space-y-3 rounded-2xl border border-[#D8D4CA] bg-[#FAF8F5] p-4">
-                <span className="font-bold uppercase tracking-wider text-[#2D5A43] text-[11px] block">
-                  1. Thông tin cơ bản (name, brand, category, sku, volume)
-                </span>
-
-                <div>
-                  <label className="mb-1 block font-bold text-[#191B19]">
-                    Tên sản phẩm (<code className="font-mono font-normal">name</code>) <span className="text-rose-600">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formName}
-                    onChange={(e) => setFormName(e.target.value)}
-                    placeholder="VD: Kem Dưỡng Giảm Mụn Phục Hồi Effaclar Duo+M 40ml"
-                    className="w-full h-9 rounded-xl border border-[#D8D4CA] bg-white px-3 text-xs text-[#191B19] focus:border-[#2D5A43] focus:outline-none"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="mb-1 block font-bold text-[#191B19]">
-                      Thương hiệu (<code className="font-mono font-normal">brand</code>) <span className="text-rose-600">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={formBrand}
-                      onChange={(e) => setFormBrand(e.target.value)}
-                      placeholder="VD: La Roche-Posay, CeraVe, Bioderma..."
-                      className="w-full h-9 rounded-xl border border-[#D8D4CA] bg-white px-3 text-xs text-[#191B19] focus:border-[#2D5A43] focus:outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="mb-1 block font-bold text-[#191B19]">
-                      Danh mục (<code className="font-mono font-normal">category</code>) <span className="text-rose-600">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={formCategory}
-                      onChange={(e) => setFormCategory(e.target.value)}
-                      placeholder="VD: Kem dưỡng, Sữa rửa mặt, Serum..."
-                      className="w-full h-9 rounded-xl border border-[#D8D4CA] bg-white px-3 text-xs text-[#191B19] focus:border-[#2D5A43] focus:outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="mb-1 block font-bold text-[#191B19]">
-                      Mã SKU (<code className="font-mono font-normal">sku</code>)
-                    </label>
-                    <input
-                      type="text"
-                      value={formSku}
-                      onChange={(e) => setFormSku(e.target.value)}
-                      placeholder="Để trống sẽ tự sinh mã..."
-                      className="w-full h-9 rounded-xl border border-[#D8D4CA] bg-white px-3 text-xs text-[#191B19] focus:border-[#2D5A43] focus:outline-none font-mono"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="mb-1 block font-bold text-[#191B19]">
-                      Dung tích / Quy cách (<code className="font-mono font-normal">volume</code>)
-                    </label>
-                    <input
-                      type="text"
-                      value={formVolume}
-                      onChange={(e) => setFormVolume(e.target.value)}
-                      placeholder="VD: 40ml, 50ml, 100ml..."
-                      className="w-full h-9 rounded-xl border border-[#D8D4CA] bg-white px-3 text-xs text-[#191B19] focus:border-[#2D5A43] focus:outline-none"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* NHÓM 2: GIÁ & TỒN KHO */}
-              <div className="space-y-3 rounded-2xl border border-[#D8D4CA] bg-[#FAF8F5] p-4">
-                <span className="font-bold uppercase tracking-wider text-[#2D5A43] text-[11px] block">
-                  2. Giá bán & Tồn kho (price, original_price, stock_count)
-                </span>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div>
-                    <label className="mb-1 block font-bold text-[#191B19]">
-                      Giá bán VNĐ (<code className="font-mono font-normal">price</code>) <span className="text-rose-600">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      required
-                      value={formPrice}
-                      onChange={(e) => setFormPrice(Number(e.target.value))}
-                      className="w-full h-9 rounded-xl border border-[#D8D4CA] bg-white px-3 text-xs text-[#191B19] focus:border-[#2D5A43] focus:outline-none font-mono"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="mb-1 block font-bold text-[#191B19]">
-                      Giá gốc niêm yết (<code className="font-mono font-normal">original_price</code>)
-                    </label>
-                    <input
-                      type="number"
-                      value={formOriginalPrice}
-                      onChange={(e) => setFormOriginalPrice(Number(e.target.value))}
-                      className="w-full h-9 rounded-xl border border-[#D8D4CA] bg-white px-3 text-xs text-[#191B19] focus:border-[#2D5A43] focus:outline-none font-mono"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="mb-1 block font-bold text-[#191B19]">
-                      Tồn kho (<code className="font-mono font-normal">stock_count</code>)
-                    </label>
-                    <input
-                      type="number"
-                      value={formStockCount}
-                      onChange={(e) => setFormStockCount(Number(e.target.value))}
-                      className="w-full h-9 rounded-xl border border-[#D8D4CA] bg-white px-3 text-xs text-[#191B19] focus:border-[#2D5A43] focus:outline-none font-mono"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* NHÓM 3: HÌNH ẢNH & THÔNG SỐ PHÁP LÝ */}
-              <div className="space-y-3 rounded-2xl border border-[#D8D4CA] bg-[#FAF8F5] p-4">
-                <span className="font-bold uppercase tracking-wider text-[#2D5A43] text-[11px] block">
-                  3. Hình ảnh & Thông số kiểm định (image_url, origin, skin_type, license_no)
-                </span>
-
-                <div>
-                  <label className="mb-1 block font-bold text-[#191B19]">
-                    URL Hình ảnh sản phẩm (<code className="font-mono font-normal">image_url</code>) <span className="text-rose-600">*</span>
-                  </label>
-                  <input
-                    type="url"
-                    required
-                    value={formImageUrl}
-                    onChange={(e) => setFormImageUrl(e.target.value)}
-                    placeholder="https://images.unsplash.com/..."
-                    className="w-full h-9 rounded-xl border border-[#D8D4CA] bg-white px-3 text-xs text-[#191B19] focus:border-[#2D5A43] focus:outline-none font-mono"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div>
-                    <label className="mb-1 block font-bold text-[#191B19]">
-                      Xuất xứ (<code className="font-mono font-normal">origin</code>)
-                    </label>
-                    <input
-                      type="text"
-                      value={formOrigin}
-                      onChange={(e) => setFormOrigin(e.target.value)}
-                      placeholder="VD: Pháp, Mỹ, Hàn Quốc..."
-                      className="w-full h-9 rounded-xl border border-[#D8D4CA] bg-white px-3 text-xs text-[#191B19] focus:border-[#2D5A43] focus:outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="mb-1 block font-bold text-[#191B19]">
-                      Loại da (<code className="font-mono font-normal">skin_type</code>)
-                    </label>
-                    <input
-                      type="text"
-                      value={formSkinType}
-                      onChange={(e) => setFormSkinType(e.target.value)}
-                      placeholder="VD: Da dầu mụn, Da nhạy cảm..."
-                      className="w-full h-9 rounded-xl border border-[#D8D4CA] bg-white px-3 text-xs text-[#191B19] focus:border-[#2D5A43] focus:outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="mb-1 block font-bold text-[#191B19]">
-                      Số công bố Bộ Y Tế (<code className="font-mono font-normal">license_no</code>)
-                    </label>
-                    <input
-                      type="text"
-                      value={formLicenseNo}
-                      onChange={(e) => setFormLicenseNo(e.target.value)}
-                      placeholder="18294/23/CBMP-QLD"
-                      className="w-full h-9 rounded-xl border border-[#D8D4CA] bg-white px-3 text-xs text-[#191B19] focus:border-[#2D5A43] focus:outline-none font-mono"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="mb-1 block font-bold text-[#191B19]">
-                    Mô tả sản phẩm (<code className="font-mono font-normal">description</code>)
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={formDescription}
-                    onChange={(e) => setFormDescription(e.target.value)}
-                    placeholder="Mô tả công dụng, hiệu quả chăm sóc da..."
-                    className="w-full rounded-xl border border-[#D8D4CA] bg-white p-3 text-xs text-[#191B19] focus:border-[#2D5A43] focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              {/* NÚT SUBMIT */}
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#D8D4CA]">
-                <button
-                  type="button"
-                  onClick={() => setIsAddModalOpen(false)}
-                  className="h-10 px-4 rounded-xl border border-[#D8D4CA] bg-white text-xs font-semibold text-[#5C605C] hover:bg-[#FAF8F5] transition cursor-pointer"
-                >
-                  Hủy Bỏ
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="h-10 px-6 rounded-xl bg-[#2D5A43] text-xs font-bold text-white hover:bg-[#214332] shadow-xs transition cursor-pointer active:scale-95 disabled:opacity-50"
-                >
-                  {isSubmitting ? "Đang Thêm..." : "Xác Nhận Thêm Sản Phẩm"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

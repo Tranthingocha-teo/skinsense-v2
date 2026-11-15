@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Store,
@@ -46,23 +45,21 @@ import {
   filterProductsByShop,
 } from "@/lib/shop-product-approval";
 
-const DEFAULT_COSMETIC_IMAGE =
-  "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=600&auto=format&fit=crop&q=80";
-
 function ProductImagePlaceholder({
-  label = "",
+  label = "Chưa có ảnh",
   compact = false,
 }: {
   label?: string;
   compact?: boolean;
 }) {
   return (
-    <div className="relative size-full overflow-hidden bg-surface-2">
-      <img
-        src={DEFAULT_COSMETIC_IMAGE}
-        alt="Sản phẩm Mall"
-        className="size-full object-cover"
-      />
+    <div className="flex size-full flex-col items-center justify-center gap-1.5 bg-surface-2 text-muted-foreground">
+      <Package className={compact ? "size-5 opacity-50" : "size-8 opacity-40"} />
+      {label ? (
+        <span className={compact ? "text-[10px] font-medium" : "text-[11px] font-medium"}>
+          {label}
+        </span>
+      ) : null}
     </div>
   );
 }
@@ -602,7 +599,6 @@ interface AdminProductApiRecord {
 }
 
 export default function ShopProductPage() {
-  const router = useRouter();
   // Page mode: "seller" (Shopee Seller Center) vs "buyer" (Shopee Marketplace Storefront)
   const [viewMode, setViewMode] = useState<"seller" | "buyer">("seller");
 
@@ -612,10 +608,6 @@ export default function ShopProductPage() {
 
   // Products state - Exactly 9 authentic products
   const [products, setProducts] = useState<ShopeeProduct[]>(INITIAL_SHOPEE_PRODUCTS);
-  const [selectedProduct, setSelectedProduct] = useState<ShopeeProduct>(INITIAL_SHOPEE_PRODUCTS[0]);
-  const [selectedVariantIndex, setSelectedVariantIndex] = useState<number>(0);
-  const [buyerQuantity, setBuyerQuantity] = useState<number>(1);
-  const [activeImageIndex, setActiveImageIndex] = useState<number>(0);
 
   // Load session from /api/auth/me
   useEffect(() => {
@@ -664,11 +656,9 @@ export default function ShopProductPage() {
                   ? ap.images.filter((img: unknown): img is string => typeof img === "string" && img.trim().length > 0)
                   : [];
                 const resolvedCover =
-                  (typeof ap.coverImage === "string" && ap.coverImage.trim()) ||
-                  apiImages[0] ||
-                  DEFAULT_COSMETIC_IMAGE;
+                  (typeof ap.coverImage === "string" && ap.coverImage.trim()) || apiImages[0] || "";
                 const resolvedGallery =
-                  apiImages.length > 0 ? apiImages : [resolvedCover];
+                  apiImages.length > 0 ? apiImages : resolvedCover ? [resolvedCover] : [];
 
                 newAdminItems.push({
                   id: ap.id,
@@ -938,7 +928,7 @@ export default function ShopProductPage() {
     }).catch(() => {});
 
     toast.info(
-      `Sản phẩm "${newShopeeProduct.name}" đã được tạo thành công và đang CHỜ SUPER ADMIN TRẦN THỊ NGỌC HÀ PHÊ DUYỆT trước khi mở bán chính thức trên sàn Mall!`,
+      `Sản phẩm "${newShopeeProduct.name}" đã được tạo thành công và đang CHỜ SUPER ADMIN PHÊ DUYỆT trước khi mở bán chính thức trên sàn Mall!`,
       { duration: 6000 }
     );
   }
@@ -1119,14 +1109,13 @@ export default function ShopProductPage() {
                     <span>Làm mới trạng thái</span>
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => setViewMode("buyer")}
+                  <Link
+                    href="/products"
                     className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-xs hover:bg-primary/90 transition cursor-pointer"
                   >
                     <ShoppingBag className="size-3.5" />
                     <span>Chuyển sang Kênh Mua Hàng</span>
-                  </button>
+                  </Link>
                 </div>
               </div>
             ) : (
@@ -1152,14 +1141,13 @@ export default function ShopProductPage() {
                     triggerLabel="🏪 Nộp hồ sơ Mở Gian hàng"
                     triggerClassName="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-amber-600/40 bg-amber-500/10 px-5 py-2 text-xs font-semibold text-amber-800 dark:text-amber-300 hover:border-amber-600 hover:bg-amber-500/20 transition cursor-pointer"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setViewMode("buyer")}
+                  <Link
+                    href="/products"
                     className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-xs font-semibold text-muted-foreground hover:bg-surface-2 hover:text-foreground transition cursor-pointer"
                   >
                     <ShoppingBag className="size-4" />
                     <span>Xem Kênh Mua Hàng</span>
-                  </button>
+                  </Link>
                 </div>
               </div>
             )
@@ -1737,7 +1725,7 @@ export default function ShopProductPage() {
                             )}
                           </div>
                           <span className="text-[10px] text-muted-foreground">
-                            Đã bán {bp.soldCount.toLocaleString()}
+                            Đã bán {bp.soldCount.toLocaleString("vi-VN")}
                           </span>
                         </div>
 
