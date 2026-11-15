@@ -466,7 +466,16 @@ export function RoutineChecklist({ api, embedded = false }: { api: RoutineApi; e
         </div>
 
         {progress}
-        <ul className="flex flex-col pt-1">{rows}</ul>
+        {items.length === 0 ? (
+          <div className="py-6 px-3 text-center rounded-xl border border-dashed border-border bg-surface-2/30 my-2">
+            <p className="text-xs font-semibold text-foreground">Chưa có bước routine nào</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              Chưa có dữ liệu phác đồ (để trống). Nhấn &quot;Sửa&quot; để thêm bước chăm sóc da.
+            </p>
+          </div>
+        ) : (
+          <ul className="flex flex-col pt-1">{rows}</ul>
+        )}
       </div>
     );
   }
@@ -548,7 +557,16 @@ export function RoutineChecklist({ api, embedded = false }: { api: RoutineApi; e
           {progress}
         </div>
 
-        <ul className="flex flex-col rounded-xl border border-foreground/10 bg-card py-2 pr-2 pl-4 sm:pl-5 md:pl-6">{rows}</ul>
+        {items.length === 0 ? (
+          <div className="py-10 px-4 text-center rounded-xl border border-dashed border-foreground/20 bg-card/60 my-2 space-y-1.5">
+            <p className="text-sm font-semibold text-foreground">Chưa có bước routine nào</p>
+            <p className="text-xs text-muted-foreground">
+              Tài khoản này chưa có bước chăm sóc da nào (để trống). Bạn có thể tự thêm bước bên dưới.
+            </p>
+          </div>
+        ) : (
+          <ul className="flex flex-col rounded-xl border border-foreground/10 bg-card py-2 pr-2 pl-4 sm:pl-5 md:pl-6">{rows}</ul>
+        )}
 
         {editing === "new" ? (
           <form

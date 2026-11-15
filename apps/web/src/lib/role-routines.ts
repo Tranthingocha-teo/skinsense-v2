@@ -24,6 +24,49 @@ export interface RoleRoutine {
   steps: RoutineStep[];
 }
 
+export const EMPTY_ROLE_ROUTINES: Record<string, RoleRoutine> = {
+  customer: {
+    role: "customer",
+    title: "Routine Khách Hàng (Dữ liệu thực)",
+    description: "Chưa có bước routine nào được thiết lập cho vai trò này (Để trống, không dùng dữ liệu mẫu).",
+    targetUser: "Chưa phân bổ",
+    allocatedBy: "Hệ thống SkinSense",
+    treatmentDuration: "Chưa thiết lập",
+    skinConcern: "Theo tình trạng da cá nhân",
+    steps: [],
+  },
+  specialist: {
+    role: "specialist",
+    title: "Routine Bác Sĩ Chuyên Khoa (Dữ liệu thực)",
+    description: "Chưa có bước routine nào được thiết lập cho vai trò Bác sĩ (Để trống, không dùng dữ liệu mẫu).",
+    targetUser: "Chưa phân bổ",
+    allocatedBy: "Hệ thống SkinSense",
+    treatmentDuration: "Chưa thiết lập",
+    skinConcern: "Theo tình trạng da cá nhân",
+    steps: [],
+  },
+  shop: {
+    role: "shop",
+    title: "Routine Chủ Cửa Hàng (Dữ liệu thực)",
+    description: "Chưa có bước routine nào được thiết lập cho vai trò Cửa hàng (Để trống, không dùng dữ liệu mẫu).",
+    targetUser: "Chưa phân bổ",
+    allocatedBy: "Hệ thống SkinSense",
+    treatmentDuration: "Chưa thiết lập",
+    skinConcern: "Theo tình trạng da cá nhân",
+    steps: [],
+  },
+  admin: {
+    role: "admin",
+    title: "Routine Ban Quản Trị (Dữ liệu thực)",
+    description: "Chưa có bước routine nào được thiết lập cho vai trò Admin (Để trống, không dùng dữ liệu mẫu).",
+    targetUser: "Chưa phân bổ",
+    allocatedBy: "Hệ thống SkinSense",
+    treatmentDuration: "Chưa thiết lập",
+    skinConcern: "Theo tình trạng da cá nhân",
+    steps: [],
+  },
+};
+
 export const DEFAULT_ROLE_ROUTINES: Record<string, RoleRoutine> = {
   customer: {
     role: "customer",
