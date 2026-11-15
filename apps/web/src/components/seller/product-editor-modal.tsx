@@ -30,17 +30,24 @@ const SKIN_TYPES = [
   { id: "normal", label: "Da thường" },
 ];
 
-export function ProductEditorModal({
-  open,
-  onOpenChange,
-  initialProduct,
-  onSave,
-}: {
+type EditableProduct = Product & { stock?: number };
+
+interface ProductEditorModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  initialProduct?: Product | null;
+  initialProduct?: EditableProduct | null;
   onSave?: (productData: ProductInput) => void;
-}) {
+}
+
+// The form keeps its fields in local state seeded from initialProduct. Keying the
+// inner dialog on (open, product) remounts it on every opening, so Edit always
+// starts from the chosen product's current values and Add starts blank.
+export function ProductEditorModal(props: ProductEditorModalProps) {
+  const key = props.open ? `open:${props.initialProduct?.id ?? "new"}` : "closed";
+  return <ProductEditorDialog key={key} {...props} />;
+}
+
+function ProductEditorDialog({ open, onOpenChange, initialProduct, onSave }: ProductEditorModalProps) {
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -48,9 +55,9 @@ export function ProductEditorModal({
   const [name, setName] = useState(initialProduct?.name || "");
   const [brand, setBrand] = useState(initialProduct?.brand || "");
   const [category, setCategory] = useState(initialProduct?.category || CATEGORIES[0]);
-  const [priceVnd, setPriceVnd] = useState<number>(initialProduct?.priceVnd || 350000);
+  const [priceVnd, setPriceVnd] = useState<number>(initialProduct?.priceVnd ?? 350000);
   const [originalPriceVnd, setOriginalPriceVnd] = useState<number | undefined>(undefined);
-  const [stock, setStock] = useState<number>(50);
+  const [stock, setStock] = useState<number>(initialProduct?.stock ?? 50);
   const [summary, setSummary] = useState(initialProduct?.summary || "");
   const [description, setDescription] = useState(initialProduct?.description || "");
   const [ingredients, setIngredients] = useState(initialProduct?.keyActives?.join(", ") || "");

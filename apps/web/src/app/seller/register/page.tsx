@@ -9,14 +9,17 @@ import { Button } from "@/components/ui/button";
 import { Sparkles, Store, ShieldCheck } from "lucide-react";
 import type { ShopStatus } from "@skinsense/domain";
 
+// The self-approve shortcut is a local testing aid only; it must never ship to production.
+const SHOW_DEV_APPROVE = process.env.NODE_ENV !== "production";
+
 export default function RegisterPage() {
   const router = useRouter();
   const [status, setStatus] = useState<ShopStatus | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
+  // The modal stays open on its own success screen; closing it reveals the pending status card.
   const handleSubmitted = () => {
     setStatus("pending");
-    setModalOpen(false);
   };
 
   const handleDevApprove = () => {
@@ -45,7 +48,7 @@ export default function RegisterPage() {
             onManageShop={() => router.push("/seller/dashboard")}
           />
 
-          {status === "pending" && (
+          {SHOW_DEV_APPROVE && status === "pending" && (
             <Card className="border-border">
               <CardContent className="p-4 flex items-center justify-between">
                 <div className="text-xs text-muted-foreground">
@@ -96,7 +99,7 @@ export default function RegisterPage() {
       <SellerRegistrationModal
         open={modalOpen}
         onOpenChange={setModalOpen}
-        onSubmitted={handleSubmitted}
+        onSuccess={handleSubmitted}
       />
     </div>
   );

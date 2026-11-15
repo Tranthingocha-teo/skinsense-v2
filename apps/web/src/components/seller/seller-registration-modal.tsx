@@ -22,14 +22,26 @@ const CATEGORIES = [
   "Ngành hàng Chăm sóc da khác",
 ];
 
+// Uncontrolled by default (renders its own trigger button). Pass `open` + `onOpenChange`
+// to control it from a page; then no trigger is rendered unless one is given.
 export function SellerRegistrationModal({
   trigger,
   onSuccess,
+  open: controlledOpen,
+  onOpenChange,
 }: {
   trigger?: React.ReactNode;
   onSuccess?: () => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const controlled = controlledOpen !== undefined;
+  const open = controlled ? controlledOpen : uncontrolledOpen;
+  function setOpen(next: boolean) {
+    if (!controlled) setUncontrolledOpen(next);
+    onOpenChange?.(next);
+  }
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -97,14 +109,16 @@ export function SellerRegistrationModal({
 
   return (
     <Dialog open={open} onOpenChange={(val) => { setOpen(val); if (!val) resetForm(); }}>
-      <DialogTrigger asChild>
-        {trigger ?? (
-          <Button className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium">
-            <Store className="size-4" />
-            <span>Đăng ký bán hàng / Supplier</span>
-          </Button>
-        )}
-      </DialogTrigger>
+      {(!controlled || trigger) && (
+        <DialogTrigger asChild>
+          {trigger ?? (
+            <Button className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium">
+              <Store className="size-4" />
+              <span>Đăng ký bán hàng / Supplier</span>
+            </Button>
+          )}
+        </DialogTrigger>
+      )}
       <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2.5 text-xl font-bold">

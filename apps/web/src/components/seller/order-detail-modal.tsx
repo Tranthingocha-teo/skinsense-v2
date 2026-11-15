@@ -46,7 +46,7 @@ export function OrderDetailModal({
             </p>
             <p className="font-semibold text-foreground">{order.customerName} - {order.customerPhone}</p>
             <p className="text-muted-foreground">{order.customerAddress}</p>
-            {order.note && <p className="text-amber-600 italic">Ghi chú: "{order.note}"</p>}
+            {order.note && <p className="text-amber-600 italic">Ghi chú: &ldquo;{order.note}&rdquo;</p>}
           </div>
 
           {/* Purchased Item */}

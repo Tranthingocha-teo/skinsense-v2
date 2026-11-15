@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { ProductList, type ExtendedProduct } from "@/components/seller/product-list";
 import { ProductEditorModal } from "@/components/seller/product-editor-modal";
-import { PRODUCTS, type ProductInput } from "@skinsense/domain";
+import { formatVnd, PRODUCTS, type ProductInput } from "@skinsense/domain";
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<ExtendedProduct[]>(
@@ -37,6 +37,8 @@ export default function ProductsPage() {
                 brand: input.brand,
                 category: input.category,
                 priceVnd: input.priceVnd,
+                priceFormatted: formatVnd(input.priceVnd),
+                imageUrl: input.images?.[0] ?? p.imageUrl,
                 summary: input.summary || p.summary,
                 description: input.description || p.description,
                 howToUse: input.howToUse || p.howToUse,
@@ -53,16 +55,20 @@ export default function ProductsPage() {
         brand: input.brand,
         category: input.category,
         priceVnd: input.priceVnd,
-        priceFormatted: input.priceVnd.toLocaleString("vi-VN") + "₫",
+        priceFormatted: formatVnd(input.priceVnd),
         rating: 5.0,
-        reviewCount: 0,
-        primaryImageUrl: "https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=400&q=80",
+        reviewsCount: 0,
+        imageUrl:
+          input.images?.[0] ?? "https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=400&q=80",
+        affiliateUrl: "",
+        targetZones: [],
+        targetClasses: [],
         summary: input.summary || "",
         description: input.description || "",
         keyActives: input.ingredients ? input.ingredients.split(",").map((s) => s.trim()) : [],
         howToUse: input.howToUse || "",
         caution: input.caution || "",
-        stock: input.stock || 50,
+        stock: input.stock ?? 50,
         status: "active",
       };
       setProducts((prev) => [newProduct, ...prev]);

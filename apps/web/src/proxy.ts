@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { supabaseEnv } from "@/lib/env";
 
 // Refreshes the Supabase session cookie on every request (Server Components
-// can't write cookies) and gates /app behind a session.
+// can't write cookies) and gates /app and /seller behind a session.
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -33,9 +33,9 @@ export async function proxy(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
   const signedIn = !!data?.claims;
 
-  // Gate ONLY /app for unauthenticated visitors:
-  // If not signed in and accessing /app -> redirect to "/"
-  if (pathname.startsWith("/app") && !signedIn) {
+  // Gate /app and /seller for unauthenticated visitors:
+  // If not signed in and accessing either -> redirect to "/"
+  if ((pathname.startsWith("/app") || pathname === "/seller" || pathname.startsWith("/seller/")) && !signedIn) {
     return redirectTo("/");
   }
 

@@ -28,8 +28,15 @@ export function ProductList({
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
-  const [productList, setProductList] = useState<ExtendedProduct[]>(products);
+  // The list is derived from props on every render so products the parent adds or
+  // edits show up; only the local toggles/removals are kept as overlays by id.
+  const [statusOverrides, setStatusOverrides] = useState<Record<string, ExtendedProduct["status"]>>({});
+  const [removedIds, setRemovedIds] = useState<ReadonlySet<string>>(() => new Set());
   const [archiveTarget, setArchiveTarget] = useState<ExtendedProduct | null>(null);
+
+  const productList = products
+    .filter((p) => !removedIds.has(p.id))
+    .map((p) => (p.id in statusOverrides ? { ...p, status: statusOverrides[p.id] } : p));
 
   const categories = Array.from(new Set(productList.map((p) => p.category)));
 
@@ -40,21 +47,15 @@ export function ProductList({
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
-  function toggleStatus(productId: string) {
-    setProductList((prev) =>
-      prev.map((p) => {
-        if (p.id === productId) {
-          const nextStatus = p.status === "active" ? "inactive" : "active";
-          return { ...p, status: nextStatus };
-        }
-        return p;
-      })
-    );
+  function toggleStatus(product: ExtendedProduct) {
+    const current = product.status ?? "active";
+    setStatusOverrides((prev) => ({ ...prev, [product.id]: current === "active" ? "inactive" : "active" }));
   }
 
   function handleConfirmArchive() {
     if (!archiveTarget) return;
-    setProductList((prev) => prev.filter((p) => p.id !== archiveTarget.id));
+    const removedId = archiveTarget.id;
+    setRemovedIds((prev) => new Set(prev).add(removedId));
     if (onArchiveProduct) onArchiveProduct(archiveTarget.id);
     setArchiveTarget(null);
   }
@@ -165,7 +166,7 @@ export function ProductList({
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => toggleStatus(product.id)}
+                          onClick={() => toggleStatus(product)}
                           title={status === "active" ? "Tạm ẩn sản phẩm" : "Hiện sản phẩm"}
                         >
                           {status === "active" ? <ToggleRight className="size-5 text-emerald-600" /> : <ToggleLeft className="size-5 text-muted-foreground" />}

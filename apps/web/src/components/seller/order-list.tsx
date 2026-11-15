@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { formatVnd, type Order, type OrderStatus } from "@skinsense/domain";
+import { formatVnd, validateOrderStatusTransition, type Order, type OrderStatus } from "@skinsense/domain";
 
 const DEMO_ORDERS: Order[] = [
   {
@@ -96,7 +96,9 @@ export function OrderList({
 }) {
   const [activeTab, setActiveTab] = useState<OrderStatus | "all">("all");
   const [search, setSearch] = useState("");
-  const [orderList, setOrderList] = useState<Order[]>(orders);
+  // Derived from props on every render; local confirm/ship actions are an overlay by order id.
+  const [statusOverrides, setStatusOverrides] = useState<Record<string, OrderStatus>>({});
+  const orderList = orders.map((o) => (o.id in statusOverrides ? { ...o, status: statusOverrides[o.id] } : o));
 
   const filtered = orderList.filter((o) => {
     const matchesTab = activeTab === "all" || o.status === activeTab;
@@ -107,12 +109,9 @@ export function OrderList({
     return matchesTab && matchesSearch;
   });
 
-  function handleConfirmOrder(orderId: string) {
-    setOrderList((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: "processing" as const } : o)));
-  }
-
-  function handleShipOrder(orderId: string) {
-    setOrderList((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: "shipping" as const } : o)));
+  function moveOrder(order: Order, next: OrderStatus) {
+    if (!validateOrderStatusTransition(order.status, next).allowed) return;
+    setStatusOverrides((prev) => ({ ...prev, [order.id]: next }));
   }
 
   return (
@@ -224,7 +223,7 @@ export function OrderList({
                       {order.status === "pending" && (
                         <Button
                           size="sm"
-                          onClick={() => handleConfirmOrder(order.id)}
+                          onClick={() => moveOrder(order, "processing")}
                           className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-8 px-2.5"
                         >
                           Xác nhận
@@ -233,7 +232,7 @@ export function OrderList({
                       {order.status === "processing" && (
                         <Button
                           size="sm"
-                          onClick={() => handleShipOrder(order.id)}
+                          onClick={() => moveOrder(order, "shipping")}
                           className="bg-blue-600 hover:bg-blue-700 text-white text-xs h-8 px-2.5 gap-1"
                         >
                           <Send className="size-3" />

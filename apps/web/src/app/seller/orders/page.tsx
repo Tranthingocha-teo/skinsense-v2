@@ -23,7 +23,7 @@ export default function OrdersPage() {
         </p>
       </div>
 
-      <OrderList onSelectOrder={handleSelectOrder} />
+      <OrderList onViewOrderDetail={handleSelectOrder} />
 
       <OrderDetailModal
         order={selectedOrder}
