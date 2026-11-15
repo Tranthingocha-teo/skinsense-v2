@@ -35,7 +35,7 @@ test("photo history → detail → delete removes the storage object, the Photo 
 
   await page.getByRole("button", { name: "Delete photo" }).click();
   const dialog = page.getByRole("alertdialog", { name: "Delete this photo?" });
-  await expect(dialog).toContainText("Deletes the photo, spots and readings");
+  await expect(dialog).toContainText("Deletes the photo, spots, readings, note and tags");
   await dialog.getByRole("button", { name: "Delete photo" }).click();
   await expect(page).toHaveURL("/app/history", { timeout: 30_000 });
   await expect(tile).toHaveCount(0);
