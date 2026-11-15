@@ -1,11 +1,13 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { pointInPolygon } from "./geometry";
+import { pointInPolygon, type Point2D } from "./geometry";
 import {
   assignSpotToZone,
   LEFT_EYE,
   LEFT_EYEBROW,
   LEFT_NOSTRIL,
   ZONE_INDICES,
+  ZONES,
   zonePolygon,
   type Landmark,
 } from "./zones";
@@ -68,6 +70,37 @@ function makeLandmarks(): Landmark[] {
 
   return landmarks;
 }
+
+// Real MediaPipe output: the 468 landmarks detected on the e2e fixture face
+// (apps/web/e2e/fixtures/face.y4m), [x, y] normalised to the 480×640 frame.
+const realLandmarks: Landmark[] = (
+  JSON.parse(readFileSync(new URL("./fixtures/face-landmarks.json", import.meta.url), "utf8")) as [number, number][]
+).map(([x, y]) => ({ x, y, z: 0 }));
+
+function selfCrossings(polygon: { x: number; y: number }[]) {
+  const side = (p: Point2D, q: Point2D, r: Point2D) => Math.sign((q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x));
+  const cross = (a: Point2D, b: Point2D, c: Point2D, d: Point2D) => side(a, b, c) * side(a, b, d) < 0 && side(c, d, a) * side(c, d, b) < 0;
+  let count = 0;
+  for (let i = 0; i < polygon.length; i++) {
+    for (let j = i + 2; j < polygon.length; j++) {
+      if (i === 0 && j === polygon.length - 1) continue; // adjacent through the closing edge
+      if (cross(polygon[i], polygon[i + 1], polygon[j], polygon[(j + 1) % polygon.length])) count++;
+    }
+  }
+  return count;
+}
+
+describe("zonePolygon on a real face", () => {
+  it.each(ZONES)("gives %s a simple (non-self-intersecting) polygon", (zone) => {
+    expect(selfCrossings(zonePolygon(zone, realLandmarks))).toBe(0);
+  });
+
+  it.each(ZONES)("assigns the centre of the %s landmarks to that zone", (zone) => {
+    const points = ZONE_INDICES[zone].map((i) => realLandmarks[i]);
+    const centre = { x: points.reduce((s, p) => s + p.x, 0) / points.length, y: points.reduce((s, p) => s + p.y, 0) / points.length };
+    expect(assignSpotToZone(centre, realLandmarks)).toBe(zone);
+  });
+});
 
 describe("zonePolygon", () => {
   it("recovers a valid polygon for chin from a scrambled seed-point order", () => {

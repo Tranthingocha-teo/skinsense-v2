@@ -13,7 +13,7 @@ export const ZONE_INDICES: Record<Zone, number[]> = {
   rightCheek: [345, 346, 347, 348, 349, 350, 451, 452, 453, 464, 435, 410, 454, 323, 366, 376],
   nose: [1, 2, 5, 4, 6, 19, 20, 94, 125, 141, 235, 236, 237, 238, 239, 240, 241, 242],
   // ponytail: py-feat's `mentalis` seed points aren't a pre-ordered boundary loop
-  // (unlike the zones above) — angle-sorted around the centroid in zonePolygon()
+  // — angle-sorted around the centroid in zonePolygon()
   // below. Thinnest-evidenced zone of the five; upgrade if ticket 09's native
   // adapter verification or real fixture testing (ticket 08) flags it.
   chin: [175, 199, 200, 18, 83, 313, 152, 148, 377],
@@ -68,9 +68,15 @@ function isExcluded(point: Point2D, landmarks: Landmark[]): boolean {
   return false;
 }
 
+// Only the forehead list is a boundary loop. The cheek and nose lists cross
+// themselves on a real face (nose: 17 crossings on the e2e fixture, so even-odd
+// ray casting left most of the nose outside every zone), so they are
+// angle-sorted like chin's seed set; zones.test.ts checks every zone is simple.
+const BOUNDARY_ORDERED: ReadonlySet<Zone> = new Set(["forehead"]);
+
 export function zonePolygon(zone: Zone, landmarks: Landmark[]): Point2D[] {
   const points = toPoints(ZONE_INDICES[zone], landmarks);
-  return zone === "chin" ? sortPointsByAngleAroundCentroid(points) : points;
+  return BOUNDARY_ORDERED.has(zone) ? points : sortPointsByAngleAroundCentroid(points);
 }
 
 // Per ADR 0001: assigns a normalized face-relative point to one of the 5 skin
