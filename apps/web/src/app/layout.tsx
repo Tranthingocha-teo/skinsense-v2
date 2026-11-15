@@ -1,24 +1,18 @@
 import type { Metadata } from "next";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
-import { Manrope, Noto_Serif_Display } from "next/font/google";
+// Self-hosted (npm) instead of next/font/google: the Google Fonts fetch at build time
+// failed intermittently in CI ("next/font/google queries have exactly one entry").
+import "@fontsource-variable/manrope";
+import "@fontsource-variable/noto-serif-display";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
-// DESIGN.md: preload only the display weights (the landing h1 is the LCP text).
-const display = Noto_Serif_Display({
-  variable: "--font-display",
-  subsets: ["latin", "vietnamese"],
-  weight: ["300", "400"],
-});
-
-const body = Manrope({
-  variable: "--font-body",
-  subsets: ["latin", "vietnamese"],
-  weight: ["300", "400", "500", "600"],
-  preload: false,
-});
+const fontVars = {
+  "--font-display": '"Noto Serif Display Variable"',
+  "--font-body": '"Manrope Variable"',
+} as React.CSSProperties;
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("Landing");
@@ -36,7 +30,8 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang={await getLocale()}
-      className={`${display.variable} ${body.variable} h-full antialiased`}
+      className="h-full antialiased"
+      style={fontVars}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
