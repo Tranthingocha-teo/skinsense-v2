@@ -84,7 +84,7 @@ export function resolveProductImage(name: string, fallback?: string): string {
 function readFromDisk(): BackendOrder[] {
   const dbPath = resolveOrdersReadPath();
   try {
-    if (!fs.existsSync(dbPath)) {
+    if (!fs.existsSync(/*turbopackIgnore: true*/ dbPath)) {
       const initial: BackendOrder[] = [
         {
           id: "ORD-9821",
@@ -116,7 +116,7 @@ function readFromDisk(): BackendOrder[] {
       writeToDisk(initial);
       return initial;
     }
-    const content = fs.readFileSync(dbPath, "utf-8");
+    const content = fs.readFileSync(/*turbopackIgnore: true*/ dbPath, "utf-8");
     const list = JSON.parse(content) as BackendOrder[];
 
     // QUY TẮC TỰ ĐỘNG HỦY: Nếu đơn hàng chưa thanh toán sau 3 ngày thì tự động hủy luôn

@@ -172,4 +172,61 @@ describe("RoleProfileView", () => {
 
     expect(await screen.findByText("Viết Đánh Giá")).toBeTruthy();
   });
+
+  it("queries shop orders cleanly and hides Duyệt & Chuẩn Bị Hàng for unpaid MoMo orders", async () => {
+    const unpaidMomoOrder = {
+      ...sampleDeliveredOrder,
+      id: "ORD-MOMO-UNPAID",
+      orderCode: "SHOPEE-MOMO-UNPAID",
+      status: "pending" as const,
+      paymentMethod: "momo" as const,
+      paymentStatus: "unpaid" as const,
+      shopName: "La Roche-Posay Flagship Store",
+    };
+
+    const requestedUrls: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        requestedUrls.push(url);
+        if (url.startsWith("/api/profile")) {
+          return new Response(
+            JSON.stringify({
+              ok: true,
+              user: {
+                id: "shop_lrp",
+                email: "shop@lrp.vn",
+                fullName: "La Roche-Posay Official Flagship Store",
+                phone: "1900 123 456",
+                avatarUrl: "",
+                shop: {
+                  shopName: "La Roche-Posay Official Flagship Store",
+                  address: "HCM",
+                  license: "GP1",
+                  category: "Skincare",
+                },
+              },
+            }),
+            { status: 200 },
+          );
+        }
+        if (url.startsWith("/api/user/orders")) {
+          return new Response(JSON.stringify({ ok: true, orders: [unpaidMomoOrder] }), {
+            status: 200,
+          });
+        }
+        return new Response(JSON.stringify({ ok: false }), { status: 401 });
+      }),
+    );
+
+    render(<RoleProfileView role="shop" />);
+
+    const shopOrdersTab = await screen.findByText(/Quản Lý Đơn Hàng Shop Mall/i);
+    fireEvent.click(shopOrdersTab);
+
+    expect(await screen.findByText("Chờ khách thanh toán")).toBeTruthy();
+    expect(screen.queryByText("Duyệt & Chuẩn Bị Hàng")).toBeNull();
+    expect(requestedUrls.some((u) => u.includes("/api/user/orders?role=shop"))).toBe(true);
+  });
 });

@@ -137,12 +137,12 @@ function getInitialThreads(): ChatThread[] {
 function readThreads(): ChatThread[] {
   const filePath = resolveChatReadPath();
   try {
-    if (!fs.existsSync(filePath)) {
+    if (!fs.existsSync(/*turbopackIgnore: true*/ filePath)) {
       const initial = getInitialThreads();
       writeThreads(initial);
       return initial;
     }
-    const content = fs.readFileSync(filePath, "utf-8");
+    const content = fs.readFileSync(/*turbopackIgnore: true*/ filePath, "utf-8");
     return JSON.parse(content) as ChatThread[];
   } catch {
     return getInitialThreads();

@@ -290,4 +290,53 @@ describe("/api/user/orders POST security and workflow validation", () => {
     );
     expect(crossShop.status).toBe(403);
   });
+
+  it("scopes GET /api/user/orders strictly by customer identity or shopId without fake shop orders", async () => {
+    currentUser = {
+      id: "shop_lrp",
+      email: "lrp@shop.vn",
+      user_metadata: { role: "shop", shop_name: "La Roche-Posay Official Flagship Store" },
+    };
+    const { GET, POST } = await import("./route");
+
+    const shopGetRes = await GET(new Request("http://localhost:3000/api/user/orders?role=shop"));
+    expect(shopGetRes.status).toBe(200);
+    const shopJson = await shopGetRes.json();
+    expect(shopJson.orders).toHaveLength(1);
+    expect(shopJson.orders[0].orderCode).toBe("ORD-UNPAID-01");
+
+    // Authenticated customer with no existing orders gets seeded under their real fullName (owning them)
+    currentUser = {
+      id: "cust_e2e",
+      email: "e2e@example.com",
+      user_metadata: { role: "customer", full_name: "Nguyễn Văn E2E" },
+    };
+    const custGetRes = await GET(
+      new Request("http://localhost:3000/api/user/orders?name=Th%C3%B9y%20Dung"),
+    );
+    expect(custGetRes.status).toBe(200);
+    const custJson = await custGetRes.json();
+    expect(custJson.orders.length).toBeGreaterThan(0);
+    expect(
+      custJson.orders.every((o: BackendOrder) => o.customerName === "Nguyễn Văn E2E"),
+    ).toBe(true);
+
+    const deliveringOrder = custJson.orders.find(
+      (o: BackendOrder) => o.status === "delivering",
+    );
+    expect(deliveringOrder).toBeTruthy();
+
+    const confirmRes = await POST(
+      new Request("http://localhost:3000/api/user/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "update_status",
+          orderCode: deliveringOrder.orderCode,
+          status: "delivered",
+        }),
+      }),
+    );
+    expect(confirmRes.status).toBe(200);
+  });
 });

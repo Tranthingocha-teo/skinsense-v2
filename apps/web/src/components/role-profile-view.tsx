@@ -328,7 +328,10 @@ export function RoleProfileView({ role }: { role: RoleType }) {
 
         // Nếu là Customer hoặc Shop thì tải luôn danh sách đơn hàng cho đúng user này
         if (role === "customer" || role === "shop") {
-          loadUserOrders(u.fullName || "", u.phone || "");
+          loadUserOrders(
+            role === "shop" ? u.shop?.shopName || u.fullName || "" : u.fullName || "",
+            u.phone || "",
+          );
           if (role === "shop") {
             loadShopThreads(u.shop?.shopName || u.fullName);
           }
@@ -341,14 +344,15 @@ export function RoleProfileView({ role }: { role: RoleType }) {
     }
   }
 
-  // Tải danh sách đơn hàng dành riêng cho user này
-  async function loadUserOrders(name: string, userPhone: string) {
+  // Tải danh sách đơn hàng dành riêng cho user hoặc gian hàng này
+  async function loadUserOrders(targetName: string, userPhone: string) {
     try {
       setOrdersLoading(true);
-      const res = await fetch(
-        `/api/user/orders?name=${encodeURIComponent(name)}&phone=${encodeURIComponent(userPhone)}`,
-        { cache: "no-store" },
-      );
+      const query =
+        role === "shop"
+          ? `role=shop&shopName=${encodeURIComponent(targetName)}`
+          : `role=customer&name=${encodeURIComponent(targetName)}&phone=${encodeURIComponent(userPhone)}`;
+      const res = await fetch(`/api/user/orders?${query}`, { cache: "no-store" });
       const json = await res.json();
       if (json.ok && Array.isArray(json.orders)) {
         setOrders(json.orders);
@@ -544,19 +548,22 @@ export function RoleProfileView({ role }: { role: RoleType }) {
       });
       const data = await res.json();
       if (data.ok) {
+        const serverOrder = data.order as UserOrder | undefined;
         toast.success("Cảm ơn bạn đã gửi đánh giá sản phẩm!");
         setOrders((prev) =>
           prev.map((o) =>
             o.orderCode.toLowerCase() === reviewOrder.orderCode.toLowerCase()
-              ? {
-                  ...o,
-                  review: {
-                    rating: reviewRating,
-                    comment: reviewComment,
-                    tags: reviewSelectedTags,
-                    createdAt: new Date().toISOString(),
-                  },
-                }
+              ? serverOrder
+                ? { ...o, ...serverOrder }
+                : {
+                    ...o,
+                    review: {
+                      rating: reviewRating,
+                      comment: reviewComment,
+                      tags: reviewSelectedTags,
+                      createdAt: new Date().toISOString(),
+                    },
+                  }
               : o,
           ),
         );
@@ -1359,7 +1366,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                                 {/* NẾU LÀ SHOP VIEW: NÚT THAO TÁC DUYỆT & GIAO CỦA NGƯỜI BÁN */}
                                 {role === "shop" && !isCancelled && (
                                   <>
-                                    {order.status === "pending" && (
+                                    {order.status === "pending" && (isPaid || order.paymentMethod === "cod") && (
                                       <button
                                         type="button"
                                         onClick={() => handleUpdateOrderStatus(order.orderCode, "processing")}
@@ -1368,6 +1375,11 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                                         <Store className="size-3.5" />
                                         <span>Duyệt & Chuẩn Bị Hàng</span>
                                       </button>
+                                    )}
+                                    {order.status === "pending" && !isPaid && order.paymentMethod !== "cod" && (
+                                      <span className="inline-flex items-center gap-1 h-8.5 px-3 rounded-xl border border-amber-200 bg-amber-50 text-[11px] font-semibold text-amber-800">
+                                        Chờ khách thanh toán
+                                      </span>
                                     )}
                                     {order.status === "processing" && (
                                       <button

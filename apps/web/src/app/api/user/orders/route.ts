@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { isValidOrderStatus, ordersStore, type BackendOrder } from "@/lib/orders-store";
-import { createClient as createServerClient } from "@/lib/supabase/server";
 import { getAuthenticatedActor, type AuthenticatedActor } from "@/lib/session-auth";
 import { normalizeShopId } from "@/lib/shop-utils";
 
@@ -8,6 +7,33 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
+
+function normalizePersonName(value?: string | null): string {
+  return (value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[đĐ]/g, "d")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function isOrderOwnedByActor(order: BackendOrder, actor: AuthenticatedActor): boolean {
+  if (actor.role === "admin") return true;
+  if (actor.role === "shop") {
+    return Boolean(actor.shopId) && normalizeShopId(order.shopName) === actor.shopId;
+  }
+  if (actor.role === "customer") {
+    const orderName = normalizePersonName(order.customerName);
+    const actorName = normalizePersonName(actor.fullName);
+    if (orderName && actorName && orderName === actorName) return true;
+
+    const orderPhone = (order.customerPhone || "").replace(/[^0-9]/g, "");
+    if (orderPhone && actor.phone && orderPhone === actor.phone) return true;
+    return false;
+  }
+  return false;
+}
 
 // Thư viện ảnh dược mỹ phẩm sắc nét cho sản phẩm
 const PRODUCT_IMAGES: Record<string, string> = {
@@ -33,48 +59,41 @@ function resolveItemImage(name: string, fallback?: string): string {
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const queryName = searchParams.get("name")?.trim().toLowerCase();
-    const queryPhone = searchParams.get("phone")?.trim();
+    const roleParam = searchParams.get("role")?.trim();
+    const shopNameParam = searchParams.get("shopName")?.trim();
 
-    // 1. Xác định thông tin người dùng đang truy cập
-    let currentUserName = "thùy dung";
-    let currentUserPhone = "0987654321";
-
-    try {
-      const serverClient = await createServerClient();
-      const { data: session } = await serverClient.auth.getUser();
-      if (session?.user) {
-        const u = session.user;
-        const meta = u.user_metadata || {};
-        currentUserName = (meta.full_name || meta.name || u.email?.split("@")[0] || currentUserName).toLowerCase();
-        currentUserPhone = (meta.phone_number || u.phone || currentUserPhone).replace(/[^0-9]/g, "");
-      }
-    } catch {}
-
-    if (queryName) currentUserName = queryName;
-    if (queryPhone) currentUserPhone = queryPhone.replace(/[^0-9]/g, "");
-
-    // 2. Lấy toàn bộ đơn hàng trong cơ sở dữ liệu (đã kèm quy tắc tự hủy sau 3 ngày)
+    const actor = await getAuthenticatedActor(req);
     const allOrders = ordersStore.getAll();
     const now = Date.now();
 
-    // 3. Lọc đúng đơn hàng của user này (không hiển thị đơn của người khác)
-    let userOrders = allOrders.filter((o) => {
-      const orderNameClean = (o.customerName || "").trim().toLowerCase();
-      if (currentUserName) {
-        const cName = currentUserName.trim().toLowerCase();
-        if (orderNameClean === cName || orderNameClean.includes(cName) || cName.includes(orderNameClean)) {
-          return true;
-        }
-      }
-      return false;
-    });
+    let currentUserName = "Thùy Dung";
+    let currentUserPhone = "0987654321";
+    let userOrders: BackendOrder[] = [];
 
-    // 4. Nếu user chưa có đơn nào trong database, tạo mặc định các đơn mẫu kèm ảnh đẹp và LƯU LUÔN VÀO DATABASE
-    if (userOrders.length === 0) {
-      const displayCustomerName = queryName
-        ? queryName.charAt(0).toUpperCase() + queryName.slice(1)
-        : (currentUserName === "thùy dung" ? "Thùy Dung" : "Khách hàng " + currentUserName);
+    if (actor?.role === "admin") {
+      currentUserName = actor.fullName;
+      currentUserPhone = actor.phone;
+      userOrders = allOrders;
+    } else if (actor?.role === "shop" || (!actor && roleParam === "shop")) {
+      const targetShopId =
+        actor?.shopId || normalizeShopId(shopNameParam || "La Roche-Posay Flagship Store");
+      currentUserName = actor?.shopName || shopNameParam || "La Roche-Posay Flagship Store";
+      currentUserPhone = actor?.phone || "";
+      userOrders = allOrders.filter((o) => normalizeShopId(o.shopName) === targetShopId);
+    } else if (actor) {
+      currentUserName = actor.fullName;
+      currentUserPhone = actor.phone || "0987654321";
+      userOrders = allOrders.filter((o) => isOrderOwnedByActor(o, actor));
+    } else {
+      // Chế độ preview mặc định trước khi đăng nhập: chỉ hiển thị đơn hàng mẫu của demo customer
+      const demoNormalized = normalizePersonName(currentUserName);
+      userOrders = allOrders.filter((o) => normalizePersonName(o.customerName) === demoNormalized);
+    }
+
+    // Chỉ tự động tạo đơn mẫu ban đầu cho tài khoản Customer / demo Customer (không tạo cho Shop)
+    const isShopRequest = actor?.role === "shop" || (!actor && roleParam === "shop");
+    if (!isShopRequest && actor?.role !== "admin" && userOrders.length === 0) {
+      const displayCustomerName = currentUserName;
 
       const sampleOrders: Omit<BackendOrder, "id" | "createdAt">[] = [
         {
@@ -215,33 +234,6 @@ export async function GET(req: Request) {
   } catch (err: unknown) {
     return NextResponse.json({ ok: false, error: err instanceof Error ? err.message : "Failed to load orders" }, { status: 500 });
   }
-}
-
-function normalizePersonName(value?: string | null): string {
-  return (value || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[đĐ]/g, "d")
-    .toLowerCase()
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function isOrderOwnedByActor(order: BackendOrder, actor: AuthenticatedActor): boolean {
-  if (actor.role === "admin") return true;
-  if (actor.role === "shop") {
-    return Boolean(actor.shopId) && normalizeShopId(order.shopName) === actor.shopId;
-  }
-  if (actor.role === "customer") {
-    const orderName = normalizePersonName(order.customerName);
-    const actorName = normalizePersonName(actor.fullName);
-    if (orderName && actorName && orderName === actorName) return true;
-
-    const orderPhone = (order.customerPhone || "").replace(/[^0-9]/g, "");
-    if (orderPhone && actor.phone && orderPhone === actor.phone) return true;
-    return false;
-  }
-  return false;
 }
 
 export async function POST(req: Request) {
