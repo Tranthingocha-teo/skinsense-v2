@@ -1,5 +1,7 @@
 import fs from "fs";
+import os from "os";
 import path from "path";
+import { normalizeShopId } from "@/lib/shop-utils";
 
 export interface ChatMessage {
   id: string;
@@ -22,17 +24,17 @@ export interface ChatThread {
 }
 
 const CHAT_FILE = path.join(process.cwd(), ".chat-db.json");
+const FALLBACK_CHAT_FILE = path.join(os.tmpdir(), ".skinsense-chat-db.json");
 
-function normalizeShopId(shopNameOrId: string): string {
-  const s = (shopNameOrId || "").toLowerCase();
-  if (s.includes("roche") || s.includes("laroche")) return "larocheposay";
-  if (s.includes("bioderma")) return "bioderma";
-  if (s.includes("cerave")) return "cerave";
-  return "skinsense_mall";
+function resolveChatReadPath(): string {
+  const override = process.env.SKINSENSE_CHAT_DB_PATH?.trim();
+  if (override) return override;
+  if (fs.existsSync(CHAT_FILE)) return CHAT_FILE;
+  if (fs.existsSync(FALLBACK_CHAT_FILE)) return FALLBACK_CHAT_FILE;
+  return CHAT_FILE;
 }
 
 function getInitialThreads(): ChatThread[] {
-  const now = new Date();
   const formatTime = (d: Date) =>
     d.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
 
@@ -133,13 +135,14 @@ function getInitialThreads(): ChatThread[] {
 }
 
 function readThreads(): ChatThread[] {
+  const filePath = resolveChatReadPath();
   try {
-    if (!fs.existsSync(CHAT_FILE)) {
+    if (!fs.existsSync(filePath)) {
       const initial = getInitialThreads();
-      fs.writeFileSync(CHAT_FILE, JSON.stringify(initial, null, 2), "utf-8");
+      writeThreads(initial);
       return initial;
     }
-    const content = fs.readFileSync(CHAT_FILE, "utf-8");
+    const content = fs.readFileSync(filePath, "utf-8");
     return JSON.parse(content) as ChatThread[];
   } catch {
     return getInitialThreads();
@@ -147,9 +150,28 @@ function readThreads(): ChatThread[] {
 }
 
 function writeThreads(threads: ChatThread[]) {
+  const payload = JSON.stringify(threads, null, 2);
+  const override = process.env.SKINSENSE_CHAT_DB_PATH?.trim();
+  const primaryPath = override || CHAT_FILE;
   try {
-    fs.writeFileSync(CHAT_FILE, JSON.stringify(threads, null, 2), "utf-8");
+    fs.mkdirSync(path.dirname(primaryPath), { recursive: true });
+    fs.writeFileSync(primaryPath, payload, "utf-8");
+    return;
+  } catch {
+    if (override) return;
+  }
+  try {
+    fs.writeFileSync(FALLBACK_CHAT_FILE, payload, "utf-8");
   } catch {}
+}
+
+function resolveDefaultShopName(cleanShopId: string, providedName?: string): string {
+  if (providedName?.trim()) return providedName.trim();
+  if (cleanShopId === "larocheposay") return "La Roche-Posay Flagship Store";
+  if (cleanShopId === "bioderma") return "Bioderma Official Store";
+  if (cleanShopId === "cerave") return "CeraVe Official Mall";
+  if (cleanShopId === "skinsense_mall") return "SkinSense Official Medical Mall";
+  return cleanShopId;
 }
 
 export const chatStore = {
@@ -159,29 +181,30 @@ export const chatStore = {
     return readThreads();
   },
 
-  getThread(shopId: string, userId = "thuy_dung"): ChatThread {
+  getThread(
+    shopId: string,
+    userId: string,
+    options?: { userName?: string; shopName?: string },
+  ): ChatThread {
+    const cleanUserId = userId.trim();
+    if (!cleanUserId) {
+      throw new Error("Thiếu userId để tải hội thoại");
+    }
+
     const list = readThreads();
     const cleanShopId = normalizeShopId(shopId);
     let found = list.find(
-      (t) => t.shopId === cleanShopId && (t.userId === userId || !userId)
+      (t) => t.shopId === cleanShopId && t.userId === cleanUserId,
     );
 
     if (!found) {
-      const defaultName =
-        cleanShopId === "larocheposay"
-          ? "La Roche-Posay Flagship Store"
-          : cleanShopId === "bioderma"
-          ? "Bioderma Official Store"
-          : cleanShopId === "cerave"
-          ? "CeraVe Official Mall"
-          : "SkinSense Official Medical Mall";
-
+      const defaultName = resolveDefaultShopName(cleanShopId, options?.shopName);
       found = {
-        id: `thread_${cleanShopId}_${userId}`,
+        id: `thread_${cleanShopId}_${cleanUserId}`,
         shopId: cleanShopId,
         shopName: defaultName,
-        userId,
-        userName: "Thùy Dung",
+        userId: cleanUserId,
+        userName: options?.userName?.trim() || "Khách hàng",
         messages: [
           {
             id: `init_${Date.now()}`,
@@ -214,7 +237,7 @@ export const chatStore = {
   sendMessage(params: {
     shopId: string;
     shopName?: string;
-    userId?: string;
+    userId: string;
     userName?: string;
     orderCode?: string;
     sender: "shop" | "user";
@@ -223,10 +246,13 @@ export const chatStore = {
   }): { thread: ChatThread; autoReply?: ChatMessage } {
     const list = readThreads();
     const cleanShopId = normalizeShopId(params.shopId);
-    const userId = params.userId || "thuy_dung";
-    const userName = params.userName || "Thùy Dung";
+    const userId = params.userId.trim();
+    if (!userId) {
+      throw new Error("Thiếu userId khi gửi tin nhắn");
+    }
+    const userName = params.userName?.trim() || "Khách hàng";
 
-    let threadIndex = list.findIndex(
+    const threadIndex = list.findIndex(
       (t) => t.shopId === cleanShopId && t.userId === userId
     );
 
@@ -236,12 +262,13 @@ export const chatStore = {
       minute: "2-digit",
     });
 
+    const resolvedShopName = resolveDefaultShopName(cleanShopId, params.shopName);
     const newMsg: ChatMessage = {
       id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
       sender: params.sender,
       senderName:
-        params.senderName ||
-        (params.sender === "user" ? userName : params.shopName || "Gian Hàng Mall"),
+        params.senderName?.trim() ||
+        (params.sender === "user" ? userName : resolvedShopName),
       text: params.text.trim(),
       time: timeStr,
       createdAt: now.toISOString(),
@@ -253,7 +280,7 @@ export const chatStore = {
       targetThread = {
         id: `thread_${cleanShopId}_${userId}`,
         shopId: cleanShopId,
-        shopName: params.shopName || "Gian Hàng Shopee Mall",
+        shopName: resolvedShopName,
         userId,
         userName,
         orderCode: params.orderCode,

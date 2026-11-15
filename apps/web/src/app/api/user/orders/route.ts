@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
-import { ordersStore, type BackendOrder } from "@/lib/orders-store";
+import { isValidOrderStatus, ordersStore, type BackendOrder } from "@/lib/orders-store";
 import { createClient as createServerClient } from "@/lib/supabase/server";
+import { getAuthenticatedActor, type AuthenticatedActor } from "@/lib/session-auth";
+import { normalizeShopId } from "@/lib/shop-utils";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -215,45 +217,150 @@ export async function GET(req: Request) {
   }
 }
 
+function normalizePersonName(value?: string | null): string {
+  return (value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[đĐ]/g, "d")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function isOrderOwnedByActor(order: BackendOrder, actor: AuthenticatedActor): boolean {
+  if (actor.role === "admin") return true;
+  if (actor.role === "shop") {
+    return Boolean(actor.shopId) && normalizeShopId(order.shopName) === actor.shopId;
+  }
+  if (actor.role === "customer") {
+    const orderName = normalizePersonName(order.customerName);
+    const actorName = normalizePersonName(actor.fullName);
+    if (orderName && actorName && orderName === actorName) return true;
+
+    const orderPhone = (order.customerPhone || "").replace(/[^0-9]/g, "");
+    if (orderPhone && actor.phone && orderPhone === actor.phone) return true;
+    return false;
+  }
+  return false;
+}
+
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const { action, orderCode, status, review } = body;
+    const actor = await getAuthenticatedActor(req);
+    if (!actor) {
+      return NextResponse.json(
+        { ok: false, error: "Vui lòng đăng nhập để thao tác đơn hàng." },
+        { status: 401 },
+      );
+    }
+
+    let body: Record<string, unknown>;
+    try {
+      body = (await req.json()) as Record<string, unknown>;
+    } catch {
+      return NextResponse.json({ ok: false, error: "Dữ liệu yêu cầu không hợp lệ." }, { status: 400 });
+    }
+
+    const action = typeof body.action === "string" ? body.action : "";
+    const orderCode = typeof body.orderCode === "string" ? body.orderCode.trim() : "";
 
     if (!orderCode) {
       return NextResponse.json({ ok: false, error: "Thiếu mã đơn hàng" }, { status: 400 });
     }
 
+    const existingOrder = ordersStore.findByCode(orderCode);
+    if (!existingOrder) {
+      return NextResponse.json({ ok: false, error: "Không tìm thấy đơn hàng" }, { status: 404 });
+    }
+
+    if (!isOrderOwnedByActor(existingOrder, actor)) {
+      return NextResponse.json(
+        { ok: false, error: "Bạn không có quyền thao tác trên đơn hàng này." },
+        { status: 403 },
+      );
+    }
+
     if (action === "update_status") {
-      if (!status) {
-        return NextResponse.json({ ok: false, error: "Thiếu trạng thái cập nhật" }, { status: 400 });
+      const status = body.status;
+      if (!status || !isValidOrderStatus(status)) {
+        return NextResponse.json(
+          { ok: false, error: "Trạng thái cập nhật không hợp lệ." },
+          { status: 400 },
+        );
       }
-      const updated = ordersStore.updateStatus(orderCode, status);
-      if (!updated) {
-        return NextResponse.json({ ok: false, error: "Không tìm thấy đơn hàng" }, { status: 404 });
+
+      if (actor.role === "customer" && status !== "cancelled" && status !== "delivered") {
+        return NextResponse.json(
+          { ok: false, error: "Khách hàng chỉ có thể hủy đơn hoặc xác nhận đã nhận hàng." },
+          { status: 403 },
+        );
       }
-      return NextResponse.json({ ok: true, order: updated });
+
+      const result = ordersStore.updateStatusSafe(orderCode, status);
+      if (!result.ok) {
+        const httpStatus =
+          result.code === "NOT_FOUND" ? 404 : result.code === "INVALID_STATUS" ? 400 : 409;
+        return NextResponse.json({ ok: false, error: result.error }, { status: httpStatus });
+      }
+      return NextResponse.json({ ok: true, order: result.order });
     }
 
     if (action === "add_review") {
-      if (!review || !review.rating) {
+      if (actor.role !== "customer") {
+        return NextResponse.json(
+          { ok: false, error: "Chỉ khách hàng mua đơn mới có thể gửi đánh giá." },
+          { status: 403 },
+        );
+      }
+
+      const rawReview = body.review as Record<string, unknown> | undefined;
+      if (!rawReview || typeof rawReview !== "object") {
         return NextResponse.json({ ok: false, error: "Vui lòng chọn số sao đánh giá" }, { status: 400 });
       }
+
+      const parsedRating = Number(rawReview.rating);
+      if (!Number.isInteger(parsedRating) || parsedRating < 1 || parsedRating > 5) {
+        return NextResponse.json(
+          { ok: false, error: "Số sao đánh giá phải từ 1 đến 5." },
+          { status: 400 },
+        );
+      }
+
+      const rawComment = typeof rawReview.comment === "string" ? rawReview.comment.trim() : "";
+      if (rawComment.length > 1000) {
+        return NextResponse.json(
+          { ok: false, error: "Nội dung đánh giá tối đa 1000 ký tự." },
+          { status: 400 },
+        );
+      }
+
+      const rawTags = Array.isArray(rawReview.tags)
+        ? rawReview.tags
+            .filter((t): t is string => typeof t === "string" && t.trim().length > 0)
+            .slice(0, 10)
+            .map((t) => t.trim().slice(0, 80))
+        : [];
+
       const reviewPayload = {
-        rating: Math.min(5, Math.max(1, Number(review.rating) || 5)),
-        comment: (review.comment || "").trim(),
-        tags: Array.isArray(review.tags) ? review.tags : [],
+        rating: parsedRating,
+        comment: rawComment,
+        tags: rawTags,
         createdAt: new Date().toISOString(),
       };
-      const updated = ordersStore.addReview(orderCode, reviewPayload);
-      if (!updated) {
-        return NextResponse.json({ ok: false, error: "Không tìm thấy đơn hàng" }, { status: 404 });
+
+      const result = ordersStore.addReviewSafe(orderCode, reviewPayload);
+      if (!result.ok) {
+        const httpStatus = result.code === "NOT_FOUND" ? 404 : 409;
+        return NextResponse.json({ ok: false, error: result.error }, { status: httpStatus });
       }
-      return NextResponse.json({ ok: true, order: updated });
+      return NextResponse.json({ ok: true, order: result.order });
     }
 
     return NextResponse.json({ ok: false, error: "Hành động không hợp lệ" }, { status: 400 });
-  } catch (err: any) {
-    return NextResponse.json({ ok: false, error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    return NextResponse.json(
+      { ok: false, error: err instanceof Error ? err.message : "Lỗi xử lý đơn hàng" },
+      { status: 500 },
+    );
   }
 }
