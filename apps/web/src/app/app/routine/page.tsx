@@ -7,7 +7,7 @@ export default async function RoutinePage() {
   const { data } = await supabase.auth.getClaims();
   if (!data?.claims) redirect("/");
   return (
-    <main className="flex flex-1 flex-col">
+    <main className="flex flex-1 flex-col pb-16">
       <SignedInRoutine />
     </main>
   );

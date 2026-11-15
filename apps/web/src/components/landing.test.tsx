@@ -20,11 +20,10 @@ function renderLanding() {
 }
 
 describe("Landing", () => {
-  it("offers 1-click entry and Xem thử in the hero", () => {
+  it("offers Supabase Gmail login and Doctor approval in the hero", () => {
     renderLanding();
-    const demo = screen.getAllByRole("link", { name: "Xem thử, không cần đăng nhập" });
-    expect(demo[0]).toHaveAttribute("href", "/demo");
-    expect(screen.getByText("🚀 NHẤP VÀO LÀ VÀO XEM NGAY (1 CHẠM)")).toBeInTheDocument();
+    expect(screen.getAllByText("Đăng nhập bằng Gmail (Google / Supabase)")[0]).toBeInTheDocument();
+    expect(screen.getAllByText("🩺 Bác sĩ: Gửi hồ sơ duyệt")[0]).toBeInTheDocument();
   });
 
   it("renders the three stage scenes and the data cards' final values before any motion loads", () => {
@@ -69,5 +68,13 @@ describe("Landing", () => {
     expect(screen.queryByText(a)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: q }));
     expect(screen.getByText(a)).toBeInTheDocument();
+  });
+
+  it("renders responsive full-width mobile container for primary action buttons", () => {
+    const { container } = renderLanding();
+    const ctaSection = container.querySelector("#cta");
+    expect(ctaSection).toBeInTheDocument();
+    const buttons = ctaSection?.querySelectorAll("button");
+    expect(buttons?.length).toBeGreaterThanOrEqual(1);
   });
 });

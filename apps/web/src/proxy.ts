@@ -6,12 +6,6 @@ import { supabaseEnv } from "@/lib/env";
 // can't write cookies) and gates /app behind a session.
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const gated = pathname === "/" || pathname.startsWith("/app");
-  // Only the landing redirect and /app need a session. Everything else (/demo,
-  // /privacy, ...) passes through, so it works with no Supabase project.
-  if (!gated) return NextResponse.next({ request });
-  // The landing page stays reachable without a backend; /app fails loudly.
-  if (pathname === "/" && !process.env.NEXT_PUBLIC_SUPABASE_URL) return NextResponse.next({ request });
 
   let response = NextResponse.next({ request });
   const { url, anonKey } = supabaseEnv();
@@ -34,8 +28,13 @@ export async function proxy(request: NextRequest) {
 
   const { data } = await supabase.auth.getClaims();
   const signedIn = !!data?.claims;
-  if (pathname.startsWith("/app") && !signedIn) return redirectTo("/");
-  if (pathname === "/" && signedIn) return redirectTo("/app");
+
+  // Gate ONLY /app for unauthenticated visitors:
+  // If not signed in and accessing /app -> redirect to "/"
+  if (pathname.startsWith("/app") && !signedIn) {
+    return redirectTo("/");
+  }
+
   return response;
 
   // A redirect must still carry the cookies getClaims() just rotated.

@@ -83,6 +83,9 @@ export function MarketProductShops({ productId }: { productId: string }) {
   const [submitting, setSubmitting] = useState(false);
   const [placedOrder, setPlacedOrder] = useState<Order | null>(null);
   const [showOrdersModal, setShowOrdersModal] = useState(false);
+  const [tempOrderMemo] = useState(
+    () => `SS${productId.slice(0, 6).toUpperCase()}${Date.now().toString().slice(-4)}`,
+  );
 
   useEffect(() => {
     async function init() {
@@ -155,7 +158,6 @@ export function MarketProductShops({ productId }: { productId: string }) {
 
   const activeUnitPrice = selectedVendor ? selectedVendor.priceVnd : product.priceVnd;
   const totalAmount = activeUnitPrice * quantity;
-  const tempOrderMemo = `SS${productId.slice(0, 6).toUpperCase()}${Date.now().toString().slice(-4)}`;
   const qrUrl = generateVietQrUrl({
     amount: totalAmount,
     memo: tempOrderMemo,
