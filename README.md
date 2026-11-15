@@ -5,6 +5,7 @@ Skin diary app: capture a face photo with a guide, tap-mark spots, tick tonight'
 You need only git, [bun](https://bun.sh), and for the Android app Android Studio. No AI tooling, shell aliases or editor plugins are required.
 
 - **Team Roadmap & GitHub Projects**: [ROADMAP.md](ROADMAP.md) | [Interactive GitHub Board](https://github.com/users/Tranthingocha-teo/projects/2)
+- **Scrum Sprints & Risk Governance**: [Sprint 1 Plan & Retro](docs/sprints/SPRINT_1.md) | [Sprint 2 Plan & Retro](docs/sprints/SPRINT_2.md) | [Dynamic Risk Register](docs/governance/RISK_REGISTER.md) | [Change Requests](docs/governance/CHANGE_REQUESTS.md) | [Traceability Matrix](docs/governance/TRACEABILITY_MATRIX.md)
 - Start here if you are taking this project over: [docs/HANDOFF.md](docs/HANDOFF.md)
 - Day-to-day commands, repository layout, emulator, Maestro and backend facts: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)
 - Architecture decisions: `docs/adr/`. Research and rationale: `docs/research/` (start with `2026-09-11-landscape-and-decisions.md`).
@@ -26,7 +27,7 @@ Running the apps against a live backend needs your own Supabase project and cred
 - **Google OAuth Setup**: [docs/setup-guides/google-oauth.md](docs/setup-guides/google-oauth.md)
 - **Deployment & Production Runbook**: [docs/setup-guides/deployment.md](docs/setup-guides/deployment.md)
 
-CI (`.github/workflows/ci.yml`) runs `bun install --frozen-lockfile`, `bun run typecheck` and `bun run test` with no secrets.
+CI (`.github/workflows/ci.yml`) runs `bun install --frozen-lockfile`, `bun run lint`, `bun run typecheck`, `bun run test`, and `bun run build` on every push and PR to `main` with no secrets. Mobile preflight and optional EAS preview builds run via `.github/workflows/mobile-preview.yml`.
 
 ## AI agents (optional)
 

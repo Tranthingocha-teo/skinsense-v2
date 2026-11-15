@@ -78,62 +78,96 @@ graph TD
 
 ---
 
-### 🚀 Milestone 4: Production Cloud & App Launch (v1.0.0) `[Sprint hiện tại]`
+### 🚀 Milestone 4: Production Cloud & App Launch (v1.0.0) `[Sprint 1 — Completed]`
 *Đưa hệ thống lên môi trường thật, triển khai Cloud và đóng gói ứng dụng phát hành.*
 
 | Issue | Nhiệm vụ | Vai trò | Track | Độ ưu tiên |
 |---|---|---|---|---|
-| `#16` | **Provision Supabase Backend & Apply Drizzle Migrations** | Backend Lead | Backend & Cloud | `P0 - Blocker` |
-| `#17` | **Configure Google Cloud OAuth 2.0 (Web & Android Clients)** | Backend Lead | Backend & Cloud | `P0 - Blocker` |
-| `#18` | **Deploy Web Application to Vercel** | Frontend Lead | Web (Next.js) | `P0 - Blocker` |
-| `#19` | **Setup Supabase Keep-Alive Cron** | Backend Lead | Backend & Cloud | `P1 - High` |
-| `#20` | **Setup EAS Credentials, Keystore & Build APK v1.0.0** | Mobile Lead | Mobile (Expo) | `P0 - Blocker` |
-| `#21` | **Execute Android Manual QA on Physical Hardware** | DevOps & QA | DevOps & QA | `P1 - High` |
-| `#22` | **Run Production Lighthouse Audit on Deployed Web App** | DevOps & QA | DevOps & QA | `P1 - High` |
-| `#23` | **Publish Release v1.0.0 on GitHub Releases** | Tech Lead | DevOps & QA | `P0 - Blocker` |
+| `#16` | **Provision Supabase Backend & Apply Drizzle Migrations** | Tech Lead (`@Tranthingocha-teo`) | Backend & Cloud | `P0 - Blocker` |
+| `#17` | **Configure Google Cloud OAuth 2.0 (Web & Android Clients)** | Tech Lead (`@Tranthingocha-teo`) | Backend & Cloud | `P0 - Blocker` |
+| `#18` | **Deploy Web Application to Vercel** | Tech Lead (`@Tranthingocha-teo`) | Web (Next.js) | `P0 - Blocker` |
+| `#19` | **Setup Supabase Keep-Alive Cron** | Tech Lead (`@Tranthingocha-teo`) | Backend & Cloud | `P1 - High` |
+| `#20` | **Setup EAS Credentials, Keystore & Build APK v1.0.0** | Tech Lead (`@Tranthingocha-teo`) | Mobile (Expo) | `P0 - Blocker` |
+| `#21` | **Execute Android Manual QA on Physical Hardware** | DevOps & QA (`@Tranthingocha-teo`) | DevOps & QA | `P1 - High` |
+| `#22` | **Run Production Lighthouse Audit on Deployed Web App** | DevOps & QA (`@Tranthingocha-teo`) | DevOps & QA | `P1 - High` |
+| `#23` | **Publish Release v1.0.0 on GitHub Releases** | Tech Lead (`@Tranthingocha-teo`) | DevOps & QA | `P0 - Blocker` |
 
 ---
 
-### 🌟 Milestone 5: Team Expansion & Next Horizons (v1.1.0) `[Lộ trình tương lai]`
-*Các tính năng nâng cao phục vụ mở rộng người dùng và nghiên cứu phát triển.*
+### 🧩 Milestone 6: Sprint 2 — Multi-Role Platform, Shopee Mall, Media & QA `[Sprint 2 — 94/97 SP Complete]`
+*Mở rộng từ ứng dụng nhật ký đơn lẻ v1.0.0 thành nền tảng da liễu đa vai trò (`customer`, `shop`, `specialist`, `admin`) và thương mại điện tử dược mỹ phẩm Shopee Mall (`CR-01`..`CR-05`).*
+
+| Issue | Nhiệm vụ | Người phụ trách | SP | Trạng thái |
+|---|---|---|---|---|
+| `#75` | **First Sprint 2 Baseline**: 4-Role Auth, Early Marketplace & Editorial Routine | `@Tranthingocha-teo` | 8 | `Done` (`2026-11-03`) |
+| `#30` | **Team Onboarding**: Welcome `@dinhthianhsang` & `@thuyydung` | `@Tranthingocha-teo`, `@thuyydung`, `@dinhthianhsang` | 1 | `Done` |
+| `#31` | **Admin 4-Role User Management & Shop Moderation** | `@Tranthingocha-teo`, `@thuyydung` | 5 | `Done` (`PR #32, #43`) |
+| `#33` | **Specialist Dermatology Portal & Doctor Profile** | `@Tranthingocha-teo`, `@thuyydung` | 5 | `Done` (`PR #34, #44`) |
+| `#35` | **Shopee Mall Product Selling & Storefront** | `@Tranthingocha-teo`, `@thuyydung` | 5 | `Done` (`PR #36, #64–#66`) |
+| `#47`, `#60` | **Shopee Mall Checkout, MoMo QR & 4-Role Profiles** | `@thuyydung` | 10 | `Done` (`PR #48`) |
+| `#76` | **Supabase Seed Architecture, Google OAuth & Super Admin Guard** | `@Tranthingocha-teo` | 8 | `Done` (`PR #37–#39`) |
+| `#77` | **Admin Supabase Backend APIs (Users, Specialists, Products, Orders)** | `@Tranthingocha-teo` | 8 | `Done` (`PR #40–#43`) |
+| `#78` | **Specialist Clinical Cases API, Allergy Alerts & Validation** | `@Tranthingocha-teo` | 5 | `Done` (`PR #44, #54, #56, #58`) |
+| `#79` | **Morning/Evening Routine Sync & Per-User Multi-Tenant Isolation** | `@Tranthingocha-teo` | 5 | `Done` (`PR #45–#46, #62–#63`) |
+| `#80` | **Admin Shop Approval Gate & Shop Name Data Isolation** | `@Tranthingocha-teo` | 8 | `Done` (`PR #64–#66`) |
+| `#81` | **Signed Server Upload, Device/Camera Uploader & Checkout Gallery** | `@Tranthingocha-teo` | 8 | `Done` (`PR #67–#74`) |
+| `#82` | **Multi-Tenant API Test Suites, `SafeProductImage` & Accessibility** | `@Tranthingocha-teo` | 5 | `Done` (`PR #50–#53, #55, #57, #59`) |
+| `#83` | **Seller Payment UI & `PR #49` Revision Review** | `@dinhthianhsang` | 5 | `Done` (`PR #61`; `PR #49` `In Progress`) |
+| `#84` | **Fix 69 Web ESLint Errors, Enforce `lint` & `build` in CI, Add Templates** | `@Tranthingocha-teo` | 5 | `Done` (`PR #86`) |
+| `#85` | **Sprint 1 & 2 Plans, Burndowns, Reviews, Retros & Risk Governance Docs** | `@Tranthingocha-teo` | 3 | `Done` (`PR #87`) |
+| `#29` | **Automated EAS Preview Build Pipeline on GitHub Actions** | `@Tranthingocha-teo`, `@dinhthianhsang` | 3 | `In Review` *(Preflight green; awaits `EXPO_TOKEN`)* |
+
+---
+
+### 🌟 Milestone 5: Team Expansion & Next Horizons (v1.1.0) `[Backlog tương lai]`
+*Các tính năng nâng cao phục vụ mở rộng người dùng và nghiên cứu phát triển (`31 SP`).*
 
 | Issue | Nhiệm vụ | Vai trò | Track | Độ ưu tiên |
 |---|---|---|---|---|
-| `#24` | **iOS Camera & MediaPipe Face Landmarker Support** | Mobile Lead | Mobile (Expo) | `P1 - High` |
-| `#25` | **Offline-First Photo & Routine Sync Queue with Local SQLite** | Backend Lead | Backend & Cloud | `P1 - High` |
-| `#26` | **Dermatologist Consultation PDF Report Generator** | Frontend Lead | Web (Next.js) | `P2 - Medium` |
-| `#27` | **Android & iOS Home Screen Widget for Routine Streak** | Mobile Lead | Mobile (Expo) | `P2 - Medium` |
-| `#28` | **Auto Skin Tone Adaptive Calibration for Multi-Ethnic Redness** | Tech Lead | Core Domain / Vision | `P2 - Medium` |
-| `#29` | **Automated EAS Preview Build Pipeline on GitHub Actions** | DevOps & QA | DevOps & QA | `P1 - High` |
+| `#24` | **iOS Camera & MediaPipe Face Landmarker Support** | Mobile Lead (`@dinhthianhsang`) | Mobile (Expo) | `P1 - High` |
+| `#25` | **Offline-First Photo & Routine Sync Queue with Local SQLite** | Tech Lead (`@Tranthingocha-teo`) | Backend & Cloud | `P1 - High` |
+| `#26` | **Dermatologist Consultation PDF Report Generator** | Tech Lead (`@Tranthingocha-teo`) | Web (Next.js) | `P2 - Medium` |
+| `#27` | **Android & iOS Home Screen Widget for Routine Streak** | Mobile Lead (`@dinhthianhsang`) | Mobile (Expo) | `P2 - Medium` |
+| `#28` | **Auto Skin Tone Adaptive Calibration for Multi-Ethnic Redness** | Tech Lead (`@Tranthingocha-teo`) | Core Domain / Vision | `P2 - Medium` |
 
 ---
 
 ## 3. 🛠️ Quy trình Làm việc Nhóm (Team Workflow & Git Strategy)
 
 ### A. Chiến lược Nhánh (Branching Strategy)
-- `main`: Nhánh production, luôn ở trạng thái pass CI (locked, không push trực tiếp).
-- Mỗi thành viên tạo nhánh từ `main` theo quy tắc:
-  - `feat/<issue-id>-<tên-ngắn-gọn>` (ví dụ: `feat/18-deploy-vercel`)
-  - `fix/<issue-id>-<tên-ngắn-gọn>`
-  - `docs/<issue-id>-<tên-ngắn-gọn>`
+- `main`: Nhánh production được bảo vệ bởi Ruleset `"Only Owner Merge"` và CI Gate, không push trực tiếp.
+- Mỗi thành viên tạo nhánh từ `main` theo quy tắc Conventional Commits:
+  - `feat/<tên-ngắn-gọn>` hoặc `feat/<issue-id>-<tên-ngắn-gọn>`
+  - `fix/<tên-ngắn-gọn>`
+  - `ci/<tên-ngắn-gọn>` / `docs/<tên-ngắn-gọn>`
 
 ### B. Quy tắc Pull Request & Definition of Done (DoD)
-Mọi Pull Request muốn được merge phải thỏa mãn:
-1. **Liên kết Issue**: Ghi rõ `Closes #<id>` trong mô tả PR để tự động cập nhật trạng thái trên Project board.
-2. **Kiểm tra tự động (CI Gate)**:
+Mọi Pull Request muốn được merge phải tuân thủ [`.github/PULL_REQUEST_TEMPLATE.md`](.github/PULL_REQUEST_TEMPLATE.md) và thỏa mãn:
+1. **Liên kết Issue**: Ghi rõ `Closes #<id>` trong mô tả PR để tự động đóng Issue và cập nhật trạng thái trên Project board.
+2. **Kiểm tra tự động (CI Gate — `.github/workflows/ci.yml`)**:
    ```bash
+   bun install --frozen-lockfile
+   bun run lint        # 0 lỗi ESLint trên tất cả workspaces
    bun run typecheck   # Toàn bộ 5 workspaces 0 lỗi TypeScript
-   bun run test        # Tất cả test suites pass 100%
+   bun run test        # Toàn bộ test suites pass 100% (@skinsense/domain, web, mobile)
+   bun run build       # Build production Next.js & Tokens không cần secrets
    ```
-3. **Review**: Có ít nhất 1 thành viên review và approve trước khi squash and merge.
+3. **Review**: Có mô tả tự kiểm thử và ít nhất 1 thành viên khác review/approve trước khi merge.
 
 ---
 
-## 4. 📊 Hướng dẫn Sử dụng GitHub Projects Board
+## 4. 📊 Hướng dẫn Sử dụng GitHub Projects & Tài liệu Quản trị
 
-Khi truy cập [**GitHub Project #2**](https://github.com/users/Tranthingocha-teo/projects/2), team có thể chuyển đổi giữa các chế độ xem tối ưu:
+Khi truy cập [**GitHub Project #2**](https://github.com/users/Tranthingocha-teo/projects/2), team sử dụng cấu trúc Kanban **5 cột chuẩn** và hệ thống báo cáo đồng bộ:
 
-1. **Board (Kanban)**: Xem tổng quan thẻ theo trạng thái `Todo` ➔ `In Progress` ➔ `Done`.
-2. **Roadmap (Timeline View)**: Xem lộ trình theo thanh thời gian (Gantt chart) dựa trên trường `Target Date` và `Milestones`.
-3. **By Track**: Nhóm công việc theo từng mảng chuyên môn (`Web`, `Mobile`, `Backend`, `Core Domain`, `DevOps`) để từng lead nắm rõ task của mình.
-4. **By Priority**: Lọc các task `P0 - Blocker` để ưu tiên giải quyết trước.
+1. **Board — 5-Column Workflow**: Luồng trạng thái `Backlog` ➔ `Ready` ➔ `In Progress` ➔ `In Review` ➔ `Done`.
+2. **Table — Master WBS & Story Points**: Bảng tổng hợp đầy đủ `Story Points`, `Sprint`, `Track`, `Priority`, `Phase`, `Target Date`.
+3. **Sprint 1 & Sprint 2 Views**: Theo dõi riêng các hạng mục thuộc `Sprint 1 (Weeks 1-6)` và `Sprint 2 (Weeks 7-11)`.
+4. **Roadmap Timeline**: Lộ trình theo thanh thời gian dựa trên trường `Target Date` và `Milestones`.
+
+### Bộ Tài Liệu Scrum & Quản Trị Rủi Ro
+- [Sprint 1 Plan, Burndown, Review & Retrospective](docs/sprints/SPRINT_1.md)
+- [Sprint 2 Plan, Burndown, Review & Final Retrospective](docs/sprints/SPRINT_2.md)
+- [Dynamic Risk Register (Week 6 ➔ Week 11) & GitHub Evidence Index](docs/governance/RISK_REGISTER.md)
+- [Formal Change Request Log (`CR-01`..`CR-05`)](docs/governance/CHANGE_REQUESTS.md)
+- [Requirements & WBS Traceability Matrix](docs/governance/TRACEABILITY_MATRIX.md)
