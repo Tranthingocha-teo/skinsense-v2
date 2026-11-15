@@ -434,10 +434,8 @@ function SpecialistContent() {
       setStartDateInput(new Date().toISOString().split("T")[0]);
       setRevisitDateInput(new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]);
       setDoctorNotesInput("Tuân thủ đúng thứ tự bước thoa sáng và tối. Liên hệ bác sĩ nếu có dấu hiệu rát đỏ bất thường.");
-      setModalProducts([
-        { id: `prod_${Date.now()}_1`, ...PRESET_PRODUCTS[0], stepNumber: 1 },
-        { id: `prod_${Date.now()}_2`, ...PRESET_PRODUCTS[1], stepNumber: 2 },
-      ]);
+      // Để trống khi bệnh nhân chưa có phác đồ (Không dùng dữ liệu mẫu)
+      setModalProducts([]);
     }
     setIsPrescribeModalOpen(true);
   }
@@ -1085,6 +1083,39 @@ function SpecialistContent() {
               </div>
             </div>
 
+            {/* Phác đồ của bệnh nhân này (Của ai hiển thị cái đó, không mẫu, nếu chưa có thì để trống) */}
+            <div className="border-t border-[#D8D4CA] pt-4">
+              <span className="font-bold text-[#191B19] text-sm block mb-2">Phác đồ điều trị của bệnh nhân:</span>
+              {selectedCase.currentRoutine && selectedCase.currentRoutine.products.length > 0 ? (
+                <div className="bg-white border border-[#D8D4CA] rounded-2xl p-4 space-y-2.5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs">
+                    <span className="font-bold text-[#2D5A43]">{selectedCase.currentRoutine.routineTitle}</span>
+                    <span className="text-[#5C605C]">Thời gian: {selectedCase.currentRoutine.startDate} → Tái khám: {selectedCase.currentRoutine.revisitDate}</span>
+                  </div>
+                  {selectedCase.currentRoutine.doctorNotes && (
+                    <p className="text-xs text-[#5C605C] italic bg-[#FAF8F5] p-2.5 rounded-xl border border-[#D8D4CA]/50">
+                      Chỉ định bác sĩ: {selectedCase.currentRoutine.doctorNotes}
+                    </p>
+                  )}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                    {selectedCase.currentRoutine.products.map((p) => (
+                      <div key={p.id} className="flex items-center gap-2.5 p-2 rounded-xl border border-[#D8D4CA] bg-[#FAF8F5] text-xs">
+                        <SafeProductImage src={p.imageUrl} alt={p.name} className="size-10 rounded-lg object-cover border border-[#D8D4CA]" />
+                        <div className="min-w-0">
+                          <span className="font-semibold text-[#191B19] truncate block">{p.name}</span>
+                          <span className="text-[11px] text-[#5C605C]">{p.brand} · {p.dosage}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-[#FAF8F5] border border-dashed border-[#D8D4CA] rounded-2xl p-4 text-center text-xs text-[#5C605C]">
+                  Bệnh nhân này chưa có phác đồ điều trị (đang để trống, không dùng dữ liệu mẫu). Bác sĩ có thể nhấn nút bên dưới để bắt đầu xuất phác đồ.
+                </div>
+              )}
+            </div>
+
             <div className="flex justify-end gap-3 pt-3 border-t border-[#D8D4CA]">
               <button
                 type="button"
@@ -1197,34 +1228,43 @@ function SpecialistContent() {
                 </div>
 
                 <div className="space-y-2.5 max-h-[260px] overflow-y-auto pr-1">
-                  {modalProducts.map((prod) => (
-                    <div
-                      key={prod.id}
-                      className="flex items-center justify-between gap-3.5 rounded-2xl border border-[#D8D4CA] bg-white p-3"
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <img
-                          src={prod.imageUrl}
-                          alt={prod.name}
-                          className="size-14 rounded-xl object-cover border border-[#D8D4CA] shrink-0"
-                        />
-                        <div className="min-w-0 text-sm">
-                          <h6 className="font-bold text-[#191B19] truncate">{prod.name}</h6>
-                          <div className="text-xs text-[#5C605C]">
-                            {prod.brand} • Liều: {prod.dosage}
+                  {modalProducts.length === 0 ? (
+                    <div className="rounded-2xl border border-dashed border-[#D8D4CA] bg-white/60 p-6 text-center space-y-2">
+                      <p className="text-sm font-semibold text-[#191B19]">Chưa có sản phẩm nào trong phác đồ</p>
+                      <p className="text-xs text-[#5C605C] max-w-md mx-auto leading-relaxed">
+                        Hồ sơ này chưa được thiết lập phác đồ (đang để trống, không chèn dữ liệu mẫu). Bác sĩ hãy nhấn nút <strong>&quot;+ Thêm sản phẩm có ảnh&quot;</strong> ở trên để kê đơn sản phẩm phù hợp.
+                      </p>
+                    </div>
+                  ) : (
+                    modalProducts.map((prod) => (
+                      <div
+                        key={prod.id}
+                        className="flex items-center justify-between gap-3.5 rounded-2xl border border-[#D8D4CA] bg-white p-3"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <SafeProductImage
+                            src={prod.imageUrl}
+                            alt={prod.name}
+                            className="size-14 rounded-xl object-cover border border-[#D8D4CA] shrink-0"
+                          />
+                          <div className="min-w-0 text-sm">
+                            <h6 className="font-bold text-[#191B19] truncate">{prod.name}</h6>
+                            <div className="text-xs text-[#5C605C]">
+                              {prod.brand} • Liều: {prod.dosage}
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveProduct(prod.id)}
-                        className="text-rose-600 hover:text-rose-800 p-1.5 cursor-pointer shrink-0"
-                      >
-                        <Trash2 className="size-4.5" />
-                      </button>
-                    </div>
-                  ))}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveProduct(prod.id)}
+                          className="text-rose-600 hover:text-rose-800 p-1.5 cursor-pointer shrink-0"
+                        >
+                          <Trash2 className="size-4.5" />
+                        </button>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
 

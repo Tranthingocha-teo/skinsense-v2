@@ -61,6 +61,21 @@ export async function GET() {
       } catch {}
     }
 
+    // 3. Check Shop registry from Supabase Storage
+    let shopRecord: any = null;
+    if (url && serviceKey) {
+      try {
+        const adminClient = createAdminClient(url, serviceKey);
+        const { data: fileBlob } = await adminClient.storage
+          .from("photos")
+          .download("shops/shops_registry.json");
+        if (fileBlob) {
+          const list: any[] = JSON.parse(await fileBlob.text());
+          shopRecord = list.find((s) => s.email?.toLowerCase() === email);
+        }
+      } catch {}
+    }
+
     const meta = (user.user_metadata || {}) as Record<string, any>;
     const isDoctorEmail =
       email.includes("doctor") ||
@@ -74,17 +89,43 @@ export async function GET() {
       email === "thuydung.doctor@gmail.com";
 
     const isSpecialist = Boolean(specialistRecord) || meta.role === "specialist" || isDoctorEmail;
-    const role = isSpecialist ? "specialist" : (meta.role || "customer");
-    const status = specialistRecord?.status || meta.status || "active";
+    const isShop = Boolean(shopRecord) || meta.role === "shop";
+
+    const role = isSpecialist ? "specialist" : isShop ? "shop" : (meta.role || "customer");
+    const status =
+      (isSpecialist
+        ? specialistRecord?.status
+        : isShop
+        ? shopRecord?.status
+        : undefined) ||
+      meta.status ||
+      "active";
+
+    const shopDetails = isShop
+      ? {
+          shopName: shopRecord?.shopName || meta.shop_name || meta.shop_details?.shopName || "Cửa Hàng Dược Mỹ Phẩm SkinSense",
+          ownerName: shopRecord?.ownerName || meta.full_name || meta.name || "Chủ Gian Hàng",
+          license: shopRecord?.license || meta.license || meta.shop_details?.license || "GPKD-Đang duyệt",
+          category: shopRecord?.category || meta.category || meta.shop_details?.category || "Dược mỹ phẩm & Trị mụn",
+          address: shopRecord?.address || meta.address || meta.shop_details?.address || "Việt Nam",
+          phone: shopRecord?.phone || meta.phone_number || "",
+        }
+      : undefined;
 
     return NextResponse.json({
       authenticated: true,
       user: {
         id: user.id,
         email,
-        fullName: specialistRecord?.name || meta.full_name || meta.name || (isSpecialist ? "Bác sĩ Da liễu" : email.split("@")[0]),
+        fullName:
+          specialistRecord?.name ||
+          (isShop ? shopRecord?.shopName || meta.shop_name : undefined) ||
+          meta.full_name ||
+          meta.name ||
+          (isSpecialist ? "Bác sĩ Da liễu" : isShop ? "Chủ Gian Hàng" : email.split("@")[0]),
         role,
         status,
+        shopDetails,
         licenseId: specialistRecord?.licenseId || meta.license_id || (isSpecialist ? "014289/BYT-CCHN" : undefined),
         hospital: specialistRecord?.hospital || meta.hospital || (isSpecialist ? "Bệnh viện Da Liễu Trung Ương" : undefined),
         specialty: specialistRecord?.specialty || meta.specialty || (isSpecialist ? "Chuyên khoa Da liễu & Thẩm mỹ Da" : undefined),

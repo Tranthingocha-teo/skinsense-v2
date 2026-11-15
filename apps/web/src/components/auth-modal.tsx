@@ -25,8 +25,14 @@ import {
   validateDoctorApprovalInput,
   sanitizeDoctorApprovalInput,
 } from "@/lib/doctor-approval-validation";
+import {
+  validateShopApprovalInput,
+  sanitizeShopApprovalInput,
+} from "@/lib/shop-approval-validation";
+import { canShopSignIn } from "@/lib/shop-product-approval";
 
 export type UserRole = "customer" | "shop" | "specialist" | "admin";
+export type AuthModalTab = "sign-in" | "register" | "doctor-approval" | "shop-approval";
 
 export const DEMO_ACCOUNTS: any[] = [];
 
@@ -37,11 +43,11 @@ export function AuthModal({
 }: {
   triggerLabel?: string;
   triggerClassName?: string;
-  defaultTab?: "sign-in" | "register" | "doctor-approval";
+  defaultTab?: AuthModalTab;
 }) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
-  const [tab, setTab] = useState<"sign-in" | "register" | "doctor-approval">(defaultTab);
+  const [tab, setTab] = useState<AuthModalTab>(defaultTab);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -70,7 +76,17 @@ export function AuthModal({
   const [docSpecialty, setDocSpecialty] = useState("Da liễu & Điều trị mụn");
   const [docPassword, setDocPassword] = useState("");
 
-  function openWithTab(targetTab: "sign-in" | "register" | "doctor-approval") {
+  // Shop Approval Form (Bảng đăng ký xin làm gian hàng)
+  const [shopNameInput, setShopNameInput] = useState("");
+  const [shopOwnerName, setShopOwnerName] = useState("");
+  const [shopLicense, setShopLicense] = useState("");
+  const [shopCategory, setShopCategory] = useState("Dược mỹ phẩm trị mụn & phục hồi");
+  const [shopAddress, setShopAddress] = useState("");
+  const [shopEmail, setShopEmail] = useState("");
+  const [shopPhone, setShopPhone] = useState("");
+  const [shopPassword, setShopPassword] = useState("");
+
+  function openWithTab(targetTab: AuthModalTab) {
     setTab(targetTab);
     setError(null);
     setSuccess(null);
@@ -173,6 +189,22 @@ export function AuthModal({
       }
 
       if (role === "shop") {
+        const check = canShopSignIn({
+          role,
+          status,
+          email: userEmail,
+        });
+
+        if (!check.allowed) {
+          setError(
+            check.reason ||
+              "Hồ sơ Gian hàng của bạn đang chờ Super Admin (Trần Thị Ngọc Hà) xét duyệt. Vui lòng đợi Admin phê duyệt trước khi đăng nhập Kênh Người Bán!"
+          );
+          setLoading(false);
+          await supabase.auth.signOut();
+          return;
+        }
+
         setSuccess("Đăng nhập Cửa hàng thành công! Đang mở Kênh Người bán...");
         setTimeout(() => {
           setIsOpen(false);
@@ -325,6 +357,71 @@ export function AuthModal({
     }
   }
 
+  async function handleShopApprovalSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setSuccess(null);
+
+    const validation = validateShopApprovalInput({
+      shopName: shopNameInput,
+      ownerName: shopOwnerName,
+      license: shopLicense,
+      category: shopCategory,
+      address: shopAddress,
+      email: shopEmail,
+      password: shopPassword,
+      phoneNumber: shopPhone,
+    });
+
+    if (!validation.isValid) {
+      setError(validation.error || "Thông tin mở gian hàng không hợp lệ.");
+      return;
+    }
+
+    const payload = sanitizeShopApprovalInput({
+      shopName: shopNameInput,
+      ownerName: shopOwnerName,
+      license: shopLicense,
+      category: shopCategory,
+      address: shopAddress,
+      email: shopEmail,
+      password: shopPassword,
+      phoneNumber: shopPhone,
+    });
+
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: payload.email,
+          password: payload.password,
+          fullName: payload.ownerName,
+          role: "shop",
+          phoneNumber: payload.phoneNumber,
+          shopName: payload.shopName,
+          license: payload.license,
+          category: payload.category,
+          address: payload.address,
+        }),
+      });
+
+      const json = await res.json();
+      if (!res.ok || json.error) {
+        throw new Error(json.error || "Gửi yêu cầu mở gian hàng thất bại.");
+      }
+
+      setSuccess(
+        "✅ Hồ sơ mở Gian hàng đã được gửi thành công! Super Admin Trần Thị Ngọc Hà sẽ xét duyệt Giấy phép kinh doanh & Danh mục sản phẩm. Sau khi duyệt, bạn có thể đăng nhập vào Kênh Người Bán (Shopee Mall).",
+      );
+      setLoading(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gửi yêu cầu mở gian hàng thất bại.");
+      setLoading(false);
+    }
+  }
+
   return (
     <>
       <button
@@ -363,8 +460,8 @@ export function AuthModal({
               </button>
             </div>
 
-            {/* 3 Tabs Switcher */}
-            <div className="grid grid-cols-3 border-b border-border bg-muted/40 p-1">
+            {/* 4 Tabs Switcher */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 border-b border-border bg-muted/40 p-1 gap-1">
               <button
                 type="button"
                 onClick={() => {
@@ -409,14 +506,30 @@ export function AuthModal({
                 }`}
               >
                 <Stethoscope className="size-3.5 hidden sm:inline" />
-                <span>Bác sĩ gửi duyệt</span>
+                <span>Bác sĩ duyệt</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setTab("shop-approval");
+                  setError(null);
+                  setSuccess(null);
+                }}
+                className={`flex h-10 items-center justify-center gap-1 rounded-lg text-xs sm:text-sm font-medium transition cursor-pointer ${
+                  tab === "shop-approval"
+                    ? "bg-primary text-primary-foreground shadow-xs font-semibold"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Store className="size-3.5 hidden sm:inline" />
+                <span>Mở Gian hàng</span>
               </button>
             </div>
 
             {/* Scrollable Body */}
             <div className="overflow-y-auto px-6 py-5">
               {/* Google OAuth Login Card (Supabase Auth - 1 Click) */}
-              {tab !== "doctor-approval" && (
+              {tab !== "doctor-approval" && tab !== "shop-approval" && (
                 <div className="mb-4 flex flex-col gap-2 rounded-xl border border-primary/25 bg-primary/5 p-3.5">
                   <div className="flex items-center justify-between">
                     <span className="flex items-center gap-1.5 text-xs font-semibold text-primary">
@@ -821,6 +934,167 @@ export function AuthModal({
                   >
                     <Stethoscope className="size-4" />
                     <span>{loading ? "Đang gửi hồ sơ..." : "Gửi yêu cầu duyệt Bác sĩ"}</span>
+                  </button>
+                </form>
+              )}
+
+              {/* TAB 4: SHOP APPROVAL REQUEST (ĐĂNG KÝ MỞ GIAN HÀNG) */}
+              {tab === "shop-approval" && (
+                <form onSubmit={handleShopApprovalSubmit} className="flex flex-col gap-3.5">
+                  <div className="rounded-xl border border-amber-600/30 bg-amber-500/10 p-3 text-xs text-foreground">
+                    <div className="flex items-center gap-1.5 font-semibold text-amber-800 dark:text-amber-300">
+                      <Store className="size-4" />
+                      <span>Quy trình xét duyệt Mở Gian Hàng Đối Tác (Shopee Mall / Partner)</span>
+                    </div>
+                    <p className="mt-1 text-[11.5px] leading-relaxed text-muted-foreground">
+                      Chủ shop gửi thông tin Giấy phép ĐKKD / Mã số thuế và địa chỉ kho hàng để được Super Admin Trần Thị Ngọc Hà kiểm duyệt và cấp quyền đăng bán sản phẩm.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-foreground">
+                      Tên Gian hàng / Thương hiệu kinh doanh *
+                    </label>
+                    <div className="relative">
+                      <Store className="absolute top-3 left-3 size-4 text-muted-foreground" />
+                      <input
+                        type="text"
+                        required
+                        value={shopNameInput}
+                        onChange={(e) => setShopNameInput(e.target.value)}
+                        placeholder="La Roche-Posay Official Store / Innisfree Beauty Hub"
+                        className="h-9.5 w-full rounded-lg border border-border bg-background pr-3 pl-9 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-foreground">
+                        Họ tên Chủ sở hữu / Người đại diện *
+                      </label>
+                      <div className="relative">
+                        <User className="absolute top-3 left-3 size-4 text-muted-foreground" />
+                        <input
+                          type="text"
+                          required
+                          value={shopOwnerName}
+                          onChange={(e) => setShopOwnerName(e.target.value)}
+                          placeholder="Nguyễn Thị Mai"
+                          className="h-9.5 w-full rounded-lg border border-border bg-background pr-3 pl-9 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-foreground">
+                        Mã số thuế / Số ĐKKD mỹ phẩm *
+                      </label>
+                      <div className="relative">
+                        <FileCheck2 className="absolute top-3 left-3 size-4 text-muted-foreground" />
+                        <input
+                          type="text"
+                          required
+                          value={shopLicense}
+                          onChange={(e) => setShopLicense(e.target.value)}
+                          placeholder="GPKD-882910-HCM hoặc MST"
+                          className="h-9.5 w-full rounded-lg border border-border bg-background pr-3 pl-9 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-foreground">
+                      Danh mục sản phẩm kinh doanh *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={shopCategory}
+                      onChange={(e) => setShopCategory(e.target.value)}
+                      placeholder="Dược mỹ phẩm trị mụn, Serum phục hồi, Chăm sóc da chuyên sâu"
+                      className="h-9.5 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-foreground">
+                      Địa chỉ gian hàng / Kho xuất hàng *
+                    </label>
+                    <div className="relative">
+                      <Building2 className="absolute top-3 left-3 size-4 text-muted-foreground" />
+                      <input
+                        type="text"
+                        required
+                        value={shopAddress}
+                        onChange={(e) => setShopAddress(e.target.value)}
+                        placeholder="Số 123 Đường Nguyễn Huệ, Quận 1, TP. Hồ Chí Minh"
+                        className="h-9.5 w-full rounded-lg border border-border bg-background pr-3 pl-9 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-foreground">
+                        Email liên hệ (Gmail) *
+                      </label>
+                      <div className="relative">
+                        <Mail className="absolute top-3 left-3 size-4 text-muted-foreground" />
+                        <input
+                          type="email"
+                          required
+                          value={shopEmail}
+                          onChange={(e) => setShopEmail(e.target.value)}
+                          placeholder="shop.laroche@skinsense.vn"
+                          className="h-9.5 w-full rounded-lg border border-border bg-background pr-3 pl-9 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-foreground">
+                        Số điện thoại Hotline / Zalo *
+                      </label>
+                      <div className="relative">
+                        <Phone className="absolute top-3 left-3 size-4 text-muted-foreground" />
+                        <input
+                          type="tel"
+                          required
+                          value={shopPhone}
+                          onChange={(e) => setShopPhone(e.target.value)}
+                          placeholder="028 3822 5588"
+                          className="h-9.5 w-full rounded-lg border border-border bg-background pr-3 pl-9 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-foreground">
+                      Mật khẩu khởi tạo (≥ 6 ký tự) *
+                    </label>
+                    <div className="relative">
+                      <Lock className="absolute top-3 left-3 size-4 text-muted-foreground" />
+                      <input
+                        type="password"
+                        required
+                        value={shopPassword}
+                        onChange={(e) => setShopPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="h-9.5 w-full rounded-lg border border-border bg-background pr-3 pl-9 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-sm font-semibold text-white transition disabled:opacity-50 cursor-pointer shadow-md"
+                  >
+                    <Store className="size-4" />
+                    <span>{loading ? "Đang gửi hồ sơ..." : "Gửi yêu cầu mở Gian hàng Shopee"}</span>
                   </button>
                 </form>
               )}

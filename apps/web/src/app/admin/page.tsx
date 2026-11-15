@@ -39,10 +39,11 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { LogoMark } from "@/components/site-header";
+import { SafeProductImage } from "@/components/safe-product-image";
 import {
   type RoutineStep,
   type RoleRoutine,
-  DEFAULT_ROLE_ROUTINES,
+  EMPTY_ROLE_ROUTINES,
 } from "@/lib/role-routines";
 
 export type { RoutineStep, RoleRoutine };
@@ -342,8 +343,8 @@ type AdminNavTab = "users" | "specialists" | "routines" | "products" | "orders" 
 export default function AdminDashboardPage() {
   const [currentTab, setCurrentTab] = useState<AdminNavTab>("users");
 
-  // State for Routines by Role (Real Data from Supabase & Admin API)
-  const [routinesData, setRoutinesData] = useState<Record<string, RoleRoutine>>(DEFAULT_ROLE_ROUTINES);
+  // State for Routines by Role (Real Data from Supabase & Admin API - Empty by default, no mock)
+  const [routinesData, setRoutinesData] = useState<Record<string, RoleRoutine>>(EMPTY_ROLE_ROUTINES);
   const [activeRoutineRole, setActiveRoutineRole] = useState<RoleType>("customer");
   const [isTickingStep, setIsTickingStep] = useState<string | null>(null);
   const [assignRoutineEmail, setAssignRoutineEmail] = useState("hattn.23itb@vku.udn.vn");
@@ -1456,7 +1457,7 @@ export default function AdminDashboardPage() {
 
         {/* TAB ROUTINES: PHÂN BỔ ROUTINE 4 ROLE BẰNG DỮ LIỆU THẬT & CÓ TÍCH SAU KHI LÀM */}
         {currentTab === "routines" && (() => {
-          const activeRoleRoutine = routinesData[activeRoutineRole] || DEFAULT_ROLE_ROUTINES[activeRoutineRole];
+          const activeRoleRoutine = routinesData[activeRoutineRole] || EMPTY_ROLE_ROUTINES[activeRoutineRole];
           const steps = activeRoleRoutine?.steps || [];
           const totalSteps = steps.length;
           const completedSteps = steps.filter((s) => s.isCompleted).length;
@@ -1495,7 +1496,7 @@ export default function AdminDashboardPage() {
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 {(["customer", "specialist", "shop", "admin"] as RoleType[]).map((roleKey) => {
                   const cfg = ROLE_CONFIG[roleKey];
-                  const roleRoutine = routinesData[roleKey] || DEFAULT_ROLE_ROUTINES[roleKey];
+                  const roleRoutine = routinesData[roleKey] || EMPTY_ROLE_ROUTINES[roleKey];
                   const isActive = activeRoutineRole === roleKey;
                   const Icon = cfg.icon;
                   const stepCount = roleRoutine?.steps?.length || 0;
@@ -1642,8 +1643,21 @@ export default function AdminDashboardPage() {
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 gap-4">
-                  {steps.map((step) => {
+                {steps.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-border bg-card p-8 sm:p-10 text-center space-y-2">
+                    <div className="size-10 rounded-xl bg-surface-2 grid place-items-center mx-auto text-muted-foreground">
+                      <Sparkles className="size-5" />
+                    </div>
+                    <h4 className="font-display text-sm sm:text-base font-bold text-foreground">
+                      Chưa có bước routine nào cho vai trò {ROLE_CONFIG[activeRoutineRole].label}
+                    </h4>
+                    <p className="text-xs text-muted-foreground max-w-md mx-auto leading-relaxed">
+                      Hệ thống tuân thủ nguyên tắc cô lập dữ liệu người dùng thật: không hiển thị dữ liệu mẫu. Khi chưa thiết lập hoặc chưa phân bổ cho tài khoản, danh sách bước sẽ để trống.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-4">
+                    {steps.map((step) => {
                     const isTicked = Boolean(step.isCompleted);
                     const isStepUpdating = isTickingStep === step.id;
 
@@ -1716,7 +1730,7 @@ export default function AdminDashboardPage() {
                         <div className="grid grid-cols-1 md:grid-cols-12 gap-4 pt-4">
                           {/* Product Thumbnail */}
                           <div className="md:col-span-3 flex flex-row md:flex-col items-center gap-3">
-                            <img
+                            <SafeProductImage
                               src={step.imageUrl}
                               alt={step.productName}
                               className="w-20 h-20 sm:w-28 sm:h-28 object-cover rounded-xl border border-border shadow-xs shrink-0"
@@ -1784,7 +1798,8 @@ export default function AdminDashboardPage() {
                       </div>
                     );
                   })}
-                </div>
+                  </div>
+                )}
               </div>
             </div>
           );

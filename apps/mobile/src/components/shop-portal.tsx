@@ -77,6 +77,17 @@ export type ShopOrderFilter = 'all' | 'pending' | 'processing' | 'shipping' | 'c
 
 const VIETNAM_BANKS = ['MB Bank', 'Vietcombank', 'Techcombank', 'VPBank', 'ACB', 'BIDV', 'TPBank'];
 
+const ORDER_STATUS_UI: Record<OrderStatus, { label: string; className: string }> = {
+  pending: { label: 'Chờ xác nhận', className: 'border-warning/25 bg-warning/10 text-warning' },
+  confirmed: { label: 'Đã xác nhận', className: 'border-primary/25 bg-primary/10 text-primary' },
+  processing: { label: 'Đang chuẩn bị', className: 'border-primary/25 bg-primary/10 text-primary' },
+  shipping: { label: 'Đang giao', className: 'border-primary/25 bg-primary/10 text-primary' },
+  delivered: { label: 'Đã giao', className: 'border-success/25 bg-success/10 text-success' },
+  completed: { label: 'Hoàn tất', className: 'border-success/25 bg-success/10 text-success' },
+  cancelled: { label: 'Đã hủy', className: 'border-destructive/25 bg-destructive/10 text-destructive' },
+  refunded: { label: 'Đã hoàn tiền', className: 'border-destructive/25 bg-destructive/10 text-destructive' },
+};
+
 export function ShopPortal() {
   const router = useRouter();
   const { top, bottom } = useSafeAreaInsets();
@@ -718,9 +729,9 @@ export function ShopPortal() {
                           {new Date(order.createdAt).toLocaleDateString('vi-VN')} {new Date(order.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                         </Text>
                       </View>
-                      <View className="rounded-pill bg-primary/10 px-2.5 py-0.5 border border-primary/20">
-                        <Text className="text-[11px] font-semibold text-primary uppercase">
-                          {order.status}
+                      <View className={`rounded-pill border px-2.5 py-1 ${ORDER_STATUS_UI[order.status].className}`}>
+                        <Text className="text-[11.5px] font-semibold">
+                          {ORDER_STATUS_UI[order.status].label}
                         </Text>
                       </View>
                     </View>
@@ -754,7 +765,7 @@ export function ShopPortal() {
                           Khách: {order.customerName} ({order.customerPhone})
                         </Text>
                         <Text className="text-[11px] font-semibold text-primary">
-                          {order.paymentMethod === 'vietqr' ? 'Đã CK VietQR' : 'Thu COD'}
+                          {order.paymentMethod === 'vietqr' ? 'VietQR' : 'COD'}
                         </Text>
                       </View>
                       <Text className="text-[11.5px] text-muted-foreground">
@@ -767,8 +778,8 @@ export function ShopPortal() {
                       )}
                       {order.trackingCode && (
                         <View className="flex-row items-center gap-1 pt-1 border-t border-border/20">
-                          <Icon as={Truck} size={12} className="text-indigo-400" />
-                          <Text className="text-[11px] font-mono text-indigo-400">
+                          <Icon as={Truck} size={12} className="text-primary" />
+                          <Text className="text-[11.5px] font-mono text-primary">
                             Mã SPX: {order.trackingCode}
                           </Text>
                         </View>
@@ -780,7 +791,7 @@ export function ShopPortal() {
                       <Text className="text-[11px] text-muted-foreground">
                         Thực nhận (sau 5% phí sàn):
                       </Text>
-                      <Text className="font-display text-[14px] font-bold text-[#AFCFA9]">
+                      <Text className="font-display text-[14px] font-bold text-success">
                         +{formatVnd(order.shopEarningsVnd || Math.round(order.totalVnd * 0.95))}
                       </Text>
                     </View>
@@ -793,17 +804,17 @@ export function ShopPortal() {
                             role="button"
                             accessibilityLabel="Từ chối đơn"
                             onPress={() => handleCancelOrder(order.id)}
-                            className="rounded-control border border-border/80 px-3 py-1.5 active:scale-[0.98] active:bg-surface-2"
+                            className="min-h-11 rounded-control border border-border/80 px-3 py-2 active:scale-[0.98] active:bg-surface-2"
                           >
-                            <Text className="text-[12px] text-rose-400 font-medium">Hủy đơn</Text>
+                            <Text className="text-[12.5px] text-destructive font-medium">Hủy đơn</Text>
                           </Pressable>
                           <Pressable
                             role="button"
                             accessibilityLabel="Xác nhận & Chuẩn bị hàng"
                             onPress={() => handleConfirmOrder(order.id)}
-                            className="rounded-control bg-primary px-3.5 py-1.5 active:scale-[0.98]"
+                            className="min-h-11 rounded-control bg-primary px-3.5 py-2 active:scale-[0.98]"
                           >
-                            <Text className="text-[12px] text-primary-foreground font-semibold">
+                            <Text className="text-[12.5px] text-primary-foreground font-semibold">
                               Xác nhận & Chuẩn bị hàng
                             </Text>
                           </Pressable>
@@ -815,7 +826,7 @@ export function ShopPortal() {
                           role="button"
                           accessibilityLabel="Bàn giao cho ĐVVC SPX"
                           onPress={() => handleShipOrder(order.id)}
-                          className="flex-row items-center gap-1.5 rounded-control bg-indigo-600 px-3.5 py-1.5 active:scale-[0.98]"
+                          className="min-h-11 flex-row items-center gap-1.5 rounded-control bg-primary px-3.5 py-2 active:scale-[0.98]"
                         >
                           <Icon as={Truck} size={13} className="text-white" />
                           <Text className="text-[12px] text-white font-semibold">
@@ -826,8 +837,8 @@ export function ShopPortal() {
 
                       {isShipping && (
                         <View className="flex-row items-center gap-1.5 px-2 py-1">
-                          <Icon as={Truck} size={13} className="text-indigo-400" />
-                          <Text className="text-[11.5px] text-muted-foreground">
+                          <Icon as={Truck} size={13} className="text-primary" />
+                          <Text className="text-[12px] text-muted-foreground">
                             Đang trên đường giao đến người mua...
                           </Text>
                         </View>
@@ -835,8 +846,8 @@ export function ShopPortal() {
 
                       {isCompleted && (
                         <View className="flex-row items-center gap-1">
-                          <Icon as={CheckCircle2} size={14} className="text-[#AFCFA9]" />
-                          <Text className="text-[12px] font-medium text-[#AFCFA9]">
+                          <Icon as={CheckCircle2} size={14} className="text-success" />
+                          <Text className="text-[12.5px] font-medium text-success">
                             Đã giao & Tiền đã về ví shop
                           </Text>
                         </View>
@@ -892,13 +903,13 @@ export function ShopPortal() {
                           )}
                         </View>
                         <View
-                          className={`rounded-pill px-2.5 py-0.5 border ${
-                            isListed ? 'border-emerald-500/20 bg-emerald-500/10' : 'border-border/80 bg-surface-2'
+                          className={`rounded-pill border px-2.5 py-1 ${
+                            isListed ? 'border-success/25 bg-success/10' : 'border-border/80 bg-surface-2'
                           }`}
                         >
                           <Text
                             className={`text-[10px] font-bold ${
-                              isListed ? 'text-[#AFCFA9]' : 'text-muted-foreground'
+                              isListed ? 'text-success' : 'text-muted-foreground'
                             }`}
                           >
                             {isListed ? `Sẵn hàng: ${listing.stock}` : 'Chưa niêm yết'}
@@ -939,8 +950,8 @@ export function ShopPortal() {
             <View className="rounded-card border border-border/80 bg-card p-4 gap-3 shadow-xs">
               <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center gap-2">
-                  <View className="size-9 rounded-pill bg-emerald-500/10 items-center justify-center border border-emerald-500/20">
-                    <Icon as={Wallet} size={18} className="text-[#AFCFA9]" />
+                  <View className="size-9 rounded-pill bg-success/10 items-center justify-center border border-success/20">
+                    <Icon as={Wallet} size={18} className="text-success" />
                   </View>
                   <View>
                     <Text className="text-[11.5px] text-muted-foreground font-medium uppercase tracking-[0.06em]">

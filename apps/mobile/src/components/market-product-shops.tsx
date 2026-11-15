@@ -316,7 +316,7 @@ export function MarketProductShops({ productId }: { productId: string }) {
           </View>
 
           {/* Search Shops Input */}
-          <View className="flex-row items-center gap-2 rounded-control border border-border bg-surface-1 px-3 py-1.5">
+          <View className="min-h-11 flex-row items-center gap-2 rounded-control border border-border bg-surface-1 px-3 py-1.5">
             <Icon as={Search} size={15} className="text-muted-foreground" />
             <TextInput
               value={searchQuery}
@@ -571,7 +571,7 @@ export function MarketProductShops({ productId }: { productId: string }) {
                 role="button"
                 accessibilityLabel="Giảm số lượng"
                 onPress={() => setQuantity((q) => Math.max(1, q - 1))}
-                className="size-7 items-center justify-center rounded-pill bg-card active:opacity-70"
+                className="size-11 items-center justify-center rounded-pill bg-card active:opacity-70"
               >
                 <Icon as={Minus} size={14} className="text-foreground" />
               </Pressable>
@@ -582,7 +582,7 @@ export function MarketProductShops({ productId }: { productId: string }) {
                 role="button"
                 accessibilityLabel="Tăng số lượng"
                 onPress={() => setQuantity((q) => q + 1)}
-                className="size-7 items-center justify-center rounded-pill bg-card active:opacity-70"
+                className="size-11 items-center justify-center rounded-pill bg-card active:opacity-70"
               >
                 <Icon as={Plus} size={14} className="text-foreground" />
               </Pressable>
@@ -639,7 +639,7 @@ export function MarketProductShops({ productId }: { productId: string }) {
               placeholderTextColor="#888"
               multiline
               numberOfLines={2}
-              className="min-h-[50px] rounded-control border border-border bg-surface-1 px-3 py-2 text-[14px] text-foreground"
+              className="min-h-[72px] rounded-control border border-border bg-surface-1 px-3 py-2 text-[14px] text-foreground"
             />
           </View>
 
@@ -659,7 +659,7 @@ export function MarketProductShops({ productId }: { productId: string }) {
 
         {/* Payment Methods */}
         <View className="rounded-card border border-border bg-card p-4 gap-3">
-          <Text className="text-[15px] font-semibold text-foreground">
+          <Text className="font-display text-[18px] font-medium text-foreground">
             Phương thức thanh toán
           </Text>
 
@@ -671,7 +671,7 @@ export function MarketProductShops({ productId }: { productId: string }) {
               void Haptics.selectionAsync().catch(() => {});
               setPaymentMethod('cod');
             }}
-            className={`flex-row items-center justify-between rounded-control border p-3 ${
+            className={`min-h-[68px] flex-row items-center justify-between rounded-control border p-3 ${
               paymentMethod === 'cod'
                 ? 'border-primary bg-primary/10'
                 : 'border-border bg-surface-1'
@@ -709,7 +709,7 @@ export function MarketProductShops({ productId }: { productId: string }) {
               void Haptics.selectionAsync().catch(() => {});
               setPaymentMethod('vietqr');
             }}
-            className={`flex-row items-center justify-between rounded-control border p-3 ${
+            className={`min-h-[68px] flex-row items-center justify-between rounded-control border p-3 ${
               paymentMethod === 'vietqr'
                 ? 'border-primary bg-primary/10'
                 : 'border-border bg-surface-1'
@@ -758,24 +758,37 @@ export function MarketProductShops({ productId }: { productId: string }) {
         </View>
 
         {/* Order Summary & Confirm */}
-        <View className="rounded-card border border-border bg-card p-4 gap-3">
+        <View className="rounded-card border border-border bg-card p-4 gap-3.5">
+          <Text className="font-display text-[18px] font-medium text-foreground">
+            Tóm tắt đơn hàng
+          </Text>
           <View className="flex-row justify-between">
-            <Text className="text-[13.5px] text-muted-foreground">Gian hàng cung cấp:</Text>
-            <Text className="text-[13.5px] font-semibold text-foreground">
+            <Text className="text-[13px] text-muted-foreground">
+              Tiền hàng ({quantity} sản phẩm):
+            </Text>
+            <Text className="text-[13px] font-medium text-foreground">
+              {formatVnd(totalAmount)}
+            </Text>
+          </View>
+          <View className="flex-row justify-between">
+            <Text className="text-[13px] text-muted-foreground">Gian hàng:</Text>
+            <Text className="max-w-[62%] text-right text-[13px] font-semibold text-foreground">
               {selectedVendor?.shop.shopName || 'SkinSense Boutique'}
             </Text>
           </View>
           <View className="flex-row justify-between">
-            <Text className="text-[13.5px] text-muted-foreground">Số lượng:</Text>
-            <Text className="text-[13.5px] font-medium text-foreground">x{quantity}</Text>
+            <Text className="text-[13px] text-muted-foreground">Vận chuyển:</Text>
+            <Text className="text-[13px] font-medium text-success">Miễn phí</Text>
           </View>
           <View className="flex-row justify-between">
-            <Text className="text-[13.5px] text-muted-foreground">Phí vận chuyển:</Text>
-            <Text className="text-[13.5px] font-medium text-success">Miễn phí giao hàng</Text>
+            <Text className="text-[13px] text-muted-foreground">Thanh toán:</Text>
+            <Text className="text-right text-[13px] font-medium text-foreground">
+              {paymentMethod === 'vietqr' ? 'Chuyển khoản VietQR' : 'Tiền mặt khi nhận (COD)'}
+            </Text>
           </View>
           <View className="flex-row justify-between items-baseline pt-2 border-t border-border/50">
-            <Text className="text-[14.5px] font-medium text-foreground">Tổng thanh toán:</Text>
-            <Text className="font-display text-[22px] font-bold text-primary tracking-tight">
+            <Text className="text-[14px] font-medium text-foreground">Tổng thanh toán</Text>
+            <Text className="font-display text-[24px] font-medium text-foreground tracking-tight">
               {formatVnd(totalAmount)}
             </Text>
           </View>
@@ -784,7 +797,7 @@ export function MarketProductShops({ productId }: { productId: string }) {
             role="button"
             onPress={handleConfirmOrder}
             disabled={submitting}
-            className="mt-2 h-12 flex-row items-center justify-center gap-2 rounded-control bg-primary active:scale-[0.98] disabled:opacity-50"
+            className="mt-2 min-h-12 flex-row items-center justify-center gap-2 rounded-control bg-primary px-4 active:scale-[0.98] disabled:opacity-50"
           >
             {submitting ? (
               <ActivityIndicator color="#fff" />

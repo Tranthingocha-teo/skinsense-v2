@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
-import { getProductForStep } from "@/lib/role-routines";
 import { isPatientAliasOfHa, filterProductsByTimeOfDay } from "@/lib/prescription-sync";
 
 export const dynamic = "force-dynamic";
@@ -54,30 +53,8 @@ export async function GET(request: Request) {
       }
     }
 
-    // Fallback if not authenticated (guest or demo)
+    // Fallback if not authenticated (guest or demo) - Strict: No Mock Data, Empty if None
     if (!user) {
-      const demoSteps = (
-        timeOfDay === "morning"
-          ? [
-              { label: "Rửa mặt dịu nhẹ", time: "morning" },
-              { label: "Serum phục hồi B5", time: "morning" },
-              { label: "Kem khóa ẩm mỏng nhẹ", time: "morning" },
-              { label: "Kem chống nắng bảo vệ", time: "morning" },
-            ]
-          : [
-              { label: "Tẩy trang dịu nhẹ", time: "evening" },
-              { label: "Rửa mặt làm sạch sâu", time: "evening" },
-              { label: "Serum trị mụn BHA", time: "evening" },
-              { label: "Kem dưỡng phục hồi", time: "evening" },
-            ]
-      ).map((item, idx) => ({
-        ...getProductForStep(item.label, timeOfDay as "morning" | "evening", idx),
-        id: `demo-${timeOfDay}-${idx}`,
-        stepNumber: idx + 1,
-        label: item.label,
-        isCompleted: idx === 0,
-      }));
-
       return NextResponse.json({
         ok: true,
         userId: "demo",
@@ -85,14 +62,14 @@ export async function GET(request: Request) {
         userName: "Người dùng Khách",
         timeOfDay,
         night: today,
-        title: timeOfDay === "morning" ? "Routine Sáng: Cấp Ẩm & Bảo Vệ Da" : "Routine Tối: Làm Sạch Sâu & Phục Hồi",
-        description: timeOfDay === "morning" ? "Làm sạch dịu nhẹ pH 5.5, cấp nước phục hồi màng ẩm và chống nắng quang phổ rộng." : "Hòa tan bụi bẩn dầu nhờn, kháng khuẩn mụn và tái tạo biểu bì qua đêm.",
-        allocatedBy: "Quy chuẩn Skincare SkinSense",
+        title: "Chưa có routine nào được thiết lập",
+        description: "Vui lòng đăng nhập tài khoản để xem phác đồ chăm sóc da của riêng bạn (Để trống, không dùng dữ liệu mẫu).",
+        allocatedBy: "Hệ thống SkinSense",
         isPrescribed: false,
-        steps: demoSteps,
-        completedCount: 1,
-        totalCount: demoSteps.length,
-        percent: 25,
+        steps: [],
+        completedCount: 0,
+        totalCount: 0,
+        percent: 0,
       });
     }
 
@@ -118,23 +95,28 @@ export async function GET(request: Request) {
     // Priority A: Check clinical records registry
     const registryCases = (await downloadJsonFromStorage<any[]>(supabaseAdmin, "clinical_records/cases_registry.json")) || [];
     
-    // Check if user is Hà (support both her Google account and school email / names)
-    const isHaUser = isPatientAliasOfHa({ userId, email: userEmail, name: userName });
+    const userRole = meta.role || (userEmail === "hattn.23itb@vku.udn.vn" ? "admin" : "customer");
+    const isDoctor = userRole === "specialist" || userEmail.includes("doctor") || userEmail.includes("bacsi") || userEmail.includes("lananh");
+    const isAdmin = userRole === "admin" || userEmail === "admin@skinsense.vn";
 
-    const matchedCase = registryCases.find((c) => {
+    // Phân quyền độc lập (của ai hiển thị cái đó, không mẫu, nếu chưa có thì để trống):
+    // Bác sĩ và Admin không tự động gán bệnh án người bệnh.
+    const isPatientUser = !isDoctor && !isAdmin;
+    const isHaPatient = isPatientUser && isPatientAliasOfHa({ userId, email: userEmail, name: userName });
+
+    const matchedCase = isPatientUser ? registryCases.find((c) => {
       if (c.patientUserId === userId || c.alternateUserId === userId || c.id === userId || c.userId === userId) return true;
       if (c.patientEmail && c.patientEmail.trim().toLowerCase() === userEmail) return true;
       if (c.alternateEmail && c.alternateEmail.trim().toLowerCase() === userEmail) return true;
-      if (isHaUser && (
+      if (isHaPatient && (
         c.patientName?.toLowerCase().includes("ngọc hà") ||
         c.patientName?.toLowerCase().includes("ngoc ha") ||
-        c.patientEmail === "hattn.23itb@vku.udn.vn" ||
         c.patientEmail === "trandinhhai0936039127@gmail.com"
       )) {
         return true;
       }
       return false;
-    });
+    }) : null;
 
     if (matchedCase?.currentRoutine && Array.isArray(matchedCase.currentRoutine.products) && matchedCase.currentRoutine.products.length > 0) {
       prescribedRoutine = matchedCase.currentRoutine;
@@ -154,8 +136,8 @@ export async function GET(request: Request) {
       } catch {}
     }
 
-    // Priority B: Check user-specific protocol in storage
-    if (!prescribedRoutine) {
+    // Priority B: Check user-specific protocol in storage (chỉ dành cho tài khoản bệnh nhân)
+    if (!prescribedRoutine && isPatientUser) {
       const userProtocol = await downloadJsonFromStorage<any>(supabaseAdmin, `routines/protocol_${userId}.json`);
       if (userProtocol?.products && Array.isArray(userProtocol.products) && userProtocol.products.length > 0) {
         prescribedRoutine = userProtocol;
@@ -200,57 +182,50 @@ export async function GET(request: Request) {
         };
       });
     } else {
-      // Priority C: Load from Supabase Postgres routine_items for THIS USER
+      // Priority C: Load from Supabase Postgres routine_items strictly for THIS USER
       const { data: dbItems } = await supabaseAdmin
         .from("routine_items")
         .select("id,label,position")
         .eq("user_id", userId)
         .order("position");
 
-      let itemsToUse = dbItems || [];
+      const itemsToUse = dbItems || [];
 
-      // If user has no items yet, seed default 4 steps for this user
+      // If user has no items yet: DO NOT seed mock data! Leave empty!
+      // "của ai hiển thị cái đó , chứ ko mẫu .Nếu chưa có thì để trống"
       if (itemsToUse.length === 0) {
-        const defaultLabels = ["Tẩy trang", "Rửa mặt", "Serum trị mụn", "Kem dưỡng ẩm"];
-        try {
-          await supabaseAdmin.from("routine_items").upsert(
-            defaultLabels.map((label, pos) => ({ user_id: userId, label, position: pos })),
-            { onConflict: "user_id,label", ignoreDuplicates: true }
-          );
-          const { data: reread } = await supabaseAdmin
-            .from("routine_items")
-            .select("id,label,position")
-            .eq("user_id", userId)
-            .order("position");
-          itemsToUse = reread || [];
-        } catch {}
+        routineTitle = timeOfDay === "morning"
+          ? `Routine Sáng · ${userName}`
+          : `Routine Tối · ${userName}`;
+        routineDescription = "Chưa có bước chăm sóc da nào được thiết lập cho tài khoản này (Để trống, không dùng dữ liệu mẫu).";
+        finalSteps = [];
+      } else {
+        routineTitle = timeOfDay === "morning"
+          ? `Routine Sáng Cá Nhân · ${userName}`
+          : `Routine Tối Cá Nhân · ${userName}`;
+        routineDescription = timeOfDay === "morning"
+          ? "Làm sạch dịu nhẹ pH 5.5, cấp nước phục hồi và chống nắng bảo vệ quang phổ rộng."
+          : "Tẩy trang hòa tan bụi mịn và dầu nhờn, kháng khuẩn ngừa mụn và tái tạo màng ẩm ban đêm.";
+
+        finalSteps = itemsToUse.map((item, idx) => {
+          const isCompleted = completedSet.has(item.label);
+          return {
+            id: item.id || `user-step-${idx}`,
+            stepNumber: idx + 1,
+            label: item.label,
+            // Không tự động chèn sản phẩm mẫu giả lập (CeraVe / La Roche-Posay)
+            productName: null,
+            brand: null,
+            category: null,
+            imageUrl: null,
+            activeIngredients: null,
+            stepTime: timeOfDay,
+            dosage: null,
+            usageGuide: null,
+            isCompleted: Boolean(isCompleted),
+          };
+        });
       }
-
-      routineTitle = timeOfDay === "morning"
-        ? `Routine Sáng Cá Nhân · ${userName}`
-        : `Routine Tối Cá Nhân · ${userName}`;
-      routineDescription = timeOfDay === "morning"
-        ? "Làm sạch dịu nhẹ pH 5.5, cấp nước phục hồi và chống nắng bảo vệ quang phổ rộng."
-        : "Tẩy trang hòa tan bụi mịn và dầu nhờn, kháng khuẩn ngừa mụn và tái tạo màng ẩm ban đêm.";
-
-      finalSteps = itemsToUse.map((item, idx) => {
-        const prod = getProductForStep(item.label, timeOfDay as "morning" | "evening", idx);
-        const isCompleted = completedSet.has(item.label) || (prod.productName && completedSet.has(prod.productName));
-        return {
-          id: item.id || `user-step-${idx}`,
-          stepNumber: idx + 1,
-          label: item.label,
-          productName: prod.productName,
-          brand: prod.brand,
-          category: prod.category,
-          imageUrl: prod.imageUrl,
-          activeIngredients: prod.activeIngredients,
-          stepTime: prod.stepTime || timeOfDay,
-          dosage: prod.dosage,
-          usageGuide: prod.usageGuide,
-          isCompleted: Boolean(isCompleted),
-        };
-      });
     }
 
     const total = finalSteps.length;

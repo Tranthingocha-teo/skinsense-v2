@@ -37,7 +37,7 @@ export function ProductCard({
       role="button"
       accessibilityLabel={product.name}
       onPress={() => router.push({ pathname: '/products/[id]', params: { id: product.id, ...(zone ? { zone } : {}) } } as any)}
-      className="w-[220px] rounded-card border border-border bg-card p-3 active:scale-[0.98]"
+      className="w-[232px] rounded-card border border-border bg-card p-3.5 shadow-xs active:scale-[0.98]"
     >
       <View className="relative aspect-square w-full overflow-hidden rounded-control bg-surface-2">
         <Image
@@ -123,7 +123,7 @@ export function RecommendedProductsSection({
               role="tab"
               aria-selected={active}
               onPress={() => setSelectedZone(filter.id)}
-              className={`rounded-pill px-3.5 py-1.5 border ${
+              className={`min-h-11 rounded-pill px-3.5 py-2 border ${
                 active
                   ? 'bg-foreground border-foreground'
                   : 'bg-card border-border'

@@ -96,11 +96,11 @@ export function ProductDetail({
 
       {/* Main Scrollable View */}
       <ScrollView
-        contentContainerClassName="gap-4 px-5 pb-32 pt-3"
+        contentContainerClassName="gap-5 px-5 pb-32 pt-4"
         showsVerticalScrollIndicator={false}
       >
         {/* Product Hero Image */}
-        <View className="aspect-square w-full overflow-hidden rounded-card border border-border bg-surface-2 shadow-sm">
+        <View className="aspect-square w-full overflow-hidden rounded-card border border-border bg-surface-2 shadow-xs">
           <Image
             source={{ uri: product.imageUrl }}
             style={{ width: '100%', height: '100%' }}
@@ -110,7 +110,7 @@ export function ProductDetail({
         </View>
 
         {/* Brand & Title Info */}
-        <View className="gap-1.5">
+        <View className="gap-2">
           <View className="flex-row items-center justify-between">
             <View className="rounded-pill bg-surface-2 px-2.5 py-1">
               <Text className="text-[11.5px] font-semibold uppercase tracking-wider text-primary">
@@ -124,32 +124,32 @@ export function ProductDetail({
             </View>
           </View>
 
-          <Text role="heading" aria-level="1" className="font-display text-[22px] font-medium leading-[28px]">
+          <Text role="heading" aria-level="1" className="font-display text-[24px] font-medium leading-[30px]">
             {product.name}
           </Text>
 
-          <View className="mt-1 flex-row items-baseline gap-2">
-            <Text className="text-[24px] font-bold text-primary">{product.priceFormatted}</Text>
-            <Text className="text-[13px] text-muted-foreground">· {product.category}</Text>
+          <View className="mt-1 flex-row flex-wrap items-baseline gap-x-2 gap-y-1">
+            <Text className="font-display text-[26px] font-medium text-foreground">{product.priceFormatted}</Text>
+            <Text className="text-[13px] text-muted-foreground">{product.category}</Text>
           </View>
         </View>
 
         {/* AI & Clinical Match Explanation */}
-        <View className="gap-2 rounded-card border border-primary/20 bg-primary/5 p-4">
+        <View className="gap-2.5 rounded-card border border-border bg-card p-4">
           <View className="flex-row items-center gap-2">
             <Icon as={Sparkles} size={18} className="text-primary" />
-            <Text className="text-[14.5px] font-semibold text-primary">
+            <Text className="text-[14.5px] font-semibold text-foreground">
               Vì sao sản phẩm này phù hợp với da bạn?
             </Text>
           </View>
-          <Text className="text-[13.5px] font-light leading-[20px] text-foreground">
+          <Text className="text-[14px] font-light leading-[22px] text-muted-foreground">
             {clinicalExplanation}
           </Text>
         </View>
 
         {/* Key Actives */}
         <View className="gap-2.5">
-          <Text role="heading" aria-level="2" className="text-[15px] font-semibold">
+          <Text role="heading" aria-level="2" className="font-display text-[17px] font-medium">
             Hoạt chất chính
           </Text>
           <View className="flex-row flex-wrap gap-2">
@@ -164,7 +164,7 @@ export function ProductDetail({
 
         {/* Detailed Description */}
         <View className="gap-2">
-          <Text role="heading" aria-level="2" className="text-[15px] font-semibold">
+          <Text role="heading" aria-level="2" className="font-display text-[17px] font-medium">
             Công dụng nổi bật
           </Text>
           <Text className="text-[14px] font-light leading-[22px] text-muted-foreground">
@@ -174,7 +174,7 @@ export function ProductDetail({
 
         {/* How to use */}
         <View className="gap-2">
-          <Text role="heading" aria-level="2" className="text-[15px] font-semibold">
+          <Text role="heading" aria-level="2" className="font-display text-[17px] font-medium">
             Hướng dẫn trong chu trình Routine
           </Text>
           <View className="rounded-card border border-border bg-card p-3.5">
@@ -211,7 +211,7 @@ export function ProductDetail({
         <View className="flex-row items-center gap-3">
           <View className="flex-1">
             <Text className="text-[11.5px] text-muted-foreground">Giá niêm yết</Text>
-            <Text className="text-[20px] font-bold text-foreground">{product.priceFormatted}</Text>
+            <Text className="font-display text-[22px] font-medium text-foreground">{product.priceFormatted}</Text>
           </View>
           <Pressable
             role="button"
@@ -220,7 +220,7 @@ export function ProductDetail({
               void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               router.push(`/market/${product.id}` as any);
             }}
-            className="flex-[1.5] h-12 flex-row items-center justify-center gap-2 rounded-control bg-primary active:opacity-90"
+            className="min-h-12 flex-[1.5] flex-row items-center justify-center gap-2 rounded-control bg-primary px-3 active:opacity-90"
           >
             <Icon as={ShoppingBag} size={17} className="text-primary-foreground" />
             <Text className="text-[15px] font-medium text-primary-foreground">

@@ -8,12 +8,17 @@ export async function POST(request: Request) {
       email,
       password,
       fullName,
+      ownerName,
+      doctorName,
       role = "customer",
       phoneNumber,
       shopName,
       specialty,
       licenseId,
       hospital,
+      license,
+      category,
+      address,
     } = body;
 
     if (!email) {
@@ -39,24 +44,36 @@ export async function POST(request: Request) {
     const isAdminEmail = normalizedEmail === "hattn.23itb@vku.udn.vn";
     const effectiveRole = isAdminEmail ? "admin" : role;
 
-    // Specialists start as "pending" approval unless it is the super admin
+    // Specialists & Shops start as "pending" approval unless it is the super admin
     const status = isAdminEmail
       ? "active"
-      : effectiveRole === "specialist"
+      : effectiveRole === "specialist" || effectiveRole === "shop"
       ? "pending"
       : "active";
 
+    const effectiveFullName = isAdminEmail
+      ? "Trần Thị Ngọc Hà (Super Admin)"
+      : (fullName || ownerName || doctorName || shopName || normalizedEmail.split("@")[0]).trim();
+
     const userMetadata = {
-      full_name: isAdminEmail
-        ? "Trần Thị Ngọc Hà (Super Admin)"
-        : fullName?.trim() || normalizedEmail.split("@")[0],
+      full_name: effectiveFullName,
+      name: effectiveFullName,
       role: effectiveRole,
       status,
       phone_number: phoneNumber?.trim() || "",
-      shop_name: shopName?.trim() || "",
+      shop_name: shopName?.trim() || fullName?.trim() || "",
+      license: license?.trim() || licenseId?.trim() || "",
+      category: category?.trim() || specialty?.trim() || "",
+      address: address?.trim() || hospital?.trim() || "",
       specialty: specialty?.trim() || "Chuyên khoa Da liễu & Thẩm mỹ Da",
-      license_id: licenseId?.trim() || "Đang chờ duyệt CCHN",
-      hospital: hospital?.trim() || "Bệnh viện Da liễu",
+      license_id: licenseId?.trim() || license?.trim() || "Đang chờ duyệt CCHN",
+      hospital: hospital?.trim() || address?.trim() || "Bệnh viện Da liễu",
+      shop_details: effectiveRole === "shop" ? {
+        shopName: shopName?.trim() || fullName?.trim() || "Gian hàng mới",
+        license: license?.trim() || licenseId?.trim() || "GPKD-Đang chờ duyệt",
+        category: category?.trim() || specialty?.trim() || "Dược mỹ phẩm & Chăm sóc da",
+        address: address?.trim() || hospital?.trim() || "Việt Nam",
+      } : undefined,
       is_super_admin: isAdminEmail,
       submitted_at: new Date().toISOString(),
     };
@@ -131,6 +148,44 @@ export async function POST(request: Request) {
       }
     }
 
+    // 3. If shop, also record in Supabase Storage shops_registry.json
+    if (effectiveRole === "shop") {
+      try {
+        let registry: any[] = [];
+        const { data: fileBlob } = await supabaseAdmin.storage
+          .from("photos")
+          .download("shops/shops_registry.json");
+        if (fileBlob) {
+          registry = JSON.parse(await fileBlob.text());
+        }
+
+        const shopEntry = {
+          id: savedUser?.id || `shop_${Date.now()}`,
+          email: normalizedEmail,
+          ownerName: userMetadata.full_name,
+          shopName: userMetadata.shop_name,
+          license: userMetadata.license,
+          category: userMetadata.category,
+          address: userMetadata.address,
+          phone: userMetadata.phone_number,
+          status,
+          avatarUrl: "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&auto=format&fit=crop&q=80",
+          submittedAt: userMetadata.submitted_at,
+        };
+
+        const filtered = registry.filter((s) => s.email?.toLowerCase() !== normalizedEmail);
+        filtered.push(shopEntry);
+
+        await supabaseAdmin.storage.from("photos").upload(
+          "shops/shops_registry.json",
+          Buffer.from(JSON.stringify(filtered, null, 2)),
+          { upsert: true, contentType: "application/json" }
+        );
+      } catch (e: any) {
+        console.warn("Lỗi lưu shops_registry:", e.message);
+      }
+    }
+
     return NextResponse.json({
       ok: true,
       user: savedUser,
@@ -138,6 +193,8 @@ export async function POST(request: Request) {
       message:
         effectiveRole === "specialist"
           ? "Hồ sơ Bác sĩ đã được gửi thành công tới Super Admin Trần Thị Ngọc Hà (hattn.23itb@vku.udn.vn) để xét duyệt!"
+          : effectiveRole === "shop"
+          ? "Hồ sơ mở Gian hàng đã được gửi thành công tới Super Admin Trần Thị Ngọc Hà (hattn.23itb@vku.udn.vn) để xét duyệt!"
           : undefined,
     });
   } catch (err) {
