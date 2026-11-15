@@ -31,15 +31,16 @@ export async function GET(req: Request) {
         );
       }
 
-      // Giới hạn shop chỉ đọc được hội thoại của chính gian hàng mình
-      const scopedShopId =
-        actor.role === "admin"
-          ? requestedShopId
-            ? normalizeShopId(requestedShopId)
-            : undefined
-          : actor.shopId || "skinsense_mall";
+      // Admin may list every shop (or filter by ?shopId). A shop account is scoped to
+      // the shop derived from its session; the shopId query param is ignored for tenancy.
+      if (actor.role === "admin") {
+        const threads = requestedShopId
+          ? await chatStore.getThreadsForShopAsync(normalizeShopId(requestedShopId))
+          : await chatStore.getAllThreadsAsync();
+        return NextResponse.json({ ok: true, threads });
+      }
 
-      const threads = await chatStore.getThreadsForShopAsync(scopedShopId);
+      const threads = await chatStore.getThreadsForShopAsync(actor.shopId);
       return NextResponse.json({ ok: true, threads });
     }
 

@@ -320,18 +320,17 @@ export const chatStore = {
     });
   },
 
+  // An absent shop id returns nothing: callers that need every thread use getAllThreads explicitly.
   getThreadsForShop(shopId?: string): ChatThread[] {
-    const list = persistence.readSync();
-    if (!shopId) return list;
+    if (!shopId?.trim()) return [];
     const clean = normalizeShopId(shopId);
-    return list.filter((t) => t.shopId === clean);
+    return persistence.readSync().filter((t) => t.shopId === clean);
   },
 
   async getThreadsForShopAsync(shopId?: string): Promise<ChatThread[]> {
-    const list = await persistence.readAsync();
-    if (!shopId) return list;
+    if (!shopId?.trim()) return [];
     const clean = normalizeShopId(shopId);
-    return list.filter((t) => t.shopId === clean);
+    return (await persistence.readAsync()).filter((t) => t.shopId === clean);
   },
 
   sendMessage(params: {

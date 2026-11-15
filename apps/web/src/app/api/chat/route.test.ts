@@ -207,6 +207,82 @@ describe("/api/chat security, isolation, and messaging", () => {
     expect(replyJson.thread.messages.some((m: { text: string }) => m.text.includes("hướng dẫn sử dụng"))).toBe(true);
   });
 
+  it("returns only the caller's own shop threads for forShop, ignoring the shopId param", async () => {
+    const { GET, POST } = await import("./route");
+
+    // Seed a thread for another shop (seed data already has larocheposay, bioderma, ...)
+    currentUser = {
+      id: "cust_minh",
+      email: "minh@example.com",
+      user_metadata: { role: "customer", full_name: "Minh Nguyen" },
+    };
+    await POST(
+      new Request("http://localhost:3000/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ shopName: "Klinik Glow Store", sender: "user", text: "Hỏi Klinik" }),
+      }),
+    );
+
+    // A shop account with no threads of its own sees nothing, with or without ?shopId
+    currentUser = {
+      id: "shop_new",
+      email: "new@shop.vn",
+      user_metadata: { role: "shop", shop_name: "Brand New Store" },
+    };
+    for (const url of [
+      "http://localhost:3000/api/chat?forShop=true",
+      "http://localhost:3000/api/chat?forShop=true&shopId=klinik_glow_store",
+      "http://localhost:3000/api/chat?forShop=true&shopId=",
+    ]) {
+      const res = await GET(new Request(url));
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.threads).toEqual([]);
+    }
+  });
+
+  it("does not let one customer read another customer's thread", async () => {
+    const { GET, POST } = await import("./route");
+
+    currentUser = {
+      id: "cust_alice",
+      email: "alice@example.com",
+      user_metadata: { role: "customer", full_name: "Alice" },
+    };
+    await POST(
+      new Request("http://localhost:3000/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ shopId: "bioderma", sender: "user", text: "Bí mật của Alice" }),
+      }),
+    );
+
+    currentUser = {
+      id: "cust_bob",
+      email: "bob@example.com",
+      user_metadata: { role: "customer", full_name: "Bob" },
+    };
+    // Bob even passes Alice's id as a query param; the server must use the session instead
+    const res = await GET(
+      new Request("http://localhost:3000/api/chat?shopId=bioderma&userId=cust_alice"),
+    );
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.thread.userId).toBe("cust_bob");
+    expect(
+      json.thread.messages.some((m: { text: string }) => m.text.includes("Bí mật của Alice")),
+    ).toBe(false);
+  });
+
+  it("chatStore returns no threads when the shop id is absent", async () => {
+    const { chatStore } = await import("@/lib/chat-store");
+    expect(chatStore.getThreadsForShop(undefined)).toEqual([]);
+    expect(await chatStore.getThreadsForShopAsync(undefined)).toEqual([]);
+    expect(await chatStore.getThreadsForShopAsync("  ")).toEqual([]);
+    expect((await chatStore.getThreadsForShopAsync("bioderma")).every((t) => t.shopId === "bioderma")).toBe(true);
+  });
+
   it("validates empty and oversized messages", async () => {
     currentUser = {
       id: "cust_alice",
