@@ -2,11 +2,16 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { supabaseEnv } from "@/lib/env";
 import { resolveActorRole } from "@/lib/actor-role";
+import { strayOAuthCodeRedirect } from "@/lib/auth-redirect";
 
 // Refreshes the Supabase session cookie on every request (Server Components
 // can't write cookies) and gates /app and /seller behind a session.
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // An OAuth code that Supabase sent to the Site URL instead of /auth/callback.
+  const stray = strayOAuthCodeRedirect(new URL(request.url));
+  if (stray) return NextResponse.redirect(stray);
 
   if (pathname === "/demo" || pathname.startsWith("/demo/")) {
     return NextResponse.next({ request });
