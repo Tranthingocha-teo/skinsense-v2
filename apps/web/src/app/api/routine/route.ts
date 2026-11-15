@@ -83,15 +83,25 @@ export async function GET(request: Request) {
     const today = new Date().toISOString().split("T")[0];
 
     // 1. Get current authenticated user
-    const supabaseServer = await createServerClient();
-    let { data: { user } } = await supabaseServer.auth.getUser();
-
-    const supabaseAdmin = getSupabaseAdmin();
+    let user = null;
+    try {
+      const supabaseServer = await createServerClient();
+      const { data } = await supabaseServer.auth.getUser();
+      user = data?.user ?? null;
+    } catch {
+      user = null;
+    }
 
     // If not found in cookie, check Authorization header (e.g. Bearer token / mobile app)
     if (!user) {
       const authHeader = request.headers.get("authorization");
-      if (authHeader && authHeader.startsWith("Bearer ")) {
+      if (
+        authHeader &&
+        authHeader.startsWith("Bearer ") &&
+        process.env.NEXT_PUBLIC_SUPABASE_URL &&
+        process.env.SUPABASE_SERVICE_ROLE_KEY
+      ) {
+        const supabaseAdmin = getSupabaseAdmin();
         const token = authHeader.slice(7).trim();
         const { data: tokenData } = await supabaseAdmin.auth.getUser(token);
         if (tokenData?.user) {
@@ -119,6 +129,8 @@ export async function GET(request: Request) {
         percent: 0,
       });
     }
+
+    const supabaseAdmin = getSupabaseAdmin();
 
     const userId = user.id;
     const userEmail = user.email?.trim().toLowerCase() || "";

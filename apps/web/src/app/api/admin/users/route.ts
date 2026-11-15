@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { requireRoleActor } from "@/lib/session-auth";
 
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -14,7 +15,10 @@ function getSupabaseAdmin() {
   });
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const auth = await requireRoleActor(request, ["admin"]);
+  if (!auth.ok) return auth.response;
+
   try {
     const supabaseAdmin = getSupabaseAdmin();
     const { data, error } = await supabaseAdmin.auth.admin.listUsers();
@@ -64,6 +68,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const auth = await requireRoleActor(request, ["admin"]);
+  if (!auth.ok) return auth.response;
+
   try {
     const body = await request.json();
     const { email, password = "password123@", fullName, role = "customer", phone, shopName, specialty, hospital, licenseId } = body;
@@ -106,6 +113,9 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
+  const auth = await requireRoleActor(request, ["admin"]);
+  if (!auth.ok) return auth.response;
+
   try {
     const body = await request.json();
     const { userId, role, status } = body;
@@ -171,6 +181,9 @@ export async function PATCH(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  const auth = await requireRoleActor(request, ["admin"]);
+  if (!auth.ok) return auth.response;
+
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get("userId");

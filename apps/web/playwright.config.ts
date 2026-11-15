@@ -4,7 +4,7 @@ import path from "node:path";
 
 loadEnvConfig(__dirname);
 
-// E2E_BASE_URL=https://skinsense-v2.vercel.app runs the same specs against a deployment, no dev server.
+// E2E_BASE_URL=https://skinsense-v2-topaz.vercel.app runs the same specs against a deployment, no dev server.
 const deployed = process.env.E2E_BASE_URL;
 
 // Seam (spec.md "Testing Decisions"): a fake camera at the browser level;

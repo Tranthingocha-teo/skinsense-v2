@@ -95,8 +95,11 @@ describe("/api/user/orders POST security and workflow validation", () => {
     vi.clearAllMocks();
   });
 
-  it("rejects unauthenticated mutations with 401", async () => {
-    const { POST } = await import("./route");
+  it("rejects unauthenticated GET and POST requests with 401", async () => {
+    const { GET, POST } = await import("./route");
+    const getRes = await GET(new Request("http://localhost:3000/api/user/orders?role=shop"));
+    expect(getRes.status).toBe(401);
+
     const res = await POST(
       new Request("http://localhost:3000/api/user/orders", {
         method: "POST",

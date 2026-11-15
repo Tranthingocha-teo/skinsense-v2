@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { requireRoleActor } from "@/lib/session-auth";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -27,10 +28,37 @@ async function downloadJsonFromStorage<T = unknown>(supabase: SupabaseClient, pa
   return null;
 }
 
-export async function GET() {
+interface ClinicalRecordEntry extends Record<string, unknown> {
+  id?: string;
+  userId?: string;
+  patientUserId?: string;
+  patientEmail?: string;
+}
+
+export async function GET(request: Request) {
+  const auth = await requireRoleActor(request, ["customer", "specialist", "admin"]);
+  if (!auth.ok) return auth.response;
+  const { actor } = auth;
+
   try {
     const supabase = getSupabaseAdmin();
-    const cases = (await downloadJsonFromStorage(supabase, "clinical_records/cases_registry.json")) || [];
+    const allCases =
+      (await downloadJsonFromStorage<ClinicalRecordEntry[]>(
+        supabase,
+        "clinical_records/cases_registry.json",
+      )) || [];
+
+    const cases =
+      actor.role === "customer"
+        ? allCases.filter(
+            (c) =>
+              c.patientUserId === actor.userId ||
+              c.userId === actor.userId ||
+              (typeof c.patientEmail === "string" &&
+                c.patientEmail.trim().toLowerCase() === actor.email),
+          )
+        : allCases;
+
     return NextResponse.json({ ok: true, cases });
   } catch (err) {
     return NextResponse.json(
@@ -41,6 +69,10 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const auth = await requireRoleActor(request, ["customer", "specialist", "admin"]);
+  if (!auth.ok) return auth.response;
+  const { actor } = auth;
+
   try {
     const body = await request.json();
     const {
@@ -75,12 +107,22 @@ export async function POST(request: Request) {
     const caseIndex = existingCases.length + 1;
     const caseCode = `BA-2026-${String(caseIndex).padStart(4, "0")}`;
 
+    const resolvedPatientUserId =
+      actor.role === "customer"
+        ? actor.userId
+        : body.patientUserId || body.userId || (patientEmail === "trandinhhai0936039127@gmail.com" ? "365d9ffb-0ee5-41d2-879c-37ef337fe262" : undefined);
+
+    const resolvedPatientEmail =
+      actor.role === "customer"
+        ? actor.email
+        : patientEmail?.trim() || "khachhang@gmail.com";
+
     const newCase = {
       id: newCaseId,
       caseCode,
-      patientUserId: body.patientUserId || body.userId || (patientEmail === "trandinhhai0936039127@gmail.com" ? "365d9ffb-0ee5-41d2-879c-37ef337fe262" : undefined),
+      patientUserId: resolvedPatientUserId,
       patientName: patientName.trim(),
-      patientEmail: patientEmail?.trim() || "khachhang@gmail.com",
+      patientEmail: resolvedPatientEmail,
       patientAge: Number(patientAge) || 21,
       patientGender: patientGender || "Nữ",
       phone: phone?.trim() || "0905 123 456",

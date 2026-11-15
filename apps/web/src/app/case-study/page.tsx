@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { CanvasIcon, SiteHeader } from "@/components/site-header";
 import { APK_URL } from "@/lib/utils";
 
-const LIVE_URL = "https://skinsense-v2.vercel.app";
+const LIVE_URL = "https://skinsense-v2-topaz.vercel.app";
 const REPO_URL = "https://github.com/Tranthingocha-teo/skinsense-v2";
 
 const INTRO =

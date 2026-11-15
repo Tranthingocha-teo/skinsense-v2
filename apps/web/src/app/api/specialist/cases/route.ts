@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { requireRoleActor } from "@/lib/session-auth";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -52,7 +53,10 @@ async function downloadJsonFromStorage<T = unknown>(supabase: SupabaseClient, pa
   return null;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const auth = await requireRoleActor(request, ["specialist", "admin"]);
+  if (!auth.ok) return auth.response;
+
   try {
     const supabase = getSupabaseAdmin();
 
@@ -167,6 +171,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const auth = await requireRoleActor(request, ["specialist", "admin"]);
+  if (!auth.ok) return auth.response;
+
   try {
     const body = await request.json();
     const { userId, caseId, routineTitle, revisitDate, doctorNotes, products } = body;

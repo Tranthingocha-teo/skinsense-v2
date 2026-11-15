@@ -17,7 +17,7 @@ export async function OPTIONS() {
 
 // GET /api/orders/latest - Lấy đơn hàng mới nhất đang chờ thanh toán
 export async function GET() {
-  const allOrders = ordersStore.getAll();
+  const allOrders = await ordersStore.getAllAsync();
   // Ưu tiên đơn hàng pending mới nhất, nếu không có lấy đơn mới nhất
   const pending = allOrders.find((o) => o.status === "pending" || o.paymentStatus === "unpaid");
   const latest = pending || allOrders[0] || null;

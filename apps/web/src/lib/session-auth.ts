@@ -1,3 +1,4 @@
+import { NextResponse } from "next/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { normalizeShopId } from "@/lib/shop-utils";
@@ -22,9 +23,14 @@ const SUPER_ADMIN_EMAIL = "hattn.23itb@vku.udn.vn";
  */
 export async function getAuthenticatedActor(request?: Request): Promise<AuthenticatedActor | null> {
   try {
-    const supabaseServer = await createServerClient();
-    const { data } = await supabaseServer.auth.getUser();
-    let user = data?.user ?? null;
+    let user = null;
+    try {
+      const supabaseServer = await createServerClient();
+      const { data } = await supabaseServer.auth.getUser();
+      user = data?.user ?? null;
+    } catch {
+      user = null;
+    }
 
     if (!user && request) {
       const authHeader = request.headers.get("authorization");
@@ -86,4 +92,39 @@ export async function getAuthenticatedActor(request?: Request): Promise<Authenti
   } catch {
     return null;
   }
+}
+
+/**
+ * Requires an authenticated actor (and optionally one of `allowedRoles`).
+ * Returns a ready-to-return 401 or 403 `NextResponse` on failure.
+ */
+export async function requireRoleActor(
+  request?: Request,
+  allowedRoles?: readonly ActorRole[],
+): Promise<
+  | { ok: true; actor: AuthenticatedActor }
+  | { ok: false; response: NextResponse }
+> {
+  const actor = await getAuthenticatedActor(request);
+  if (!actor) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { ok: false, error: "Vui lòng đăng nhập để truy cập." },
+        { status: 401 },
+      ),
+    };
+  }
+
+  if (allowedRoles && allowedRoles.length > 0 && !allowedRoles.includes(actor.role)) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { ok: false, error: "Bạn không có quyền truy cập chức năng này." },
+        { status: 403 },
+      ),
+    };
+  }
+
+  return { ok: true, actor };
 }

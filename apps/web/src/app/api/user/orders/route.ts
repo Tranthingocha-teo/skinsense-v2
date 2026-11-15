@@ -58,41 +58,35 @@ function resolveItemImage(name: string, fallback?: string): string {
 
 export async function GET(req: Request) {
   try {
-    const { searchParams } = new URL(req.url);
-    const roleParam = searchParams.get("role")?.trim();
-    const shopNameParam = searchParams.get("shopName")?.trim();
-
     const actor = await getAuthenticatedActor(req);
-    const allOrders = ordersStore.getAll();
-    const now = Date.now();
-
-    let currentUserName = "Thùy Dung";
-    let currentUserPhone = "0987654321";
-    let userOrders: BackendOrder[] = [];
-
-    if (actor?.role === "admin") {
-      currentUserName = actor.fullName;
-      currentUserPhone = actor.phone;
-      userOrders = allOrders;
-    } else if (actor?.role === "shop" || (!actor && roleParam === "shop")) {
-      const targetShopId =
-        actor?.shopId || normalizeShopId(shopNameParam || "La Roche-Posay Flagship Store");
-      currentUserName = actor?.shopName || shopNameParam || "La Roche-Posay Flagship Store";
-      currentUserPhone = actor?.phone || "";
-      userOrders = allOrders.filter((o) => normalizeShopId(o.shopName) === targetShopId);
-    } else if (actor) {
-      currentUserName = actor.fullName;
-      currentUserPhone = actor.phone || "0987654321";
-      userOrders = allOrders.filter((o) => isOrderOwnedByActor(o, actor));
-    } else {
-      // Chế độ preview mặc định trước khi đăng nhập: chỉ hiển thị đơn hàng mẫu của demo customer
-      const demoNormalized = normalizePersonName(currentUserName);
-      userOrders = allOrders.filter((o) => normalizePersonName(o.customerName) === demoNormalized);
+    if (!actor) {
+      return NextResponse.json(
+        { ok: false, error: "Vui lòng đăng nhập để xem đơn hàng." },
+        { status: 401 },
+      );
     }
 
-    // Chỉ tự động tạo đơn mẫu ban đầu cho tài khoản Customer / demo Customer (không tạo cho Shop)
-    const isShopRequest = actor?.role === "shop" || (!actor && roleParam === "shop");
-    if (!isShopRequest && actor?.role !== "admin" && userOrders.length === 0) {
+    const allOrders = await ordersStore.getAllAsync();
+    const now = Date.now();
+
+    let currentUserName = actor.fullName || "Khách hàng";
+    let currentUserPhone = actor.phone || "0987654321";
+    let userOrders: BackendOrder[] = [];
+
+    if (actor.role === "admin") {
+      userOrders = allOrders;
+    } else if (actor.role === "shop") {
+      const targetShopId =
+        actor.shopId || normalizeShopId(actor.shopName || "La Roche-Posay Flagship Store");
+      currentUserName = actor.shopName || "La Roche-Posay Flagship Store";
+      currentUserPhone = actor.phone || "";
+      userOrders = allOrders.filter((o) => normalizeShopId(o.shopName) === targetShopId);
+    } else {
+      userOrders = allOrders.filter((o) => isOrderOwnedByActor(o, actor));
+    }
+
+    // Chỉ tự động tạo đơn mẫu ban đầu cho tài khoản Customer (không tạo cho Shop/Admin)
+    if (actor.role === "customer" && userOrders.length === 0) {
       const displayCustomerName = currentUserName;
 
       const sampleOrders: Omit<BackendOrder, "id" | "createdAt">[] = [
@@ -194,7 +188,7 @@ export async function GET(req: Request) {
 
       const createdList: BackendOrder[] = [];
       for (const sample of sampleOrders) {
-        const created = ordersStore.create(sample);
+        const created = await ordersStore.createAsync(sample);
         createdList.push(created);
       }
       userOrders = createdList;
@@ -260,7 +254,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "Thiếu mã đơn hàng" }, { status: 400 });
     }
 
-    const existingOrder = ordersStore.findByCode(orderCode);
+    const existingOrder = await ordersStore.findByCodeAsync(orderCode);
     if (!existingOrder) {
       return NextResponse.json({ ok: false, error: "Không tìm thấy đơn hàng" }, { status: 404 });
     }
@@ -288,7 +282,7 @@ export async function POST(req: Request) {
         );
       }
 
-      const result = ordersStore.updateStatusSafe(orderCode, status);
+      const result = await ordersStore.updateStatusSafeAsync(orderCode, status);
       if (!result.ok) {
         const httpStatus =
           result.code === "NOT_FOUND" ? 404 : result.code === "INVALID_STATUS" ? 400 : 409;
@@ -340,7 +334,7 @@ export async function POST(req: Request) {
         createdAt: new Date().toISOString(),
       };
 
-      const result = ordersStore.addReviewSafe(orderCode, reviewPayload);
+      const result = await ordersStore.addReviewSafeAsync(orderCode, reviewPayload);
       if (!result.ok) {
         const httpStatus = result.code === "NOT_FOUND" ? 404 : 409;
         return NextResponse.json({ ok: false, error: result.error }, { status: httpStatus });

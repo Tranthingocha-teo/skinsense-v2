@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     }
 
     if (!code) {
-      const allOrders = ordersStore.getAll();
+      const allOrders = await ordersStore.getAllAsync();
       const latestPending = allOrders.find((o) => o.status === "pending" || o.paymentStatus === "unpaid");
       if (latestPending) {
         code = latestPending.orderCode;
@@ -40,12 +40,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, error: "Thiếu mã đơn hàng" }, { status: 400, headers: corsHeaders });
     }
 
-    const updated = ordersStore.markAsPaid(code);
+    const updated = await ordersStore.markAsPaidAsync(code);
     return NextResponse.json(
       { ok: true, message: "Thanh toán thành công", order: updated },
       { headers: corsHeaders },
     );
-  } catch (error) {
+  } catch {
     return NextResponse.json({ ok: false, error: "Lỗi thanh toán" }, { status: 500, headers: corsHeaders });
   }
 }
@@ -55,7 +55,7 @@ export async function GET(request: Request) {
   let code = searchParams.get("code") || searchParams.get("orderCode") || "";
 
   if (!code) {
-    const allOrders = ordersStore.getAll();
+    const allOrders = await ordersStore.getAllAsync();
     const latestPending = allOrders.find((o) => o.status === "pending" || o.paymentStatus === "unpaid");
     if (latestPending) {
       code = latestPending.orderCode;
@@ -66,7 +66,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ ok: false, error: "Thiếu mã đơn hàng" }, { status: 400, headers: corsHeaders });
   }
 
-  const updated = ordersStore.markAsPaid(code);
+  const updated = await ordersStore.markAsPaidAsync(code);
   return NextResponse.json(
     { ok: true, message: "Thanh toán thành công", order: updated },
     { headers: corsHeaders },

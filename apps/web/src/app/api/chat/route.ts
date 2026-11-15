@@ -39,13 +39,13 @@ export async function GET(req: Request) {
             : undefined
           : actor.shopId || "skinsense_mall";
 
-      const threads = chatStore.getThreadsForShop(scopedShopId);
+      const threads = await chatStore.getThreadsForShopAsync(scopedShopId);
       return NextResponse.json({ ok: true, threads });
     }
 
     // Role khách hàng chỉ đọc được cuộc hội thoại của chính mình với shop đã chọn
     const resolvedShopId = normalizeShopId(requestedShopId || "skinsense_mall");
-    const thread = chatStore.getThread(resolvedShopId, actor.userId, {
+    const thread = await chatStore.getThreadAsync(resolvedShopId, actor.userId, {
       userName: actor.fullName,
     });
     return NextResponse.json({ ok: true, thread });
@@ -130,7 +130,7 @@ export async function POST(req: Request) {
           ? normalizeShopId(rawShopId || rawShopName || "skinsense_mall")
           : actor.shopId || normalizeShopId(actor.shopName || rawShopName || "skinsense_mall");
 
-      const result = chatStore.sendMessage({
+      const result = await chatStore.sendMessageAsync({
         shopId: effectiveShopId,
         shopName: actor.role === "admin" ? rawShopName || undefined : actor.shopName,
         userId: rawTargetUserId,
@@ -150,7 +150,7 @@ export async function POST(req: Request) {
 
     // Khách hàng chỉ được gửi tin nhắn bằng chính userId đã xác thực
     const targetShopId = normalizeShopId(rawShopId || rawShopName || "skinsense_mall");
-    const result = chatStore.sendMessage({
+    const result = await chatStore.sendMessageAsync({
       shopId: targetShopId,
       shopName: rawShopName || undefined,
       userId: actor.userId,

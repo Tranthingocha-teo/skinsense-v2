@@ -11,7 +11,7 @@ export async function GET(request: Request) {
   const sinceParam = searchParams.get("since");
 
   if (code) {
-    const order = ordersStore.findByCode(code);
+    const order = await ordersStore.findByCodeAsync(code);
     if (order && (order.paymentStatus === "paid" || order.status === "processing")) {
       return NextResponse.json(
         {
@@ -38,7 +38,7 @@ export async function GET(request: Request) {
   if (sinceParam) {
     const sinceTimestamp = parseInt(sinceParam, 10);
     if (!isNaN(sinceTimestamp)) {
-      const allOrders = ordersStore.getAll();
+      const allOrders = await ordersStore.getAllAsync();
       const recentPaid = allOrders.find((o) => {
         if (o.paymentStatus !== "paid") return false;
         if (!o.paidAt) return false;
