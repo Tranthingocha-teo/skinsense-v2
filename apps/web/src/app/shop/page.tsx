@@ -166,8 +166,8 @@ export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
       shippingFeeVnd: 0,
     },
     variants: [
-      { id: "var_03", name: "Chai 236ml", priceVnd: 280000, originalPriceVnd: 330000, stock: 90, sku: "CERAVE-236ML" },
       { id: "var_04", name: "Chai 473ml Tiết Kiệm", priceVnd: 380000, originalPriceVnd: 450000, stock: 130, sku: "CERAVE-473ML" },
+      { id: "var_03", name: "Chai 236ml", priceVnd: 280000, originalPriceVnd: 330000, stock: 90, sku: "CERAVE-236ML" },
     ],
     vouchers: [
       { id: "vc_03", code: "CERAVE20K", discountLabel: "Giảm 20.000₫", minSpendLabel: "Đơn từ 350.000₫" },
@@ -357,8 +357,8 @@ export const INITIAL_SHOPEE_PRODUCTS: ShopeeProduct[] = [
       shippingFeeVnd: 0,
     },
     variants: [
-      { id: "var_10", name: "Chai 200ml", priceVnd: 285000, originalPriceVnd: 340000, stock: 75, sku: "LRP-MICELLAR-200ML" },
       { id: "var_11", name: "Chai 400ml Tiết Kiệm", priceVnd: 435000, originalPriceVnd: 515000, stock: 120, sku: "LRP-MICELLAR-400ML" },
+      { id: "var_10", name: "Chai 200ml", priceVnd: 285000, originalPriceVnd: 340000, stock: 75, sku: "LRP-MICELLAR-200ML" },
     ],
     vouchers: [
       { id: "vc_11", code: "FREESHIP", discountLabel: "Freeship Xtra", minSpendLabel: "Tối đa 70.000₫" },
@@ -885,9 +885,18 @@ export default function ShopProductPage() {
                     key={prod.id}
                     className="group rounded-2xl border border-[#D8D4CA] bg-[#FAF8F5] overflow-hidden shadow-2xs hover:border-[#C2410C]/60 hover:shadow-sm transition-all flex flex-col justify-between"
                   >
-                    {/* KHỐI 1: HÌNH ẢNH SẢN PHẨM (Không có vệt đen che ảnh, ảnh 1:1 trong sáng) */}
+                    {/* KHỐI 1: HÌNH ẢNH SẢN PHẨM (Bấm vào xem ngay trang chi tiết sản phẩm chuẩn sàn) */}
                     <div>
-                      <div className="relative aspect-square w-full bg-neutral-100 overflow-hidden border-b border-[#D8D4CA]/80">
+                      <div
+                        onClick={() => {
+                          setSelectedProduct(prod);
+                          setSelectedVariantIndex(0);
+                          setActiveImageIndex(0);
+                          setViewMode("buyer");
+                        }}
+                        className="relative aspect-square w-full bg-neutral-100 overflow-hidden border-b border-[#D8D4CA]/80 cursor-pointer"
+                        title="Bấm để xem trang chi tiết sản phẩm trên sàn"
+                      >
                         <img
                           src={prod.coverImage}
                           alt={prod.name}
@@ -912,7 +921,7 @@ export default function ShopProductPage() {
                         </span>
                       </div>
 
-                      {/* KHỐI 2: BRAND, SKU, TIÊU ĐỀ & ĐÁNH GIÁ (Sạch sẽ, không bị màu đen che) */}
+                      {/* KHỐI 2: BRAND, SKU, TIÊU ĐỀ & ĐÁNH GIÁ (Bấm tiêu đề xem chi tiết) */}
                       <div className="p-3.5 space-y-2.5">
                         <div className="flex items-center justify-between text-[10px] text-[#5C605C]">
                           <span className="font-semibold text-[#C2410C] uppercase tracking-wider truncate max-w-[150px]">
@@ -924,8 +933,14 @@ export default function ShopProductPage() {
                         </div>
 
                         <h3
-                          className="font-bold text-sm text-[#191B19] leading-snug line-clamp-2 min-h-[38px]"
-                          title={prod.name}
+                          onClick={() => {
+                            setSelectedProduct(prod);
+                            setSelectedVariantIndex(0);
+                            setActiveImageIndex(0);
+                            setViewMode("buyer");
+                          }}
+                          className="font-bold text-sm text-[#191B19] leading-snug line-clamp-2 min-h-[38px] cursor-pointer hover:text-[#C2410C] transition"
+                          title="Bấm để xem chi tiết sản phẩm"
                         >
                           {prod.name}
                         </h3>
@@ -1074,7 +1089,7 @@ export default function ShopProductPage() {
                       </div>
                     </div>
 
-                    {/* KHỐI 3: THANH NÚT THAO TÁC - ĐÃ BỎ GẠCH KẺ NGANG THEO ĐÚNG YÊU CẦU */}
+                    {/* KHỐI 3: THANH NÚT THAO TÁC (Xem chi tiết hoặc Mua ngay chuẩn xác giá) */}
                     <div className="p-3.5 pt-0 flex items-center gap-1.5">
                       <button
                         type="button"
@@ -1083,7 +1098,7 @@ export default function ShopProductPage() {
                         title="Xem đầy đủ mọi trường thông số Shopee"
                       >
                         <FileText className="size-3 text-[#5C605C]" />
-                        <span>Thông Số</span>
+                        <span className="hidden sm:inline">Thông Số</span>
                       </button>
 
                       <button
@@ -1094,11 +1109,23 @@ export default function ShopProductPage() {
                           setActiveImageIndex(0);
                           setViewMode("buyer");
                         }}
-                        className="flex-1 h-9 flex items-center justify-center gap-1 rounded-xl bg-[#C2410C] text-[11px] font-bold text-white shadow-2xs hover:bg-[#9A3412] transition cursor-pointer"
+                        className="flex-1 h-9 flex items-center justify-center gap-1 rounded-xl border border-[#C2410C]/40 bg-[#C2410C]/5 text-[#C2410C] text-[11px] font-bold hover:bg-[#C2410C]/15 transition cursor-pointer"
                         title="Xem giao diện mua hàng chuẩn sàn Shopee"
                       >
                         <Eye className="size-3" />
-                        <span>Xem Trên Sàn</span>
+                        <span>Chi Tiết</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          router.push(`/shop/checkout?productId=${prod.id}&variant=0&quantity=1`);
+                        }}
+                        className="flex-1 h-9 flex items-center justify-center gap-1 rounded-xl bg-[#C2410C] text-[11px] font-bold text-white shadow-2xs hover:bg-[#9A3412] transition cursor-pointer"
+                        title="Mua ngay sản phẩm này và chuyển đến trang thanh toán"
+                      >
+                        <ShoppingBag className="size-3" />
+                        <span>Mua Ngay</span>
                       </button>
 
                       <button
@@ -1352,7 +1379,7 @@ export default function ShopProductPage() {
                       type="button"
                       onClick={() => {
                         toast.success(`Đang chuyển sang trang thanh toán đơn hàng ${formatMoney(selectedProduct.priceVnd * buyerQuantity)}...`);
-                        router.push("/shop/checkout");
+                        router.push(`/shop/checkout?productId=${selectedProduct.id}&variant=${selectedVariantIndex}&quantity=${buyerQuantity}`);
                       }}
                       className="h-11 flex-1 flex items-center justify-center gap-2 rounded-xl bg-[#C2410C] px-5 text-sm font-bold text-white shadow-xs hover:bg-[#9A3412] transition active:scale-[0.98] cursor-pointer w-full"
                     >

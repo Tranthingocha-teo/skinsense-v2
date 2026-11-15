@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useEffect, useMemo, useRef } from "react";
+import { Suspense, useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -228,6 +228,31 @@ function CheckoutInner() {
     ];
   });
 
+  // Tự động cập nhật sản phẩm khi query param thay đổi (VD: bấm "Mua Ngay" sản phẩm khác trên shop)
+  useEffect(() => {
+    if (productIdParam) {
+      const found = INITIAL_SHOPEE_PRODUCTS.find((p) => p.id === productIdParam);
+      if (found) {
+        const chosenVariant = found.variants[variantParam] || found.variants[0];
+        setItems([
+          {
+            id: `item_${found.id}`,
+            productId: found.id,
+            name: found.name,
+            brand: found.brand,
+            variant: chosenVariant ? chosenVariant.name : `Dung tích ${found.specifications.volume}`,
+            volume: found.specifications.volume,
+            image: found.coverImage,
+            priceVnd: chosenVariant ? chosenVariant.priceVnd : found.priceVnd,
+            originalPriceVnd: chosenVariant ? chosenVariant.originalPriceVnd : found.originalPriceVnd,
+            quantity: qtyParam,
+            selected: true,
+          },
+        ]);
+      }
+    }
+  }, [productIdParam, variantParam, qtyParam]);
+
   // Thông tin địa chỉ giao hàng
   const [recipientName, setRecipientName] = useState("Trần Thị Ngọc Hà");
   const [recipientPhone, setRecipientPhone] = useState("(+84) 987 654 321");
@@ -240,10 +265,6 @@ function CheckoutInner() {
   const [sellerNote, setSellerNote] = useState("Gói hàng kỹ kèm túi chống sốc giúp mình nha shop.");
 
   // PHƯƠNG THỨC THANH TOÁN (Mặc định là MoMo theo chỉ đạo của Hà)
-  // "momo": Quét mã QR MoMo cố định của shop
-  // "cod": Thanh toán khi nhận hàng
-  // "vietqr": Quét mã VietQR ngân hàng
-  // "card": Thẻ quốc tế Visa/Mastercard
   const [paymentMethod, setPaymentMethod] = useState<"momo" | "cod" | "vietqr" | "card">("momo");
 
   // Vouchers & Xu Shopee
@@ -254,8 +275,9 @@ function CheckoutInner() {
   const shippingFeeVnd = 40000;
   const shippingDiscountVnd = 40000; // Freeship Xtra
 
-  // Mã đơn hàng được sinh ra khi thanh toán
-  const [orderCode, setOrderCode] = useState("");
+  // Mã đơn hàng được sinh ra khi thanh toán (Khởi tạo sẵn để mã QR luôn luôn có mã chuẩn xác, không bao giờ rỗng)
+  const [orderCode, setOrderCode] = useState(() => `SHOPEE-SS-${Math.floor(100000 + Math.random() * 900000)}`);
+  const [modalOpenedAt, setModalOpenedAt] = useState<number>(0);
 
   // ==========================================================================
   // STATE CHO POPUP MÃ QR MOMO ("SAU QUÉT TỰ TẮT")
@@ -283,6 +305,48 @@ function CheckoutInner() {
   const voucherDiscount = useShopVoucher && rawTotal >= 300000 ? shopVoucherDiscountVnd : 0;
   const coinsDeduction = useCoins ? Math.min(rawTotal, coinDiscountVnd) : 0;
   const finalTotal = Math.max(0, rawTotal + (shippingFeeVnd - shippingDiscountVnd) - voucherDiscount - coinsDeduction);
+
+  // ==========================================================================
+  // XÁC ĐỊNH ĐƯỜNG LINK QUÉT THANH TOÁN CHO ĐIỆN THOẠI (CÙNG MẠNG WI-FI HOẶC TEST)
+  // ==========================================================================
+  const [hostIp, setHostIp] = useState("192.168.1.3");
+  const [port, setPort] = useState("3000");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setPort(window.location.port || "3000");
+      if (window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+        setHostIp(window.location.hostname);
+      }
+    }
+  }, []);
+
+  const mobilePayUrl = useMemo(() => {
+    if (!orderCode) return "";
+    return `http://${hostIp}:${port}/pay-demo?orderCode=${encodeURIComponent(orderCode)}&amount=${finalTotal}&shop=${encodeURIComponent(activeShop.shopName)}`;
+  }, [hostIp, port, orderCode, finalTotal, activeShop.shopName]);
+
+  // Tạo mã QR bằng thư viện qrcode nội bộ, đảm bảo 100% offline, sắc nét, không bị trễ hay lỗi mạng ngoài
+  const [qrBase64, setQrBase64] = useState<string>("");
+
+  useEffect(() => {
+    if (!mobilePayUrl) return;
+    import("qrcode")
+      .then((QRCode) => {
+        QRCode.toDataURL(mobilePayUrl, {
+          errorCorrectionLevel: "H",
+          margin: 1,
+          width: 280,
+          color: {
+            dark: "#191B19",
+            light: "#FFFFFF",
+          },
+        })
+          .then(setQrBase64)
+          .catch(() => {});
+      })
+      .catch(() => {});
+  }, [mobilePayUrl]);
 
   // Quantity helpers
   function updateQuantity(id: string, delta: number) {
@@ -323,16 +387,45 @@ function CheckoutInner() {
   }
 
   // ==========================================================================
-  // XỬ LÝ ĐẶT HÀNG / BẬT POPUP QR MOMO
+  // XỬ LÝ ĐẶT HÀNG / GỌI BACKEND TẠO ĐƠN HÀNG MỚI (STATUS: PENDING)
   // ==========================================================================
-  function handlePlaceOrder() {
+  async function handlePlaceOrder() {
     if (selectedItems.length === 0) {
       toast.error("Vui lòng chọn ít nhất 1 sản phẩm để thanh toán!");
       return;
     }
 
-    const randomOrderNumber = `SHOPEE-SS-${Math.floor(100000 + Math.random() * 900000)}`;
-    setOrderCode(randomOrderNumber);
+    const activeOrderCode = orderCode || `SHOPEE-SS-${Math.floor(100000 + Math.random() * 900000)}`;
+    if (!orderCode) setOrderCode(activeOrderCode);
+    const nowTimestamp = Date.now();
+    setModalOpenedAt(nowTimestamp);
+
+    // Lưu đơn hàng vào backend API /api/orders (Trạng thái pending)
+    try {
+      await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderCode: activeOrderCode,
+          customerName: recipientName,
+          customerPhone: recipientPhone,
+          shippingAddress: recipientAddress,
+          totalAmount: finalTotal,
+          paymentMethod,
+          shopName: activeShop.shopName,
+          brand: activeShop.brand,
+          items: selectedItems.map((i) => ({
+            id: i.id,
+            name: i.name,
+            price: i.priceVnd,
+            quantity: i.quantity,
+            variant: i.variant,
+          })),
+        }),
+      });
+    } catch {
+      // Fallback
+    }
 
     if (paymentMethod === "momo" || paymentMethod === "vietqr") {
       // Bật Popup hiển thị Mã QR MoMo cố định của shop
@@ -348,47 +441,72 @@ function CheckoutInner() {
   }
 
   // ==========================================================================
-  // LOGIC "SAU QUÉT TỰ TẮT" KHI BẬT POPUP MOMO
-  // Mô phỏng: Người dùng quét mã trên app -> sau 3.5s hệ thống nhận được tiền ->
-  // đổi trạng thái sang tích xanh -> sau 1.5s popup TỰ ĐỘNG TẮT và mở trang thành công
+  // REAL BACKEND POLLING: Kiểm tra trạng thái thanh toán từ điện thoại
+  // Khi điện thoại bấm "Xác nhận thanh toán" -> Backend đổi trạng thái đơn hàng ->
+  // Màn hình máy tính nhận được tín hiệu -> TỰ ĐỘNG TẮT POPUP MÃ QR!
   // ==========================================================================
   useEffect(() => {
-    if (!isMomoModalOpen) return;
+    if (!isMomoModalOpen || !orderCode) return;
 
-    // Đếm ngược thời gian hết hạn mã
+    let hasHandledSuccess = false;
+
+    // 1. Đếm ngược thời gian hết hạn mã (1s/lần)
     const countdownInterval = setInterval(() => {
       setMomoCountdown((prev) => (prev > 0 ? prev - 1 : 0));
     }, 1000);
 
-    // Mô phỏng quét xong sau 3.5 giây
-    const scanSuccessTimer = setTimeout(() => {
-      setMomoScanningState("success");
-      toast.success("Đã nhận được thanh toán từ Ví MoMo thành công!");
+    // 2. Polling Backend: Hỏi /api/orders/[id]/status mỗi 1.0 giây (Kèm since để chống lệch mã)
+    const pollingInterval = setInterval(async () => {
+      if (hasHandledSuccess) return;
+      try {
+        const sinceParam = modalOpenedAt > 0 ? modalOpenedAt : Date.now() - 30000;
+        const res = await fetch(
+          `/api/orders/${encodeURIComponent(orderCode)}/status?t=${Date.now()}&since=${sinceParam}`,
+          {
+            cache: "no-store",
+            headers: {
+              "Cache-Control": "no-cache, no-store, must-revalidate",
+              Pragma: "no-cache",
+            },
+          },
+        );
 
-      // "SAU QUÉT TỰ TẮT": Đợi 1.5 giây để khách thấy thông báo thành công rồi tự động đóng popup!
-      const autoCloseTimer = setTimeout(() => {
-        setIsMomoModalOpen(false);
-        setIsSuccessModalOpen(true);
-      }, 1500);
+        let data: any = null;
+        if (res.ok) {
+          data = await res.json();
+        } else {
+          // Fallback tới endpoint phụ /api/orders/status
+          const fbRes = await fetch(
+            `/api/orders/status?code=${encodeURIComponent(orderCode)}&t=${Date.now()}&since=${sinceParam}`,
+          );
+          if (fbRes.ok) {
+            data = await fbRes.json();
+          }
+        }
 
-      return () => clearTimeout(autoCloseTimer);
-    }, 3800);
+        if (data && data.ok && data.paid) {
+          hasHandledSuccess = true;
+          clearInterval(pollingInterval);
+          setMomoScanningState("success");
+          toast.success("🎉 Điện thoại đã thanh toán MoMo thành công!");
+
+          // "SAU QUÉT TỰ TẮT": Đợi 1.2 giây để thấy thông báo thành công rồi tự động đóng popup!
+          setTimeout(() => {
+            setIsMomoModalOpen(false);
+            setIsSuccessModalOpen(true);
+          }, 1200);
+        }
+      } catch {
+        // Bỏ qua lỗi kết nối polling nếu mạng chập chờn
+      }
+    }, 1000);
 
     return () => {
       clearInterval(countdownInterval);
-      clearTimeout(scanSuccessTimer);
+      clearInterval(pollingInterval);
     };
-  }, [isMomoModalOpen]);
+  }, [isMomoModalOpen, orderCode, modalOpenedAt]);
 
-  // Nút hỗ trợ test nhanh: Bỏ qua đếm giây, hoàn tất quét ngay
-  function handleQuickCompleteMomo() {
-    setMomoScanningState("success");
-    toast.success("Xác nhận thanh toán MoMo hoàn tất!");
-    setTimeout(() => {
-      setIsMomoModalOpen(false);
-      setIsSuccessModalOpen(true);
-    }, 800);
-  }
 
   // Format đếm ngược mm:ss
   const formatCountdown = (seconds: number) => {
@@ -857,7 +975,7 @@ function CheckoutInner() {
               </div>
 
               <div className="text-[11px] text-pink-700 bg-pink-100/70 border border-pink-300 rounded-xl px-3 py-1 font-medium">
-                ⚡ Khi bấm "Đặt Hàng", mã QR sẽ hiện lên để bạn quét và tự tắt sau khi quét.
+                ⚡ Khi bấm "Thanh Toán", quét bằng điện thoại và bấm xác nhận để màn hình tự động tắt mã.
               </div>
             </div>
           )}
@@ -941,7 +1059,7 @@ function CheckoutInner() {
       </main>
 
       {/* ==================================================================== */}
-      {/* MODAL MÃ QR MOMO ("MỖI SHOP 1 MÃ CỐ ĐỊNH, SAU QUÉT TỰ TẮT") */}
+      {/* MODAL MÃ QR MOMO ("QUÉT ĐIỆN THOẠI THẬT, BACKEND XÁC NHẬN TỰ TẮT") */}
       {/* ==================================================================== */}
       {isMomoModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-xs animate-in fade-in duration-200">
@@ -954,7 +1072,7 @@ function CheckoutInner() {
                 </div>
                 <div>
                   <h4 className="font-bold text-sm tracking-wide leading-tight">Thanh Toán Ví MoMo</h4>
-                  <p className="text-[11px] text-pink-100">Mã QR Cố Định • {activeShop.shopName}</p>
+                  <p className="text-[11px] text-pink-100">Quét Camera Điện Thoại • {activeShop.shopName}</p>
                 </div>
               </div>
 
@@ -968,7 +1086,7 @@ function CheckoutInner() {
             </div>
 
             {/* Nội dung Popup QR */}
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-3.5">
               {/* Thẻ thông tin Shop & Số tiền */}
               <div className="rounded-2xl bg-pink-50/60 border border-pink-100 p-3.5 text-xs text-left space-y-1.5">
                 <div className="flex justify-between items-center">
@@ -997,26 +1115,23 @@ function CheckoutInner() {
 
               {/* Khung hiển thị Mã QR MoMo + Tia Laser quét */}
               <div className="relative mx-auto w-64 h-64 rounded-3xl border-2 border-pink-300 bg-white p-3 shadow-inner flex flex-col items-center justify-center overflow-hidden">
-                {/* Tia Laser Quét Động (Laser Scanning Line) */}
+                {/* Tia Laser Quét Động */}
                 {momoScanningState === "waiting" && (
                   <div className="absolute inset-x-3 h-1 bg-gradient-to-r from-transparent via-[#D82D8B] to-transparent shadow-[0_0_12px_#D82D8B] animate-bounce pointer-events-none z-10 opacity-80" />
                 )}
 
-                {/* Ảnh Mã QR MoMo độ phân giải cao kết nối API VietQR với thông tin cố định của shop */}
+                {/* Mã QR dẫn trực tiếp tới trang xác nhận điện thoại pay-demo (Base64 nội bộ cực nét, quét nhạy 100%) */}
                 <img
-                  src={`https://api.vietqr.io/image/970422-${activeShop.momoPhone.replace(/\s+/g, "")}-compact.png?amount=${finalTotal}&addInfo=${encodeURIComponent(activeShop.momoCode + " " + orderCode)}&accountName=${encodeURIComponent(activeShop.momoReceiver)}`}
-                  alt="Mã QR MoMo Shop"
-                  className="w-full h-full object-contain rounded-xl"
+                  src={
+                    qrBase64 ||
+                    `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(mobilePayUrl || `http://${hostIp}:${port}/pay-demo?orderCode=${orderCode}&amount=${finalTotal}`)}`
+                  }
+                  alt="Mã QR Quét MoMo"
+                  className="w-full h-full object-contain rounded-xl select-none"
                   onError={(e) => {
-                    // Fallback sang QR generator tiêu chuẩn nếu cần
-                    (e.target as HTMLImageElement).src = `https://quickchart.io/qr?text=2%7C99%7C${activeShop.momoPhone}%7C${activeShop.momoReceiver}%7C${orderCode}%7C0%7C0%7C${finalTotal}&size=250`;
+                    (e.target as HTMLImageElement).src = `https://quickchart.io/qr?text=${encodeURIComponent(mobilePayUrl || `http://${hostIp}:${port}/pay-demo?orderCode=${orderCode}&amount=${finalTotal}`)}&size=260&margin=1`;
                   }}
                 />
-
-                {/* Logo MoMo nằm giữa mã QR */}
-                <div className="absolute size-10 rounded-xl bg-[#A50064] text-white flex items-center justify-center font-bold text-base shadow-md border-2 border-white pointer-events-none">
-                  M
-                </div>
 
                 {/* Lớp phủ thông báo khi quét xong ("SAU QUÉT TỰ TẮT") */}
                 {momoScanningState === "success" && (
@@ -1030,17 +1145,32 @@ function CheckoutInner() {
                 )}
               </div>
 
+              {/* Nút bấm test mở nhanh trang điện thoại trên tab mới (không cần điện thoại vẫn test được) */}
+              <div className="rounded-2xl bg-pink-50 border border-pink-200 p-2.5 flex items-center justify-between gap-2 text-left">
+                <div className="text-[11px] text-[#A50064] font-medium leading-tight">
+                  <span className="font-bold">📱 Test trực tiếp:</span> Dùng camera điện thoại quét QR hoặc:
+                </div>
+                <button
+                  type="button"
+                  onClick={() => window.open(mobilePayUrl, "_blank")}
+                  className="rounded-xl bg-[#A50064] hover:bg-[#880052] active:scale-95 text-white text-[11px] font-bold px-3 py-1.5 transition shrink-0 flex items-center gap-1.5 cursor-pointer shadow-xs"
+                >
+                  <ExternalLink className="size-3" />
+                  <span>Mở Tab Điện Thoại</span>
+                </button>
+              </div>
+
               {/* Trạng thái quét & Thời gian đếm ngược */}
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 {momoScanningState === "waiting" ? (
                   <div className="flex items-center justify-center gap-2 text-xs font-semibold text-[#A50064]">
                     <span className="size-2 rounded-full bg-[#A50064] animate-ping" />
-                    <span>Đang chờ bạn mở ứng dụng MoMo để quét mã...</span>
+                    <span>Đang chờ điện thoại quét mã & bấm xác nhận...</span>
                   </div>
                 ) : (
                   <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-emerald-700">
                     <CheckCircle2 className="size-4" />
-                    <span>Thanh toán thành công! Đang chuyển hướng...</span>
+                    <span>Backend xác nhận thành công! Đang chuyển hướng...</span>
                   </div>
                 )}
 
@@ -1050,30 +1180,14 @@ function CheckoutInner() {
                 </div>
               </div>
 
-              {/* Hướng dẫn thao tác nhanh 3 bước */}
-              <div className="rounded-xl bg-[#FAF8F5] p-3 text-[11px] text-[#5C605C] text-left space-y-1 border border-[#D8D4CA]/60">
-                <p>1. Mở ứng dụng <strong>MoMo</strong> trên điện thoại.</p>
-                <p>2. Chọn <strong>"Quét Mã"</strong> và hướng camera vào mã QR ở trên.</p>
-                <p>3. Xác nhận số tiền & <strong>cửa sổ sẽ tự động tắt</strong> ngay khi hoàn tất.</p>
-              </div>
-
-              {/* Nút mô phỏng quét xong nhanh (dành cho người test / demo) */}
-              <div className="pt-2 border-t border-[#D8D4CA]/50 flex items-center justify-between gap-2">
+              {/* Nút đóng / đổi phương thức */}
+              <div className="pt-2 border-t border-[#D8D4CA]/50 flex items-center justify-center">
                 <button
                   type="button"
                   onClick={() => setIsMomoModalOpen(false)}
-                  className="rounded-xl border border-[#D8D4CA] px-3 py-1.5 text-[11px] font-semibold text-[#5C605C] hover:bg-[#FAF8F5]"
+                  className="rounded-xl border border-[#D8D4CA] px-4 py-2 text-xs font-semibold text-[#5C605C] hover:bg-[#FAF8F5] transition cursor-pointer"
                 >
-                  Đổi cách thanh toán
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleQuickCompleteMomo}
-                  className="rounded-xl bg-pink-100 border border-pink-300 px-3.5 py-1.5 text-[11px] font-bold text-[#A50064] hover:bg-pink-200 flex items-center gap-1 transition cursor-pointer"
-                >
-                  <Zap className="size-3" />
-                  <span>⚡ Tôi đã quét xong (Bỏ qua chờ)</span>
+                  Đóng / Đổi phương thức khác
                 </button>
               </div>
             </div>
