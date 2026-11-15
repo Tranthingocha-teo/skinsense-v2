@@ -4,7 +4,11 @@ import { signedInCookies } from "./auth";
 // Signs the test account in against the project the env points at (production), reads only: run after Dinh approves.
 const TEST_EMAIL = "e2e@skinsense.test";
 
-test("onboarding appears once per device after sign-in, and Xem thử never shows it", async ({ context, page }) => {
+// A fresh device: no onboarded flag (the config seeds one for every other spec), English copy.
+test.use({ storageState: { cookies: [], origins: [] } });
+
+test("onboarding appears once per device after sign-in, and Xem thử never shows it", async ({ context, page, baseURL }) => {
+  await context.addCookies([{ name: "locale", value: "en", url: baseURL! }]);
   await page.goto("/demo");
   await expect(page.getByRole("heading", { name: "A skin diary, one photo a night." })).toBeHidden();
 
