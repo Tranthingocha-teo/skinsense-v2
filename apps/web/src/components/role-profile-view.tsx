@@ -39,6 +39,7 @@ import { InitialsAvatar } from "@/components/initials-avatar";
 import { SafeProductImage } from "@/components/safe-product-image";
 import { normalizeShopId } from "@/lib/shop-utils";
 import { pingChatSync, useChatSync, useStickToBottom } from "@/hooks/use-chat-sync";
+import { ImageUploader } from "@/components/cloudinary-product-uploader";
 
 export type RoleType = "customer" | "specialist" | "shop" | "admin";
 
@@ -1927,13 +1928,13 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                           </div>
 
                           <div className="space-y-1.5">
-                            <label className="text-xs font-semibold text-[#191B19]">Link ảnh đại diện (Avatar URL)</label>
-                            <input
-                              type="url"
-                              value={avatarUrl}
-                              onChange={(e) => setAvatarUrl(e.target.value)}
-                              placeholder="https://..."
-                              className="h-10 w-full rounded-xl border border-[#D8D4CA] bg-white px-3.5 text-sm text-[#191B19] focus:border-[#191B19] focus:outline-none transition"
+                            <ImageUploader
+                              images={avatarUrl ? [avatarUrl] : []}
+                              onChange={(next) => setAvatarUrl(next[0] ?? "")}
+                              folder="avatars"
+                              shape="round"
+                              label="Ảnh đại diện"
+                              emptyHint="Chưa có ảnh đại diện: hồ sơ hiện chữ viết tắt tên bạn."
                             />
                           </div>
                         </div>

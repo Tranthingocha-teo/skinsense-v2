@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
+import { checkImageFile } from "@/lib/upload-limits";
 
 interface UploadServiceStatus {
   configured: boolean;
@@ -25,12 +26,39 @@ export interface CloudinaryProductUploaderProps {
   onUploadingChange?: (uploading: boolean) => void;
 }
 
-export function CloudinaryProductUploader({
+export interface ImageUploaderProps extends CloudinaryProductUploaderProps {
+  /** Several images (a gallery, first one is the cover) or exactly one (avatar, logo, banner). */
+  multiple?: boolean;
+  label?: string;
+  emptyHint?: string;
+  /** Cloudinary folder hint passed to /api/upload/cloudinary. */
+  folder?: string;
+  /** Preview shape for a single image. */
+  shape?: "square" | "round" | "wide";
+}
+
+/** The product gallery uploader used by the seller channel (/shop). */
+export function CloudinaryProductUploader(props: CloudinaryProductUploaderProps) {
+  return <ImageUploader {...props} multiple />;
+}
+
+/**
+ * Upload from the device or take a photo with the camera; the image goes to Cloudinary through
+ * /api/upload/cloudinary (signed in, server-signed). The only way to set an image: no pasted URLs.
+ */
+export function ImageUploader({
   images,
   onChange,
   shopName,
   onUploadingChange,
-}: CloudinaryProductUploaderProps) {
+  multiple = false,
+  label = "Hình Ảnh Sản Phẩm (Tự chọn từ máy hoặc chụp Camera)",
+  emptyHint,
+  folder,
+  shape = "square",
+}: ImageUploaderProps) {
+  // A single-image field replaces its image; a gallery appends.
+  const merge = (added: string[]) => (multiple ? [...images, ...added] : added.slice(-1));
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const mobileCameraInputRef = useRef<HTMLInputElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -136,6 +164,12 @@ export function CloudinaryProductUploader({
   );
 
   async function uploadSingleFile(file: File | Blob, label?: string) {
+    const invalid = checkImageFile(file);
+    if (invalid) {
+      setUploadError(invalid);
+      toast.error(invalid);
+      return null;
+    }
     setUploadError(null);
     setIsUploading(true);
     setUploadProgressLabel(label || "Đang tải ảnh lên...");
@@ -150,6 +184,7 @@ export function CloudinaryProductUploader({
       if (shopName?.trim()) {
         form.append("shopName", shopName.trim());
       }
+      if (folder) form.append("folder", folder);
 
       const res = await fetch("/api/upload/cloudinary", {
         method: "POST",
@@ -159,7 +194,9 @@ export function CloudinaryProductUploader({
 
       if (!res.ok || !json?.ok || !json?.url) {
         const errMsg =
-          json?.error || "Không thể tải ảnh lên. Vui lòng thử lại.";
+          res.status === 401
+            ? "Vui lòng đăng nhập để tải ảnh lên."
+            : json?.error || "Không thể tải ảnh lên. Vui lòng thử lại.";
         setUploadError(errMsg);
         toast.error(errMsg, { duration: 5000 });
         return null;
@@ -183,7 +220,7 @@ export function CloudinaryProductUploader({
   async function handleFilesSelected(fileList: FileList | null) {
     if (!fileList || fileList.length === 0) return;
 
-    const files = Array.from(fileList);
+    const files = multiple ? Array.from(fileList) : Array.from(fileList).slice(0, 1);
     const uploadedUrls: string[] = [];
 
     for (let i = 0; i < files.length; i += 1) {
@@ -200,7 +237,7 @@ export function CloudinaryProductUploader({
     }
 
     if (uploadedUrls.length > 0) {
-      onChange([...images, ...uploadedUrls]);
+      onChange(merge(uploadedUrls));
       toast.success(`Đã tải lên ${uploadedUrls.length} ảnh thành công!`);
     }
   }
@@ -240,7 +277,7 @@ export function CloudinaryProductUploader({
     if (blob) {
       const url = await uploadSingleFile(blob, "Đang lưu ảnh vừa chụp...");
       if (url) {
-        onChange([...images, url]);
+        onChange(merge([url]));
         toast.success("Đã chụp và tải ảnh lên thành công!");
         stopCameraStream();
         setIsCameraOpen(false);
@@ -259,6 +296,7 @@ export function CloudinaryProductUploader({
         body: JSON.stringify({
           dataUrl,
           shopName: shopName?.trim() || undefined,
+          folder,
         }),
       });
       const json = await res.json().catch(() => ({}));
@@ -268,7 +306,7 @@ export function CloudinaryProductUploader({
         toast.error(msg);
         return;
       }
-      onChange([...images, String(json.url)]);
+      onChange(merge([String(json.url)]));
       toast.success("Đã chụp và tải ảnh lên thành công!");
       stopCameraStream();
       setIsCameraOpen(false);
@@ -293,9 +331,7 @@ export function CloudinaryProductUploader({
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <label className="block font-medium text-foreground">
-          Hình Ảnh Sản Phẩm (Tự chọn từ máy hoặc chụp Camera)
-        </label>
+        <span className="block font-medium text-foreground">{label}</span>
       </div>
 
       {/* Warning banner only when server image service is unavailable */}
@@ -317,7 +353,7 @@ export function CloudinaryProductUploader({
           className="flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary/40 bg-primary/5 px-4 py-2.5 text-xs font-semibold text-primary transition hover:border-primary hover:bg-primary/10 disabled:opacity-50 cursor-pointer"
         >
           <FolderOpen className="size-4" />
-          <span>Chọn ảnh từ máy tính / điện thoại</span>
+          <span>{images.length > 0 && !multiple ? "Đổi ảnh khác từ máy" : "Chọn ảnh từ máy tính / điện thoại"}</span>
         </button>
 
         <button
@@ -336,7 +372,8 @@ export function CloudinaryProductUploader({
         ref={fileInputRef}
         type="file"
         accept="image/*"
-        multiple
+        multiple={multiple}
+        aria-label={label}
         data-testid="product-file-input"
         className="hidden"
         onChange={(e) => {
@@ -379,7 +416,7 @@ export function CloudinaryProductUploader({
           <div className="flex items-center justify-between">
             <span className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
               <Camera className="size-4 text-emerald-600" />
-              <span>Chụp ảnh sản phẩm</span>
+              <span>Chụp ảnh</span>
             </span>
             <button
               type="button"
@@ -451,8 +488,34 @@ export function CloudinaryProductUploader({
         </div>
       )}
 
-      {/* Uploaded Images Gallery Preview */}
-      {images.length > 0 ? (
+      {/* Single image: one preview with remove; replacing is the upload buttons above */}
+      {!multiple && images[0] ? (
+        <div className="flex items-center gap-3 rounded-xl border border-border bg-surface-2/50 p-2.5">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={images[0]}
+            alt="Ảnh đã tải lên"
+            className={`shrink-0 border border-border object-cover ${
+              shape === "round" ? "size-16 rounded-full" : shape === "wide" ? "h-16 w-32 rounded-lg" : "size-16 rounded-lg"
+            }`}
+          />
+          <span className="min-w-0 flex-1 text-[11px] text-muted-foreground">Ảnh đã tải lên</span>
+          <button
+            type="button"
+            disabled={isUploading}
+            onClick={() => onChange([])}
+            className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-border bg-background px-3 text-xs font-semibold text-foreground hover:border-destructive hover:text-destructive disabled:opacity-50 cursor-pointer"
+          >
+            <Trash2 className="size-3.5" />
+            <span>Gỡ ảnh</span>
+          </button>
+        </div>
+      ) : !multiple ? (
+        <div className="rounded-xl border border-border bg-surface-2/50 px-3.5 py-3 text-[11px] text-muted-foreground flex items-center gap-2">
+          <ImagePlus className="size-4 shrink-0 text-muted-foreground/70" />
+          <span>{emptyHint ?? "Chưa có ảnh. Chọn ảnh từ máy hoặc chụp từ camera (không bắt buộc)."}</span>
+        </div>
+      ) : images.length > 0 ? (
         <div className="space-y-2">
           <div className="text-[11px] font-medium text-muted-foreground flex items-center justify-between">
             <span>
@@ -507,7 +570,7 @@ export function CloudinaryProductUploader({
         <div className="rounded-xl border border-border bg-surface-2/50 px-3.5 py-3 text-[11px] text-muted-foreground flex items-center gap-2">
           <ImagePlus className="size-4 shrink-0 text-muted-foreground/70" />
           <span>
-            Chưa có ảnh sản phẩm. Bạn có thể chọn ảnh từ máy hoặc chụp từ camera (không bắt buộc).
+            {emptyHint ?? "Chưa có ảnh sản phẩm. Bạn có thể chọn ảnh từ máy hoặc chụp từ camera (không bắt buộc)."}
           </span>
         </div>
       )}

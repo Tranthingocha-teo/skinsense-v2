@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { validateShopProfileUpdate, type ShopProfileUpdateInput, type Shop } from "@skinsense/domain";
+import { ImageUploader } from "@/components/cloudinary-product-uploader";
 
 const CATEGORIES = [
   "Dược mỹ phẩm & Chăm sóc da liễu",
@@ -167,13 +168,23 @@ export function ShopManagementForm({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Logo / Avatar (URL)</Label>
-              <Input value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} placeholder="https://..." />
+              <ImageUploader
+                images={avatarUrl ? [avatarUrl] : []}
+                onChange={(next) => setAvatarUrl(next[0] ?? "")}
+                folder="shops"
+                shape="round"
+                label="Logo / ảnh đại diện"
+              />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Banner Bìa Gian Hàng (URL)</Label>
-              <Input value={bannerUrl} onChange={(e) => setBannerUrl(e.target.value)} placeholder="https://..." />
+              <ImageUploader
+                images={bannerUrl ? [bannerUrl] : []}
+                onChange={(next) => setBannerUrl(next[0] ?? "")}
+                folder="shops"
+                shape="wide"
+                label="Ảnh bìa gian hàng"
+              />
             </div>
           </div>
 

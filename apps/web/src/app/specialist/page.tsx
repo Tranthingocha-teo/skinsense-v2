@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { LogoMark } from "@/components/site-header";
 import { SafeProductImage } from "@/components/safe-product-image";
 import { PatientPhoto } from "@/components/patient-photo";
+import { ImageUploader } from "@/components/cloudinary-product-uploader";
 
 function computeFutureDateIso(daysAhead: number): string {
   return new Date(Date.now() + daysAhead * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
@@ -461,16 +462,12 @@ function SpecialistContent() {
         toast.error("Vui lòng nhập tên sản phẩm!");
         return;
       }
-      if (!customProdImage.trim()) {
-        toast.error("Vui lòng cung cấp link ảnh sản phẩm!");
-        return;
-      }
       newProd = {
         id: `prod_${Date.now()}`,
         name: customProdName.trim(),
         brand: customProdBrand.trim() || "Dược mỹ phẩm",
         category: customProdCategory,
-        imageUrl: customProdImage.trim(),
+        imageUrl: customProdImage.trim() || undefined,
         activeIngredients: customProdActives.trim() || "Hoạt chất da liễu",
         stepTime: customProdTime,
         stepNumber: modalProducts.length + 1,
@@ -1431,15 +1428,15 @@ function SpecialistContent() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-[#191B19] font-semibold mb-1">Link ảnh (URL) *</label>
-                  <div className="flex gap-2.5">
-                    <input
-                      type="url"
-                      required
-                      value={customProdImage}
-                      onChange={(e) => setCustomProdImage(e.target.value)}
-                      className="flex-1 rounded-xl border border-[#D8D4CA] bg-white px-3.5 py-2 text-sm text-[#191B19]"
-                    />
+                  <ImageUploader
+                    images={customProdImage ? [customProdImage] : []}
+                    onChange={(next) => setCustomProdImage(next[0] ?? "")}
+                    folder="products"
+                    label="Ảnh sản phẩm (không bắt buộc)"
+                    emptyHint="Không có ảnh: ứng dụng tự vẽ hình sản phẩm."
+                  />
+                  <div className="mt-2 flex items-center gap-2.5 text-xs text-[#5C605C]">
+                    <span>Xem trước:</span>
                     <SafeProductImage
                       src={customProdImage}
                       alt="Xem trước"

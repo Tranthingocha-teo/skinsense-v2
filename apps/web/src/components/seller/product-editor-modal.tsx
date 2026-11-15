@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { validateProductInput, type ProductInput, type Product } from "@skinsense/domain";
+import { ImageUploader } from "@/components/cloudinary-product-uploader";
 
 const CATEGORIES = [
   "Tẩy trang & Sữa rửa mặt",
@@ -65,7 +66,7 @@ function ProductEditorDialog({ open, onOpenChange, initialProduct, onSave }: Pro
   const [howToUse, setHowToUse] = useState(initialProduct?.howToUse || "");
   const [caution, setCaution] = useState(initialProduct?.caution || "");
   const [origin, setOrigin] = useState("Pháp");
-  const [imageUrl, setImageUrl] = useState(initialProduct?.imageUrl || "");
+  const [images, setImages] = useState<string[]>(initialProduct?.imageUrl ? [initialProduct.imageUrl] : []);
 
   function toggleSkinType(id: string) {
     setSkinTypes((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
@@ -88,7 +89,7 @@ function ProductEditorDialog({ open, onOpenChange, initialProduct, onSave }: Pro
       howToUse,
       caution,
       origin,
-      images: imageUrl.trim() ? [imageUrl.trim()] : [],
+      images,
     };
 
     const validation = validateProductInput(input);
@@ -220,8 +221,13 @@ function ProductEditorDialog({ open, onOpenChange, initialProduct, onSave }: Pro
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Link Hình Ảnh Sản Phẩm</Label>
-            <Input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://..." />
+            <ImageUploader
+              multiple
+              images={images}
+              onChange={setImages}
+              folder="products"
+              label="Hình ảnh sản phẩm (chọn từ máy hoặc chụp camera)"
+            />
           </div>
 
           {/* Descriptions & Usage */}
