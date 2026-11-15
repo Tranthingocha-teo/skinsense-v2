@@ -249,7 +249,9 @@
     "downloadAndroid": "Tải bản Android (APK)",
     "privacyPolicy": "Chính sách riêng tư",
     "tryDemo": "Xem thử, không cần đăng nhập",
-    "tryDemoShort": "Xem thử"
+    "tryDemoShort": "Xem thử",
+    "authErrorTitle": "Đăng nhập chưa thành công.",
+    "authErrorBody": "Vui lòng thử lại. Nếu vẫn lỗi, hãy đóng các tab SkinSense khác rồi đăng nhập lại."
   },
   "Capture": {
     "title": "Chụp ảnh tối nay",

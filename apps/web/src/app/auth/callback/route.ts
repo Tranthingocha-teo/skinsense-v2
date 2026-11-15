@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
+import { authErrorUrl, safeNextPath } from "@/lib/auth-redirect";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -8,7 +9,13 @@ export const revalidate = 0;
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
-  const next = requestUrl.searchParams.get("next");
+  const next = safeNextPath(requestUrl.searchParams.get("next"));
+
+  // The provider (or Supabase) reports a failure as ?error=…&error_description=…
+  const providerError = requestUrl.searchParams.get("error_description") || requestUrl.searchParams.get("error");
+  if (providerError) {
+    return NextResponse.redirect(authErrorUrl(requestUrl.origin, providerError));
+  }
 
   if (code) {
     const supabase = await createClient();
@@ -122,7 +129,8 @@ export async function GET(request: Request) {
       return NextResponse.redirect(new URL("/app", requestUrl.origin));
     }
     console.error("Supabase auth exchangeCodeForSession error:", error?.message);
+    return NextResponse.redirect(authErrorUrl(requestUrl.origin, error?.message || "exchange_failed"));
   }
 
-  return NextResponse.redirect(new URL("/app", requestUrl.origin));
+  return NextResponse.redirect(authErrorUrl(requestUrl.origin, "missing_code"));
 }
