@@ -85,6 +85,14 @@ CREATE TABLE IF NOT EXISTS "seller_orders" (
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
+-- Production created seller_orders out of band with the price column named product_price_vnd.
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'seller_orders' AND column_name = 'product_price_vnd')
+     AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'seller_orders' AND column_name = 'price_vnd') THEN
+    ALTER TABLE "seller_orders" RENAME COLUMN "product_price_vnd" TO "price_vnd";
+  END IF;
+END $$;
+--> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "seller_withdrawals" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"shop_id" uuid NOT NULL,

@@ -190,5 +190,15 @@ describe("committed migrations", () => {
       await expect(as(db, A, `UPDATE shops SET status = 'pending' WHERE id = '${SHOP_A}'`)).rejects.toThrow(/permission denied/);
       expect((await db.query("SELECT id FROM seller_products")).rows).toHaveLength(1);
     }, 60_000);
+
+    it("renames production's out-of-band product_price_vnd column to price_vnd when re-applied", async () => {
+      const db = await sellerDb();
+      await db.exec(`ALTER TABLE seller_orders RENAME COLUMN price_vnd TO product_price_vnd`);
+      await applyMigration(db, "0006_seller_system");
+      const cols = await db.query<{ column_name: string }>(
+        "SELECT column_name FROM information_schema.columns WHERE table_name = 'seller_orders' AND column_name LIKE '%price_vnd' ORDER BY 1",
+      );
+      expect(cols.rows.map((r) => r.column_name)).toEqual(["price_vnd"]);
+    }, 60_000);
   });
 });
