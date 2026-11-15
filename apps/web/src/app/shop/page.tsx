@@ -36,7 +36,6 @@ import {
 import { toast } from "sonner";
 import { LogoMark } from "@/components/site-header";
 import { AuthModal } from "@/components/auth-modal";
-import { CloudinaryProductUploader } from "@/components/cloudinary-product-uploader";
 import {
   canShopSignIn,
   isProductVisibleToBuyer,
@@ -44,25 +43,6 @@ import {
   matchesShop,
   filterProductsByShop,
 } from "@/lib/shop-product-approval";
-
-function ProductImagePlaceholder({
-  label = "Chưa có ảnh",
-  compact = false,
-}: {
-  label?: string;
-  compact?: boolean;
-}) {
-  return (
-    <div className="flex size-full flex-col items-center justify-center gap-1.5 bg-surface-2 text-muted-foreground">
-      <Package className={compact ? "size-5 opacity-50" : "size-8 opacity-40"} />
-      {label ? (
-        <span className={compact ? "text-[10px] font-medium" : "text-[11px] font-medium"}>
-          {label}
-        </span>
-      ) : null}
-    </div>
-  );
-}
 
 // Shopee Product Variant
 export interface ProductVariant {
@@ -627,14 +607,6 @@ export default function ShopProductPage() {
             const newAdminItems: ShopeeProduct[] = [];
             data.products.forEach((ap: any) => {
               if (!existingNames.has(ap.name.toLowerCase())) {
-                const apiImages = Array.isArray(ap.images)
-                  ? ap.images.filter((img: unknown): img is string => typeof img === "string" && img.trim().length > 0)
-                  : [];
-                const resolvedCover =
-                  (typeof ap.coverImage === "string" && ap.coverImage.trim()) || apiImages[0] || "";
-                const resolvedGallery =
-                  apiImages.length > 0 ? apiImages : resolvedCover ? [resolvedCover] : [];
-
                 newAdminItems.push({
                   id: ap.id,
                   shopName: ap.shopName || "SkinSense Flagship",
@@ -645,8 +617,8 @@ export default function ShopProductPage() {
                   origin: ap.origin || "Pháp",
                   isMall: true,
                   isPreferredPlus: false,
-                  images: resolvedGallery,
-                  coverImage: resolvedCover,
+                  images: [ap.coverImage || "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=800&auto=format&fit=crop&q=80"],
+                  coverImage: ap.coverImage || "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=800&auto=format&fit=crop&q=80",
                   priceVnd: ap.price,
                   originalPriceVnd: Math.round(ap.price * 1.25),
                   discountPercent: 20,
@@ -713,9 +685,9 @@ export default function ShopProductPage() {
   const [formPrice, setFormPrice] = useState<number>(350000);
   const [formOriginalPrice, setFormOriginalPrice] = useState<number>(450000);
   const [formStock, setFormStock] = useState<number>(100);
-  const [formCoverImage, setFormCoverImage] = useState("");
-  const [formImages, setFormImages] = useState<string[]>([]);
-  const [isUploadingImages, setIsUploadingImages] = useState(false);
+  const [formCoverImage, setFormCoverImage] = useState(
+    "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=600&auto=format&fit=crop&q=80",
+  );
   const [formSkinType, setFormSkinType] = useState("Mọi loại da, da mụn nhạy cảm");
   const [formVolume, setFormVolume] = useState("50ml");
   const [formActives, setFormActives] = useState("Niacinamide, B5, Salicylic Acid");
@@ -807,19 +779,10 @@ export default function ShopProductPage() {
       toast.error("Tồn kho không được âm!");
       return;
     }
-    if (isUploadingImages) {
-      toast.info("Ảnh sản phẩm đang được tải lên, vui lòng đợi...");
+    if (!formCoverImage.trim()) {
+      toast.error("Vui lòng nhập link ảnh sản phẩm!");
       return;
     }
-
-    const resolvedImages = formImages.map((u) => u.trim()).filter(Boolean);
-    const resolvedCoverImage = resolvedImages[0] || formCoverImage.trim();
-    const galleryImages =
-      resolvedImages.length > 0
-        ? resolvedImages
-        : resolvedCoverImage
-          ? [resolvedCoverImage]
-          : [];
 
     const discountPct = Math.max(
       0,
@@ -836,8 +799,8 @@ export default function ShopProductPage() {
       origin: formOrigin.trim() || "Nhập khẩu",
       isMall: true,
       isPreferredPlus: true,
-      coverImage: resolvedCoverImage,
-      images: galleryImages,
+      coverImage: formCoverImage.trim(),
+      images: [formCoverImage.trim()],
       priceVnd: Number(formPrice),
       originalPriceVnd: Number(formOriginalPrice),
       discountPercent: discountPct,
@@ -879,8 +842,6 @@ export default function ShopProductPage() {
     };
 
     setProducts((prev) => [newShopeeProduct, ...prev]);
-    setFormImages([]);
-    setFormCoverImage("");
     setIsAddModalOpen(false);
 
     // Sync to backend /api/admin/products so Admin can approve
@@ -896,7 +857,6 @@ export default function ShopProductPage() {
         brand: newShopeeProduct.brand,
         sku: newShopeeProduct.sku,
         coverImage: newShopeeProduct.coverImage,
-        images: newShopeeProduct.images,
         description: newShopeeProduct.description,
         origin: newShopeeProduct.origin,
       }),
@@ -1353,15 +1313,11 @@ export default function ShopProductPage() {
                         className="relative aspect-square w-full overflow-hidden border-b border-border bg-surface-2 cursor-pointer"
                         title="Bấm để xem trang chi tiết sản phẩm trên sàn"
                       >
-                        {prod.coverImage ? (
-                          <img
-                            src={prod.coverImage}
-                            alt={prod.name}
-                            className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
-                          />
-                        ) : (
-                          <ProductImagePlaceholder />
-                        )}
+                        <img
+                          src={prod.coverImage}
+                          alt={prod.name}
+                          className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
                         {/* Overlay Badges Shopee Mall & Freeship & Approval Status */}
                         <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 items-start">
                           {prod.status === "pending" && (
@@ -1687,15 +1643,11 @@ export default function ShopProductPage() {
                 <div className="space-y-3.5 lg:col-span-5">
                   {/* Big Cover Image */}
                   <div className="relative aspect-square w-full overflow-hidden rounded-2xl border border-border bg-surface-2 shadow-xs">
-                    {selectedProduct.images[activeImageIndex] || selectedProduct.coverImage ? (
-                      <img
-                        src={selectedProduct.images[activeImageIndex] || selectedProduct.coverImage}
-                        alt={selectedProduct.name}
-                        className="size-full object-cover"
-                      />
-                    ) : (
-                      <ProductImagePlaceholder label="Shop chưa thêm ảnh sản phẩm" />
-                    )}
+                    <img
+                      src={selectedProduct.images[activeImageIndex] || selectedProduct.coverImage}
+                      alt={selectedProduct.name}
+                      className="size-full object-cover"
+                    />
                     {selectedProduct.isMall && (
                       <div className="absolute top-3 left-3 rounded-md bg-rose-600 px-2 py-0.5 text-xs font-bold text-white shadow-xs flex items-center gap-1">
                         <BadgeCheck className="size-3.5" />
@@ -2012,15 +1964,11 @@ export default function ShopProductPage() {
                         className="group flex flex-col justify-between overflow-hidden rounded-2xl border border-border bg-card text-left transition hover:border-primary/50 hover:shadow-md cursor-pointer"
                       >
                         <div className="relative aspect-square w-full overflow-hidden border-b border-border bg-surface-2">
-                          {bp.coverImage ? (
-                            <img
-                              src={bp.coverImage}
-                              alt={bp.name}
-                              className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
-                            />
-                          ) : (
-                            <ProductImagePlaceholder />
-                          )}
+                          <img
+                            src={bp.coverImage}
+                            alt={bp.name}
+                            className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          />
                           <span className="absolute top-2 right-2 rounded bg-amber-500 px-1.5 py-0.5 text-[9px] font-bold text-white shadow-xs">
                             -{bp.discountPercent}%
                           </span>
@@ -2056,17 +2004,11 @@ export default function ShopProductPage() {
           <div className="my-8 max-h-[90vh] w-full max-w-3xl space-y-5 overflow-y-auto rounded-3xl border border-border bg-card p-5 shadow-2xl sm:p-7">
             <div className="flex items-start justify-between border-b border-border pb-3.5">
               <div className="flex items-center gap-3">
-                {inspectingProduct.coverImage ? (
-                  <img
-                    src={inspectingProduct.coverImage}
-                    alt={inspectingProduct.name}
-                    className="size-12 shrink-0 rounded-xl border border-border object-cover"
-                  />
-                ) : (
-                  <div className="size-12 shrink-0 overflow-hidden rounded-xl border border-border">
-                    <ProductImagePlaceholder label="" compact />
-                  </div>
-                )}
+                <img
+                  src={inspectingProduct.coverImage}
+                  alt={inspectingProduct.name}
+                  className="size-12 shrink-0 rounded-xl border border-border object-cover"
+                />
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="rounded bg-rose-600 px-1.5 py-0.2 text-[9px] font-bold text-white">
@@ -2287,17 +2229,28 @@ export default function ShopProductPage() {
                   </select>
                 </div>
 
-                {/* Tải ảnh từ thiết bị / chụp camera lên Cloudinary (không bắt buộc link mẫu) */}
+                {/* Link ảnh bìa với preview */}
                 <div>
-                  <CloudinaryProductUploader
-                    images={formImages}
-                    onChange={(next) => {
-                      setFormImages(next);
-                      setFormCoverImage(next[0] || "");
-                    }}
-                    shopName={currentShopName}
-                    onUploadingChange={setIsUploadingImages}
-                  />
+                  <label className="mb-1 block font-medium text-foreground">
+                    Link Ảnh Bìa Sản Phẩm (Tỷ lệ 1:1) <span className="text-rose-600">* Bắt buộc</span>
+                  </label>
+                  <div className="flex gap-2.5">
+                    <input
+                      type="url"
+                      required
+                      value={formCoverImage}
+                      onChange={(e) => setFormCoverImage(e.target.value)}
+                      placeholder="https://images.unsplash.com/..."
+                      className={`${PRODUCT_FORM_FIELD_CLASS} flex-1`}
+                    />
+                    {formCoverImage && (
+                      <img
+                        src={formCoverImage}
+                        alt="Preview"
+                        className="size-11 rounded-lg border border-border object-cover"
+                      />
+                    )}
+                  </div>
                 </div>
               </div>
 
