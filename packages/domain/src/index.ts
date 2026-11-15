@@ -63,6 +63,7 @@ export {
   generateVietQrUrl,
   INITIAL_LISTINGS,
   INITIAL_SHOPS,
+  ORDER_STATUSES,
   validateOrderStatusTransition,
   validateProductInput,
   validateSellerRegistration,

@@ -1,3 +1,4 @@
+import { getTableConfig } from "drizzle-orm/pg-core";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -7,9 +8,12 @@ import {
   getShopById,
   INITIAL_LISTINGS,
   INITIAL_SHOPS,
+  ORDER_STATUSES,
   validateOrderStatusTransition,
+  validateProductInput,
   validateSellerRegistration,
 } from "./marketplace";
+import { sellerOrders } from "./schema";
 
 describe("Marketplace Domain Entity & VietQR generator", () => {
   it("provides initial approved shops and listings", () => {
@@ -93,6 +97,39 @@ describe("Seller System Domain Rules", () => {
     expect(validateOrderStatusTransition("shipping", "completed").allowed).toBe(true);
     expect(validateOrderStatusTransition("completed", "pending").allowed).toBe(false);
     expect(validateOrderStatusTransition("cancelled", "shipping").allowed).toBe(false);
+  });
+
+  it("lets a seller confirm a pending order and deliver a shipped one", () => {
+    expect(validateOrderStatusTransition("pending", "confirmed").allowed).toBe(true);
+    expect(validateOrderStatusTransition("confirmed", "processing").allowed).toBe(true);
+    expect(validateOrderStatusTransition("shipping", "delivered").allowed).toBe(true);
+    expect(validateOrderStatusTransition("delivered", "completed").allowed).toBe(true);
+  });
+
+  it("uses exactly the order statuses the database check constraint accepts", () => {
+    const status = getTableConfig(sellerOrders).columns.find((c) => c.name === "status");
+    expect(status?.enumValues).toEqual([...ORDER_STATUSES]);
+  });
+
+  const base = { name: "Serum B5", brand: "LRP", category: "Serum", priceVnd: 100000, stock: 3 };
+
+  it.each([
+    ["NaN price", { priceVnd: Number.NaN }, "priceVnd"],
+    ["fractional price", { priceVnd: 1000.5 }, "priceVnd"],
+    ["negative price", { priceVnd: -1 }, "priceVnd"],
+    ["infinite price", { priceVnd: Number.POSITIVE_INFINITY }, "priceVnd"],
+    ["NaN stock", { stock: Number.NaN }, "stock"],
+    ["fractional stock", { stock: 2.5 }, "stock"],
+    ["negative stock", { stock: -1 }, "stock"],
+    ["fractional original price", { originalPriceVnd: 150000.5 }, "originalPriceVnd"],
+  ])("rejects a product with %s", (_label, patch, field) => {
+    const result = validateProductInput({ ...base, ...patch });
+    expect(result.valid).toBe(false);
+    expect(result.errors[field]).toBeDefined();
+  });
+
+  it("accepts a product with zero price and zero stock", () => {
+    expect(validateProductInput({ ...base, priceVnd: 0, stock: 0 }).valid).toBe(true);
   });
 });
 

@@ -17,8 +17,9 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
-import { authenticatedRole, authUsers } from "drizzle-orm/supabase";
+import { anonRole, authenticatedRole, authUsers } from "drizzle-orm/supabase";
 import { FEEDBACK_KINDS, FEEDBACK_MESSAGE_MAX, FEEDBACK_PLATFORMS } from "./feedback";
+import { ORDER_STATUSES } from "./marketplace";
 import { NOTE_MAX, TAG_MAX } from "./notes";
 import { ZONES } from "./zones";
 
@@ -156,6 +157,14 @@ export const feedback = pgTable(
 // -------------------------------------------------------------
 // Seller / Supplier & Marketplace Tables (Modules 1 - 6)
 // -------------------------------------------------------------
+// The policies below are mirrored by the hand-written, idempotent drizzle/0006_seller_system.sql, which also
+// carries what drizzle cannot model: column-level GRANTs (owners may only touch non-privileged columns; status,
+// is_official, wallet balance, order totals and earnings stay service-role only) and the seller_orders insert
+// trigger that derives price, seller and totals server-side. Change both together.
+
+const isUid = (column: string) => sql.raw(`${column} = (select auth.uid())`);
+const ownsShop = (shopIdColumn: string) =>
+  sql.raw(`exists (select 1 from public.shops s where s.id = ${shopIdColumn} and s.user_id = (select auth.uid()))`);
 
 export const shops = pgTable(
   "shops",
@@ -181,21 +190,22 @@ export const shops = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   () => [
-    pgPolicy("shops: owner insert", {
+    pgPolicy("shops_select", {
+      for: "select",
+      to: [anonRole, authenticatedRole],
+      using: sql`status = 'approved' or ${isUid("user_id")}`,
+    }),
+    pgPolicy("shops_insert", {
       for: "insert",
       to: authenticatedRole,
-      withCheck: sql`user_id = (select auth.uid()) and status = 'pending'`,
+      withCheck: sql`${isUid("user_id")} and status = 'pending' and is_official = false and wallet_balance_vnd = 0`,
     }),
-    pgPolicy("shops: owner select & update", {
-      for: "all",
+    // Row filter only; which columns an owner may change is a column GRANT in the migration.
+    pgPolicy("shops_update", {
+      for: "update",
       to: authenticatedRole,
-      using: sql`user_id = (select auth.uid())`,
-      withCheck: sql`user_id = (select auth.uid())`,
-    }),
-    pgPolicy("shops: public select", {
-      for: "select",
-      to: authenticatedRole,
-      using: sql`status = 'approved'`,
+      using: isUid("user_id"),
+      withCheck: isUid("user_id"),
     }),
   ],
 ).enableRLS();
@@ -233,16 +243,26 @@ export const sellerProducts = pgTable(
   (t) => [
     check("price_vnd_non_negative", sql`${t.priceVnd} >= 0`),
     check("stock_non_negative", sql`${t.stock} >= 0`),
-    pgPolicy("seller_products: owner access", {
-      for: "all",
-      to: authenticatedRole,
-      using: sql`user_id = (select auth.uid())`,
-      withCheck: sql`user_id = (select auth.uid())`,
-    }),
-    pgPolicy("seller_products: public select", {
+    pgPolicy("seller_products_select", {
       for: "select",
+      to: [anonRole, authenticatedRole],
+      using: sql`status = 'active' or ${isUid("user_id")}`,
+    }),
+    pgPolicy("seller_products_insert", {
+      for: "insert",
       to: authenticatedRole,
-      using: sql`status = 'active'`,
+      withCheck: sql`${isUid("user_id")} and ${ownsShop("shop_id")}`,
+    }),
+    pgPolicy("seller_products_update", {
+      for: "update",
+      to: authenticatedRole,
+      using: isUid("user_id"),
+      withCheck: sql`${isUid("user_id")} and ${ownsShop("shop_id")}`,
+    }),
+    pgPolicy("seller_products_delete", {
+      for: "delete",
+      to: authenticatedRole,
+      using: isUid("user_id"),
     }),
   ],
 ).enableRLS();
@@ -274,7 +294,7 @@ export const sellerOrders = pgTable(
     platformFeeVnd: integer("platform_fee_vnd").notNull(),
     note: text(),
     paymentMethod: text("payment_method", { enum: ["cod", "vietqr"] }).notNull().default("cod"),
-    status: text({ enum: ["pending", "confirmed", "processing", "shipping", "completed", "cancelled", "refunded"] }).notNull().default("pending"),
+    status: text({ enum: ORDER_STATUSES }).notNull().default("pending"),
     trackingCode: text("tracking_code"),
     shippingProvider: text("shipping_provider").default("SPX Express"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -282,16 +302,23 @@ export const sellerOrders = pgTable(
   },
   (t) => [
     check("order_quantity_positive", sql`${t.quantity} > 0`),
-    pgPolicy("seller_orders: seller select & update", {
-      for: "all",
-      to: authenticatedRole,
-      using: sql`seller_user_id = (select auth.uid())`,
-      withCheck: sql`seller_user_id = (select auth.uid())`,
-    }),
-    pgPolicy("seller_orders: customer select", {
+    pgPolicy("seller_orders_select", {
       for: "select",
       to: authenticatedRole,
-      using: sql`customer_user_id = (select auth.uid())`,
+      using: sql`${isUid("customer_user_id")} or ${ownsShop("shop_id")}`,
+    }),
+    // Price, seller and totals are set by the insert trigger, not by the customer.
+    pgPolicy("seller_orders_insert", {
+      for: "insert",
+      to: authenticatedRole,
+      withCheck: sql`${isUid("customer_user_id")} and status = 'pending'`,
+    }),
+    // Sellers of the order's shop; a column GRANT limits them to status and shipping fields.
+    pgPolicy("seller_orders_update", {
+      for: "update",
+      to: authenticatedRole,
+      using: ownsShop("shop_id"),
+      withCheck: ownsShop("shop_id"),
     }),
   ],
 ).enableRLS();
@@ -317,11 +344,16 @@ export const sellerWithdrawals = pgTable(
   },
   (t) => [
     check("withdrawal_amount_positive", sql`${t.amountVnd} > 0`),
-    pgPolicy("seller_withdrawals: owner access", {
-      for: "all",
+    pgPolicy("seller_withdrawals_select", {
+      for: "select",
       to: authenticatedRole,
-      using: sql`user_id = (select auth.uid())`,
-      withCheck: sql`user_id = (select auth.uid())`,
+      using: isUid("user_id"),
+    }),
+    // No update/delete policy: only the service role approves, rejects or processes a withdrawal.
+    pgPolicy("seller_withdrawals_insert", {
+      for: "insert",
+      to: authenticatedRole,
+      withCheck: sql`${isUid("user_id")} and status = 'pending' and processed_at is null and ${ownsShop("shop_id")}`,
     }),
   ],
 ).enableRLS();

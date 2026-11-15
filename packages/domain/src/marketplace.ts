@@ -8,6 +8,7 @@ export interface Shop {
   shopName: string;
   ownerName: string;
   phone: string;
+  email?: string;
   address: string;
   status: ShopStatus;
   rating: number;
@@ -32,15 +33,19 @@ export interface ShopListing {
 }
 
 export type PaymentMethod = "cod" | "vietqr";
-export type OrderStatus =
-  | "pending"
-  | "confirmed"
-  | "processing"
-  | "shipping"
-  | "delivered"
-  | "completed"
-  | "cancelled"
-  | "refunded";
+// Single source for the seller_orders.status check constraint (schema.ts) and the transition table below.
+export const ORDER_STATUSES = [
+  "pending",
+  "confirmed",
+  "processing",
+  "shipping",
+  "delivered",
+  "completed",
+  "cancelled",
+  "refunded",
+] as const;
+
+export type OrderStatus = (typeof ORDER_STATUSES)[number];
 
 export interface OrderTrackingEvent {
   time: string;
@@ -458,6 +463,10 @@ export interface ProductInput {
   images?: string[];
 }
 
+function isNonNegativeInteger(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
+}
+
 export function validateProductInput(input: ProductInput): { valid: boolean; errors: Record<string, string> } {
   const errors: Record<string, string> = {};
 
@@ -470,14 +479,18 @@ export function validateProductInput(input: ProductInput): { valid: boolean; err
   if (!input.category || !input.category.trim()) {
     errors.category = "Vui lòng chọn danh mục sản phẩm.";
   }
-  if (typeof input.priceVnd !== "number" || input.priceVnd < 0) {
+  if (!isNonNegativeInteger(input.priceVnd)) {
     errors.priceVnd = "Giá bán phải là số nguyên lớn hơn hoặc bằng 0.";
   }
-  if (input.originalPriceVnd !== undefined && input.originalPriceVnd < input.priceVnd) {
-    errors.originalPriceVnd = "Giá gốc không được nhỏ hơn giá niêm yết.";
+  if (input.originalPriceVnd !== undefined) {
+    if (!isNonNegativeInteger(input.originalPriceVnd)) {
+      errors.originalPriceVnd = "Giá gốc phải là số nguyên lớn hơn hoặc bằng 0.";
+    } else if (input.originalPriceVnd < input.priceVnd) {
+      errors.originalPriceVnd = "Giá gốc không được nhỏ hơn giá niêm yết.";
+    }
   }
-  if (typeof input.stock !== "number" || input.stock < 0) {
-    errors.stock = "Số lượng tồn kho không được âm.";
+  if (!isNonNegativeInteger(input.stock)) {
+    errors.stock = "Số lượng tồn kho phải là số nguyên không âm.";
   }
 
   return { valid: Object.keys(errors).length === 0, errors };
@@ -490,7 +503,7 @@ export function validateOrderStatusTransition(
   if (currentStatus === nextStatus) return { allowed: true };
 
   const validTransitions: Record<OrderStatus, OrderStatus[]> = {
-    pending: ["processing", "cancelled"],
+    pending: ["confirmed", "processing", "cancelled"],
     confirmed: ["processing", "cancelled"],
     processing: ["shipping", "cancelled"],
     shipping: ["delivered", "completed", "refunded"],
