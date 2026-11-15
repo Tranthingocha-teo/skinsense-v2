@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getAuthenticatedActor } from "@/lib/session-auth";
 import { authzClaims, SUPER_ADMIN_EMAIL } from "@/lib/actor-role";
+import { shopIdClaim } from "@/lib/shop-utils";
+import { downloadStorageJson } from "@/lib/supabase/storage-json";
 
 export async function POST(request: Request) {
   try {
@@ -79,7 +81,7 @@ export async function POST(request: Request) {
     };
 
     // 1. Check if user already exists
-    const { data: userList } = await supabaseAdmin.auth.admin.listUsers();
+    const { data: userList } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
     const existingUser = userList?.users.find((u) => u.email?.toLowerCase() === normalizedEmail);
 
     let savedUser = null;
@@ -102,7 +104,9 @@ export async function POST(request: Request) {
           ...userMetadata,
           ...(alreadyApproved ? { status: "active" } : {}),
         },
-        ...(alreadyApproved ? {} : { app_metadata: authzClaims(effectiveRole, status) }),
+        ...(alreadyApproved
+          ? {}
+          : { app_metadata: { ...authzClaims(effectiveRole, status), ...shopIdClaim(effectiveRole, currentApp, userMetadata) } }),
       });
       if (updateErr) throw new Error(updateErr.message);
       savedUser = updated.user;
@@ -115,7 +119,7 @@ export async function POST(request: Request) {
         email: normalizedEmail,
         password,
         email_confirm: true,
-        app_metadata: authzClaims(effectiveRole, status),
+        app_metadata: { ...authzClaims(effectiveRole, status), ...shopIdClaim(effectiveRole, {}, userMetadata) },
         user_metadata: userMetadata,
       });
 
@@ -126,13 +130,10 @@ export async function POST(request: Request) {
     // 2. If specialist, also record in Supabase Storage specialists_registry.json
     if (effectiveRole === "specialist") {
       try {
-        let registry: Array<Record<string, unknown>> = [];
-        const { data: fileBlob } = await supabaseAdmin.storage
-          .from("photos")
-          .download("specialists/specialists_registry.json");
-        if (fileBlob) {
-          registry = JSON.parse(await fileBlob.text()) as Array<Record<string, unknown>>;
-        }
+        // Through a cache-busted signed URL: storage .download() can serve a stale copy, and
+        // writing back a stale list dropped applications submitted moments earlier.
+        const registry =
+          (await downloadStorageJson<Array<Record<string, unknown>>>("specialists/specialists_registry.json", supabaseAdmin)) ?? [];
 
         const specialistEntry = {
           id: savedUser?.id || `spec_${Date.now()}`,
@@ -166,13 +167,8 @@ export async function POST(request: Request) {
     // 3. If shop, also record in Supabase Storage shops_registry.json
     if (effectiveRole === "shop") {
       try {
-        let registry: Array<Record<string, unknown>> = [];
-        const { data: fileBlob } = await supabaseAdmin.storage
-          .from("photos")
-          .download("shops/shops_registry.json");
-        if (fileBlob) {
-          registry = JSON.parse(await fileBlob.text()) as Array<Record<string, unknown>>;
-        }
+        const registry =
+          (await downloadStorageJson<Array<Record<string, unknown>>>("shops/shops_registry.json", supabaseAdmin)) ?? [];
 
         const shopEntry = {
           id: savedUser?.id || `shop_${Date.now()}`,

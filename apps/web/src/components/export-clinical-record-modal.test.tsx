@@ -27,15 +27,16 @@ describe("ExportClinicalRecordModal", () => {
     const onClose = vi.fn();
     const onSuccess = vi.fn();
 
-    // Mock fetch
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
+    // Mock fetch: the session (/api/auth/me) and the submit.
+    global.fetch = vi.fn().mockImplementation((url: string) =>
+      Promise.resolve({
         ok: true,
-        caseCode: "BA-2026-9999",
-        message: "Đã lưu hồ sơ bệnh án thành công vào Supabase.",
-      }),
-    } as Response);
+        json: async () =>
+          url === "/api/auth/me"
+            ? { authenticated: true, user: { id: "u1", fullName: "Nguyễn Văn Test", email: "test@example.com" } }
+            : { ok: true, caseCode: "BA-2026-9999", message: "Đã lưu hồ sơ bệnh án thành công vào Supabase." },
+      } as Response),
+    );
 
     render(
       <ExportClinicalRecordModal
@@ -46,7 +47,14 @@ describe("ExportClinicalRecordModal", () => {
     );
 
     expect(screen.getByText(/Xuất Bệnh Án Soi Da AI Gửi Bác Sĩ Chuyên Khoa/i)).toBeInTheDocument();
-    expect(screen.getByDisplayValue("Trần Thị Ngọc Hà")).toBeInTheDocument();
+    // The signed-in patient's own name, never a built-in person's.
+    expect(await screen.findByDisplayValue("Nguyễn Văn Test")).toBeInTheDocument();
+    expect(screen.queryByDisplayValue("Trần Thị Ngọc Hà")).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByPlaceholderText("09xx xxx xxx"), { target: { value: "0900000000" } });
+    fireEvent.change(screen.getByPlaceholderText(/Da đỏ ửng sau khi ra nắng/), {
+      target: { value: "Mụn viêm vùng cằm" },
+    });
 
     const submitBtn = screen.getByRole("button", {
       name: /Xuất & Gửi Bệnh Án Tới Bác Sĩ/i,

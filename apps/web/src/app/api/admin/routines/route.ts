@@ -164,7 +164,7 @@ export async function POST(request: Request) {
           if (trimmed.length === 36 && trimmed.includes("-")) {
             targetUserId = trimmed;
           } else {
-            const { data: userList } = await supabase.auth.admin.listUsers();
+            const { data: userList } = await supabase.auth.admin.listUsers({ perPage: 1000 });
             const found = userList?.users.find((u) => u.email?.toLowerCase() === trimmed.toLowerCase());
             if (found) targetUserId = found.id;
           }

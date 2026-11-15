@@ -1,15 +1,12 @@
 import { NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
-import fs from "fs";
-import path from "path";
 import { getAuthenticatedActor, requireRoleActor } from "@/lib/session-auth";
+import type { ActorRole } from "@/lib/actor-role";
+import { profileFromAuthUser, type ProfileRow, type SpecialistRow } from "@/lib/profile-from-user";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
-
-// Đường dẫn file lưu tạm cục bộ để đảm bảo dữ liệu luôn lưu trữ bền vững khi test local
-const CACHE_FILE = path.join(process.cwd(), ".profiles-cache.json");
 
 interface ProfilePayload {
   id?: string;
@@ -38,21 +35,6 @@ interface ProfilePayload {
     skinType?: string;
     allergies?: string;
   };
-}
-
-function readCache(): Record<string, Record<string, unknown>> {
-  try {
-    if (fs.existsSync(CACHE_FILE)) {
-      return JSON.parse(fs.readFileSync(CACHE_FILE, "utf-8")) as Record<string, Record<string, unknown>>;
-    }
-  } catch {}
-  return {};
-}
-
-function writeCache(data: Record<string, Record<string, unknown>>) {
-  try {
-    fs.writeFileSync(CACHE_FILE, JSON.stringify(data, null, 2), "utf-8");
-  } catch {}
 }
 
 function getSupabaseAdmin() {
@@ -165,10 +147,8 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const requestedRole = searchParams.get("role");
-    const requestedEmail = searchParams.get("email")?.trim().toLowerCase();
 
     const actor = await getAuthenticatedActor(req);
-    const cache = readCache();
 
     // 1. Kiểm tra session đăng nhập hiện tại từ Supabase
     let authUser: Awaited<ReturnType<Awaited<ReturnType<typeof createServerClient>>["auth"]["getUser"]>>["data"]["user"] = null;
@@ -193,70 +173,48 @@ export async function GET(req: Request) {
         ? requestedRole
         : actor?.role || requestedRole || (authUser?.user_metadata?.role as string) || "customer";
 
-    // 2. Chỉ đọc cache cục bộ cho chính user đang đăng nhập (hoặc admin tra cứu email)
-    const canReadTargetEmail =
-      Boolean(requestedEmail) &&
-      (actor?.role === "admin" || requestedEmail === actor?.email);
-    const cacheKey = canReadTargetEmail
-      ? requestedEmail!
-      : authUser?.email?.toLowerCase() || actor?.email || activeRole;
-    if (cache[cacheKey]) {
-      return NextResponse.json({ ok: true, user: cache[cacheKey], source: "cache" });
-    }
-
-    // 3. Truy vấn dữ liệu thực tế từ Database Supabase (nếu có tài khoản)
-    const admin = getSupabaseAdmin();
-    if (admin && authUser) {
-      try {
-        // Đọc từ bảng profiles (chỉ dùng các cột có sẵn: id, email, role, full_name, avatar_url, updated_at)
-        const { data: profileRow } = await admin
-          .from("profiles")
-          .select("id, email, role, full_name, avatar_url, updated_at")
-          .eq("id", authUser.id)
-          .maybeSingle();
-
-        if (profileRow) {
-          const baseUser = {
-            id: profileRow.id,
-            email: profileRow.email,
-            role: profileRow.role,
-            fullName: profileRow.full_name || authUser.user_metadata?.full_name || authUser.email?.split("@")[0],
-            avatarUrl: profileRow.avatar_url || authUser.user_metadata?.avatar_url || DEFAULT_ROLE_PROFILES[profileRow.role]?.avatarUrl,
-            phone: authUser.user_metadata?.phone_number || authUser.phone || "0987 654 321",
-            status: "active",
-            createdAt: authUser.created_at,
-          };
-
-          // Nếu là Bác sĩ, lấy thêm từ bảng specialists có sẵn
-          if (profileRow.role === "specialist") {
-            const { data: specRow } = await admin
+    // 2. (The local .profiles-cache.json is gone: it was read before the account, was seeded with
+    //    the sample persona on save, and on a read-only serverless disk never worked anyway.)
+    // 3. The signed-in user's own data: auth record, profiles row and (specialist) specialists row.
+    //    Never a sample persona: a new account used to get "Thùy Dung" / "La Roche-Posay" here, with
+    //    that persona's address, allergies and licence shown as the user's own.
+    if (authUser) {
+      const role = (activeRole in DEFAULT_ROLE_PROFILES ? activeRole : "customer") as ActorRole;
+      const admin = getSupabaseAdmin();
+      let profileRow: ProfileRow | null = null;
+      let specRow: SpecialistRow | null = null;
+      if (admin) {
+        try {
+          const { data } = await admin
+            .from("profiles")
+            .select("full_name, avatar_url")
+            .eq("id", authUser.id)
+            .maybeSingle();
+          profileRow = data;
+          if (role === "specialist" && authUser.email) {
+            const { data: spec } = await admin
               .from("specialists")
-              .select("id, full_name, license_number, specialty, hospital, experience_years, phone, email, avatar_url, status, bio, rating, review_count, cases_count")
-              .eq("email", profileRow.email)
+              .select("id, hospital, license_number, specialty, experience_years, bio")
+              .eq("email", authUser.email.toLowerCase())
+              .order("created_at", { ascending: false })
+              .limit(1)
               .maybeSingle();
-
-            return NextResponse.json({
-              ok: true,
-              user: {
-                ...baseUser,
-                specialist: specRow || DEFAULT_ROLE_PROFILES.specialist.specialist,
-              },
-            });
+            specRow = spec;
           }
-
-          return NextResponse.json({
-            ok: true,
-            user: {
-              ...baseUser,
-              shop: DEFAULT_ROLE_PROFILES.shop.shop,
-              customer: DEFAULT_ROLE_PROFILES.customer.customer,
-            },
-          });
-        }
-      } catch {}
+        } catch {}
+      }
+      return NextResponse.json({
+        ok: true,
+        user: profileFromAuthUser(authUser, role, {
+          profile: profileRow,
+          specialist: specRow,
+          defaultAvatarUrl: DEFAULT_ROLE_PROFILES[role]?.avatarUrl,
+        }),
+        source: "account",
+      });
     }
 
-    // 4. Nếu chưa có trên DB hoặc đang ở chế độ xem role cụ thể, trả về dữ liệu mẫu tương ứng
+    // 4. A Bearer-token actor without a cookie session: the sample for its role.
     const fallback = DEFAULT_ROLE_PROFILES[activeRole] || DEFAULT_ROLE_PROFILES.customer;
     return NextResponse.json({ ok: true, user: fallback, source: "default" });
   } catch (err: unknown) {
@@ -285,10 +243,8 @@ export async function PUT(req: Request) {
       );
     }
 
-    // 1. Lưu vào cache cục bộ
-    const cache = readCache();
+    // 1. What the page gets back: exactly what was saved, no sample-persona fields mixed in.
     const updatedUser = {
-      ...DEFAULT_ROLE_PROFILES[effectiveRole],
       ...body,
       id: effectiveId,
       email: effectiveEmail,
@@ -296,15 +252,12 @@ export async function PUT(req: Request) {
       updatedAt: new Date().toISOString(),
     };
 
-    cache[effectiveEmail] = updatedUser;
-    cache[effectiveRole] = updatedUser;
-    writeCache(cache);
-
     // 2. Lưu vào Supabase Session (nếu user đang đăng nhập)
     try {
       const serverClient = await createServerClient();
       const { data: sessionData } = await serverClient.auth.getUser();
-      if (sessionData?.user) {
+      // Only for the user's own profile: an admin editing someone else must not overwrite their own metadata.
+      if (sessionData?.user && sessionData.user.id === effectiveId) {
         const u = sessionData.user;
         await serverClient.auth.updateUser({
           data: {
@@ -312,9 +265,9 @@ export async function PUT(req: Request) {
             avatar_url: body.avatarUrl,
             phone_number: body.phone,
             role: effectiveRole,
-            ...(body.specialist ? { hospital: body.specialist.hospital, license_id: body.specialist.licenseNumber } : {}),
-            ...(body.shop ? { shop_name: body.shop.shopName, address: body.shop.address } : {}),
-            ...(body.customer ? { address: body.customer.address, skin_type: body.customer.skinType } : {}),
+            ...(body.specialist ? { hospital: body.specialist.hospital, license_id: body.specialist.licenseNumber, specialty: body.specialist.specialty } : {}),
+            ...(body.shop ? { shop_name: body.shop.shopName, address: body.shop.address, license: body.shop.license, category: body.shop.category } : {}),
+            ...(body.customer ? { address: body.customer.address, skin_type: body.customer.skinType, allergies: body.customer.allergies } : {}),
           },
         });
 
@@ -347,7 +300,16 @@ export async function PUT(req: Request) {
 
         // Nếu là role specialist: Cập nhật bảng specialists bằng các cột có sẵn
         if (effectiveRole === "specialist" && body.specialist) {
-          const specId = body.specialist.id || "spec_01";
+          // The account's own row: the one already stored under its email, else its user id. A
+          // missing id used to fall back to "spec_01", so every specialist overwrote the same row.
+          const { data: ownRow } = await admin
+            .from("specialists")
+            .select("id")
+            .eq("email", effectiveEmail)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          const specId = ownRow?.id ?? effectiveId;
           await admin.from("specialists").upsert(
             {
               id: specId,

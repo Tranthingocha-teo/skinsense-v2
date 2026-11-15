@@ -189,6 +189,8 @@ export function UserPrescribedRoutine({
   const totalPrice = routine.products.reduce((acc, p) => acc + p.priceVnd, 0);
   const totalOriginalPrice = routine.products.reduce((acc, p) => acc + p.originalPriceVnd, 0);
   const totalSaved = totalOriginalPrice - totalPrice;
+  const morningCount = routine.products.filter((p) => p.timing === "morning" || p.timing === "both").length;
+  const eveningCount = routine.products.filter((p) => p.timing === "evening" || p.timing === "both").length;
 
   function handleGoToShop() {
     toast.success("Đang chuyển đến trang thanh toán Shopee Mall...");
@@ -202,11 +204,17 @@ export function UserPrescribedRoutine({
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-[#D8D4CA]/70 pb-4">
           {/* Thông tin Bác sĩ */}
           <div className="flex items-center gap-3.5">
-            <img
-              src={routine.doctor.avatar}
-              alt={routine.doctor.name}
-              className="size-14 rounded-2xl object-cover border-2 border-[#2D5A43] shadow-xs shrink-0"
-            />
+            {routine.doctor.avatar ? (
+              <img
+                src={routine.doctor.avatar}
+                alt={routine.doctor.name}
+                className="size-14 rounded-2xl object-cover border-2 border-[#2D5A43] shadow-xs shrink-0"
+              />
+            ) : (
+              <span className="size-14 rounded-2xl border-2 border-[#2D5A43] bg-[#2D5A43]/10 text-[#2D5A43] flex items-center justify-center shrink-0">
+                <Stethoscope className="size-6" />
+              </span>
+            )}
             <div>
               <div className="flex items-center gap-2">
                 <span className="rounded bg-[#2D5A43] px-2 py-0.5 text-[10px] font-bold text-white flex items-center gap-1">
@@ -218,7 +226,9 @@ export function UserPrescribedRoutine({
               <h3 className="font-serif text-lg font-bold text-[#191B19] mt-0.5">
                 {routine.doctor.name}
               </h3>
-              <p className="text-xs text-[#5C605C]">{routine.doctor.hospital} • {routine.doctor.title}</p>
+              <p className="text-xs text-[#5C605C]">
+                {[routine.doctor.hospital, routine.doctor.title].filter(Boolean).join(" • ")}
+              </p>
             </div>
           </div>
 
@@ -270,7 +280,7 @@ export function UserPrescribedRoutine({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
         <div>
           <h2 className="font-serif text-lg sm:text-xl font-bold text-[#191B19]">
-            Chi Tiết 4 Bước Routine Được Kê Đơn
+            Chi Tiết {routine.products.length} Bước Routine Được Kê Đơn
           </h2>
           <p className="text-xs text-[#5C605C] mt-0.5">
             Các sản phẩm dược mỹ phẩm chính hãng theo đúng liều lượng và phác đồ điều trị của Bác sĩ.
@@ -287,7 +297,7 @@ export function UserPrescribedRoutine({
                 : "text-[#5C605C] hover:text-[#191B19]"
             }`}
           >
-            Tất cả 4 bước
+            Tất cả {routine.products.length} bước
           </button>
           <button
             type="button"
@@ -299,7 +309,7 @@ export function UserPrescribedRoutine({
             }`}
           >
             <Sun className="size-3.5" />
-            <span>Buổi Sáng (3)</span>
+            <span>Buổi Sáng ({morningCount})</span>
           </button>
           <button
             type="button"
@@ -311,7 +321,7 @@ export function UserPrescribedRoutine({
             }`}
           >
             <Moon className="size-3.5" />
-            <span>Buổi Tối (3)</span>
+            <span>Buổi Tối ({eveningCount})</span>
           </button>
         </div>
       </div>
@@ -361,9 +371,11 @@ export function UserPrescribedRoutine({
                   alt={prod.name}
                   className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
                 />
-                <span className="absolute bottom-1 right-1 rounded bg-black/60 backdrop-blur-xs px-1.5 py-0.2 text-[10px] font-mono text-white">
-                  {prod.volume}
-                </span>
+                {prod.volume && (
+                  <span className="absolute bottom-1 right-1 rounded bg-black/60 backdrop-blur-xs px-1.5 py-0.2 text-[10px] font-mono text-white">
+                    {prod.volume}
+                  </span>
+                )}
               </div>
 
               <div className="space-y-1.5 flex-1 min-w-0">
@@ -404,7 +416,7 @@ export function UserPrescribedRoutine({
                 <span>Chính Hãng 100% Shopee Mall</span>
               </div>
 
-              <div className="flex items-baseline gap-2">
+              {prod.priceVnd > 0 && <div className="flex items-baseline gap-2">
                 <span className="text-[11px] text-[#5C605C]">Giá tham khảo:</span>
                 <span className="text-base font-bold font-serif text-[#C2410C]">
                   {formatMoney(prod.priceVnd)}
@@ -412,7 +424,7 @@ export function UserPrescribedRoutine({
                 <span className="text-xs text-[#5C605C] line-through">
                   {formatMoney(prod.originalPriceVnd)}
                 </span>
-              </div>
+              </div>}
             </div>
           </div>
         ))}
@@ -423,28 +435,32 @@ export function UserPrescribedRoutine({
         <div className="space-y-1.5 text-center md:text-left">
           <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
             <span className="rounded-md bg-[#C2410C] px-2.5 py-0.5 text-xs font-bold text-white">
-              Trọn Bộ 4 Sản Phẩm Theo Phác Đồ Bác Sĩ
+              Trọn Bộ {routine.products.length} Sản Phẩm Theo Phác Đồ Bác Sĩ
             </span>
-            <span className="rounded-md bg-[#2D5A43]/10 text-[#2D5A43] px-2.5 py-0.5 text-xs font-bold">
-              Tiết kiệm {formatMoney(totalSaved)} khi mua cả bộ
-            </span>
+            {totalSaved > 0 && (
+              <span className="rounded-md bg-[#2D5A43]/10 text-[#2D5A43] px-2.5 py-0.5 text-xs font-bold">
+                Tiết kiệm {formatMoney(totalSaved)} khi mua cả bộ
+              </span>
+            )}
             <span className="text-xs text-[#5C605C]">• Freeship Xtra toàn quốc</span>
           </div>
           <h3 className="font-serif text-lg sm:text-xl font-bold text-[#191B19]">
             Hoàn Tất Đơn Kê & Mua Sản Phẩm Tại Gian Hàng Shopee
           </h3>
           <p className="text-xs text-[#5C605C]">
-            Tất cả 4 sản phẩm chính hãng sẽ được chuẩn bị sẵn tại Shop để bạn đặt hàng và nhận thuốc/dược mỹ phẩm tại nhà.
+            Tất cả {routine.products.length} sản phẩm chính hãng sẽ được chuẩn bị sẵn tại Shop để bạn đặt hàng và nhận thuốc/dược mỹ phẩm tại nhà.
           </p>
         </div>
 
         <div className="flex flex-col sm:flex-row items-center gap-5 shrink-0 w-full md:w-auto justify-between md:justify-end">
-          <div className="text-center sm:text-right">
-            <span className="text-xs text-[#5C605C] block">Tổng chi phí dự kiến:</span>
-            <div className="text-2xl sm:text-3xl font-bold font-serif text-[#C2410C]">
-              {formatMoney(totalPrice)}
+          {totalPrice > 0 && (
+            <div className="text-center sm:text-right">
+              <span className="text-xs text-[#5C605C] block">Tổng chi phí dự kiến:</span>
+              <div className="text-2xl sm:text-3xl font-bold font-serif text-[#C2410C]">
+                {formatMoney(totalPrice)}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Nút hành động duy nhất: ĐI ĐẾN TRANG SẢN PHẨM ĐỂ MUA HÀNG */}
           <button

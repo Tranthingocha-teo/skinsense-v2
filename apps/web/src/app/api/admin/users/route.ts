@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { requireRoleActor } from "@/lib/session-auth";
+import { randomUUID } from "node:crypto";
 import { authzClaims } from "@/lib/actor-role";
+import { shopIdClaim } from "@/lib/shop-utils";
+import { downloadStorageJson } from "@/lib/supabase/storage-json";
 
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -22,7 +25,7 @@ export async function GET(request: Request) {
 
   try {
     const supabaseAdmin = getSupabaseAdmin();
-    const { data, error } = await supabaseAdmin.auth.admin.listUsers();
+    const { data, error } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
@@ -76,7 +79,9 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { email, password = "password123@", fullName, role = "customer", phone, shopName, specialty, hospital, licenseId } = body;
+    // No shared default password: an account created without one gets a random password nobody
+    // knows and signs in with Google or a magic link. ("password123@" let anyone into it.)
+    const { email, password = `${randomUUID()}Aa1!`, fullName, role = "customer", phone, shopName, specialty, hospital, licenseId } = body;
 
     if (!email || !email.includes("@")) {
       return NextResponse.json({ error: "Email không hợp lệ." }, { status: 400 });
@@ -94,7 +99,7 @@ export async function POST(request: Request) {
       email: normalizedEmail,
       password,
       email_confirm: true,
-      app_metadata: authzClaims(role, initialStatus),
+      app_metadata: { ...authzClaims(role, initialStatus), ...shopIdClaim(role, {}, { shop_name: shopName }) },
       user_metadata: {
         full_name: fullName?.trim() || normalizedEmail.split("@")[0],
         role,
@@ -158,7 +163,9 @@ export async function PATCH(request: Request) {
 
     const { data, error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
       user_metadata: updatedMetadata,
-      ...(role || status ? { app_metadata: authzClaims(nextRole, nextStatus) } : {}),
+      ...(role || status
+        ? { app_metadata: { ...authzClaims(nextRole, nextStatus), ...shopIdClaim(nextRole, currentApp, currentMeta) } }
+        : {}),
     });
 
     if (error) {
@@ -170,13 +177,9 @@ export async function PATCH(request: Request) {
     if (userEffectiveRole === "shop" && status) {
       try {
         const email = userRes.user.email?.toLowerCase();
-        let registry: Array<{ id?: string; email?: string; status?: string }> = [];
-        const { data: fileBlob } = await supabaseAdmin.storage
-          .from("photos")
-          .download("shops/shops_registry.json");
-        if (fileBlob) {
-          registry = JSON.parse(await fileBlob.text());
-        }
+        // Cache-busted read (storage .download() can be stale; writing a stale list back lost entries).
+        let registry =
+          (await downloadStorageJson<Array<{ id?: string; email?: string; status?: string }>>("shops/shops_registry.json", supabaseAdmin)) ?? [];
         registry = registry.map((s) =>
           s.email?.toLowerCase() === email || s.id === userId ? { ...s, status } : s
         );

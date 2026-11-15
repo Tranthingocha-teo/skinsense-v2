@@ -81,6 +81,39 @@ export async function uploadStorageJson(
   }
 }
 
+/**
+ * Runs read-modify-write steps on one Storage JSON file one at a time. The queue is per file path
+ * for the whole process (on globalThis), so every route that writes the file shares it even if the
+ * module is instantiated per route bundle. Separate serverless instances do not share it.
+ */
+export function withStoreLock<R>(storagePath: string, fn: () => Promise<R>): Promise<R> {
+  const queues = ((globalThis as { __skinsenseStoreLocks?: Map<string, Promise<void>> }).__skinsenseStoreLocks ??=
+    new Map<string, Promise<void>>());
+  const run = (queues.get(storagePath) ?? Promise.resolve()).then(fn, fn);
+  queues.set(
+    storagePath,
+    run.then(
+      () => undefined,
+      () => undefined,
+    ),
+  );
+  return run;
+}
+
+/** Whether an object exists in the bucket. Errors count as "exists" so callers never overwrite blindly. */
+export async function storageObjectExists(storagePath: string, client: SupabaseClient): Promise<boolean> {
+  const slash = storagePath.lastIndexOf("/");
+  const dir = slash === -1 ? "" : storagePath.slice(0, slash);
+  const name = storagePath.slice(slash + 1);
+  try {
+    const { data, error } = await client.storage.from(DEFAULT_STORAGE_BUCKET).list(dir, { search: name, limit: 100 });
+    if (error || !data) return true;
+    return data.some((entry) => entry.name === name);
+  } catch {
+    return true;
+  }
+}
+
 export interface PersistentJsonStoreOptions<T> {
   storagePath: string;
   primaryFile: string;
@@ -95,8 +128,6 @@ export interface PersistentJsonStoreOptions<T> {
  * and falls back to local / tmp disk files for offline dev or test overrides.
  */
 export function createPersistentJsonStore<T>(options: PersistentJsonStoreOptions<T>) {
-  let lockQueue: Promise<void> = Promise.resolve();
-
   function resolveReadPath(): string {
     const override = process.env[options.overrideEnvVar]?.trim();
     if (override) return override;
@@ -158,14 +189,21 @@ export function createPersistentJsonStore<T>(options: PersistentJsonStoreOptions
 
     const remote = await downloadStorageJson<T>(options.storagePath, admin);
     if (remote !== null && (!Array.isArray(options.getInitial()) || Array.isArray(remote))) {
-      const { value, changed } = applyNormalize(remote);
+      // Normalization is applied on every read and saved by the next locked write. A read must
+      // not upload: plain reads (the checkout polls status every second) run outside the lock,
+      // and uploading the snapshot they read overwrote writes made meanwhile — a payment
+      // confirmed from the phone was lost this way and the QR never closed.
+      const { value } = applyNormalize(remote);
       writeDisk(value);
-      if (changed) {
-        await uploadStorageJson(options.storagePath, value, admin);
-      }
       return value;
     }
 
+    // Seed the remote store only when it really does not exist. A read that merely failed
+    // (network, timeout) used to upload this instance's local copy — on a serverless instance the
+    // seed data — over the real store, wiping every order or chat written since.
+    if (await storageObjectExists(options.storagePath, admin)) {
+      throw new Error(`Không đọc được ${options.storagePath}, vui lòng thử lại.`);
+    }
     const local = readDisk();
     await uploadStorageJson(options.storagePath, local, admin);
     return local;
@@ -175,16 +213,16 @@ export function createPersistentJsonStore<T>(options: PersistentJsonStoreOptions
     writeDisk(data);
     const override = process.env[options.overrideEnvVar]?.trim();
     if (override) return;
-    await uploadStorageJson(options.storagePath, data);
+    const admin = getSupabaseAdminClient();
+    if (!admin) return; // offline / local-disk mode, like readAsync
+    // A failed upload used to be ignored, so the API answered "saved" for data that was not.
+    if (!(await uploadStorageJson(options.storagePath, data, admin)) && !(await uploadStorageJson(options.storagePath, data, admin))) {
+      throw new Error(`Không lưu được ${options.storagePath}, vui lòng thử lại.`);
+    }
   }
 
   function withLock<R>(fn: () => Promise<R>): Promise<R> {
-    const run = lockQueue.then(fn, fn);
-    lockQueue = run.then(
-      () => undefined,
-      () => undefined,
-    );
-    return run;
+    return withStoreLock(options.storagePath, fn);
   }
 
   return {

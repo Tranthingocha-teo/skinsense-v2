@@ -32,6 +32,7 @@ vi.mock("@supabase/supabase-js", () => {
               text: async () => JSON.stringify([
                 {
                   id: "case-01",
+                  patientUserId: "patient-01",
                   caseCode: "BA-2026-0891",
                   patientName: "Trần Thị Ngọc Hà",
                   patientAge: 21,
@@ -68,6 +69,7 @@ vi.mock("@supabase/supabase-js", () => {
       auth: {
         admin: {
           listUsers: vi.fn().mockResolvedValue({ data: { users: [] } }),
+          getUserById: vi.fn(async (id: string) => ({ data: { user: id === "patient-01" ? { id } : null } })),
         },
       },
     })),
@@ -173,5 +175,17 @@ describe("Specialist Cases API (/api/specialist/cases)", () => {
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.ok).toBe(true);
+  });
+
+  it("refuses a prescription whose patient matches no account instead of writing to a fallback account", async () => {
+    const { POST } = await import("./route");
+    const res = await POST(
+      new Request("http://localhost:3000/api/specialist/cases", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ caseId: "no-such-case", userId: "nobody", products: [{ name: "Kem" }] }),
+      }),
+    );
+    expect(res.status).toBe(404);
   });
 });

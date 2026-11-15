@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
-import { ordersStore } from "@/lib/orders-store";
+import { isOrderOwnedByActor, ordersStore } from "@/lib/orders-store";
 import { requireRoleActor } from "@/lib/session-auth";
-import { normalizeShopId } from "@/lib/shop-utils";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+
+const PAYMENT_METHODS = ["momo", "cod", "vietqr", "card"];
 
 // GET /api/orders?code=...
 export async function GET(request: Request) {
@@ -20,37 +21,24 @@ export async function GET(request: Request) {
     if (!order) {
       return NextResponse.json({ ok: false, error: "Không tìm thấy đơn hàng." }, { status: 404 });
     }
-    if (
-      actor.role === "shop" &&
-      actor.shopId &&
-      normalizeShopId(order.shopName) !== actor.shopId
-    ) {
-      return NextResponse.json({ ok: false, error: "Không có quyền xem đơn hàng này." }, { status: 403 });
-    }
-    if (
-      actor.role === "customer" &&
-      order.customerName.trim().toLowerCase() !== actor.fullName.trim().toLowerCase()
-    ) {
+    if (!isOrderOwnedByActor(order, actor)) {
       return NextResponse.json({ ok: false, error: "Không có quyền xem đơn hàng này." }, { status: 403 });
     }
     return NextResponse.json({ ok: true, order });
   }
 
   const allOrders = await ordersStore.getAllAsync();
-  const scopedOrders =
-    actor.role === "admin"
-      ? allOrders
-      : actor.role === "shop"
-        ? allOrders.filter((o) => actor.shopId && normalizeShopId(o.shopName) === actor.shopId)
-        : allOrders.filter(
-            (o) => o.customerName.trim().toLowerCase() === actor.fullName.trim().toLowerCase(),
-          );
-
-  return NextResponse.json({ ok: true, orders: scopedOrders });
+  return NextResponse.json({ ok: true, orders: allOrders.filter((o) => isOrderOwnedByActor(o, actor)) });
 }
 
 // POST /api/orders (Tạo đơn hàng mới - trạng thái pending)
+// Signed-in buyers only, and the order is bound to the buyer's user id: it used to be anonymous,
+// so anyone could write orders into the store and buyers found their orders only by name.
 export async function POST(request: Request) {
+  const auth = await requireRoleActor(request);
+  if (!auth.ok) return auth.response;
+  const { actor } = auth;
+
   try {
     const body = await request.json();
     const {
@@ -71,12 +59,17 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
-
-    const newOrder = await ordersStore.createAsync({
-      orderCode,
-      customerName: customerName || "Khách Hàng Shopee",
-      customerPhone: customerPhone || "0987654321",
-      shippingAddress: shippingAddress || "TP. Hồ Chí Minh",
+    if (!PAYMENT_METHODS.includes(paymentMethod)) {
+      return NextResponse.json({ ok: false, error: "Phương thức thanh toán không hợp lệ." }, { status: 400 });
+    }
+    // A code that already exists (a random 6-digit collision, a double submit, or someone else's
+    // code) must not replace that order: the create used to overwrite it.
+    const newOrder = await ordersStore.createIfAbsentAsync({
+      orderCode: String(orderCode),
+      customerId: actor.userId,
+      customerName: String(customerName || actor.fullName),
+      customerPhone: String(customerPhone || actor.phone || ""),
+      shippingAddress: String(shippingAddress || ""),
       totalAmount: Number(totalAmount),
       status: "pending",
       paymentMethod,
@@ -86,6 +79,9 @@ export async function POST(request: Request) {
       carrier: "SPX Express (Freeship Xtra)",
       items,
     });
+    if (!newOrder) {
+      return NextResponse.json({ ok: false, error: "Mã đơn hàng đã tồn tại, vui lòng thử lại." }, { status: 409 });
+    }
 
     return NextResponse.json({
       ok: true,
