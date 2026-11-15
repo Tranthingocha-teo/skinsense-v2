@@ -1,9 +1,34 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+interface MockAuthUser {
+  id: string;
+  email: string;
+  user_metadata?: Record<string, unknown>;
+}
+
+let currentAuthUser: MockAuthUser | null = null;
+
+vi.mock("@/lib/supabase/server", () => ({
+  createClient: vi.fn(async () => ({
+    auth: {
+      getUser: vi.fn(async () => ({
+        data: { user: currentAuthUser },
+        error: null,
+      })),
+    },
+  })),
+}));
+
 import { GET, POST } from "./route";
 
 describe("/api/upload/cloudinary", () => {
   beforeEach(() => {
+    currentAuthUser = {
+      id: "shop_01",
+      email: "shop@example.com",
+      user_metadata: { role: "shop", shop_name: "Sakura Shop" },
+    };
     vi.unstubAllEnvs();
     vi.stubEnv("CLOUDINARY_URL", "");
     vi.stubEnv("CLOUDINARY_CLOUD_NAME", "");
@@ -17,6 +42,18 @@ describe("/api/upload/cloudinary", () => {
   afterEach(() => {
     vi.restoreAllMocks();
     vi.unstubAllEnvs();
+  });
+
+  it("POST rejects unauthenticated upload attempts with 401", async () => {
+    currentAuthUser = null;
+    const req = new Request("http://localhost:3000/api/upload/cloudinary", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ dataUrl: "data:image/png;base64,iVBORw0KGgo=" }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(401);
   });
 
   it("GET reports unconfigured status when Cloudinary env vars are missing", async () => {

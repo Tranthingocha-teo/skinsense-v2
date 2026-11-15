@@ -18,14 +18,14 @@ bun workspaces + Turborepo.
 bun install
 bun run typecheck        # turbo: web (next typegen + tsc), mobile (tsc), domain (tsc)
 bun run test             # vitest (domain, web), jest-expo (mobile)
-bun run lint             # manual; not part of CI
+bun run lint             # enforced on every PR in CI (`0` errors across all workspaces)
 bun run dev              # all apps
 cd apps/web && bun dev   # http://localhost:3000
 cd apps/web && bun run e2e   # Playwright (some specs write to the backend your env points at)
 cd apps/mobile && bunx expo run:android   # needs an emulator or a USB phone
 ```
 
-CI runs install (frozen lockfile), typecheck and test only, without secrets.
+CI runs `bun install --frozen-lockfile`, `bun run lint`, `bun run typecheck`, `bun run test`, and `bun run build` without secrets. See also `.github/workflows/mobile-preview.yml` for mobile preflight checks.
 
 ## Android
 

@@ -23,7 +23,7 @@ const body = Manrope({
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("Landing");
   return {
-    metadataBase: new URL("https://skinsense-v2.vercel.app"),
+    metadataBase: new URL("https://skinsense-v2-topaz.vercel.app"),
     title: t("title"),
     description: t("tagline"),
     manifest: "/manifest.json",

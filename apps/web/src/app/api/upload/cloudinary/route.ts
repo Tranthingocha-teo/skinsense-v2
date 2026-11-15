@@ -3,6 +3,7 @@ import {
   isCloudinaryConfigured,
   uploadImageToCloudinary,
 } from "@/lib/cloudinary";
+import { requireRoleActor } from "@/lib/session-auth";
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // 10MB
 const ALLOWED_IMAGE_TYPES = new Set([
@@ -42,6 +43,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const auth = await requireRoleActor(request, ["customer", "shop", "specialist", "admin"]);
+  if (!auth.ok) return auth.response;
+
   try {
     const status = isCloudinaryConfigured();
     if (!status.configured) {

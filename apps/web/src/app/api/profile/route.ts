@@ -3,6 +3,7 @@ import { createClient as createServerClient } from "@/lib/supabase/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import fs from "fs";
 import path from "path";
+import { getAuthenticatedActor, requireRoleActor } from "@/lib/session-auth";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -39,16 +40,16 @@ interface ProfilePayload {
   };
 }
 
-function readCache(): Record<string, any> {
+function readCache(): Record<string, Record<string, unknown>> {
   try {
     if (fs.existsSync(CACHE_FILE)) {
-      return JSON.parse(fs.readFileSync(CACHE_FILE, "utf-8"));
+      return JSON.parse(fs.readFileSync(CACHE_FILE, "utf-8")) as Record<string, Record<string, unknown>>;
     }
   } catch {}
   return {};
 }
 
-function writeCache(data: Record<string, any>) {
+function writeCache(data: Record<string, Record<string, unknown>>) {
   try {
     fs.writeFileSync(CACHE_FILE, JSON.stringify(data, null, 2), "utf-8");
   } catch {}
@@ -67,8 +68,19 @@ function getSupabaseAdmin() {
   }
 }
 
+interface RoleProfileDefault extends Record<string, unknown> {
+  id: string;
+  email: string;
+  role: string;
+  fullName: string;
+  avatarUrl: string;
+  phone: string;
+  status: string;
+  createdAt: string;
+}
+
 // Dữ liệu mẫu chuẩn của hệ thống SkinSense v2 theo đúng 4 role
-const DEFAULT_ROLE_PROFILES: Record<string, any> = {
+const DEFAULT_ROLE_PROFILES: Record<string, RoleProfileDefault> = {
   admin: {
     id: "admin_super",
     email: "hattn.23itb@vku.udn.vn",
@@ -153,12 +165,13 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const requestedRole = searchParams.get("role");
-    const requestedEmail = searchParams.get("email");
+    const requestedEmail = searchParams.get("email")?.trim().toLowerCase();
 
+    const actor = await getAuthenticatedActor(req);
     const cache = readCache();
 
     // 1. Kiểm tra session đăng nhập hiện tại từ Supabase
-    let authUser: any = null;
+    let authUser: Awaited<ReturnType<Awaited<ReturnType<typeof createServerClient>>["auth"]["getUser"]>>["data"]["user"] = null;
     try {
       const supabase = await createServerClient();
       const { data } = await supabase.auth.getUser();
@@ -167,14 +180,26 @@ export async function GET(req: Request) {
       }
     } catch {}
 
-    // Xác định role cần trả về
-    let activeRole = requestedRole || (authUser ? (authUser.user_metadata?.role || "customer") : "customer");
-    if (authUser && authUser.email?.toLowerCase() === "hattn.23itb@vku.udn.vn") {
-      activeRole = requestedRole || "admin";
+    // Nếu chưa đăng nhập: chỉ trả dữ liệu mẫu tĩnh theo role (không đọc cache email thật)
+    if (!actor && !authUser) {
+      const previewRole =
+        requestedRole && requestedRole in DEFAULT_ROLE_PROFILES ? requestedRole : "customer";
+      const fallback = DEFAULT_ROLE_PROFILES[previewRole] || DEFAULT_ROLE_PROFILES.customer;
+      return NextResponse.json({ ok: true, user: fallback, source: "default" });
     }
 
-    // 2. Tìm trong cache cục bộ đã lưu trước đó nếu có
-    const cacheKey = requestedEmail || (authUser?.email) || activeRole;
+    const activeRole =
+      actor?.role === "admin" && requestedRole
+        ? requestedRole
+        : actor?.role || requestedRole || (authUser?.user_metadata?.role as string) || "customer";
+
+    // 2. Chỉ đọc cache cục bộ cho chính user đang đăng nhập (hoặc admin tra cứu email)
+    const canReadTargetEmail =
+      Boolean(requestedEmail) &&
+      (actor?.role === "admin" || requestedEmail === actor?.email);
+    const cacheKey = canReadTargetEmail
+      ? requestedEmail!
+      : authUser?.email?.toLowerCase() || actor?.email || activeRole;
     if (cache[cacheKey]) {
       return NextResponse.json({ ok: true, user: cache[cacheKey], source: "cache" });
     }
@@ -234,16 +259,26 @@ export async function GET(req: Request) {
     // 4. Nếu chưa có trên DB hoặc đang ở chế độ xem role cụ thể, trả về dữ liệu mẫu tương ứng
     const fallback = DEFAULT_ROLE_PROFILES[activeRole] || DEFAULT_ROLE_PROFILES.customer;
     return NextResponse.json({ ok: true, user: fallback, source: "default" });
-  } catch (err: any) {
-    return NextResponse.json({ ok: false, error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    return NextResponse.json({ ok: false, error: err instanceof Error ? err.message : "Failed to load profile" }, { status: 500 });
   }
 }
 
 export async function PUT(req: Request) {
+  const auth = await requireRoleActor(req);
+  if (!auth.ok) return auth.response;
+  const { actor } = auth;
+
   try {
     const body: ProfilePayload = await req.json();
 
-    if (!body.fullName || !body.email || !body.role) {
+    const effectiveId = actor.role === "admin" && body.id ? body.id : actor.userId;
+    const effectiveEmail =
+      actor.role === "admin" && body.email ? body.email.trim().toLowerCase() : actor.email;
+    const effectiveRole =
+      actor.role === "admin" && body.role ? body.role : actor.role;
+
+    if (!body.fullName || !effectiveEmail || !effectiveRole) {
       return NextResponse.json(
         { ok: false, error: "Họ tên, email và vai trò không được để trống." },
         { status: 400 },
@@ -253,13 +288,16 @@ export async function PUT(req: Request) {
     // 1. Lưu vào cache cục bộ
     const cache = readCache();
     const updatedUser = {
-      ...DEFAULT_ROLE_PROFILES[body.role],
+      ...DEFAULT_ROLE_PROFILES[effectiveRole],
       ...body,
+      id: effectiveId,
+      email: effectiveEmail,
+      role: effectiveRole,
       updatedAt: new Date().toISOString(),
     };
 
-    cache[body.email.toLowerCase()] = updatedUser;
-    cache[body.role] = updatedUser;
+    cache[effectiveEmail] = updatedUser;
+    cache[effectiveRole] = updatedUser;
     writeCache(cache);
 
     // 2. Lưu vào Supabase Session (nếu user đang đăng nhập)
@@ -273,7 +311,7 @@ export async function PUT(req: Request) {
             full_name: body.fullName,
             avatar_url: body.avatarUrl,
             phone_number: body.phone,
-            role: body.role,
+            role: effectiveRole,
             ...(body.specialist ? { hospital: body.specialist.hospital, license_id: body.specialist.licenseNumber } : {}),
             ...(body.shop ? { shop_name: body.shop.shopName, address: body.shop.address } : {}),
             ...(body.customer ? { address: body.customer.address, skin_type: body.customer.skinType } : {}),
@@ -282,8 +320,8 @@ export async function PUT(req: Request) {
 
         await serverClient.from("profiles").upsert({
           id: u.id,
-          email: u.email || body.email,
-          role: body.role,
+          email: u.email || effectiveEmail,
+          role: effectiveRole,
           full_name: body.fullName,
           avatar_url: body.avatarUrl,
           updated_at: new Date().toISOString(),
@@ -295,23 +333,20 @@ export async function PUT(req: Request) {
     const admin = getSupabaseAdmin();
     if (admin) {
       try {
-        // Cập nhật bảng profiles: id, email, role, full_name, avatar_url, updated_at
-        if (body.id) {
-          await admin.from("profiles").upsert(
-            {
-              id: body.id,
-              email: body.email,
-              role: body.role,
-              full_name: body.fullName,
-              avatar_url: body.avatarUrl,
-              updated_at: new Date().toISOString(),
-            },
-            { onConflict: "id" },
-          );
-        }
+        await admin.from("profiles").upsert(
+          {
+            id: effectiveId,
+            email: effectiveEmail,
+            role: effectiveRole,
+            full_name: body.fullName,
+            avatar_url: body.avatarUrl,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "id" },
+        );
 
         // Nếu là role specialist: Cập nhật bảng specialists bằng các cột có sẵn
-        if (body.role === "specialist" && body.specialist) {
+        if (effectiveRole === "specialist" && body.specialist) {
           const specId = body.specialist.id || "spec_01";
           await admin.from("specialists").upsert(
             {
@@ -322,7 +357,7 @@ export async function PUT(req: Request) {
               hospital: body.specialist.hospital || "Bệnh viện Da Liễu Trung Ương",
               experience_years: Number(body.specialist.experienceYears || 5),
               phone: body.phone || "0905 123 456",
-              email: body.email,
+              email: effectiveEmail,
               avatar_url: body.avatarUrl,
               bio: body.specialist.bio || "",
             },
@@ -330,19 +365,17 @@ export async function PUT(req: Request) {
           );
         }
 
-        // Cập nhật metadata tài khoản Auth (nếu có user id)
-        if (body.id) {
-          await admin.auth.admin.updateUserById(body.id, {
-            user_metadata: {
-              full_name: body.fullName,
-              avatar_url: body.avatarUrl,
-              phone_number: body.phone,
-              role: body.role,
-              ...(body.specialist ? { hospital: body.specialist.hospital, license_id: body.specialist.licenseNumber } : {}),
-              ...(body.shop ? { shop_name: body.shop.shopName, address: body.shop.address } : {}),
-            },
-          });
-        }
+        // Cập nhật metadata tài khoản Auth cho chính user hợp lệ
+        await admin.auth.admin.updateUserById(effectiveId, {
+          user_metadata: {
+            full_name: body.fullName,
+            avatar_url: body.avatarUrl,
+            phone_number: body.phone,
+            role: effectiveRole,
+            ...(body.specialist ? { hospital: body.specialist.hospital, license_id: body.specialist.licenseNumber } : {}),
+            ...(body.shop ? { shop_name: body.shop.shopName, address: body.shop.address } : {}),
+          },
+        });
       } catch (dbErr) {
         console.warn("Lỗi lưu Supabase (tiếp tục với cache):", dbErr);
       }
@@ -353,7 +386,7 @@ export async function PUT(req: Request) {
       message: "Đã cập nhật hồ sơ thành công vào cơ sở dữ liệu!",
       user: updatedUser,
     });
-  } catch (err: any) {
-    return NextResponse.json({ ok: false, error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    return NextResponse.json({ ok: false, error: err instanceof Error ? err.message : "Failed to update profile" }, { status: 500 });
   }
 }

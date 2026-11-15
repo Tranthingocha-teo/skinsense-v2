@@ -1,8 +1,34 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { requireRoleActor } from "@/lib/session-auth";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+
+interface PrescribedProductPayload {
+  id?: string;
+  name?: string;
+  productName?: string;
+  label?: string;
+  brand?: string;
+  category?: string;
+  imageUrl?: string;
+  activeIngredients?: string;
+  stepTime?: string;
+  stepNumber?: number;
+  dosage?: string;
+  usageGuide?: string;
+}
+
+interface StoredClinicalCase {
+  id?: string;
+  caseCode?: string;
+  patientUserId?: string;
+  patientEmail?: string;
+  patientName?: string;
+  status?: string;
+  [key: string]: unknown;
+}
 
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -10,7 +36,7 @@ function getSupabaseAdmin() {
   return createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
 }
 
-async function downloadJsonFromStorage<T = any>(supabase: any, path: string): Promise<T | null> {
+async function downloadJsonFromStorage<T = unknown>(supabase: SupabaseClient, path: string): Promise<T | null> {
   try {
     const { data: signData } = await supabase.storage.from("photos").createSignedUrl(path, 60);
     if (signData?.signedUrl) {
@@ -27,12 +53,15 @@ async function downloadJsonFromStorage<T = any>(supabase: any, path: string): Pr
   return null;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const auth = await requireRoleActor(request, ["specialist", "admin"]);
+  if (!auth.ok) return auth.response;
+
   try {
     const supabase = getSupabaseAdmin();
 
     // 1. Fetch real cases from Supabase Storage registry
-    const storageCases: any[] = (await downloadJsonFromStorage<any[]>(supabase, "clinical_records/cases_registry.json")) || [];
+    const storageCases: StoredClinicalCase[] = (await downloadJsonFromStorage<StoredClinicalCase[]>(supabase, "clinical_records/cases_registry.json")) || [];
 
     // 2. Fetch real photos from Supabase Postgres
     const { data: photos } = await supabase
@@ -142,6 +171,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const auth = await requireRoleActor(request, ["specialist", "admin"]);
+  if (!auth.ok) return auth.response;
+
   try {
     const body = await request.json();
     const { userId, caseId, routineTitle, revisitDate, doctorNotes, products } = body;
@@ -154,9 +186,9 @@ export async function POST(request: Request) {
     const targetCaseId = caseId || userId;
 
     // 1. Update cases_registry in Supabase Storage
-    let existingCases: any[] = [];
+    let existingCases: StoredClinicalCase[] = [];
     try {
-      existingCases = (await downloadJsonFromStorage<any[]>(supabase, "clinical_records/cases_registry.json")) || [];
+      existingCases = (await downloadJsonFromStorage<StoredClinicalCase[]>(supabase, "clinical_records/cases_registry.json")) || [];
       if (existingCases.length > 0) {
         const updatedCases = existingCases.map((c) => {
           if (c.id === targetCaseId || c.caseCode === targetCaseId || c.id === userId) {
@@ -170,7 +202,7 @@ export async function POST(request: Request) {
                 doctorNotes: doctorNotes || "Tuân thủ đều đặn mỗi sáng và tối theo chỉ dẫn.",
                 prescribedBy: "BS. CKI Nguyễn Mai Hoa",
                 prescribedAt: new Date().toISOString(),
-                products: products.map((p: any, idx: number) => ({
+                products: (products as PrescribedProductPayload[]).map((p, idx: number) => ({
                   id: p.id || `prod_${idx}`,
                   name: p.name || p.productName || p.label,
                   brand: p.brand || "Chỉ định chuyên khoa",
@@ -194,8 +226,8 @@ export async function POST(request: Request) {
           { upsert: true, contentType: "application/json" }
         );
       }
-    } catch (e: any) {
-      console.warn("Lỗi cập nhật storage cases_registry:", e.message);
+    } catch (e: unknown) {
+      console.warn("Lỗi cập nhật storage cases_registry:", e instanceof Error ? e.message : String(e));
     }
 
     // 2. Determine target patient's user_id
@@ -204,7 +236,7 @@ export async function POST(request: Request) {
     let targetPatientName = "";
 
     const targetCase = existingCases.find(
-      (c: any) => c.id === targetCaseId || c.caseCode === targetCaseId || c.id === userId
+      (c) => c.id === targetCaseId || c.caseCode === targetCaseId || c.id === userId
     );
     if (targetCase) {
       if (!patientUserId && targetCase.patientUserId && targetCase.patientUserId.length === 36) {

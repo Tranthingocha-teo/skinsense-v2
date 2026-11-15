@@ -5,8 +5,12 @@ import {
   type RoleRoutine,
   EMPTY_ROLE_ROUTINES,
 } from "@/lib/role-routines";
+import { requireRoleActor } from "@/lib/session-auth";
+import { downloadStorageJson, uploadStorageJson } from "@/lib/supabase/storage-json";
 
 export type { RoutineStep, RoleRoutine };
+
+const ROLE_ROUTINES_STORAGE_PATH = "admin/role_routines_registry.json";
 
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -15,14 +19,30 @@ function getSupabaseAdmin() {
 }
 
 // Persistent master store for routines categorized by 4 roles (Strict Multi-tenant, No Mock Data)
-let ROUTINES_STORE: Record<string, RoleRoutine> = JSON.parse(
+const ROUTINES_STORE: Record<string, RoleRoutine> = JSON.parse(
   JSON.stringify(EMPTY_ROLE_ROUTINES)
 );
 
+async function loadRoleRoutines(): Promise<Record<string, RoleRoutine>> {
+  const remote = await downloadStorageJson<Record<string, RoleRoutine>>(ROLE_ROUTINES_STORAGE_PATH);
+  if (remote && typeof remote === "object") {
+    for (const key of Object.keys(remote)) {
+      if (ROUTINES_STORE[key]) {
+        ROUTINES_STORE[key] = remote[key];
+      }
+    }
+  }
+  return ROUTINES_STORE;
+}
+
 export async function GET(request: Request) {
+  const auth = await requireRoleActor(request, ["admin", "specialist", "customer", "shop"]);
+  if (!auth.ok) return auth.response;
+
   try {
     const { searchParams } = new URL(request.url);
     const role = searchParams.get("role");
+    await loadRoleRoutines();
 
     // Also check if today has real completions in Supabase
     const today = new Date().toISOString().split("T")[0];
@@ -35,7 +55,6 @@ export async function GET(request: Request) {
 
       if (entries && entries.length > 0) {
         const completedSet = new Set(entries.flatMap((e) => e.completed_labels || []));
-        // Update tick state based on Supabase database
         for (const rKey of Object.keys(ROUTINES_STORE)) {
           ROUTINES_STORE[rKey].steps = ROUTINES_STORE[rKey].steps.map((st) => ({
             ...st,
@@ -56,9 +75,13 @@ export async function GET(request: Request) {
 }
 
 export async function PATCH(request: Request) {
+  const auth = await requireRoleActor(request, ["admin", "specialist", "customer", "shop"]);
+  if (!auth.ok) return auth.response;
+
   try {
     const body = await request.json();
     const { role = "customer", stepId, isCompleted, night } = body;
+    await loadRoleRoutines();
 
     if (!ROUTINES_STORE[role]) {
       return NextResponse.json({ error: "Vai trò không hợp lệ." }, { status: 400 });
@@ -72,7 +95,7 @@ export async function PATCH(request: Request) {
       return s;
     });
 
-    // Also persist tick to Supabase PostgreSQL routine_entries
+    // Persist tick to Supabase PostgreSQL routine_entries for authenticated user
     const targetNight = night || new Date().toISOString().split("T")[0];
     const completedLabels = currentRoutine.steps
       .filter((s) => s.isCompleted)
@@ -80,9 +103,8 @@ export async function PATCH(request: Request) {
 
     try {
       const supabase = getSupabaseAdmin();
-      const adminUserId = "614ef0f9-1b4d-48f7-aa3e-29a8bd0b8c33"; // Super Admin
       await supabase.from("routine_entries").upsert({
-        user_id: adminUserId,
+        user_id: auth.actor.userId,
         night: targetNight,
         completed_labels: completedLabels,
         item_count: currentRoutine.steps.length,
@@ -91,9 +113,11 @@ export async function PATCH(request: Request) {
       console.error("Failed to sync tick to Supabase routine_entries:", e);
     }
 
+    await uploadStorageJson(ROLE_ROUTINES_STORAGE_PATH, ROUTINES_STORE);
+
     const total = currentRoutine.steps.length;
     const completed = currentRoutine.steps.filter((s) => s.isCompleted).length;
-    const percent = Math.round((completed / total) * 100);
+    const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
 
     return NextResponse.json({
       ok: true,
@@ -109,9 +133,13 @@ export async function PATCH(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const auth = await requireRoleActor(request, ["admin", "specialist"]);
+  if (!auth.ok) return auth.response;
+
   try {
     const body = await request.json();
     const { role = "customer", title, description, steps, targetUser } = body;
+    await loadRoleRoutines();
 
     if (!ROUTINES_STORE[role]) {
       return NextResponse.json({ error: "Vai trò không hợp lệ." }, { status: 400 });
@@ -170,6 +198,8 @@ export async function POST(request: Request) {
         console.error("Failed to sync routine_items to Supabase:", e);
       }
     }
+
+    await uploadStorageJson(ROLE_ROUTINES_STORAGE_PATH, ROUTINES_STORE);
 
     return NextResponse.json({
       ok: true,

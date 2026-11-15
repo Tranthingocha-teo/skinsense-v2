@@ -15,9 +15,9 @@ export async function GET(
   const cleanId = decodeURIComponent(id || "").trim();
 
   // 1. Kiểm tra đơn hàng cụ thể theo mã hoặc đơn mới nhất nếu mã là latest
-  let order = ordersStore.findByCode(cleanId);
+  let order = await ordersStore.findByCodeAsync(cleanId);
   if (!order && cleanId.toLowerCase() === "latest") {
-    const all = ordersStore.getAll();
+    const all = await ordersStore.getAllAsync();
     order = all.find((o) => o.status === "pending" || o.paymentStatus === "unpaid") || all[0];
   }
 
@@ -48,7 +48,7 @@ export async function GET(
   if (sinceParam) {
     const sinceTimestamp = parseInt(sinceParam, 10);
     if (!isNaN(sinceTimestamp)) {
-      const allOrders = ordersStore.getAll();
+      const allOrders = await ordersStore.getAllAsync();
       const recentPaid = allOrders.find((o) => {
         if (o.paymentStatus !== "paid") return false;
         if (!o.paidAt) return false;

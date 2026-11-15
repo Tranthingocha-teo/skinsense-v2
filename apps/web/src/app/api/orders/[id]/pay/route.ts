@@ -24,7 +24,7 @@ export async function POST(
   const cleanId = decodeURIComponent(id || "").trim();
 
   try {
-    const updated = ordersStore.markAsPaid(cleanId);
+    const updated = await ordersStore.markAsPaidAsync(cleanId);
 
     return NextResponse.json(
       {
@@ -52,7 +52,7 @@ export async function GET(
 ) {
   const { id } = await props.params;
   const cleanId = decodeURIComponent(id || "").trim();
-  const updated = ordersStore.markAsPaid(cleanId);
+  const updated = await ordersStore.markAsPaidAsync(cleanId);
 
   return NextResponse.json(
     {
