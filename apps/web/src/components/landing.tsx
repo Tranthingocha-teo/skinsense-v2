@@ -108,6 +108,12 @@ export function Landing() {
                 triggerLabel={locale === "vi" ? "Gian hàng: Gửi hồ sơ mở shop" : "Store registration"}
                 triggerClassName="flex h-[54px] w-full sm:w-auto items-center justify-center gap-2 rounded-xl border border-amber-600/40 bg-amber-500/10 px-6 text-[15px] font-semibold text-amber-800 dark:text-amber-300 transition hover:border-amber-600 hover:bg-amber-500/20 cursor-pointer shadow-md"
               />
+              <Link
+                href="/products"
+                className="flex h-[54px] w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[#C2410C] px-6 text-[15px] font-bold text-white shadow-md hover:bg-[#9A3412] transition hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+              >
+                <span>{locale === "vi" ? "🛍️ Sàn Dược Mỹ Phẩm" : "🛍️ Skincare store"}</span>
+              </Link>
             </div>
           </div>
           <div className="flex flex-col gap-0.5 text-[11.5px] tracking-[0.06em] uppercase md:flex-row md:items-center md:gap-6 md:text-xs md:tracking-[0.08em]">

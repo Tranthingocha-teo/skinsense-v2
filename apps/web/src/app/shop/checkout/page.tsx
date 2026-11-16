@@ -2,7 +2,7 @@
 
 import { Suspense, useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import {
   Store,
   ShoppingBag,
@@ -187,7 +187,6 @@ function formatMoney(amount: number) {
 // 2. CHECKOUT INNER COMPONENT (WRAPPED IN SUSPENSE FOR NEXT.JS)
 // ============================================================================
 function CheckoutInner() {
-  const router = useRouter();
   const searchParams = useSearchParams();
 
   const productIdParam = searchParams.get("productId");
@@ -659,7 +658,7 @@ function CheckoutInner() {
       <header className="sticky top-0 z-40 border-b border-[#D8D4CA] bg-[#E8E5DE]/95 backdrop-blur-md">
         <div className="mx-auto flex max-w-[1280px] items-center justify-between px-4 py-3.5 sm:px-6">
           <div className="flex items-center gap-3">
-            <Link href="/shop" className="flex items-center gap-2.5 group">
+            <Link href="/products" className="flex items-center gap-2.5 group">
               <LogoMark className="size-8 transition group-hover:scale-105" />
               <div className="flex flex-col">
                 <span className="font-serif text-lg font-bold tracking-tight text-[#191B19] leading-tight">
@@ -682,11 +681,11 @@ function CheckoutInner() {
 
           <div className="flex items-center gap-2">
             <Link
-              href="/shop"
+              href="/products"
               className="flex items-center gap-1.5 rounded-xl border border-[#D8D4CA] bg-[#F6F4EF] px-3.5 py-1.5 text-xs font-semibold text-[#5C605C] hover:text-[#191B19] transition"
             >
               <ArrowLeft className="size-3.5" />
-              <span>Quay lại Shop</span>
+              <span>Quay lại Mua Sắm</span>
             </Link>
           </div>
         </div>
@@ -1398,21 +1397,18 @@ function CheckoutInner() {
 
             <div className="flex flex-col sm:flex-row gap-3">
               <Link
-                href="/shop"
-                className="flex-1 rounded-2xl bg-[#C2410C] py-3 text-xs font-bold text-white shadow-xs hover:bg-[#9A3412] text-center"
+                href="/user/profile"
+                className="flex-1 rounded-2xl bg-[#2D5A43] py-3 text-xs font-bold text-white shadow-xs hover:bg-[#214332] text-center flex items-center justify-center gap-1.5"
               >
-                Tiếp Tục Mua Sắm
+                <Package className="size-4" />
+                <span>Theo Dõi Đơn Hàng</span>
               </Link>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsSuccessModalOpen(false);
-                  router.push("/shop");
-                }}
-                className="flex-1 rounded-2xl border border-[#D8D4CA] bg-white py-3 text-xs font-semibold text-[#191B19] hover:bg-[#FAF8F5]"
+              <Link
+                href="/products"
+                className="flex-1 rounded-2xl border border-[#D8D4CA] bg-white py-3 text-xs font-semibold text-[#191B19] hover:bg-[#FAF8F5] text-center flex items-center justify-center gap-1.5"
               >
-                Về Trang Chủ
-              </button>
+                <span>Tiếp Tục Mua Sắm</span>
+              </Link>
             </div>
           </div>
         </div>

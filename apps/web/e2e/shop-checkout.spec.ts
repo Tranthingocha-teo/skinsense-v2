@@ -24,8 +24,8 @@ test("a buyer checks out with MoMo, pays from the phone link, and sees the paid 
   users.push(buyer);
   await signIn(context, buyer);
 
-  await page.goto("/shop");
-  await page.getByRole("button", { name: "Mua Hàng", exact: true }).click();
+  // Buyers start from the /products storefront.
+  await page.goto("/products");
   await page.getByRole("button", { name: "Mua Ngay", exact: true }).first().click();
   await expect(page).toHaveURL(/\/shop\/checkout\?productId=/);
 

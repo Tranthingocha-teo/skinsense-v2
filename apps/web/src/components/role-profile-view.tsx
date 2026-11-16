@@ -119,7 +119,7 @@ const ROLE_SETTINGS: Record<RoleType, RoleConfig> = {
     roleBadge: "Khách Hàng Thân Thiết",
     badgeClass: "bg-[#2D5A43]/10 text-[#2D5A43] border-[#2D5A43]/30",
     primaryColor: "#2D5A43",
-    backHref: "/shop",
+    backHref: "/products",
     backLabel: "Cửa hàng SkinSense",
     portalHref: "/user/routine",
     portalLabel: "Xem Phác Đồ Routine",
@@ -849,6 +849,26 @@ export function RoleProfileView({ role }: { role: RoleType }) {
           </div>
 
           <div className="flex items-center gap-2.5">
+            {role === "customer" && (
+              <Link
+                href="/products"
+                className="flex items-center gap-1.5 h-9 rounded-xl border border-[#C2410C]/40 bg-[#C2410C]/10 px-3.5 text-xs font-bold text-[#C2410C] hover:bg-[#C2410C] hover:text-white transition shadow-2xs"
+                title="Khám phá danh sách dược mỹ phẩm chính hãng"
+              >
+                <ShoppingBag className="size-3.5" />
+                <span>Cửa Hàng Mua Sắm</span>
+              </Link>
+            )}
+            {role === "shop" && (
+              <Link
+                href="/shop"
+                className="flex items-center gap-1.5 h-9 rounded-xl border border-[#C2410C]/40 bg-[#C2410C]/10 px-3.5 text-xs font-bold text-[#C2410C] hover:bg-[#C2410C] hover:text-white transition shadow-2xs"
+                title="Xem danh sách quản lý sản phẩm của gian hàng"
+              >
+                <Package className="size-3.5" />
+                <span>Danh Sách Sản Phẩm Shop</span>
+              </Link>
+            )}
             {activeTab === "profile" && (
               <>
                 {!isEditing ? (
@@ -1073,7 +1093,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                         Bạn chưa có đơn hàng nào trong mục này. Hãy ghé qua SkinSense Mall để chọn mua sản phẩm chăm sóc da nhé!
                       </p>
                       <Link
-                        href="/shop"
+                        href="/products"
                         className="inline-flex items-center gap-1.5 h-9 px-4 rounded-xl bg-[#2D5A43] text-xs font-bold text-white shadow-xs hover:bg-[#214332] transition"
                       >
                         <ShoppingBag className="size-3.5" />
@@ -1448,7 +1468,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                                     {/* 5. NÚT MUA LẠI / ĐẶT LẠI */}
                                     {(order.status === "delivered" || isCancelled) && (
                                       <Link
-                                        href="/shop"
+                                        href="/products"
                                         className="flex items-center gap-1 h-8.5 px-3.5 rounded-xl border border-[#D8D4CA] bg-[#FAF8F5] text-xs font-bold text-[#191B19] hover:bg-white transition"
                                       >
                                         <span>{isCancelled ? "Đặt Lại Đơn Mới" : "Mua Lại"}</span>

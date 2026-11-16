@@ -9,7 +9,7 @@ const PAGES = [
   "/", "/case-study", "/privacy", "/stage", "/demo", "/demo/history", "/demo/routine", "/demo/trends",
   "/demo/photos/demo-photo-2026-11-15", "/demo/spots/demo-photo-2026-11-15",
   "/app", "/app/capture", "/app/history", "/app/routine", "/app/settings", "/app/settings/feedback", "/app/trends",
-  "/shop", "/shop/checkout", "/shop/profile", "/checkout", "/pay-demo", "/profile", "/user/profile", "/user/routine",
+  "/products", "/products?productId=sp_01", "/shop", "/shop/checkout", "/shop/profile", "/checkout", "/pay-demo", "/profile", "/user/profile", "/user/routine",
   "/specialist", "/specialist/profile", "/admin", "/admin/profile",
   "/seller", "/seller/dashboard", "/seller/analytics", "/seller/orders", "/seller/products", "/seller/register",
   "/seller/shop", "/seller/wallet",
