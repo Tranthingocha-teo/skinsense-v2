@@ -21,7 +21,8 @@
     "capture": "Capture",
     "trends": "Trends",
     "settings": "Settings",
-    "sellerChannel": "Seller channel"
+    "shop": "Shop",
+    "orders": "Orders"
   },
   "Settings": {
     "title": "Settings",
