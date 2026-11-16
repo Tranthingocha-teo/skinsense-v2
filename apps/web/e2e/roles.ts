@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { BrowserContext, Page } from "@playwright/test";
 import { admin, signedInCookies } from "./auth";
 import { normalizeShopId } from "../src/lib/shop-utils";
-import { JSON_STORE_TABLE, readStorageJsonList, updateStorageJsonList } from "../src/lib/supabase/storage-json";
+import { JSON_STORE_TABLE, downloadStorageJson, readStorageJsonList, updateStorageJsonList } from "../src/lib/supabase/storage-json";
 
 // The multi-role specs (shop, seller, specialist, chat, registration) run against the real
 // Supabase project, so every account they sign in is a fresh @skinsense.test user that the
@@ -99,6 +99,11 @@ export async function pruneJsonStore(path: string, isOurs: (entry: Record<string
 
 export async function readJsonStore(path: string): Promise<Array<Record<string, unknown>>> {
   return readStorageJsonList<Record<string, unknown>>(path, admin);
+}
+
+/** One JSON document store, such as a routines/protocol_<userId>.json; null when absent. */
+export async function readJsonDoc<T>(path: string): Promise<T | null> {
+  return downloadStorageJson<T>(path, admin);
 }
 
 export const STORES = {

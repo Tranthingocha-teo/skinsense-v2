@@ -11,7 +11,11 @@ test.afterAll(async () => cleanupUsers(users));
 
 test("a visitor browses the storefront without seller tools or a sample persona", async ({ page }) => {
   const errors = collectPageErrors(page);
+  // The page shows its built-in catalogue first and adds the approved partner products when this
+  // fetch returns: count the cards only after that, or the count changes under the filter checks.
+  const partnerProducts = page.waitForResponse((res) => new URL(res.url()).pathname === "/api/admin/products");
   await page.goto("/products");
+  await partnerProducts;
 
   await expect(page.getByRole("heading", { name: /Danh Sách Sản Phẩm/ })).toBeVisible();
   await expect(page.getByRole("button", { name: "Mua Ngay", exact: true }).first()).toBeVisible();
@@ -59,22 +63,14 @@ test("a partner shop's product shows up only once the admin approves it", async 
     await expect(page.getByRole("heading", { name: /Danh Sách Sản Phẩm/ })).toBeVisible();
     await expect(page.getByText(name)).toHaveCount(0);
 
-    // The store is a JSON file in Storage and a fresh write can take a moment to read back
-    // (the PATCH 404s until then); approving is idempotent, so retry until it lands.
-    await expect
-      .poll(async () => (await adminContext.request.patch("/api/admin/products", { data: { productId, status: "approved" } })).status(), {
-        timeout: 30_000,
-      })
-      .toBe(200);
+    // Read-your-writes, no retry: when the store was a Storage file this PATCH 404'd for a while
+    // because the read right after the POST still returned the old list (app_json_stores fixes it).
+    const approved = await adminContext.request.patch("/api/admin/products", { data: { productId, status: "approved" } });
+    expect(approved.status()).toBe(200);
 
-    // The marketplace list is a JSON file in Storage: wait until a buyer's read returns it.
-    await expect
-      .poll(async () => {
-        const res = await page.request.get(`/api/admin/products?_t=${Date.now()}`);
-        const json = (await res.json()) as { products?: Array<{ id: string }> };
-        return json.products?.some((p) => p.id === productId) ?? false;
-      }, { timeout: 30_000 })
-      .toBe(true);
+    const res = await page.request.get("/api/admin/products");
+    const json = (await res.json()) as { products?: Array<{ id: string }> };
+    expect(json.products?.some((p) => p.id === productId)).toBe(true);
     await page.reload();
     const card = page.locator("div.group", { hasText: name });
     await expect(card).toHaveCount(1, { timeout: 15_000 });

@@ -187,6 +187,18 @@ describe("updateStorageJsonList on app_json_stores", () => {
     expect(storageCalls).not.toHaveBeenCalled();
   }, 60_000);
 
+  it("re-seeds from the latest Storage file when the row is deleted (the cutover's DELETE FROM app_json_stores)", async () => {
+    const db = await freshDb();
+    const fake = fakeClient(db);
+    fake.files[key] = [{ id: "old" }];
+    await append(fake, key, "stale");
+    // Old production keeps writing the file; then the rows are cleared right before the deploy.
+    fake.files[key] = [{ id: "old" }, { id: "written by old production" }];
+    await db.query("DELETE FROM app_json_stores");
+    await append(fake, key, "new");
+    expect(((await rowOf(db, key)).data as { id: string }[]).map((e) => e.id)).toEqual(["old", "written by old production", "new"]);
+  }, 60_000);
+
   it("reads its own write immediately (Storage served the previous list: PATCH 404 right after POST)", async () => {
     const db = await freshDb();
     const fake = fakeClient(db);

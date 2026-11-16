@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { expect, test, type APIRequestContext, type Browser, type BrowserContext, type Page } from "@playwright/test";
 import { admin } from "./auth";
-import { STORES, cleanupUsers, collectPageErrors, readJsonStore, runTag, signIn, userPool, type TestUser } from "./roles";
+import { STORES, cleanupUsers, collectPageErrors, readJsonDoc, readJsonStore, runTag, signIn, userPool, type TestUser } from "./roles";
 
 // The admin console's approval flows, driven in the browser by a throwaway @skinsense.test admin
 // (app_metadata role "admin", minted with the service role: the app never grants it). Every
@@ -404,8 +404,7 @@ test("routine allocation goes to the named account only; an unknown email is ref
     expect(errors).toEqual([]);
   });
 
-  const { data } = await admin.storage.from("photos").createSignedUrl(`routines/protocol_${customer.userId}.json`, 60);
-  const protocol = (await (await fetch(`${data!.signedUrl}&_t=${Date.now()}`)).json()) as { userId: string; targetUser: string };
+  const protocol = await readJsonDoc<{ userId: string; targetUser: string }>(`routines/protocol_${customer.userId}.json`);
   expect(protocol).toMatchObject({ userId: customer.userId, targetUser: customer.email });
 });
 
