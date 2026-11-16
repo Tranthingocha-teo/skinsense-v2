@@ -62,6 +62,14 @@ test("a partner shop's product shows up only once the admin approves it", async 
     const approved = await adminContext.request.patch("/api/admin/products", { data: { productId, status: "approved" } });
     expect(approved.status()).toBe(200);
 
+    // The marketplace list is a JSON file in Storage: wait until a buyer's read returns it.
+    await expect
+      .poll(async () => {
+        const res = await page.request.get(`/api/admin/products?_t=${Date.now()}`);
+        const json = (await res.json()) as { products?: Array<{ id: string }> };
+        return json.products?.some((p) => p.id === productId) ?? false;
+      }, { timeout: 30_000 })
+      .toBe(true);
     await page.reload();
     const card = page.locator("div.group", { hasText: name });
     await expect(card).toHaveCount(1, { timeout: 15_000 });
