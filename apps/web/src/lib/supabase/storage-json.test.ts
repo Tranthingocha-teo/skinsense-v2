@@ -5,8 +5,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const upload = vi.fn();
 let remote: unknown = [];
 
-vi.mock("@supabase/supabase-js", () => ({
-  createClient: vi.fn(() => ({
+// The legacy Storage path: these run as if migration 0007 were not applied yet
+// (storage-json.table.test.ts covers the table).
+vi.mock("@supabase/supabase-js", async () => {
+  const { noJsonStoreTable } = await import("./json-store-test-support");
+  return { createClient: vi.fn(() => ({
+    from: noJsonStoreTable,
     storage: {
       from: vi.fn(() => ({
         createSignedUrl: vi.fn(async () => ({ data: { signedUrl: "https://storage.test/x?token=t" } })),
@@ -16,8 +20,8 @@ vi.mock("@supabase/supabase-js", () => ({
         list: vi.fn(async (_dir: string, opts: { search: string }) => ({ data: [{ name: opts.search }], error: null })),
       })),
     },
-  })),
-}));
+  })) };
+});
 
 const { createPersistentJsonStore, updateStorageJsonList, getSupabaseAdminClient } = await import("./storage-json");
 

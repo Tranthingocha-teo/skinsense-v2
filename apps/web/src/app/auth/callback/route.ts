@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { authErrorUrl, safeNextPath } from "@/lib/auth-redirect";
+import { downloadStorageJson } from "@/lib/supabase/storage-json";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -59,27 +60,8 @@ export async function GET(request: Request) {
       }
       let specialistRecord: SpecialistRegistryEntry | null = null;
       if (adminClient) {
-        try {
-          const { data: signData } = await adminClient.storage
-            .from("photos")
-            .createSignedUrl("specialists/specialists_registry.json", 60);
-          if (signData?.signedUrl) {
-            const res = await fetch(signData.signedUrl + `&_t=${Date.now()}`, { cache: "no-store" });
-            if (res.ok) {
-              const registry = (await res.json()) as SpecialistRegistryEntry[];
-              specialistRecord = registry.find((s) => s.email?.toLowerCase() === email) ?? null;
-            }
-          }
-          if (!specialistRecord) {
-            const { data: fileBlob } = await adminClient.storage
-              .from("photos")
-              .download("specialists/specialists_registry.json");
-            if (fileBlob) {
-              const registry = JSON.parse(await fileBlob.text()) as SpecialistRegistryEntry[];
-              specialistRecord = registry.find((s) => s.email?.toLowerCase() === email) ?? null;
-            }
-          }
-        } catch {}
+        const registry = await downloadStorageJson<SpecialistRegistryEntry[]>("specialists/specialists_registry.json", adminClient);
+        if (Array.isArray(registry)) specialistRecord = registry.find((s) => s.email?.toLowerCase() === email) ?? null;
       }
 
       const meta = (user.user_metadata || {}) as Record<string, string | undefined>;

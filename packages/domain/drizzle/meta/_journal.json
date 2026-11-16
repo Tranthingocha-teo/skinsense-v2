@@ -50,6 +50,13 @@
       "when": 1794800000000,
       "tag": "0006_seller_system",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1794900000000,
+      "tag": "0007_app_json_stores",
+      "breakpoints": true
     }
   ]
 }

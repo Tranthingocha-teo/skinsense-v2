@@ -31,8 +31,10 @@ vi.mock("@/lib/supabase/server", () => ({
   })),
 }));
 
-vi.mock("@supabase/supabase-js", () => ({
-  createClient: vi.fn(() => ({
+vi.mock("@supabase/supabase-js", async () => {
+  // JSON stores as Storage files (migration 0007 not applied).
+  const { noJsonStoreTable } = await import("@/lib/supabase/json-store-test-support");
+  return { createClient: vi.fn(() => ({
     storage: {
       from: vi.fn(() => ({
         createSignedUrl: vi.fn().mockResolvedValue({ data: { signedUrl: "" } }),
@@ -42,15 +44,19 @@ vi.mock("@supabase/supabase-js", () => ({
         list: vi.fn().mockResolvedValue({ data: [], error: null }),
       })),
     },
-    from: vi.fn(() => ({
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      order: vi.fn().mockResolvedValue({ data: [] }),
-      delete: vi.fn().mockReturnThis(),
-      insert: vi.fn().mockResolvedValue({ data: [] }),
-      upsert: vi.fn().mockResolvedValue({ data: [] }),
-      maybeSingle: vi.fn().mockResolvedValue({ data: null }),
-    })),
+    from: vi.fn((table: string) =>
+      table === "app_json_stores"
+        ? noJsonStoreTable()
+        : {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            order: vi.fn().mockResolvedValue({ data: [] }),
+            delete: vi.fn().mockReturnThis(),
+            insert: vi.fn().mockResolvedValue({ data: [] }),
+            upsert: vi.fn().mockResolvedValue({ data: [] }),
+            maybeSingle: vi.fn().mockResolvedValue({ data: null }),
+          },
+    ),
     auth: {
       admin: {
         listUsers: vi.fn().mockResolvedValue({
@@ -72,8 +78,8 @@ vi.mock("@supabase/supabase-js", () => ({
         deleteUser: vi.fn().mockResolvedValue({ error: null }),
       },
     },
-  })),
-}));
+  })) };
+});
 
 const ADMIN_ACTOR: MockAuthUser = {
   id: "admin-01",

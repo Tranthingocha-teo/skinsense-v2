@@ -202,4 +202,47 @@ describe("committed migrations", () => {
       expect(cols.rows.map((r) => r.column_name)).toEqual(["price_vnd"]);
     }, 60_000);
   });
+
+  describe("app_json_stores (0007)", () => {
+    it("keeps the web app's JSON stores away from the client roles", async () => {
+      const db = await freshDb();
+      await db.exec(`INSERT INTO app_json_stores (key, data) VALUES ('orders/orders_registry.json', '[{"id":"o1"}]')`);
+      for (const role of ["authenticated", "anon"]) {
+        for (const sql of [
+          "SELECT key FROM app_json_stores",
+          `INSERT INTO app_json_stores (key, data) VALUES ('x', '[]')`,
+          `UPDATE app_json_stores SET data = '[]'`,
+          "DELETE FROM app_json_stores",
+        ]) {
+          await db.exec(`SET ROLE ${role}; SELECT set_config('request.jwt.claim.sub','${A}',false);`);
+          try {
+            await expect(db.query(sql)).rejects.toThrow(/permission denied/);
+          } finally {
+            await db.exec("RESET ROLE");
+          }
+        }
+      }
+      const rows = await db.query<{ data: unknown; version: string }>("SELECT data, version FROM app_json_stores");
+      expect(rows.rows).toEqual([{ data: [{ id: "o1" }], version: 1 }]);
+    }, 60_000);
+
+    it("lets only one of two writers that read the same version win the compare-and-swap", async () => {
+      const db = await freshDb();
+      await db.exec(`INSERT INTO app_json_stores (key, data) VALUES ('k', '[]')`);
+      const cas = (data: string) =>
+        db.query(`UPDATE app_json_stores SET data = $1, version = version + 1, updated_at = now() WHERE key = 'k' AND version = 1 RETURNING version`, [data]);
+      const [first, second] = [await cas('["a"]'), await cas('["b"]')];
+      expect([first.rows.length, second.rows.length]).toEqual([1, 0]);
+      const seeded = await db.query(`INSERT INTO app_json_stores (key, data) VALUES ('k', '["seed"]') ON CONFLICT (key) DO NOTHING RETURNING key`);
+      expect(seeded.rows).toEqual([]);
+      expect((await db.query("SELECT data, version FROM app_json_stores")).rows).toEqual([{ data: ["a"], version: 2 }]);
+    }, 60_000);
+
+    it("re-applies cleanly over an existing table without touching its rows", async () => {
+      const db = await freshDb();
+      await db.exec(`INSERT INTO app_json_stores (key, data) VALUES ('k', '[1]')`);
+      await applyMigration(db, "0007_app_json_stores");
+      expect((await db.query("SELECT data FROM app_json_stores")).rows).toEqual([{ data: [1] }]);
+    }, 60_000);
+  });
 });

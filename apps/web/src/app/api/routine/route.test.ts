@@ -3,7 +3,9 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 const mockUser = { id: "test-user-id", email: "test@example.com" };
 
 // Mock @supabase/supabase-js
-vi.mock("@supabase/supabase-js", () => {
+vi.mock("@supabase/supabase-js", async () => {
+  // JSON stores as Storage files (migration 0007 not applied).
+  const { noJsonStoreTable } = await import("@/lib/supabase/json-store-test-support");
   return {
     createClient: vi.fn(() => ({
       storage: {
@@ -12,7 +14,7 @@ vi.mock("@supabase/supabase-js", () => {
           download: vi.fn().mockResolvedValue({ data: null }),
         })),
       },
-      from: vi.fn(() => ({
+      from: vi.fn((table: string) => table === "app_json_stores" ? noJsonStoreTable() : ({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         order: vi.fn().mockResolvedValue({

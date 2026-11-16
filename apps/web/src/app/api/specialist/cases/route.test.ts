@@ -21,7 +21,9 @@ vi.mock("@/lib/supabase/server", () => ({
 }));
 
 // Mock @supabase/supabase-js
-vi.mock("@supabase/supabase-js", () => {
+vi.mock("@supabase/supabase-js", async () => {
+  // The cases registry as a Storage file (migration 0007 not applied).
+  const { noJsonStoreTable } = await import("@/lib/supabase/json-store-test-support");
   return {
     createClient: vi.fn(() => ({
       storage: {
@@ -59,13 +61,17 @@ vi.mock("@supabase/supabase-js", () => {
           upload: vi.fn().mockResolvedValue({ data: {} }),
         })),
       },
-      from: vi.fn(() => ({
-        select: vi.fn().mockReturnThis(),
-        order: vi.fn().mockResolvedValue({ data: [] }),
-        delete: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        insert: vi.fn().mockResolvedValue({ data: [] }),
-      })),
+      from: vi.fn((table: string) =>
+        table === "app_json_stores"
+          ? noJsonStoreTable()
+          : {
+              select: vi.fn().mockReturnThis(),
+              order: vi.fn().mockResolvedValue({ data: [] }),
+              delete: vi.fn().mockReturnThis(),
+              eq: vi.fn().mockReturnThis(),
+              insert: vi.fn().mockResolvedValue({ data: [] }),
+            },
+      ),
       auth: {
         admin: {
           listUsers: vi.fn().mockResolvedValue({ data: { users: [] } }),

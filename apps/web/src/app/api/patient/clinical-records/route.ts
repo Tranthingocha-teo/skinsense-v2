@@ -1,32 +1,18 @@
 import { ownImageUrl } from "@skinsense/domain";
 import { NextResponse } from "next/server";
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { createClient } from "@supabase/supabase-js";
 import { requireRoleActor } from "@/lib/session-auth";
+import { downloadStorageJson, updateStorageJsonList } from "@/lib/supabase/storage-json";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+
+const CASES_PATH = "clinical_records/cases_registry.json";
 
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
   return createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
-}
-
-async function downloadJsonFromStorage<T = unknown>(supabase: SupabaseClient, path: string): Promise<T | null> {
-  try {
-    const { data: signData } = await supabase.storage.from("photos").createSignedUrl(path, 60);
-    if (signData?.signedUrl) {
-      const res = await fetch(signData.signedUrl + `&_t=${Date.now()}`, { cache: "no-store" });
-      if (res.ok) {
-        return (await res.json()) as T;
-      }
-    }
-    const { data: fileBlob } = await supabase.storage.from("photos").download(path);
-    if (fileBlob) {
-      return JSON.parse(await fileBlob.text()) as T;
-    }
-  } catch {}
-  return null;
 }
 
 interface ClinicalRecordEntry extends Record<string, unknown> {
@@ -43,11 +29,7 @@ export async function GET(request: Request) {
 
   try {
     const supabase = getSupabaseAdmin();
-    const allCases =
-      (await downloadJsonFromStorage<ClinicalRecordEntry[]>(
-        supabase,
-        "clinical_records/cases_registry.json",
-      )) || [];
+    const allCases = (await downloadStorageJson<ClinicalRecordEntry[]>(CASES_PATH, supabase)) || [];
 
     // ?mine=1: only the caller's own records whatever the role (the patient routine page), so a
     // specialist opening /user/routine does not get another patient's prescription.
@@ -104,12 +86,7 @@ export async function POST(request: Request) {
 
     const supabase = getSupabaseAdmin();
 
-    // 1. Download existing cases registry from Supabase Storage with cache busting
-    const existingCases = (await downloadJsonFromStorage<Array<Record<string, unknown>>>(supabase, "clinical_records/cases_registry.json")) || [];
-
     const newCaseId = `case_${Date.now()}`;
-    const caseIndex = existingCases.length + 1;
-    const caseCode = `BA-2026-${String(caseIndex).padStart(4, "0")}`;
 
     const resolvedPatientUserId =
       actor.role === "customer"
@@ -121,9 +98,7 @@ export async function POST(request: Request) {
         ? actor.email
         : patientEmail?.trim() || "khachhang@gmail.com";
 
-    const newCase = {
-      id: newCaseId,
-      caseCode,
+    const caseFields = {
       patientUserId: resolvedPatientUserId,
       patientName: patientName.trim(),
       patientEmail: resolvedPatientEmail,
@@ -150,18 +125,18 @@ export async function POST(request: Request) {
       createdAt: new Date().toISOString(),
     };
 
-    const updatedCases = [newCase, ...existingCases];
-
-    // 2. Save back to Supabase Storage as Buffer
-    const { error: uploadErr } = await supabase.storage.from("photos").upload(
-      "clinical_records/cases_registry.json",
-      Buffer.from(JSON.stringify(updatedCases, null, 2)),
-      { upsert: true, contentType: "application/json" },
+    // Prepended in one atomic step: reading the registry, adding the case and uploading it back
+    // separately dropped a record another patient sent at the same moment. The code is numbered
+    // from the list it is added to.
+    const newCase = await updateStorageJsonList<Record<string, unknown>, Record<string, unknown> & { caseCode: string }>(
+      CASES_PATH,
+      supabase,
+      (list) => {
+        const created = { id: newCaseId, caseCode: `BA-2026-${String(list.length + 1).padStart(4, "0")}`, ...caseFields };
+        return { next: [created, ...list], result: created };
+      },
     );
-
-    if (uploadErr) {
-      throw new Error(uploadErr.message);
-    }
+    const { caseCode } = newCase;
 
     return NextResponse.json({
       ok: true,

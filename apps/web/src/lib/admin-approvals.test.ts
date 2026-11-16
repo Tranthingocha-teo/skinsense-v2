@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ApprovalError, applyAccountDecision } from "./admin-approvals";
+import { noJsonStoreTable } from "./supabase/json-store-test-support";
 
 interface FakeUser {
   id: string;
@@ -15,6 +16,8 @@ const updateUserById = vi.fn();
 
 function fakeClient(): SupabaseClient {
   return {
+    // The registries as Storage files (migration 0007 not applied).
+    from: noJsonStoreTable,
     auth: {
       admin: {
         getUserById: vi.fn(async (id: string) => (id === user.id ? { data: { user }, error: null } : { data: { user: null }, error: { message: "nope" } })),

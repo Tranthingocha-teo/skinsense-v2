@@ -40,21 +40,9 @@ function getSupabaseAdmin() {
   return createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
 }
 
-async function downloadJsonFromStorage<T = unknown>(supabase: SupabaseClient, path: string): Promise<T | null> {
-  try {
-    const { data: signData } = await supabase.storage.from("photos").createSignedUrl(path, 60);
-    if (signData?.signedUrl) {
-      const res = await fetch(signData.signedUrl + `&_t=${Date.now()}`, { cache: "no-store" });
-      if (res.ok) {
-        return (await res.json()) as T;
-      }
-    }
-    const { data: fileBlob } = await supabase.storage.from("photos").download(path);
-    if (fileBlob) {
-      return JSON.parse(await fileBlob.text()) as T;
-    }
-  } catch {}
-  return null;
+/** A JSON store (app_json_stores; a Storage file before migration 0007), `null` if absent or unreadable. */
+function downloadJsonFromStorage<T = unknown>(supabase: SupabaseClient, path: string): Promise<T | null> {
+  return downloadStorageJson<T>(path, supabase);
 }
 
 /**
@@ -195,11 +183,7 @@ export async function POST(request: Request) {
           products,
         };
 
-        await supabase.storage.from("photos").upload(
-          `routines/protocol_${uid}.json`,
-          Buffer.from(JSON.stringify(patientProtocol, null, 2)),
-          { upsert: true, contentType: "application/json" }
-        );
+        await uploadStorageJson(`routines/protocol_${uid}.json`, patientProtocol, supabase);
       } catch {}
     }
 

@@ -1,8 +1,25 @@
+import { AsyncLocalStorage } from "node:async_hooks";
 import fs from "fs";
 import path from "path";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 const DEFAULT_STORAGE_BUCKET = "photos";
+
+/**
+ * The app's JSON stores (orders, chat, registries, cases, routines) live in the Postgres table
+ * `app_json_stores` (packages/domain/drizzle/0007_app_json_stores.sql), one row per store keyed by
+ * the Storage path the file used to have. They used to be JSON files in the "photos" bucket, read
+ * and re-uploaded whole: two serverless instances that read the same list both wrote it back and
+ * the later upload erased the other's row. Every write is now a compare-and-swap on `version`.
+ *
+ * Until the table exists (PostgREST answers "no such table") every function here keeps the old
+ * Storage behaviour, so the code can ship before or after the migration. Once a key has a row the
+ * Storage file is never written again; a key without a row is seeded once from its legacy file.
+ */
+export const JSON_STORE_TABLE = "app_json_stores";
+
+/** How many times a conflicting write re-reads and re-applies its change before giving up. */
+const MAX_ATTEMPTS = 8;
 
 /**
  * Creates a server-only Supabase Admin client using `SUPABASE_SERVICE_ROLE_KEY`.
@@ -18,21 +35,126 @@ export function getSupabaseAdminClient(): SupabaseClient | null {
   });
 }
 
-/**
- * Downloads and parses a JSON file stored inside the private Supabase Storage bucket.
- * Falls back cleanly to `null` if unavailable or invalid.
- */
-export async function downloadStorageJson<T = unknown>(
-  storagePath: string,
-  client?: SupabaseClient | null,
-): Promise<T | null> {
-  const admin = client ?? getSupabaseAdminClient();
-  if (!admin) return null;
+// ---------------------------------------------------------------------------------------------
+// The table, through PostgREST.
 
+class TableMissingError extends Error {}
+
+/** A write lost the compare-and-swap: someone else wrote the store since it was read. */
+export class StoreConflictError extends Error {
+  constructor(key: string) {
+    super(`${key} vừa được cập nhật ở nơi khác, vui lòng thử lại.`);
+  }
+}
+
+interface Row<T> {
+  data: T;
+  version: number;
+}
+
+function check(error: { code?: string; message?: string } | null, key: string): void {
+  if (!error) return;
+  // PGRST205: the table is not in PostgREST's schema cache; 42P01: Postgres "undefined_table".
+  if (error.code === "PGRST205" || error.code === "42P01") throw new TableMissingError(error.message);
+  throw new Error(`Lỗi kho dữ liệu ${key}: ${error.message ?? error.code ?? "unknown"}`);
+}
+
+async function selectRow<T>(client: SupabaseClient, key: string): Promise<Row<T> | null> {
+  const { data, error } = await client.from(JSON_STORE_TABLE).select("data, version").eq("key", key).maybeSingle();
+  check(error, key);
+  return data ? { data: data.data as T, version: Number(data.version) } : null;
+}
+
+/** INSERT ... ON CONFLICT (key) DO NOTHING. True when this call created the row. */
+async function insertRow(client: SupabaseClient, key: string, data: unknown): Promise<boolean> {
+  const { data: rows, error } = await client
+    .from(JSON_STORE_TABLE)
+    .upsert({ key, data }, { onConflict: "key", ignoreDuplicates: true })
+    .select("key");
+  check(error, key);
+  return Array.isArray(rows) && rows.length === 1;
+}
+
+/** UPDATE ... WHERE key = $k AND version = $v. The new version, or null when the row moved on. */
+async function swapRow(client: SupabaseClient, key: string, data: unknown, version: number): Promise<number | null> {
+  const { data: rows, error } = await client
+    .from(JSON_STORE_TABLE)
+    .update({ data, version: version + 1, updated_at: new Date().toISOString() })
+    .eq("key", key)
+    .eq("version", version)
+    .select("version");
+  check(error, key);
+  return Array.isArray(rows) && rows.length === 1 ? version + 1 : null;
+}
+
+function backoff(attempt: number): Promise<void> {
+  const ms = Math.min(400, 15 * 2 ** attempt) * (0.5 + Math.random());
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// ---------------------------------------------------------------------------------------------
+// Optimistic concurrency inside withStoreLock.
+//
+// A locked step reads the store, changes it and writes it back. The read records the version it
+// saw; the write is a compare-and-swap against it and throws StoreConflictError if another process
+// wrote meanwhile, and withStoreLock then runs the whole step again on fresh data. Callers keep
+// their read/modify/write code unchanged.
+
+interface LockContext {
+  key: string;
+  /** undefined: not read yet; null: read, no row; number: read at this version. */
+  version: number | null | undefined;
+}
+
+const globals = globalThis as {
+  __skinsenseStoreLocks?: Map<string, Promise<void>>;
+  __skinsenseStoreContext?: AsyncLocalStorage<LockContext>;
+  __skinsenseLegacyAbsent?: Set<string>;
+};
+const lockContext = (globals.__skinsenseStoreContext ??= new AsyncLocalStorage<LockContext>());
+/** Keys whose legacy Storage file is known not to exist (legacy files are never created again). */
+const legacyAbsent = (globals.__skinsenseLegacyAbsent ??= new Set<string>());
+
+function remember(key: string, version: number | null): void {
+  const ctx = lockContext.getStore();
+  if (ctx && ctx.key === key) ctx.version = version;
+}
+
+/**
+ * Runs read-modify-write steps on one store one at a time in this process (the queue is on
+ * globalThis, shared by every route bundle) and, across processes, retries the step when its write
+ * loses the compare-and-swap. `fn` may therefore run more than once: keep it to reading, computing
+ * and writing the store.
+ */
+export function withStoreLock<R>(storagePath: string, fn: () => Promise<R>): Promise<R> {
+  const queues = (globals.__skinsenseStoreLocks ??= new Map<string, Promise<void>>());
+  const attempt = async (): Promise<R> => {
+    for (let i = 1; ; i++) {
+      try {
+        return await lockContext.run({ key: storagePath, version: undefined }, fn);
+      } catch (err) {
+        if (!(err instanceof StoreConflictError) || i >= MAX_ATTEMPTS) throw err;
+        await backoff(i);
+      }
+    }
+  };
+  const run = (queues.get(storagePath) ?? Promise.resolve()).then(attempt, attempt);
+  queues.set(
+    storagePath,
+    run.then(
+      () => undefined,
+      () => undefined,
+    ),
+  );
+  return run;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Legacy Storage files: read when the table is missing, and once per key to seed its row.
+
+async function legacyDownload<T>(storagePath: string, admin: SupabaseClient): Promise<T | null> {
   try {
-    const { data: signData } = await admin.storage
-      .from(DEFAULT_STORAGE_BUCKET)
-      .createSignedUrl(storagePath, 60);
+    const { data: signData } = await admin.storage.from(DEFAULT_STORAGE_BUCKET).createSignedUrl(storagePath, 60);
 
     if (signData?.signedUrl) {
       const separator = signData.signedUrl.includes("?") ? "&" : "?";
@@ -44,9 +166,7 @@ export async function downloadStorageJson<T = unknown>(
       }
     }
 
-    const { data: fileBlob } = await admin.storage
-      .from(DEFAULT_STORAGE_BUCKET)
-      .download(storagePath);
+    const { data: fileBlob } = await admin.storage.from(DEFAULT_STORAGE_BUCKET).download(storagePath);
 
     if (fileBlob) {
       return JSON.parse(await fileBlob.text()) as T;
@@ -56,17 +176,7 @@ export async function downloadStorageJson<T = unknown>(
   return null;
 }
 
-/**
- * Uploads a JSON-serializable payload to the private Supabase Storage bucket.
- */
-export async function uploadStorageJson(
-  storagePath: string,
-  data: unknown,
-  client?: SupabaseClient | null,
-): Promise<boolean> {
-  const admin = client ?? getSupabaseAdminClient();
-  if (!admin) return false;
-
+async function legacyUpload(storagePath: string, data: unknown, admin: SupabaseClient): Promise<boolean> {
   try {
     const { error } = await admin.storage
       .from(DEFAULT_STORAGE_BUCKET)
@@ -79,25 +189,6 @@ export async function uploadStorageJson(
   } catch {
     return false;
   }
-}
-
-/**
- * Runs read-modify-write steps on one Storage JSON file one at a time. The queue is per file path
- * for the whole process (on globalThis), so every route that writes the file shares it even if the
- * module is instantiated per route bundle. Separate serverless instances do not share it.
- */
-export function withStoreLock<R>(storagePath: string, fn: () => Promise<R>): Promise<R> {
-  const queues = ((globalThis as { __skinsenseStoreLocks?: Map<string, Promise<void>> }).__skinsenseStoreLocks ??=
-    new Map<string, Promise<void>>());
-  const run = (queues.get(storagePath) ?? Promise.resolve()).then(fn, fn);
-  queues.set(
-    storagePath,
-    run.then(
-      () => undefined,
-      () => undefined,
-    ),
-  );
-  return run;
 }
 
 /** Whether an object exists in the bucket. Errors count as "exists" so callers never overwrite blindly. */
@@ -114,13 +205,127 @@ export async function storageObjectExists(storagePath: string, client: SupabaseC
   }
 }
 
+/** The legacy file's content, `undefined` when it does not exist; throws when it exists but cannot be read. */
+async function readLegacyStrict<T>(key: string, client: SupabaseClient): Promise<T | undefined> {
+  if (legacyAbsent.has(key)) return undefined;
+  const data = await legacyDownload<T>(key, client);
+  if (data !== null) return data;
+  if (await storageObjectExists(key, client)) throw new Error(`Không đọc được ${key}, vui lòng thử lại.`);
+  legacyAbsent.add(key);
+  return undefined;
+}
+
+// ---------------------------------------------------------------------------------------------
+// One store, table first.
+
+type Loaded<T> = { mode: "table"; row: Row<T> | null } | { mode: "legacy" };
+
 /**
- * Reads a JSON array store in Storage that must exist or be legitimately missing. A failed read of
- * an existing file throws: callers used to treat it as an empty list and wrote that back, wiping
+ * Reads a store's row, seeding it from the legacy Storage file the first time. Throws when the
+ * store exists but cannot be read; `{ mode: "legacy" }` when the table does not exist yet.
+ */
+async function loadStore<T>(key: string, client: SupabaseClient): Promise<Loaded<T>> {
+  try {
+    let row = await selectRow<T>(client, key);
+    if (!row) {
+      const legacy = await readLegacyStrict<T>(key, client);
+      if (legacy !== undefined) {
+        await insertRow(client, key, legacy);
+        row = await selectRow<T>(client, key);
+      }
+    }
+    remember(key, row ? row.version : null);
+    return { mode: "table", row };
+  } catch (err) {
+    if (err instanceof TableMissingError) return { mode: "legacy" };
+    throw err;
+  }
+}
+
+/**
+ * Writes a store's row. Inside withStoreLock, after the store was read there, it is a
+ * compare-and-swap against what was read and throws StoreConflictError if it lost (the lock reruns
+ * the step). Elsewhere it is a last-writer-wins write that still never interleaves with another.
+ * `"legacy"` when the table does not exist yet.
+ */
+async function storeRow(key: string, data: unknown, client: SupabaseClient): Promise<"ok" | "legacy"> {
+  try {
+    const ctx = lockContext.getStore();
+    if (ctx && ctx.key === key && ctx.version !== undefined) {
+      const next = ctx.version === null ? ((await insertRow(client, key, data)) ? 1 : null) : await swapRow(client, key, data, ctx.version);
+      if (next === null) throw new StoreConflictError(key);
+      ctx.version = next;
+      return "ok";
+    }
+    for (let i = 1; i <= MAX_ATTEMPTS; i++) {
+      const row = await selectRow(client, key);
+      const done = row ? (await swapRow(client, key, data, row.version)) !== null : await insertRow(client, key, data);
+      if (done) return "ok";
+      await backoff(i);
+    }
+    throw new StoreConflictError(key);
+  } catch (err) {
+    if (err instanceof TableMissingError) return "legacy";
+    throw err;
+  }
+}
+
+// ---------------------------------------------------------------------------------------------
+// The helpers the routes call. Signatures and error behaviour are the Storage-era ones.
+
+/**
+ * Reads one JSON store. `null` when it does not exist or cannot be read.
+ */
+export async function downloadStorageJson<T = unknown>(
+  storagePath: string,
+  client?: SupabaseClient | null,
+): Promise<T | null> {
+  const admin = client ?? getSupabaseAdminClient();
+  if (!admin) return null;
+
+  try {
+    const loaded = await loadStore<T>(storagePath, admin);
+    if (loaded.mode === "table") return loaded.row ? loaded.row.data : null;
+  } catch {
+    return null;
+  }
+  return legacyDownload<T>(storagePath, admin);
+}
+
+/**
+ * Replaces one JSON store. False when the write failed. Inside withStoreLock it is checked against
+ * the version read there (see storeRow).
+ */
+export async function uploadStorageJson(
+  storagePath: string,
+  data: unknown,
+  client?: SupabaseClient | null,
+): Promise<boolean> {
+  const admin = client ?? getSupabaseAdminClient();
+  if (!admin) return false;
+
+  try {
+    if ((await storeRow(storagePath, data, admin)) === "ok") return true;
+  } catch (err) {
+    if (err instanceof StoreConflictError) throw err;
+    return false;
+  }
+  return legacyUpload(storagePath, data, admin);
+}
+
+/**
+ * Reads a JSON array store that must exist or be legitimately missing. A failed read of an
+ * existing store throws: callers used to treat it as an empty list and wrote that back, wiping
  * every registry entry.
  */
 export async function readStorageJsonList<T>(storagePath: string, client: SupabaseClient): Promise<T[]> {
-  const list = await downloadStorageJson<T[]>(storagePath, client);
+  const loaded = await loadStore<T[]>(storagePath, client);
+  if (loaded.mode === "table") {
+    if (!loaded.row) return [];
+    if (Array.isArray(loaded.row.data)) return loaded.row.data;
+    throw new Error(`Không đọc được ${storagePath}, vui lòng thử lại.`);
+  }
+  const list = await legacyDownload<T[]>(storagePath, client);
   if (Array.isArray(list)) return list;
   if (await storageObjectExists(storagePath, client)) {
     throw new Error(`Không đọc được ${storagePath}, vui lòng thử lại.`);
@@ -129,9 +334,10 @@ export async function readStorageJsonList<T>(storagePath: string, client: Supaba
 }
 
 /**
- * Locked read-modify-write of a JSON array store. `mutate` returns the next list, or `null` to
- * leave the file untouched. Throws when the read or the upload fails, so a route never answers
- * "saved" for data that was not (the admin approvals used to swallow these errors).
+ * Atomic read-modify-write of a JSON array store. `mutate` returns the next list, or `null` to
+ * leave the store untouched; it may run more than once (a lost compare-and-swap re-reads and
+ * re-applies it), so it must only compute. Throws when the read or the write fails, so a route
+ * never answers "saved" for data that was not.
  */
 export function updateStorageJsonList<T, R = T[]>(
   storagePath: string,
@@ -158,8 +364,9 @@ export interface PersistentJsonStoreOptions<T> {
 }
 
 /**
- * Creates a hybrid JSON store that persists to Supabase Storage on serverless deployments
- * and falls back to local / tmp disk files for offline dev or test overrides.
+ * Creates a hybrid JSON store that persists to the app_json_stores table (Storage before the
+ * migration) on serverless deployments and falls back to local / tmp disk files for offline dev or
+ * test overrides.
  */
 export function createPersistentJsonStore<T>(options: PersistentJsonStoreOptions<T>) {
   function resolveReadPath(): string {
@@ -210,6 +417,20 @@ export function createPersistentJsonStore<T>(options: PersistentJsonStoreOptions
     }
   }
 
+  function hasExpectedShape(remote: unknown): remote is T {
+    return remote !== null && remote !== undefined && (!Array.isArray(options.getInitial()) || Array.isArray(remote));
+  }
+
+  // Normalization is applied on every read and saved by the next locked write. A read must not
+  // write: plain reads (the checkout polls status every second) run outside the lock, and writing
+  // the snapshot they read overwrote writes made meanwhile — a payment confirmed from the phone was
+  // lost this way and the QR never closed.
+  function fromRemote(remote: T): T {
+    const { value } = applyNormalize(remote);
+    writeDisk(value);
+    return value;
+  }
+
   async function readAsync(): Promise<T> {
     const override = process.env[options.overrideEnvVar]?.trim();
     if (override) {
@@ -221,16 +442,22 @@ export function createPersistentJsonStore<T>(options: PersistentJsonStoreOptions
       return readDisk();
     }
 
-    const remote = await downloadStorageJson<T>(options.storagePath, admin);
-    if (remote !== null && (!Array.isArray(options.getInitial()) || Array.isArray(remote))) {
-      // Normalization is applied on every read and saved by the next locked write. A read must
-      // not upload: plain reads (the checkout polls status every second) run outside the lock,
-      // and uploading the snapshot they read overwrote writes made meanwhile — a payment
-      // confirmed from the phone was lost this way and the QR never closed.
-      const { value } = applyNormalize(remote);
-      writeDisk(value);
-      return value;
+    const loaded = await loadStore<T>(options.storagePath, admin);
+    if (loaded.mode === "table") {
+      if (loaded.row) {
+        if (!hasExpectedShape(loaded.row.data)) throw new Error(`Không đọc được ${options.storagePath}, vui lòng thử lại.`);
+        return fromRemote(loaded.row.data);
+      }
+      // No row and no legacy file: the store really does not exist yet. Seed it with this
+      // instance's local data unless another instance just did, and read back whichever won.
+      await insertRow(admin, options.storagePath, readDisk());
+      const seeded = await loadStore<T>(options.storagePath, admin);
+      if (seeded.mode === "table" && seeded.row && hasExpectedShape(seeded.row.data)) return fromRemote(seeded.row.data);
+      throw new Error(`Không đọc được ${options.storagePath}, vui lòng thử lại.`);
     }
+
+    const remote = await legacyDownload<T>(options.storagePath, admin);
+    if (hasExpectedShape(remote)) return fromRemote(remote);
 
     // Seed the remote store only when it really does not exist. A read that merely failed
     // (network, timeout) used to upload this instance's local copy — on a serverless instance the
@@ -239,7 +466,7 @@ export function createPersistentJsonStore<T>(options: PersistentJsonStoreOptions
       throw new Error(`Không đọc được ${options.storagePath}, vui lòng thử lại.`);
     }
     const local = readDisk();
-    await uploadStorageJson(options.storagePath, local, admin);
+    await legacyUpload(options.storagePath, local, admin);
     return local;
   }
 
@@ -249,7 +476,7 @@ export function createPersistentJsonStore<T>(options: PersistentJsonStoreOptions
     if (override) return;
     const admin = getSupabaseAdminClient();
     if (!admin) return; // offline / local-disk mode, like readAsync
-    // A failed upload used to be ignored, so the API answered "saved" for data that was not.
+    // A failed write used to be ignored, so the API answered "saved" for data that was not.
     if (!(await uploadStorageJson(options.storagePath, data, admin)) && !(await uploadStorageJson(options.storagePath, data, admin))) {
       throw new Error(`Không lưu được ${options.storagePath}, vui lòng thử lại.`);
     }

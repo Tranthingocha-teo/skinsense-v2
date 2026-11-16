@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { BrowserContext, Page } from "@playwright/test";
 import { admin, signedInCookies } from "./auth";
 import { normalizeShopId } from "../src/lib/shop-utils";
+import { JSON_STORE_TABLE, readStorageJsonList, updateStorageJsonList } from "../src/lib/supabase/storage-json";
 
 // The multi-role specs (shop, seller, specialist, chat, registration) run against the real
 // Supabase project, so every account they sign in is a fresh @skinsense.test user that the
@@ -84,43 +85,20 @@ export function collectPageErrors(page: Page): string[] {
 
 const BUCKET = "photos";
 
-// Through a cache-busted signed URL, like the app (lib/supabase/storage-json.ts): storage
-// .download() can return a stale copy, and pruning a stale list would write old data back.
-async function readJson<T>(path: string): Promise<T | null> {
-  const { data } = await admin.storage.from(BUCKET).createSignedUrl(path, 60);
-  if (!data?.signedUrl) return null;
-  const res = await fetch(`${data.signedUrl}&_t=${Date.now()}`, { cache: "no-store" });
-  if (!res.ok) return null;
-  try {
-    return (await res.json()) as T;
-  } catch {
-    return null;
-  }
-}
-
-/** Removes exactly the entries `isOurs` matches from a JSON array store; leaves the rest untouched. */
+/**
+ * Removes exactly the entries `isOurs` matches from a JSON array store; leaves the rest untouched.
+ * Through the app's own helper, so it is the same compare-and-swap on app_json_stores (or the
+ * Storage file before migration 0007): a prune can no longer undo a write the app made meanwhile.
+ */
 export async function pruneJsonStore(path: string, isOurs: (entry: Record<string, unknown>) => boolean): Promise<void> {
-  // The app writes these stores under its own lock, which this process cannot take. Re-read right
-  // before writing and start over if the store changed meanwhile: writing back a list read before
-  // a concurrent approval undid that approval in a parallel spec.
-  for (let attempt = 0; attempt < 5; attempt++) {
-    const list = await readJson<Array<Record<string, unknown>>>(path);
-    if (!Array.isArray(list)) return;
+  await updateStorageJsonList<Record<string, unknown>, void>(path, admin, (list) => {
     const kept = list.filter((entry) => !isOurs(entry));
-    if (kept.length === list.length) return;
-    const again = await readJson<Array<Record<string, unknown>>>(path);
-    if (JSON.stringify(again) !== JSON.stringify(list)) continue;
-    const { error } = await admin.storage
-      .from(BUCKET)
-      .upload(path, Buffer.from(JSON.stringify(kept, null, 2)), { upsert: true, contentType: "application/json" });
-    if (error) throw error;
-    return;
-  }
+    return { next: kept.length === list.length ? null : kept, result: undefined };
+  });
 }
 
 export async function readJsonStore(path: string): Promise<Array<Record<string, unknown>>> {
-  const list = await readJson<Array<Record<string, unknown>>>(path);
-  return Array.isArray(list) ? list : [];
+  return readStorageJsonList<Record<string, unknown>>(path, admin);
 }
 
 export const STORES = {
@@ -151,7 +129,9 @@ export async function cleanupUsers(users: TestUser[], extra?: { orderCodes?: str
   await pruneJsonStore(STORES.cases, (c) => ids.has(String(c.patientUserId ?? "")) || emails.has(lower(c.patientEmail)));
 
   for (const user of users) {
-    await admin.storage.from(BUCKET).remove([`routines/protocol_${user.userId}.json`]);
+    const protocol = `routines/protocol_${user.userId}.json`;
+    await admin.storage.from(BUCKET).remove([protocol]);
+    await admin.from(JSON_STORE_TABLE).delete().eq("key", protocol); // an error here = no table yet
     await admin.from("routine_items").delete().eq("user_id", user.userId);
     await admin.auth.admin.deleteUser(user.userId);
   }
