@@ -178,7 +178,31 @@ describe("updateStorageJsonList on app_json_stores", () => {
     expect((row.data as { id: string }[]).map((e) => e.id).sort()).toEqual(["legacy", "x", "y", "z"]);
     expect(fake.uploads).toEqual([]);
     fake.files[key] = [{ id: "changed later" }];
+    vi.mocked(global.fetch).mockClear();
+    const storageCalls = vi.spyOn(fake.client.storage, "from");
     expect((await readStorageJsonList<{ id: string }>(key, fake.client)).map((e) => e.id)).not.toContain("changed later");
+    await append(fake, key, "after");
+    // Once a key has its row, neither reads nor writes consult Storage again.
+    expect(global.fetch).not.toHaveBeenCalled();
+    expect(storageCalls).not.toHaveBeenCalled();
+  }, 60_000);
+
+  it("reads its own write immediately (Storage served the previous list: PATCH 404 right after POST)", async () => {
+    const db = await freshDb();
+    const fake = fakeClient(db);
+    for (const id of ["p1", "p2", "p3"]) {
+      await updateStorageJsonList<{ id: string; status: string }, void>(key, fake.client, (list) => ({
+        next: [{ id, status: "draft" }, ...list],
+        result: undefined,
+      }));
+      // The admin products PATCH: find the product created a moment ago and update it.
+      const found = await updateStorageJsonList<{ id: string; status: string }, boolean>(key, fake.client, (list) => {
+        const hit = list.some((p) => p.id === id);
+        return { next: hit ? list.map((p) => (p.id === id ? { ...p, status: "active" } : p)) : null, result: hit };
+      });
+      expect(found).toBe(true);
+      expect((await readStorageJsonList<{ id: string; status: string }>(key, fake.client)).find((p) => p.id === id)?.status).toBe("active");
+    }
   }, 60_000);
 
   it("does not seed or write when the legacy file exists but cannot be read", async () => {
