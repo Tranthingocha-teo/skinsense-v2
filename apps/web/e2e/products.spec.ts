@@ -59,8 +59,13 @@ test("a partner shop's product shows up only once the admin approves it", async 
     await expect(page.getByRole("heading", { name: /Danh Sách Sản Phẩm/ })).toBeVisible();
     await expect(page.getByText(name)).toHaveCount(0);
 
-    const approved = await adminContext.request.patch("/api/admin/products", { data: { productId, status: "approved" } });
-    expect(approved.status()).toBe(200);
+    // The store is a JSON file in Storage and a fresh write can take a moment to read back
+    // (the PATCH 404s until then); approving is idempotent, so retry until it lands.
+    await expect
+      .poll(async () => (await adminContext.request.patch("/api/admin/products", { data: { productId, status: "approved" } })).status(), {
+        timeout: 30_000,
+      })
+      .toBe(200);
 
     // The marketplace list is a JSON file in Storage: wait until a buyer's read returns it.
     await expect
