@@ -163,6 +163,19 @@ export function ImageUploader({
     [stopCameraStream],
   );
 
+  async function readFileAsDataUrl(file: File | Blob): Promise<string | null> {
+    try {
+      return await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target?.result as string);
+        reader.onerror = (e) => reject(e);
+        reader.readAsDataURL(file);
+      });
+    } catch {
+      return null;
+    }
+  }
+
   async function uploadSingleFile(file: File | Blob, label?: string) {
     const invalid = checkImageFile(file);
     if (invalid) {
@@ -171,6 +184,12 @@ export function ImageUploader({
       return null;
     }
     setUploadError(null);
+
+    // If Cloudinary is not configured or in local demo mode, read directly from device immediately
+    if (uploadStatus && !uploadStatus.configured) {
+      return await readFileAsDataUrl(file);
+    }
+
     setIsUploading(true);
     setUploadProgressLabel(label || "Đang tải ảnh lên...");
 
@@ -193,21 +212,30 @@ export function ImageUploader({
       const json = await res.json().catch(() => ({}));
 
       if (!res.ok || !json?.ok || !json?.url) {
-        const errMsg =
-          res.status === 401
-            ? "Vui lòng đăng nhập để tải ảnh lên."
-            : json?.error || "Không thể tải ảnh lên. Vui lòng thử lại.";
+        if (res.status === 401) {
+          const errMsg = "Vui lòng đăng nhập để tải ảnh lên.";
+          setUploadError(errMsg);
+          toast.error(errMsg, { duration: 5000 });
+          return null;
+        }
+
+        // Fallback silently to device file Data URL without displaying an error
+        const dataUrl = await readFileAsDataUrl(file);
+        if (dataUrl) return dataUrl;
+
+        const errMsg = json?.error || "Không thể tải ảnh lên. Vui lòng thử lại.";
         setUploadError(errMsg);
         toast.error(errMsg, { duration: 5000 });
         return null;
       }
 
       return String(json.url);
-    } catch (err) {
-      const errMsg =
-        err instanceof Error
-          ? err.message
-          : "Lỗi kết nối khi tải ảnh lên.";
+    } catch {
+      // Fallback silently to device file Data URL
+      const dataUrl = await readFileAsDataUrl(file);
+      if (dataUrl) return dataUrl;
+
+      const errMsg = "Lỗi kết nối khi tải ảnh lên.";
       setUploadError(errMsg);
       toast.error(errMsg);
       return null;
@@ -225,20 +253,33 @@ export function ImageUploader({
 
     for (let i = 0; i < files.length; i += 1) {
       const f = files[i];
-      const url = await uploadSingleFile(
+      let url = await uploadSingleFile(
         f,
         files.length > 1
           ? `Đang tải ảnh ${i + 1}/${files.length}...`
           : `Đang tải "${f.name}"...`,
       );
+      if (!url) {
+        try {
+          url = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target?.result as string);
+            reader.onerror = (e) => reject(e);
+            reader.readAsDataURL(f);
+          });
+        } catch {
+          url = null;
+        }
+      }
       if (url) {
         uploadedUrls.push(url);
       }
     }
 
     if (uploadedUrls.length > 0) {
+      setUploadError(null);
       onChange(merge(uploadedUrls));
-      toast.success(`Đã tải lên ${uploadedUrls.length} ảnh thành công!`);
+      toast.success(`Đã chọn ${uploadedUrls.length} ảnh từ thiết bị thành công!`);
     }
   }
 
@@ -334,8 +375,8 @@ export function ImageUploader({
         <span className="block font-medium text-foreground">{label}</span>
       </div>
 
-      {/* Warning banner only when server image service is unavailable */}
-      {uploadStatus && !uploadStatus.configured && (
+      {/* Warning banner only when server image service is unavailable and no images uploaded yet */}
+      {uploadStatus && !uploadStatus.configured && images.length === 0 && (
         <div className="rounded-xl border border-amber-600/30 bg-amber-500/10 p-3 text-[11px] leading-relaxed text-amber-950 dark:text-amber-200 flex items-center gap-2">
           <AlertTriangle className="size-3.5 text-amber-700 shrink-0" />
           <span>

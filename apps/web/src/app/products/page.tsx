@@ -249,7 +249,7 @@ function UserProductsMarketplaceContent() {
               <LogoMark className="size-8 transition group-hover:scale-105" />
               <div className="flex flex-col">
                 <span className="font-serif text-lg font-bold tracking-tight text-[#191B19] leading-tight">
-                  SkinSense <span className="text-[#C2410C] font-sans text-xs font-bold tracking-wider">MALL</span>
+                  SkinSense <span className="text-[#D0011B] font-sans text-xs font-bold tracking-wider">MALL</span>
                 </span>
                 <span className="text-[11px] font-medium text-[#5C605C]">
                   Dược Mỹ Phẩm Chính Hãng 100%
@@ -260,9 +260,9 @@ function UserProductsMarketplaceContent() {
             <span className="h-5 w-px bg-[#D8D4CA] hidden sm:inline-block" />
 
             {/* Badges cam kết */}
-            <div className="hidden lg:flex items-center gap-2 text-xs font-semibold text-[#2D5A43]">
-              <span className="flex items-center gap-1 rounded-full bg-[#2D5A43]/10 px-2.5 py-0.5">
-                <ShieldCheck className="size-3.5 text-[#2D5A43]" />
+            <div className="hidden lg:flex items-center gap-2 text-xs font-semibold text-[#33664C]">
+              <span className="flex items-center gap-1 rounded-full bg-[#33664C]/10 px-2.5 py-0.5">
+                <ShieldCheck className="size-3.5 text-[#33664C]" />
                 100% Chính Hãng
               </span>
             </div>
@@ -271,46 +271,46 @@ function UserProductsMarketplaceContent() {
           {/* Ô tìm kiếm sản phẩm */}
           <div className="hidden md:flex flex-1 max-w-md mx-6">
             <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[#8C8F8A]" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[#33664C]/70" />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Tìm kem chống nắng, serum B5, nước tẩy trang..."
-                className="w-full h-9 rounded-xl border border-[#D8D4CA] bg-white pl-9 pr-3 text-xs text-[#191B19] placeholder:text-[#8C8F8A] focus:border-[#2D5A43] focus:outline-none shadow-2xs"
+                className="w-full h-9 rounded-xl border border-[#33664C]/30 bg-[#F6F4EF] pl-9 pr-3 text-xs text-[#191B19] placeholder:text-[#5C605C] focus:border-[#33664C] focus:outline-none shadow-2xs"
               />
               {searchTerm && (
                 <button
                   type="button"
                   onClick={() => setSearchTerm("")}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#8C8F8A] hover:text-[#191B19]"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#33664C] hover:text-[#28523D]"
                 >
-                  <X className="size-3.5" />
+                  <X className="size-3.5 text-[#33664C]" />
                 </button>
               )}
             </div>
           </div>
 
-          {/* Actions Người Mua: Thêm Sản Phẩm, Đơn Mua, Profile */}
+          {/* Actions Người Mua: Đơn Mua, Profile */}
           <div className="flex items-center gap-2 sm:gap-2.5">
             {/* Đơn mua của người đang đăng nhập */}
             <Link
               href="/user/profile"
-              className="flex items-center gap-1.5 rounded-xl border border-[#D8D4CA] bg-white px-3.5 py-1.5 text-xs font-bold text-[#191B19] hover:border-[#2D5A43] hover:text-[#2D5A43] transition shadow-2xs"
+              className="flex items-center gap-1.5 rounded-xl border border-[#33664C]/30 bg-[#F6F4EF] px-3.5 py-1.5 text-xs font-bold text-[#33664C] hover:bg-[#33664C] hover:text-[#F6F4EF] transition shadow-2xs group"
               title="Xem lịch sử đơn mua, theo dõi tiến trình đơn hàng và Đánh giá"
             >
-              <Package className="size-3.5 text-[#C2410C]" />
+              <Package className="size-3.5 text-[#33664C] group-hover:text-[#F6F4EF]" />
               <span>Đơn Mua Của Tôi</span>
             </Link>
 
-            {/* Tài khoản: hồ sơ dựng từ phiên đăng nhập (lib/profile-from-user.ts) */}
+            {/* Tài khoản: hồ sơ dựng từ phiên đăng nhập */}
             <Link
               href="/user/profile"
-              className="flex items-center gap-1.5 rounded-xl border border-[#D8D4CA] bg-[#FAF8F5] p-1.5 sm:px-2.5 sm:py-1 text-xs font-semibold text-[#191B19] hover:bg-white transition"
+              className="flex items-center gap-1.5 rounded-xl border border-[#33664C]/30 bg-[#F6F4EF] p-1.5 sm:px-2.5 sm:py-1 text-xs font-semibold text-[#33664C] hover:bg-[#33664C] hover:text-[#F6F4EF] transition group"
               title="Tài khoản của tôi"
               aria-label="Tài khoản của tôi"
             >
-              <User className="size-4 text-[#2D5A43]" />
+              <User className="size-4 text-[#33664C] group-hover:text-[#F6F4EF]" />
               <span className="hidden md:inline font-bold">Tài khoản</span>
             </Link>
           </div>
@@ -325,9 +325,9 @@ function UserProductsMarketplaceContent() {
             <button
               type="button"
               onClick={handleBackToList}
-              className="flex items-center gap-2 rounded-xl border border-[#D8D4CA] bg-white px-4 py-2 text-xs font-bold text-[#191B19] hover:border-[#2D5A43] hover:text-[#2D5A43] transition shadow-2xs cursor-pointer"
+              className="flex items-center gap-2 rounded-xl border border-[#33664C]/40 bg-[#F6F4EF] px-4 py-2 text-xs font-bold text-[#33664C] hover:bg-[#33664C] hover:text-[#F6F4EF] transition shadow-2xs cursor-pointer group"
             >
-              <ArrowLeft className="size-4" />
+              <ArrowLeft className="size-4 text-[#33664C] group-hover:text-[#F6F4EF]" />
               <span>Quay lại Danh Sách Sản Phẩm</span>
             </button>
 
@@ -358,9 +358,9 @@ function UserProductsMarketplaceContent() {
                     <BadgeCheck className="size-3.5" />
                     <span>Mall</span>
                   </div>
-                  {/* Tag giảm giá vàng cam góc phải */}
+                  {/* Tag giảm giá */}
                   {selectedProduct.discountPercent > 0 && (
-                    <span className="absolute top-3 right-3 rounded-md bg-[#FEF08A] px-2 py-0.5 text-xs font-bold text-[#854D0E] shadow-2xs">
+                    <span className="absolute top-3 right-3 rounded-md bg-[#33664C] px-2 py-0.5 text-xs font-bold text-[#F6F4EF] shadow-2xs">
                       GIẢM {selectedProduct.discountPercent}%
                     </span>
                   )}
@@ -380,7 +380,7 @@ function UserProductsMarketplaceContent() {
                       onClick={() => setActiveImageIndex(i)}
                       className={`relative size-16 rounded-xl overflow-hidden border-2 transition cursor-pointer shrink-0 ${
                         activeImageIndex === i
-                          ? "border-[#2D5A43] ring-2 ring-[#2D5A43]/20 shadow-xs"
+                          ? "border-[#33664C] ring-2 ring-[#33664C]/20 shadow-xs"
                           : "border-[#D8D4CA] opacity-75 hover:opacity-100"
                       }`}
                     >
@@ -397,12 +397,12 @@ function UserProductsMarketplaceContent() {
                 </div>
 
                 {/* Khối Đảm Bảo Chính Hãng */}
-                <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[#D8D4CA]/80 bg-[#FAF8F5] p-3 text-xs text-[#5C605C]">
-                  <span className="flex items-center gap-1.5 font-bold text-[#2D5A43]">
-                    <ShieldCheck className="size-4 text-[#2D5A43]" />
+                <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[#33664C]/20 bg-[#F6F4EF] p-3 text-xs text-[#33664C]">
+                  <span className="flex items-center gap-1.5 font-bold text-[#33664C]">
+                    <ShieldCheck className="size-4 text-[#33664C]" />
                     <span>Đảm Bảo Chính Hãng</span>
                   </span>
-                  <span className="font-medium">3 Ngày Trả Hàng / Hoàn Tiền 100%</span>
+                  <span className="font-medium text-[#33664C]">3 Ngày Trả Hàng / Hoàn Tiền 100%</span>
                 </div>
               </div>
 
@@ -414,14 +414,14 @@ function UserProductsMarketplaceContent() {
                     <span className="rounded bg-[#D0011B] px-2 py-0.5 text-xs font-bold text-white">
                       Mall
                     </span>
-                    <span className="rounded bg-[#2D5A43]/10 px-2 py-0.5 text-xs font-bold text-[#2D5A43]">
+                    <span className="rounded bg-[#33664C]/10 px-2 py-0.5 text-xs font-bold text-[#33664C]">
                       {selectedProduct.brand} Chính Hãng
                     </span>
-                    <span className="rounded bg-[#FAF8F5] border border-[#D8D4CA] px-2 py-0.5 text-xs font-semibold text-[#191B19] flex items-center gap-1">
-                      <Store className="size-3 text-[#2D5A43]" />
+                    <span className="rounded bg-[#F6F4EF] border border-[#33664C]/20 px-2 py-0.5 text-xs font-semibold text-[#33664C] flex items-center gap-1">
+                      <Store className="size-3 text-[#33664C]" />
                       <span>Gian hàng: {selectedProduct.shopName || selectedProduct.brand}</span>
                     </span>
-                    <span className="font-mono text-xs text-[#8C8F8A]">
+                    <span className="font-mono text-xs text-[#5C605C]">
                       SKU: {selectedProduct.sku}
                     </span>
                   </div>
@@ -432,13 +432,13 @@ function UserProductsMarketplaceContent() {
                   </h1>
 
                   {/* KHỐI GIÁ KHUYẾN MÃI MALL */}
-                  <div className="space-y-1.5 rounded-2xl border border-[#D8D4CA] bg-[#FAF8F5] p-4 sm:p-5">
-                    <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#5C605C]">
-                      <Sparkles className="size-3.5 text-amber-600" />
+                  <div className="space-y-1.5 rounded-2xl border border-[#33664C]/20 bg-[#F6F4EF] p-4 sm:p-5">
+                    <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#33664C]">
+                      <Sparkles className="size-3.5 text-[#33664C]" />
                       <span>GIÁ KHUYẾN MÃI MALL</span>
                     </div>
                     <div className="flex flex-wrap items-baseline gap-3">
-                      <span className="text-2xl sm:text-3xl font-black text-[#191B19]">
+                      <span className="text-2xl sm:text-3xl font-black text-[#33664C]">
                         {formatVnd(currentVariant.priceVnd)}
                       </span>
                       {(currentVariant.originalPriceVnd ?? 0) > currentVariant.priceVnd && (
@@ -447,7 +447,7 @@ function UserProductsMarketplaceContent() {
                         </span>
                       )}
                       {selectedProduct.discountPercent > 0 && (
-                        <span className="rounded bg-[#191B19] px-2 py-0.5 text-xs font-bold text-white shadow-xs">
+                        <span className="rounded bg-[#33664C] px-2 py-0.5 text-xs font-bold text-[#F6F4EF] shadow-xs">
                           -{selectedProduct.discountPercent}% GIẢM
                         </span>
                       )}
@@ -464,11 +464,11 @@ function UserProductsMarketplaceContent() {
                         {selectedProduct.vouchers.map((vc) => (
                           <div
                             key={vc.id}
-                            className="flex items-center gap-1 rounded-lg border border-dashed border-[#D8D4CA] bg-[#FAF8F5] px-2.5 py-1.5 text-xs font-medium text-[#191B19]"
+                            className="flex items-center gap-1 rounded-lg border border-dashed border-[#33664C]/30 bg-[#F6F4EF] px-2.5 py-1.5 text-xs font-medium text-[#33664C]"
                           >
-                            <Tag className="size-3 text-[#C2410C]" />
+                            <Tag className="size-3 text-[#33664C]" />
                             <span>{vc.discountLabel}</span>
-                            <span className="text-[10px] font-normal text-[#5C605C]">({vc.minSpendLabel})</span>
+                            <span className="text-[10px] font-normal text-[#33664C]/80">({vc.minSpendLabel})</span>
                           </div>
                         ))}
                       </div>
@@ -476,9 +476,9 @@ function UserProductsMarketplaceContent() {
                   )}
 
                   {/* Vận chuyển */}
-                  <div className="space-y-1.5 rounded-xl border border-[#D8D4CA]/80 bg-[#FAF8F5] p-3 text-xs">
-                    <div className="flex items-center gap-1.5 font-bold text-[#2D5A43]">
-                      <Truck className="size-4" />
+                  <div className="space-y-1.5 rounded-xl border border-[#33664C]/20 bg-[#F6F4EF] p-3 text-xs">
+                    <div className="flex items-center gap-1.5 font-bold text-[#33664C]">
+                      <Truck className="size-4 text-[#33664C]" />
                       <span>Vận Chuyển</span>
                     </div>
                     <div className="space-y-0.5 pl-5 text-xs text-[#5C605C]">
@@ -493,7 +493,7 @@ function UserProductsMarketplaceContent() {
 
                   {/* Phân loại hàng / Dung tích (Variants) */}
                   <div className="space-y-2">
-                    <span className="block text-xs font-bold uppercase tracking-wider text-[#5C605C]">
+                    <span className="block text-xs font-bold uppercase tracking-wider text-[#33664C]">
                       PHÂN LOẠI HÀNG:
                     </span>
                     <div className="flex flex-wrap items-center gap-2.5">
@@ -507,12 +507,12 @@ function UserProductsMarketplaceContent() {
                           onClick={() => setSelectedVariantIndex(idx)}
                           className={`rounded-xl border px-3.5 py-2 text-xs font-bold transition cursor-pointer ${
                             selectedVariantIndex === idx
-                              ? "border-[#191B19] bg-[#191B19]/5 text-[#191B19] ring-2 ring-[#191B19]/20 shadow-xs"
-                              : "border-[#D8D4CA] bg-white text-[#5C605C] hover:border-[#191B19] hover:text-[#191B19]"
+                              ? "border-[#33664C] bg-[#33664C] text-[#F6F4EF] shadow-xs"
+                              : "border border-[#33664C]/30 bg-[#F6F4EF] text-[#33664C] hover:bg-[#33664C]/10"
                           }`}
                         >
                           <span>{v.name}</span>
-                          <span className="block text-[11px] font-medium opacity-80">{formatVnd(v.priceVnd)}</span>
+                          <span className="block text-[11px] font-medium opacity-90">{formatVnd(v.priceVnd)}</span>
                         </button>
                       ))}
                     </div>
@@ -520,26 +520,26 @@ function UserProductsMarketplaceContent() {
 
                   {/* Số lượng */}
                   <div className="flex flex-wrap items-center gap-3 pt-1">
-                    <span className="text-xs font-bold uppercase tracking-wider text-[#5C605C]">
+                    <span className="text-xs font-bold uppercase tracking-wider text-[#33664C]">
                       SỐ LƯỢNG:
                     </span>
-                    <div className="flex items-center rounded-xl border border-[#D8D4CA] bg-[#FAF8F5]">
+                    <div className="flex items-center rounded-xl border border-[#33664C]/30 bg-[#F6F4EF] overflow-hidden">
                       <button
                         type="button"
                         aria-label="Giảm số lượng"
                         onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                        className="px-3 py-2 text-sm font-bold text-[#5C605C] hover:text-[#191B19] cursor-pointer"
+                        className="px-3 py-2 text-sm font-bold text-[#33664C] hover:bg-[#33664C] hover:text-[#F6F4EF] transition cursor-pointer"
                       >
                         -
                       </button>
-                      <span className="px-3 py-1 text-sm font-bold text-[#191B19] tabular-nums">
+                      <span className="px-3 py-1 text-sm font-bold text-[#33664C] bg-white tabular-nums">
                         {quantity}
                       </span>
                       <button
                         type="button"
                         aria-label="Tăng số lượng"
                         onClick={() => setQuantity((q) => q + 1)}
-                        className="px-3 py-2 text-sm font-bold text-[#5C605C] hover:text-[#191B19] cursor-pointer"
+                        className="px-3 py-2 text-sm font-bold text-[#33664C] hover:bg-[#33664C] hover:text-[#F6F4EF] transition cursor-pointer"
                       >
                         +
                       </button>
@@ -555,10 +555,10 @@ function UserProductsMarketplaceContent() {
                   <button
                     type="button"
                     onClick={() => handleBuyNow(selectedProduct.id, selectedVariantIndex, quantity)}
-                    className="w-full sm:w-auto sm:min-w-[320px] h-12 rounded-xl bg-[#191B19] hover:bg-[#2D5A43] text-white text-sm font-bold shadow-md transition flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
+                    className="w-full sm:w-auto sm:min-w-[320px] h-12 rounded-xl bg-[#33664C] hover:bg-[#28523D] text-[#F6F4EF] text-sm font-bold shadow-md transition flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
                     title="Chuyển trực tiếp sang trang thanh toán của Khách hàng"
                   >
-                    <ShoppingBag className="size-4.5" />
+                    <ShoppingBag className="size-4.5 text-[#F6F4EF]" />
                     <span>Mua Ngay</span>
                   </button>
                 </div>
@@ -633,16 +633,16 @@ function UserProductsMarketplaceContent() {
         /* 3. MÀN HÌNH ĐẦU TIÊN CỦA USER: DANH SÁCH CÁC SẢN PHẨM ĐỂ CHỌN MUA */
         <>
           {/* BANNER GIỚI THIỆU - TUYỆT ĐỐI KHÔNG CÓ NÚT MOMO HAY THANH TOÁN */}
-          <section className="bg-gradient-to-r from-[#2D5A43] via-[#356B50] to-[#2D5A43] text-white py-6 px-4 shadow-sm">
+          <section className="bg-gradient-to-r from-[#33664C] via-[#3d7a5b] to-[#33664C] text-[#F6F4EF] py-6 px-4 shadow-sm">
             <div className="mx-auto max-w-[1360px] space-y-1.5 text-center md:text-left">
-              <div className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-0.5 text-xs font-bold text-white backdrop-blur-xs">
-                <Sparkles className="size-3.5 text-amber-300" />
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-[#F6F4EF]/20 px-3 py-0.5 text-xs font-bold text-[#F6F4EF] backdrop-blur-xs">
+                <Sparkles className="size-3.5 text-[#F6F4EF]" />
                 SkinSense Mall
               </div>
-              <h1 className="text-xl sm:text-2xl font-serif font-bold tracking-tight">
+              <h1 className="text-xl sm:text-2xl font-serif font-bold tracking-tight text-[#F6F4EF]">
                 Sàn Dược Mỹ Phẩm Chuẩn Y Khoa Cho Làn Da Nhạy Cảm
               </h1>
-              <p className="text-xs sm:text-sm text-white/85 max-w-2xl">
+              <p className="text-xs sm:text-sm text-[#F6F4EF]/90 max-w-2xl">
                 Chọn mua sản phẩm đã qua kiểm nghiệm lâm sàng từ La Roche-Posay, Bioderma, CeraVe.
               </p>
             </div>
@@ -652,8 +652,8 @@ function UserProductsMarketplaceContent() {
           <section className="mx-auto max-w-[1360px] px-4 pt-6 sm:px-6 space-y-4">
             {/* Bộ lọc nhanh theo thương hiệu */}
             <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-              <span className="text-xs font-bold text-[#5C605C] shrink-0 flex items-center gap-1">
-                <Tag className="size-3.5 text-[#C2410C]" />
+              <span className="text-xs font-bold text-[#33664C] shrink-0 flex items-center gap-1">
+                <Tag className="size-3.5 text-[#33664C]" />
                 Thương hiệu:
               </span>
               {brands.map((brand) => (
@@ -663,8 +663,8 @@ function UserProductsMarketplaceContent() {
                   onClick={() => setSelectedBrand(brand)}
                   className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition shrink-0 cursor-pointer ${
                     selectedBrand === brand
-                      ? "bg-[#2D5A43] text-white shadow-xs"
-                      : "border border-[#D8D4CA] bg-white text-[#5C605C] hover:border-[#2D5A43] hover:text-[#191B19]"
+                      ? "bg-[#33664C] text-[#F6F4EF] shadow-xs"
+                      : "border border-[#33664C]/30 bg-[#F6F4EF] text-[#33664C] hover:bg-[#33664C]/10"
                   }`}
                 >
                   {brand}
@@ -673,10 +673,10 @@ function UserProductsMarketplaceContent() {
             </div>
 
             {/* Bộ lọc loại da & Sắp xếp */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-[#D8D4CA]/60 pt-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-[#33664C]/20 pt-3">
               <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-                <span className="text-xs font-bold text-[#5C605C] shrink-0 flex items-center gap-1">
-                  <Filter className="size-3.5 text-[#2D5A43]" />
+                <span className="text-xs font-bold text-[#33664C] shrink-0 flex items-center gap-1">
+                  <Filter className="size-3.5 text-[#33664C]" />
                   Loại da:
                 </span>
                 {SKIN_TYPES.map((st) => (
@@ -686,8 +686,8 @@ function UserProductsMarketplaceContent() {
                     onClick={() => setSelectedSkinType(st.id)}
                     className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition shrink-0 cursor-pointer ${
                       selectedSkinType === st.id
-                        ? "bg-[#C2410C] text-white shadow-2xs"
-                        : "border border-[#D8D4CA]/80 bg-[#FAF8F5] text-[#5C605C] hover:bg-white"
+                        ? "bg-[#33664C] text-[#F6F4EF] shadow-2xs"
+                        : "border border-[#33664C]/30 bg-[#F6F4EF] text-[#33664C] hover:bg-[#33664C]/10"
                     }`}
                   >
                     {st.label}
@@ -696,11 +696,11 @@ function UserProductsMarketplaceContent() {
               </div>
 
               <div className="flex items-center gap-2 self-end sm:self-auto shrink-0 text-xs">
-                <span className="text-[#5C605C] font-medium">Sắp xếp:</span>
+                <span className="text-[#33664C] font-medium">Sắp xếp:</span>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-                  className="h-8 rounded-lg border border-[#D8D4CA] bg-white px-2.5 text-xs font-bold text-[#191B19] focus:outline-none focus:border-[#2D5A43]"
+                  className="h-8 rounded-lg border border-[#33664C]/30 bg-[#F6F4EF] px-2.5 text-xs font-bold text-[#33664C] focus:outline-none focus:border-[#33664C]"
                 >
                   <option value="default">Mặc định</option>
                   <option value="price-asc">💵 Giá: Thấp đến Cao</option>
@@ -734,7 +734,7 @@ function UserProductsMarketplaceContent() {
                     setSelectedBrand(ALL_BRANDS);
                     setSelectedSkinType("all");
                   }}
-                  className="px-4 py-2 rounded-xl bg-[#2D5A43] text-white text-xs font-bold hover:bg-[#214332] transition"
+                  className="px-4 py-2 rounded-xl bg-[#33664C] text-[#F6F4EF] text-xs font-bold hover:bg-[#28523D] transition cursor-pointer"
                 >
                   Xóa Bộ Lọc
                 </button>
@@ -769,7 +769,7 @@ function UserProductsMarketplaceContent() {
                         </span>
                         {/* Tag giảm giá */}
                         {discountPercent > 0 && (
-                          <span className="absolute top-2 right-2 rounded bg-[#FEF08A] px-1.5 py-0.5 text-[9px] font-bold text-[#854D0E] shadow-2xs">
+                          <span className="absolute top-2 right-2 rounded bg-[#33664C] px-1.5 py-0.5 text-[9px] font-bold text-[#F6F4EF] shadow-2xs">
                             -{discountPercent}%
                           </span>
                         )}
@@ -777,12 +777,12 @@ function UserProductsMarketplaceContent() {
 
                       {/* Thông tin sản phẩm */}
                       <div className="flex-1 flex flex-col">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#2D5A43] mb-1">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#33664C] mb-1">
                           {prod.brand}
                         </span>
                         <h3
                           onClick={() => handleOpenDetail(prod)}
-                          className="text-xs font-semibold text-[#191B19] line-clamp-2 leading-snug cursor-pointer group-hover:text-[#2D5A43] transition mb-1.5"
+                          className="text-xs font-semibold text-[#191B19] line-clamp-2 leading-snug cursor-pointer group-hover:text-[#33664C] transition mb-1.5"
                           title={prod.name}
                         >
                           {prod.name}
@@ -791,7 +791,7 @@ function UserProductsMarketplaceContent() {
                         {/* Giá tiền */}
                         <div className="mt-auto pt-2 border-t border-[#D8D4CA]/40">
                           <div className="flex items-baseline gap-1.5">
-                            <span className="text-sm font-bold text-[#191B19]">
+                            <span className="text-sm font-bold text-[#33664C]">
                               {formatVnd(prod.priceVnd)}
                             </span>
                             {prod.originalPriceVnd > prod.priceVnd && (
@@ -808,25 +808,25 @@ function UserProductsMarketplaceContent() {
 
                         {/* ĐÚNG 2 NÚT BẤM THEO YÊU CẦU: [CHI TIẾT] VÀ [MUA NGAY] */}
                         <div className="mt-3 grid grid-cols-2 gap-1.5">
-                          {/* NÚT 1: [Chi Tiết] -> Bấm vào thì phần chi tiết sản phẩm mới hiện */}
+                          {/* NÚT 1: [Chi Tiết] -> Màu kem #F6F4EF, viền/chữ/icon màu xanh #33664C */}
                           <button
                             type="button"
                             onClick={() => handleOpenDetail(prod)}
-                            className="flex items-center justify-center gap-1 h-9 rounded-xl border border-[#D8D4CA] bg-[#FAF8F5] text-[11px] font-semibold text-[#191B19] hover:bg-white hover:border-[#2D5A43] transition cursor-pointer"
+                            className="flex items-center justify-center gap-1 h-9 rounded-xl border border-[#33664C]/40 bg-[#F6F4EF] text-[11px] font-semibold text-[#33664C] hover:bg-[#33664C] hover:text-[#F6F4EF] transition cursor-pointer group"
                             title="Bấm để xem chi tiết sản phẩm"
                           >
-                            <Eye className="size-3 text-[#5C605C]" />
+                            <Eye className="size-3 text-[#33664C] group-hover:text-[#F6F4EF]" />
                             <span>Chi Tiết</span>
                           </button>
 
-                          {/* NÚT 2: [Mua Ngay] -> Bấm vào thì trang thanh toán hiện */}
+                          {/* NÚT 2: [Mua Ngay] -> Màu xanh #33664C, chữ/icon màu kem #F6F4EF */}
                           <button
                             type="button"
                             onClick={() => handleBuyNow(prod.id, 0, 1)}
-                            className="flex items-center justify-center gap-1 h-9 rounded-xl bg-[#191B19] hover:bg-[#2D5A43] text-[11px] font-bold text-white transition shadow-2xs cursor-pointer active:scale-[0.98]"
+                            className="flex items-center justify-center gap-1 h-9 rounded-xl bg-[#33664C] hover:bg-[#28523D] text-[11px] font-bold text-[#F6F4EF] transition shadow-2xs cursor-pointer active:scale-[0.98]"
                             title="Bấm để mua ngay và chuyển sang trang thanh toán"
                           >
-                            <ShoppingBag className="size-3" />
+                            <ShoppingBag className="size-3 text-[#F6F4EF]" />
                             <span>Mua Ngay</span>
                           </button>
                         </div>
