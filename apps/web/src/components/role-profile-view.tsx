@@ -1042,41 +1042,86 @@ export function RoleProfileView({ role }: { role: RoleType }) {
               {/* =========================================================== */}
               {(role === "customer" || role === "shop") && activeTab === "orders" && (
                 <div className="space-y-4">
-                  {/* THANH BỘ LỌC TRẠNG THÁI ĐƠN HÀNG CHUẨN SHOPEE */}
-                  <div className="rounded-2xl border border-[#D8D4CA] bg-[#FAF8F5] p-2.5 shadow-xs flex items-center justify-between flex-wrap gap-2">
-                    <div className="flex items-center gap-1.5 overflow-x-auto py-0.5">
-                      {[
-                        { key: "all", label: "Tất Cả" },
-                        { key: "pending", label: "Chờ Thanh Toán" },
-                        { key: "processing", label: "Chuẩn Bị Hàng" },
-                        { key: "delivering", label: "Đang Vận Chuyển" },
-                        { key: "delivered", label: "Đã Nhận Hàng" },
-                        { key: "cancelled", label: "Đã Hủy" },
-                      ].map((tab) => (
-                        <button
-                          key={tab.key}
-                          type="button"
-                          onClick={() => setOrderFilter(tab.key)}
-                          className={`h-8 px-3.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-                            orderFilter === tab.key
-                              ? "bg-[#2D5A43] text-white shadow-2xs"
-                              : "text-[#5C605C] hover:bg-white hover:text-[#191B19]"
-                          }`}
-                        >
-                          {tab.label}
-                        </button>
-                      ))}
+                  {/* KHỐI 1: THANH ĐIỀU KHIỂN RIÊNG BIỆT PHÍA TRÊN CÙNG CHỨA NÚT LÀM MỚI */}
+                  <div className="flex items-center justify-between rounded-2xl border border-[#D8D4CA] bg-[#FAF8F5] p-3 sm:px-4 shadow-xs">
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex size-8 items-center justify-center rounded-xl bg-[#33664C]/10 text-[#33664C]">
+                        <ShoppingBag className="size-4" />
+                      </div>
+                      <div>
+                        <h3 className="text-xs sm:text-sm font-bold text-[#191B19]">
+                          {role === "shop" ? "Quản Lý Đơn Hàng Gian Hàng" : "Quản Lý Đơn Hàng"}
+                        </h3>
+                        <p className="text-[11px] text-[#5C605C]">
+                          {orders.length} đơn hàng trong hệ thống
+                        </p>
+                      </div>
                     </div>
 
                     <button
                       type="button"
                       onClick={() => loadUserOrders(fullName, phone)}
-                      className="flex items-center gap-1 h-8 px-3 rounded-lg border border-[#D8D4CA] bg-white text-xs font-semibold text-[#5C605C] hover:text-[#191B19] transition"
-                      title="Làm mới đơn hàng"
+                      className="flex items-center gap-1.5 h-8 px-3.5 rounded-xl border border-[#33664C]/30 bg-[#F6F4EF] text-xs font-semibold text-[#33664C] hover:bg-[#33664C] hover:text-[#F6F4EF] transition cursor-pointer active:scale-95 shadow-xs"
+                      title="Làm mới danh sách đơn hàng"
                     >
-                      <RefreshCw className={`size-3 ${ordersLoading ? "animate-spin text-[#2D5A43]" : ""}`} />
+                      <RefreshCw className={`size-3.5 ${ordersLoading ? "animate-spin text-inherit" : "text-inherit"}`} />
                       <span>Làm mới</span>
                     </button>
+                  </div>
+
+                  {/* KHỐI 2: THANH BỘ LỌC TRẠNG THÁI ĐƠN HÀNG CÓ ICON CHUẨN SHOPEE */}
+                  <div className="rounded-2xl border border-[#D8D4CA] bg-[#FAF8F5] p-2 shadow-xs">
+                    <div className="flex items-center gap-1.5 overflow-x-auto py-0.5">
+                      {[
+                        { key: "all", label: "Tất Cả", icon: ShoppingBag },
+                        { key: "pending", label: "Chờ Thanh Toán", icon: Clock },
+                        { key: "processing", label: "Chuẩn Bị Hàng", icon: Package },
+                        { key: "delivering", label: "Đang Vận Chuyển", icon: Truck },
+                        { key: "delivered", label: "Đã Nhận Hàng", icon: CheckCircle2 },
+                        { key: "cancelled", label: "Đã Hủy", icon: XCircle },
+                      ].map((tab) => {
+                        const Icon = tab.icon;
+                        const count =
+                          tab.key === "all"
+                            ? orders.length
+                            : tab.key === "pending"
+                            ? orders.filter(
+                                (o) =>
+                                  (o.status === "pending" || o.paymentStatus === "unpaid") &&
+                                  o.status !== "cancelled"
+                              ).length
+                            : orders.filter((o) => o.status === tab.key).length;
+
+                        const isActive = orderFilter === tab.key;
+
+                        return (
+                          <button
+                            key={tab.key}
+                            type="button"
+                            onClick={() => setOrderFilter(tab.key)}
+                            className={`flex items-center gap-1.5 h-9 px-3.5 rounded-xl text-xs font-semibold whitespace-nowrap transition cursor-pointer active:scale-95 ${
+                              isActive
+                                ? "bg-[#33664C] text-[#F6F4EF] shadow-xs"
+                                : "text-[#5C605C] hover:bg-[#F6F4EF] hover:text-[#191B19]"
+                            }`}
+                          >
+                            <Icon className={`size-3.5 ${isActive ? "text-[#F6F4EF]" : "text-[#5C605C]"}`} />
+                            <span>{tab.label}</span>
+                            {count > 0 && (
+                              <span
+                                className={`ml-0.5 px-1.5 py-0.5 text-[10px] font-bold rounded-full leading-none ${
+                                  isActive
+                                    ? "bg-[#F6F4EF] text-[#33664C]"
+                                    : "bg-[#33664C]/10 text-[#33664C]"
+                                }`}
+                              >
+                                {count}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
 
                   {/* DANH SÁCH THẺ ĐƠN HÀNG (ORDER CARDS) */}
@@ -1161,7 +1206,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                                       : order.status === "delivering"
                                       ? "bg-sky-50 text-sky-800 border-sky-300"
                                       : order.status === "processing"
-                                      ? "bg-blue-50 text-blue-800 border-blue-300"
+                                      ? "bg-[#33664C]/10 text-[#33664C] border-[#33664C]/30"
                                       : "bg-amber-50 text-amber-700 border-amber-200"
                                   }`}
                                 >
@@ -1182,7 +1227,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                                     </>
                                   ) : order.status === "processing" ? (
                                     <>
-                                      <Store className="size-3 text-blue-600" />
+                                      <Store className="size-3 text-[#33664C]" />
                                       <span>Shop Đang Chuẩn Bị</span>
                                     </>
                                   ) : (
@@ -1368,7 +1413,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                                       <button
                                         type="button"
                                         onClick={() => handleUpdateOrderStatus(order.orderCode, "processing")}
-                                        className="flex items-center gap-1.5 h-8.5 px-3 rounded-xl bg-blue-600 text-xs font-bold text-white shadow-2xs hover:bg-blue-700 transition cursor-pointer"
+                                        className="flex items-center gap-1.5 h-8.5 px-3.5 rounded-xl bg-[#33664C] text-xs font-bold text-[#F6F4EF] shadow-2xs hover:bg-[#28523D] transition cursor-pointer"
                                       >
                                         <Store className="size-3.5" />
                                         <span>Duyệt & Chuẩn Bị Hàng</span>
@@ -1383,7 +1428,7 @@ export function RoleProfileView({ role }: { role: RoleType }) {
                                       <button
                                         type="button"
                                         onClick={() => handleUpdateOrderStatus(order.orderCode, "delivering")}
-                                        className="flex items-center gap-1.5 h-8.5 px-3 rounded-xl bg-sky-600 text-xs font-bold text-white shadow-2xs hover:bg-sky-700 transition cursor-pointer"
+                                        className="flex items-center gap-1.5 h-8.5 px-3.5 rounded-xl bg-[#33664C] text-xs font-bold text-[#F6F4EF] shadow-2xs hover:bg-[#28523D] transition cursor-pointer"
                                       >
                                         <Truck className="size-3.5" />
                                         <span>Giao Cho Shipper</span>
