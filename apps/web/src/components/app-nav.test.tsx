@@ -32,12 +32,22 @@ function renderShell(path: string) {
 }
 
 describe("AppShell", () => {
+  it("gives customers a way to the shop and to their orders (chat and reviews live on each order)", () => {
+    for (const nav of renderShell("/app")) {
+      expect(nav.Shop).toEqual({ href: "/products", active: false });
+      expect(nav.Orders).toEqual({ href: "/user/profile?tab=orders", active: false });
+      expect(nav["Seller channel"]).toBeUndefined();
+    }
+  });
+
   it("links each tab to its /app screen and marks the current one active in both bars", () => {
     for (const nav of renderShell("/app/trends")) {
       expect(nav).toEqual({
         Today: { href: "/app", active: false },
         Capture: { href: "/app/capture", active: false },
         Trends: { href: "/app/trends", active: true },
+        Shop: { href: "/products", active: false },
+        Orders: { href: "/user/profile?tab=orders", active: false },
         Settings: { href: "/app/settings", active: false },
       });
     }
@@ -54,6 +64,8 @@ describe("AppShell", () => {
         Today: { href: "/demo", active: true },
         Capture: { href: "/#cta", active: false },
         Trends: { href: "/demo/trends", active: false },
+        Shop: { href: "/products", active: false },
+        Orders: { href: "/user/profile?tab=orders", active: false },
         Settings: { href: "/#cta", active: false },
       });
     }
