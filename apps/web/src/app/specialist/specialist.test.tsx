@@ -2,6 +2,10 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import SpecialistPage, { INITIAL_PATIENT_CASES } from "./page";
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
+}));
+
 function mockApi(casesResponse: { status: number; body: unknown }) {
   global.fetch = vi.fn().mockImplementation((url: string) => {
     if (String(url).startsWith("/api/specialist/cases")) {
@@ -99,5 +103,30 @@ describe("Specialist Portal access", () => {
     mockApi({ status: 403, body: { ok: false } });
     render(<SpecialistPage />);
     expect(await screen.findByText(/chưa được cấp quyền Bác sĩ/i)).toBeInTheDocument();
+  });
+
+  it("shows pending approval details and application button when a doctor status is pending", async () => {
+    global.fetch = vi.fn().mockImplementation((url: string) => {
+      if (String(url).startsWith("/api/specialist/cases")) {
+        return Promise.resolve({ ok: false, status: 403, json: async () => ({ ok: false }) } as Response);
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          authenticated: true,
+          user: {
+            fullName: "BS. Trần Quốc Tuấn",
+            role: "specialist",
+            status: "pending",
+            licenseId: "CCHN-008812/BYT",
+            hospital: "BV Da Liễu",
+          },
+        }),
+      } as Response);
+    });
+    render(<SpecialistPage />);
+    expect(await screen.findByText(/Hồ sơ Bác sĩ đang chờ Super Admin duyệt/i)).toBeInTheDocument();
+    expect(screen.getByText(/CCHN-008812\/BYT/)).toBeInTheDocument();
   });
 });

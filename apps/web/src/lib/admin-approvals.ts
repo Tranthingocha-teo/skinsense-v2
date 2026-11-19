@@ -1,7 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { authzClaims, SUPER_ADMIN_EMAIL } from "@/lib/actor-role";
+import { sortAdminRecords } from "@/lib/admin-sort";
 import { shopIdClaim } from "@/lib/shop-utils";
-import { updateStorageJsonList } from "@/lib/supabase/storage-json";
+import { downloadStorageJson, updateStorageJsonList } from "@/lib/supabase/storage-json";
 
 /**
  * Account status, stored in app_metadata (the authority for rights, lib/actor-role.ts):
@@ -30,7 +31,33 @@ export const REGISTRY_PATHS = {
 /** Long enough to mean "until unlocked"; Supabase takes a Go duration. */
 const LOCK_BAN_DURATION = "876000h";
 
-type RegistryEntry = { id?: string; email?: string; status?: string } & Record<string, unknown>;
+export type RegistryEntry = {
+  id?: string;
+  email?: string;
+  status?: string;
+  name?: string;
+  ownerName?: string;
+  shopName?: string;
+  phone?: string;
+  license?: string;
+  category?: string;
+  address?: string;
+  licenseId?: string;
+  hospital?: string;
+  specialty?: string;
+  submittedAt?: string;
+} & Record<string, unknown>;
+
+export function findRegistryEntry<T extends { id?: string; email?: string }>(
+  list: readonly T[],
+  userId: string,
+  email: string,
+): T | undefined {
+  const lower = email.trim().toLowerCase();
+  return list.find((entry) => entry.id === userId || (typeof entry.email === "string" && entry.email.toLowerCase() === lower));
+}
+
+export { sortAdminRecords };
 
 export class ApprovalError extends Error {
   constructor(
@@ -60,11 +87,29 @@ export async function applyAccountDecision(
   const appMeta = (user.app_metadata ?? {}) as Record<string, unknown>;
   const userMeta = (user.user_metadata ?? {}) as Record<string, unknown>;
   if (appMeta.role === "admin") throw new ApprovalError("Không thể thay đổi tài khoản quản trị viên.", 403);
+  let promotedFromPendingRegistry = false;
   if (change.expectRole && appMeta.role !== change.expectRole) {
-    throw new ApprovalError("Tài khoản này không có hồ sơ đăng ký phù hợp để duyệt.", 409);
+    const expectRole = change.expectRole;
+    if (
+      (expectRole === "shop" || expectRole === "specialist") &&
+      (appMeta.role === undefined || appMeta.role === null || appMeta.role === "customer")
+    ) {
+      const registry = await downloadStorageJson<RegistryEntry[]>(REGISTRY_PATHS[expectRole], admin).catch(() => null);
+      const entry = Array.isArray(registry) ? findRegistryEntry(registry, userId, email) : undefined;
+      promotedFromPendingRegistry = entry?.status === "pending" || entry?.status === "rejected";
+    }
+    if (!promotedFromPendingRegistry) {
+      throw new ApprovalError("Tài khoản này không có hồ sơ đăng ký phù hợp để duyệt.", 409);
+    }
   }
 
-  const role: GrantableRole = change.role ?? (isGrantableRole(appMeta.role) ? appMeta.role : "customer");
+  const role: GrantableRole =
+    change.role ??
+    (promotedFromPendingRegistry && change.expectRole
+      ? change.expectRole
+      : isGrantableRole(appMeta.role)
+        ? appMeta.role
+        : "customer");
   const current: AccountStatus = isAccountStatus(appMeta.status) ? appMeta.status : "active";
   // Unlocking restores the status the account had when it was locked: a pending or rejected
   // application that was locked must not come back approved.

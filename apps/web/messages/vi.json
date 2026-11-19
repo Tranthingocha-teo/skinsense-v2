@@ -34,8 +34,9 @@
     "data": "Dữ liệu",
     "history": "Lịch sử ảnh",
     "export": "Xuất dữ liệu (.csv)",
-    "sellerGroup": "Dành cho gian hàng",
-    "sellerLink": "Kênh Người Bán"
+    "sellerGroup": "Dành cho gian hàng & đối tác",
+    "sellerLink": "Kênh Người Bán",
+    "doctorLink": "Cổng / Đăng ký Bác sĩ"
   },
   "Feedback": {
     "title": "Góp ý",

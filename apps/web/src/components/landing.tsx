@@ -100,11 +100,13 @@ export function Landing() {
               />
               <AuthModal
                 defaultTab="doctor-approval"
+                autoOpenApplyParam="doctor"
                 triggerLabel={locale === "vi" ? "Bác sĩ: Gửi hồ sơ duyệt" : "Doctor registration"}
                 triggerClassName="flex h-[54px] w-full sm:w-auto items-center justify-center gap-2 rounded-xl border border-emerald-600/40 bg-emerald-500/10 px-6 text-[15px] font-semibold text-emerald-800 dark:text-emerald-300 transition hover:border-emerald-600 hover:bg-emerald-500/20 cursor-pointer shadow-md"
               />
               <AuthModal
                 defaultTab="shop-approval"
+                autoOpenApplyParam="shop"
                 triggerLabel={locale === "vi" ? "Gian hàng: Gửi hồ sơ mở shop" : "Store registration"}
                 triggerClassName="flex h-[54px] w-full sm:w-auto items-center justify-center gap-2 rounded-xl border border-amber-600/40 bg-amber-500/10 px-6 text-[15px] font-semibold text-amber-800 dark:text-amber-300 transition hover:border-amber-600 hover:bg-amber-500/20 cursor-pointer shadow-md"
               />

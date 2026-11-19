@@ -263,6 +263,18 @@ export function Settings({ account, api }: { account: Account; api: SettingsApi 
                   </span>
                 </Link>
               </Item>
+              <Item asChild className={ROW}>
+                <Link href="/specialist">
+                  <span className="flex items-center gap-2 font-medium text-foreground">
+                    {t("doctorLink")}
+                  </span>
+                  <span className={HIT}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <path d="M9 5l7 7-7 7" />
+                    </svg>
+                  </span>
+                </Link>
+              </Item>
             </Group>
           </div>
 

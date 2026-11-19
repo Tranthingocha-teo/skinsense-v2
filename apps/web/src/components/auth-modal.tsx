@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Eye,
@@ -40,10 +40,14 @@ export function AuthModal({
   triggerLabel,
   triggerClassName,
   defaultTab = "sign-in",
+  autoOpenApplyParam,
+  onSubmitted,
 }: {
   triggerLabel?: string;
   triggerClassName?: string;
   defaultTab?: AuthModalTab;
+  autoOpenApplyParam?: "doctor" | "shop";
+  onSubmitted?: () => void;
 }) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
@@ -51,6 +55,8 @@ export function AuthModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [needsEmailSignInFor, setNeedsEmailSignInFor] = useState<"doctor" | "shop" | null>(null);
+  const [signedInUser, setSignedInUser] = useState<{ email: string; fullName?: string } | null>(null);
 
   // Sign In Form
   const [signInEmail, setSignInEmail] = useState("");
@@ -90,29 +96,60 @@ export function AuthModal({
     setTab(targetTab);
     setError(null);
     setSuccess(null);
+    setNeedsEmailSignInFor(null);
     setIsOpen(true);
   }
+
+  useEffect(() => {
+    if (!autoOpenApplyParam || typeof window === "undefined") return;
+    const apply = new URLSearchParams(window.location.search).get("apply");
+    if (apply === autoOpenApplyParam) {
+      setTab(defaultTab);
+      setIsOpen(true);
+    }
+  }, [autoOpenApplyParam, defaultTab]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    fetch("/api/auth/me", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled || !data?.authenticated || !data?.user?.email) return;
+        const email = String(data.user.email).trim().toLowerCase();
+        const fullName = typeof data.user.fullName === "string" ? data.user.fullName.trim() : "";
+        setSignedInUser({ email, fullName });
+        if (email !== "hattn.23itb@vku.udn.vn") {
+          setDocEmail((prev) => prev || email);
+          if (fullName) setDocName((prev) => prev || fullName);
+          setShopEmail((prev) => prev || email);
+          if (fullName) setShopOwnerName((prev) => prev || fullName);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen]);
+
+  const isDoctorSubmittingAsSignedIn = Boolean(
+    signedInUser && docEmail.trim().toLowerCase() === signedInUser.email.toLowerCase(),
+  );
+  const isShopSubmittingAsSignedIn = Boolean(
+    signedInUser && shopEmail.trim().toLowerCase() === signedInUser.email.toLowerCase(),
+  );
 
   async function handleSignIn(e?: React.FormEvent) {
     if (e) e.preventDefault();
     setError(null);
     setSuccess(null);
+    setNeedsEmailSignInFor(null);
 
     const email = signInEmail.trim().toLowerCase();
     const password = signInPassword;
 
     if (!email || !password) {
       setError("Vui lòng nhập đầy đủ Email và Mật khẩu.");
-      return;
-    }
-
-    // Special handler for Super Admin email
-    if (email === "hattn.23itb@vku.udn.vn") {
-      setSuccess("Đăng nhập Super Admin thành công! Đang chuyển tới Bảng Quản Trị...");
-      setTimeout(() => {
-        setIsOpen(false);
-        router.push("/admin");
-      }, 300);
       return;
     }
 
@@ -135,17 +172,17 @@ export function AuthModal({
         password,
       });
 
-      if (signInError && !isDirectDoctorEmail) {
+      if (signInError) {
         throw new Error(
           signInError.message === "Invalid login credentials"
-            ? "Email hoặc mật khẩu không chính xác. Bạn có thể chọn tài khoản mẫu phía dưới để thử nghiệm."
+            ? "Email hoặc mật khẩu không chính xác."
             : signInError.message,
         );
       }
 
       const userEmail = data?.user?.email?.trim().toLowerCase() || email;
-      let role = data?.user?.user_metadata?.role;
-      let status = data?.user?.user_metadata?.status;
+      let role = data?.user?.app_metadata?.role || data?.user?.user_metadata?.role;
+      let status = data?.user?.app_metadata?.status || data?.user?.user_metadata?.status;
 
       // Query /api/auth/me for real Supabase server-validated role
       try {
@@ -164,26 +201,23 @@ export function AuthModal({
         setTimeout(() => {
           setIsOpen(false);
           router.push("/admin");
+          router.refresh();
         }, 300);
         return;
       }
 
-      const isDoctor =
-        role === "specialist" ||
-        isDirectDoctorEmail ||
-        userEmail.includes("doctor") ||
-        userEmail.includes("bacsi") ||
-        userEmail.startsWith("dr.");
+      const isDoctor = role === "specialist" || isDirectDoctorEmail;
 
       if (isDoctor) {
         setSuccess("Đăng nhập Bác sĩ thành công! Đang mở Cổng Bác sĩ Chuyên khoa...");
         setTimeout(() => {
           setIsOpen(false);
-          if (status === "pending" || userEmail.includes("tuan")) {
+          if (status === "pending") {
             router.push("/specialist?status=pending");
           } else {
             router.push("/specialist");
           }
+          router.refresh();
         }, 300);
         return;
       }
@@ -295,17 +329,44 @@ export function AuthModal({
     }
   }
 
+  async function submitApprovalRequest(role: "doctor" | "shop", body: Record<string, unknown>, successMessage: string, fallbackError: string) {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      const json = await res.json();
+      if (!res.ok || json.error) {
+        if (res.status === 409 && typeof json.error === "string" && json.error.includes("đã được đăng ký")) {
+          setNeedsEmailSignInFor(role);
+        }
+        throw new Error(json.error || fallbackError);
+      }
+
+      setSuccess(successMessage);
+      setLoading(false);
+      onSubmitted?.();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : fallbackError);
+      setLoading(false);
+    }
+  }
+
   async function handleDoctorApprovalSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setSuccess(null);
+    setNeedsEmailSignInFor(null);
 
     const validation = validateDoctorApprovalInput({
       fullName: docName,
       licenseId: docLicenseId,
       hospital: docHospital,
       email: docEmail,
-      password: docPassword,
+      password: isDoctorSubmittingAsSignedIn ? undefined : docPassword,
       phoneNumber: docPhone,
       specialty: docSpecialty,
     });
@@ -320,47 +381,33 @@ export function AuthModal({
       licenseId: docLicenseId,
       hospital: docHospital,
       email: docEmail,
-      password: docPassword,
+      password: isDoctorSubmittingAsSignedIn ? undefined : docPassword,
       phoneNumber: docPhone,
       specialty: docSpecialty,
     });
 
-    setLoading(true);
-    try {
-      const res = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: payload.email,
-          password: payload.password,
-          fullName: payload.fullName,
-          role: "specialist",
-          phoneNumber: payload.phoneNumber,
-          specialty: payload.specialty,
-          licenseId: payload.licenseId,
-          hospital: payload.hospital,
-        }),
-      });
-
-      const json = await res.json();
-      if (!res.ok || json.error) {
-        throw new Error(json.error || "Gửi yêu cầu thất bại.");
-      }
-
-      setSuccess(
-        "Hồ sơ Bác sĩ đã được gửi thành công! Ban quản trị sẽ xét duyệt Chứng chỉ hành nghề. Sau khi duyệt, bạn có thể đăng nhập vào cổng chuyên gia.",
-      );
-      setLoading(false);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Gửi yêu cầu thất bại.");
-      setLoading(false);
-    }
+    await submitApprovalRequest(
+      "doctor",
+      {
+        email: payload.email,
+        ...(payload.password ? { password: payload.password } : {}),
+        fullName: payload.fullName,
+        role: "specialist",
+        phoneNumber: payload.phoneNumber,
+        specialty: payload.specialty,
+        licenseId: payload.licenseId,
+        hospital: payload.hospital,
+      },
+      "Hồ sơ Bác sĩ đã được gửi thành công! Ban quản trị sẽ xét duyệt Chứng chỉ hành nghề. Sau khi duyệt, bạn có thể đăng nhập vào cổng chuyên gia.",
+      "Gửi yêu cầu thất bại.",
+    );
   }
 
   async function handleShopApprovalSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setSuccess(null);
+    setNeedsEmailSignInFor(null);
 
     const validation = validateShopApprovalInput({
       shopName: shopNameInput,
@@ -369,7 +416,7 @@ export function AuthModal({
       category: shopCategory,
       address: shopAddress,
       email: shopEmail,
-      password: shopPassword,
+      password: isShopSubmittingAsSignedIn ? undefined : shopPassword,
       phoneNumber: shopPhone,
     });
 
@@ -385,41 +432,26 @@ export function AuthModal({
       category: shopCategory,
       address: shopAddress,
       email: shopEmail,
-      password: shopPassword,
+      password: isShopSubmittingAsSignedIn ? undefined : shopPassword,
       phoneNumber: shopPhone,
     });
 
-    setLoading(true);
-    try {
-      const res = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: payload.email,
-          password: payload.password,
-          fullName: payload.ownerName,
-          role: "shop",
-          phoneNumber: payload.phoneNumber,
-          shopName: payload.shopName,
-          license: payload.license,
-          category: payload.category,
-          address: payload.address,
-        }),
-      });
-
-      const json = await res.json();
-      if (!res.ok || json.error) {
-        throw new Error(json.error || "Gửi yêu cầu mở gian hàng thất bại.");
-      }
-
-      setSuccess(
-        "Hồ sơ mở Gian hàng đã được gửi thành công! Super Admin Trần Thị Ngọc Hà sẽ xét duyệt Giấy phép kinh doanh & Danh mục sản phẩm. Sau khi duyệt, bạn có thể đăng nhập vào Kênh Người Bán (SkinSense Mall).",
-      );
-      setLoading(false);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Gửi yêu cầu mở gian hàng thất bại.");
-      setLoading(false);
-    }
+    await submitApprovalRequest(
+      "shop",
+      {
+        email: payload.email,
+        ...(payload.password ? { password: payload.password } : {}),
+        fullName: payload.ownerName,
+        role: "shop",
+        phoneNumber: payload.phoneNumber,
+        shopName: payload.shopName,
+        license: payload.license,
+        category: payload.category,
+        address: payload.address,
+      },
+      "Hồ sơ mở Gian hàng đã được gửi thành công! Super Admin Trần Thị Ngọc Hà sẽ xét duyệt Giấy phép kinh doanh & Danh mục sản phẩm. Sau khi duyệt, bạn có thể đăng nhập vào Kênh Người Bán (SkinSense Mall).",
+      "Gửi yêu cầu mở gian hàng thất bại.",
+    );
   }
 
   return (
@@ -551,10 +583,19 @@ export function AuthModal({
               {error && (
                 <div
                   role="alert"
-                  className="mb-4 flex items-start gap-2.5 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-xs leading-5 text-destructive"
+                  className="mb-4 flex flex-col gap-2.5 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-xs leading-5 text-destructive"
                 >
-                  <AlertCircle className="mt-0.5 size-4 shrink-0" />
-                  <span>{error}</span>
+                  <div className="flex items-start gap-2.5">
+                    <AlertCircle className="mt-0.5 size-4 shrink-0" />
+                    <span>{error}</span>
+                  </div>
+                  {needsEmailSignInFor && (
+                    <GoogleOAuthButton
+                      next={needsEmailSignInFor === "doctor" ? "/?apply=doctor" : "/?apply=shop"}
+                      label="Đăng nhập bằng Gmail để tiếp tục nộp hồ sơ"
+                      className="flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-foreground/25 bg-card px-3 text-xs font-semibold text-foreground shadow-xs transition hover:border-foreground cursor-pointer"
+                    />
+                  )}
                 </div>
               )}
               {success && (
@@ -910,22 +951,28 @@ export function AuthModal({
                     </div>
                   </div>
 
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-foreground">
-                      Mật khẩu khởi tạo (≥ 6 ký tự) *
-                    </label>
-                    <div className="relative">
-                      <Lock className="absolute top-3 left-3 size-4 text-muted-foreground" />
-                      <input
-                        type="password"
-                        required
-                        value={docPassword}
-                        onChange={(e) => setDocPassword(e.target.value)}
-                        placeholder="••••••••"
-                        className="h-9.5 w-full rounded-lg border border-border bg-background pr-3 pl-9 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                      />
+                  {isDoctorSubmittingAsSignedIn ? (
+                    <div className="rounded-lg border border-emerald-600/25 bg-emerald-500/5 px-3 py-2 text-[11.5px] text-emerald-900 dark:text-emerald-200">
+                      Đang nộp hồ sơ bằng tài khoản đã đăng nhập (<strong>{signedInUser?.email}</strong>) — không cần tạo mật khẩu mới.
                     </div>
-                  </div>
+                  ) : (
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-foreground">
+                        Mật khẩu khởi tạo (≥ 6 ký tự) *
+                      </label>
+                      <div className="relative">
+                        <Lock className="absolute top-3 left-3 size-4 text-muted-foreground" />
+                        <input
+                          type="password"
+                          required
+                          value={docPassword}
+                          onChange={(e) => setDocPassword(e.target.value)}
+                          placeholder="••••••••"
+                          className="h-9.5 w-full rounded-lg border border-border bg-background pr-3 pl-9 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                        />
+                      </div>
+                    </div>
+                  )}
 
                   <button
                     type="submit"
@@ -1071,22 +1118,28 @@ export function AuthModal({
                     </div>
                   </div>
 
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-foreground">
-                      Mật khẩu khởi tạo (≥ 6 ký tự) *
-                    </label>
-                    <div className="relative">
-                      <Lock className="absolute top-3 left-3 size-4 text-muted-foreground" />
-                      <input
-                        type="password"
-                        required
-                        value={shopPassword}
-                        onChange={(e) => setShopPassword(e.target.value)}
-                        placeholder="••••••••"
-                        className="h-9.5 w-full rounded-lg border border-border bg-background pr-3 pl-9 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                      />
+                  {isShopSubmittingAsSignedIn ? (
+                    <div className="rounded-lg border border-amber-600/25 bg-amber-500/5 px-3 py-2 text-[11.5px] text-amber-900 dark:text-amber-200">
+                      Đang nộp hồ sơ bằng tài khoản đã đăng nhập (<strong>{signedInUser?.email}</strong>) — không cần tạo mật khẩu mới.
                     </div>
-                  </div>
+                  ) : (
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-foreground">
+                        Mật khẩu khởi tạo (≥ 6 ký tự) *
+                      </label>
+                      <div className="relative">
+                        <Lock className="absolute top-3 left-3 size-4 text-muted-foreground" />
+                        <input
+                          type="password"
+                          required
+                          value={shopPassword}
+                          onChange={(e) => setShopPassword(e.target.value)}
+                          placeholder="••••••••"
+                          className="h-9.5 w-full rounded-lg border border-border bg-background pr-3 pl-9 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                        />
+                      </div>
+                    </div>
+                  )}
 
                   <button
                     type="submit"

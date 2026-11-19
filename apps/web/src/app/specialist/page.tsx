@@ -25,6 +25,7 @@ import { LogoMark } from "@/components/site-header";
 import { SafeProductImage } from "@/components/safe-product-image";
 import { PatientPhoto } from "@/components/patient-photo";
 import { ImageUploader } from "@/components/cloudinary-product-uploader";
+import { AuthModal } from "@/components/auth-modal";
 
 function computeFutureDateIso(daysAhead: number): string {
   return new Date(Date.now() + daysAhead * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
@@ -337,14 +338,15 @@ function SpecialistContent() {
 
   const [isPending, setIsPending] = useState(false);
 
-  useEffect(() => {
-    fetch("/api/auth/me")
+  const refreshAuthMe = () => {
+    fetch("/api/auth/me", { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
         if (data.authenticated && data.user) {
-          if (data.user.role === "doctor_pending") {
-            setIsPending(true);
-          }
+          const pendingDoctor =
+            data.user.role === "doctor_pending" ||
+            (data.user.role === "specialist" && data.user.status === "pending");
+          setIsPending(pendingDoctor);
           setDoctorProfile((prev) => ({
             ...prev,
             name: data.user.fullName || prev.name,
@@ -355,6 +357,10 @@ function SpecialistContent() {
         }
       })
       .catch(() => {});
+  };
+
+  useEffect(() => {
+    refreshAuthMe();
   }, []);
 
   // Only the cases patients really sent. The sample cases (INITIAL_PATIENT_CASES) used to fill the
@@ -567,13 +573,35 @@ function SpecialistContent() {
               ? "Vui lòng đăng nhập bằng tài khoản Bác sĩ đã được duyệt để xem bệnh án."
               : "Tài khoản của bạn chưa được cấp quyền Bác sĩ. Hồ sơ đăng ký Bác sĩ cần được Ban quản trị duyệt trước."}
           </p>
-          <Link
-            href={access === "signed-out" ? "/" : "/app"}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#2D5A43] px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90 transition"
-          >
-            <Home className="size-4" />
-            <span>{access === "signed-out" ? "Về trang chủ để đăng nhập" : "Về trang soi da"}</span>
-          </Link>
+          {access === "denied" && isPending && (
+            <div className="rounded-2xl border border-amber-600/30 bg-amber-500/10 p-4 text-left text-xs text-amber-950 space-y-1">
+              <div className="font-bold">Hồ sơ Bác sĩ đang chờ Super Admin duyệt</div>
+              {doctorProfile.licenseNumber && (
+                <div>Số CCHN: <span className="font-mono font-semibold">{doctorProfile.licenseNumber}</span></div>
+              )}
+              {doctorProfile.hospital && <div>Đơn vị: {doctorProfile.hospital}</div>}
+            </div>
+          )}
+          <div className="flex flex-col gap-2.5 pt-1">
+            {access === "denied" && (
+              <AuthModal
+                defaultTab="doctor-approval"
+                triggerLabel={isPending ? "Cập nhật hồ sơ Bác sĩ" : "Gửi hồ sơ đăng ký Bác sĩ ngay"}
+                triggerClassName="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#2D5A43]/40 bg-[#2D5A43]/10 px-5 py-2.5 text-sm font-semibold text-[#2D5A43] hover:bg-[#2D5A43]/20 transition cursor-pointer"
+                onSubmitted={() => {
+                  refreshAuthMe();
+                  refreshCases();
+                }}
+              />
+            )}
+            <Link
+              href={access === "signed-out" ? "/" : "/app"}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#2D5A43] px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90 transition"
+            >
+              <Home className="size-4" />
+              <span>{access === "signed-out" ? "Về trang chủ để đăng nhập" : "Về trang soi da"}</span>
+            </Link>
+          </div>
         </div>
       </div>
     );

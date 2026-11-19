@@ -39,6 +39,7 @@ import { toast } from "sonner";
 import { LogoMark } from "@/components/site-header";
 import { SafeProductImage } from "@/components/safe-product-image";
 import { InitialsAvatar } from "@/components/initials-avatar";
+import { sortAdminRecords } from "@/lib/admin-sort";
 import {
   type RoutineStep,
   type RoleRoutine,
@@ -58,6 +59,7 @@ export interface SystemUser {
   role: RoleType;
   status: UserStatus;
   createdAt: string;
+  submittedAt?: string;
   avatarUrl?: string;
   shopDetails?: {
     shopName: string;
@@ -199,7 +201,7 @@ export default function AdminDashboardPage() {
   const [productFilter, setProductFilter] = useState<"all" | "pending" | "approved">("pending");
 
   // State for Specialists
-  const [specialistFilter, setSpecialistFilter] = useState<"all" | "pending" | "active">("all");
+  const [specialistFilter, setSpecialistFilter] = useState<"all" | "pending" | "active" | "rejected">("all");
   const [inspectingSpecialist, setInspectingSpecialist] = useState<SystemUser | null>(null);
 
   // State for Orders
@@ -223,7 +225,7 @@ export default function AdminDashboardPage() {
 
   // Filtered Users
   const filteredUsers = useMemo(() => {
-    return users.filter((u) => {
+    const matched = users.filter((u) => {
       if (selectedRoleFilter === "pending") {
         if (u.status !== "pending") return false;
       } else if (selectedRoleFilter !== "all") {
@@ -236,10 +238,12 @@ export default function AdminDashboardPage() {
         const matchEmail = u.email.toLowerCase().includes(q);
         const matchPhone = u.phone.includes(q);
         const matchShop = u.shopDetails?.shopName.toLowerCase().includes(q);
-        return matchName || matchEmail || matchPhone || matchShop;
+        const matchCchn = u.specialistDetails?.licenseId.toLowerCase().includes(q);
+        return matchName || matchEmail || matchPhone || matchShop || matchCchn;
       }
       return true;
     });
+    return sortAdminRecords(matched);
   }, [users, selectedRoleFilter, searchQuery]);
 
   // Filtered Products
@@ -250,7 +254,7 @@ export default function AdminDashboardPage() {
 
   // Filtered Specialists
   const filteredSpecialists = useMemo(() => {
-    return users.filter((u) => {
+    const matched = users.filter((u) => {
       if (u.role !== "specialist") return false;
       if (specialistFilter !== "all" && u.status !== specialistFilter) return false;
       if (searchQuery.trim()) {
@@ -264,6 +268,7 @@ export default function AdminDashboardPage() {
       }
       return true;
     });
+    return sortAdminRecords(matched);
   }, [users, specialistFilter, searchQuery]);
 
   // Summary Metrics
@@ -278,6 +283,7 @@ export default function AdminDashboardPage() {
     const pendingOrdersCount = orders.filter((o) => o.status === "pending").length;
     const pendingShopsCount = users.filter((u) => u.role === "shop" && u.status === "pending").length;
     const pendingSpecialistsCount = users.filter((u) => u.role === "specialist" && u.status === "pending").length;
+    const pendingAccountsCount = pendingShopsCount + pendingSpecialistsCount;
 
     return {
       totalRevenue,
@@ -286,9 +292,19 @@ export default function AdminDashboardPage() {
       pendingOrdersCount,
       pendingShopsCount,
       pendingSpecialistsCount,
+      pendingAccountsCount,
       totalUsers: users.length,
     };
   }, [orders, products, users]);
+
+  function refreshUsersQuietly() {
+    callApi<{ users?: SystemUser[] }>("/api/admin/users")
+      .then((json) => {
+        setUsers(sortAdminRecords(json.users ?? []));
+        setLoadState((prev) => ({ ...prev, users: "ready" }));
+      })
+      .catch(() => {});
+  }
 
   // Load the real data. A failed load shows an error state (it used to keep sample rows).
   useEffect(() => {
@@ -303,7 +319,7 @@ export default function AdminDashboardPage() {
           toast.error(`Không tải được dữ liệu: ${err.message}`);
         });
 
-    load<SystemUser>("users", "/api/admin/users", (j) => (j.users as SystemUser[]) ?? [], setUsers);
+    load<SystemUser>("users", "/api/admin/users", (j) => sortAdminRecords((j.users as SystemUser[]) ?? []), setUsers);
     load<ProductItem>("products", "/api/admin/products", (j) => (j.products as ProductItem[]) ?? [], setProducts);
     load<OrderItem>("orders", "/api/admin/orders", (j) => (j.orders as OrderItem[]) ?? [], setOrders);
 
@@ -642,7 +658,10 @@ export default function AdminDashboardPage() {
         <div className="max-w-[1440px] w-full mx-auto flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="inline-flex p-1 rounded-xl bg-surface-2/70 border border-border gap-1 overflow-x-auto scrollbar-none">
             <button
-              onClick={() => setCurrentTab("users")}
+              onClick={() => {
+                setCurrentTab("users");
+                refreshUsersQuietly();
+              }}
               className={`flex items-center gap-2 py-2 px-4 rounded-lg text-xs font-semibold transition cursor-pointer whitespace-nowrap ${
                 currentTab === "users"
                   ? "bg-card text-foreground shadow-xs border border-border"
@@ -651,15 +670,18 @@ export default function AdminDashboardPage() {
             >
               <Users className="size-4" />
               <span>Phân quyền 4 Role</span>
-              {summaryMetrics.pendingShopsCount > 0 && (
+              {summaryMetrics.pendingAccountsCount > 0 && (
                 <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-800 text-amber-50 font-bold">
-                  {summaryMetrics.pendingShopsCount}
+                  {summaryMetrics.pendingAccountsCount}
                 </span>
               )}
             </button>
 
             <button
-              onClick={() => setCurrentTab("specialists")}
+              onClick={() => {
+                setCurrentTab("specialists");
+                refreshUsersQuietly();
+              }}
               className={`flex items-center gap-2 py-2 px-4 rounded-lg text-xs font-semibold transition cursor-pointer whitespace-nowrap ${
                 currentTab === "specialists"
                   ? "bg-card text-foreground shadow-xs border border-border"
@@ -811,12 +833,17 @@ export default function AdminDashboardPage() {
                     <Stethoscope className="size-4.5" />
                   </div>
                 </div>
-                <div className="mt-4">
+                <div className="mt-4 flex items-baseline justify-between">
                   <span className="text-2xl sm:text-3xl font-display font-bold text-foreground">
                     {users.filter((u) => u.role === "specialist").length}
                   </span>
-                  <p className="text-xs text-muted-foreground mt-1">Tư vấn & kê phác đồ da</p>
+                  {summaryMetrics.pendingSpecialistsCount > 0 && (
+                    <span className="px-2.5 py-0.5 text-[11px] font-semibold rounded-full bg-emerald-700/15 text-emerald-950 dark:text-emerald-200 border border-emerald-800/30">
+                      {summaryMetrics.pendingSpecialistsCount} chờ duyệt
+                    </span>
+                  )}
                 </div>
+                <p className="text-xs text-muted-foreground mt-1">Tư vấn & kê phác đồ da</p>
               </div>
 
               <div
@@ -837,6 +864,28 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
             </div>
+
+            {summaryMetrics.pendingSpecialistsCount > 0 && (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-emerald-700/30 bg-emerald-500/10 px-4 py-3 text-xs sm:text-sm">
+                <div className="flex items-center gap-2.5 text-emerald-950 dark:text-emerald-200">
+                  <Stethoscope className="size-4.5 text-emerald-700 dark:text-emerald-400 shrink-0" />
+                  <span>
+                    Có <strong>{summaryMetrics.pendingSpecialistsCount}</strong> hồ sơ Bác sĩ Da liễu mới đang chờ đối soát CCHN &amp; phê duyệt.
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCurrentTab("specialists");
+                    setSpecialistFilter("pending");
+                    refreshUsersQuietly();
+                  }}
+                  className="self-start sm:self-auto px-3.5 py-1.5 rounded-lg bg-emerald-700 text-white text-xs font-semibold hover:bg-emerald-600 transition cursor-pointer shrink-0"
+                >
+                  Duyệt Bác sĩ ngay →
+                </button>
+              </div>
+            )}
 
             {/* Filter Bar */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -900,7 +949,7 @@ export default function AdminDashboardPage() {
                   }`}
                 >
                   <span className="size-2 rounded-full bg-amber-800 dark:bg-amber-400" />
-                  Cần duyệt ({summaryMetrics.pendingShopsCount})
+                  Cần duyệt ({summaryMetrics.pendingAccountsCount})
                 </button>
               </div>
 
@@ -951,6 +1000,13 @@ export default function AdminDashboardPage() {
                                   <span className="text-[11px] text-amber-900 dark:text-amber-300 font-medium mt-1 flex items-center gap-1.5">
                                     <Store className="size-3" />
                                     {user.shopDetails.shopName}
+                                  </span>
+                                )}
+                                {user.specialistDetails && (
+                                  <span className="text-[11px] text-emerald-900 dark:text-emerald-300 font-medium mt-1 flex items-center gap-1.5">
+                                    <Stethoscope className="size-3" />
+                                    {user.specialistDetails.licenseId || "Chờ đối soát CCHN"}
+                                    {user.specialistDetails.hospital ? ` · ${user.specialistDetails.hospital}` : ""}
                                   </span>
                                 )}
                               </div>
@@ -1039,6 +1095,15 @@ export default function AdminDashboardPage() {
                                   >
                                     Xem CCHN
                                   </button>
+                                  {user.status === "pending" && (
+                                    <button
+                                      onClick={() => handleRejectSpecialist(user.id, user.name)}
+                                      disabled={saving.has(`user:${user.id}`)}
+                                      className="px-3 py-1.5 rounded-md text-xs font-semibold text-rose-800 dark:text-rose-300 hover:bg-rose-500/10 border border-rose-600/30 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                      Từ chối
+                                    </button>
+                                  )}
                                   <button
                                     onClick={() => handleApproveSpecialist(user.id, user.name)}
                                     disabled={saving.has(`user:${user.id}`)}
@@ -1163,6 +1228,16 @@ export default function AdminDashboardPage() {
                   }`}
                 >
                   Đã phê duyệt ({users.filter((u) => u.role === "specialist" && u.status === "active").length})
+                </button>
+                <button
+                  onClick={() => setSpecialistFilter("rejected")}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-medium cursor-pointer ${
+                    specialistFilter === "rejected"
+                      ? "bg-rose-700 text-white font-semibold"
+                      : "bg-card border border-border text-muted-foreground"
+                  }`}
+                >
+                  Bị từ chối ({users.filter((u) => u.role === "specialist" && u.status === "rejected").length})
                 </button>
               </div>
             </div>

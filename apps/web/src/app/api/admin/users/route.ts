@@ -3,13 +3,17 @@ import { requireRoleActor } from "@/lib/session-auth";
 import { randomUUID } from "node:crypto";
 import { authzClaims, SUPER_ADMIN_EMAIL } from "@/lib/actor-role";
 import { shopIdClaim } from "@/lib/shop-utils";
-import { getSupabaseAdminClient } from "@/lib/supabase/storage-json";
+import { getSupabaseAdminClient, readStorageJsonList } from "@/lib/supabase/storage-json";
 import {
   ApprovalError,
+  REGISTRY_PATHS,
   applyAccountDecision,
+  findRegistryEntry,
   isAccountStatus,
   isGrantableRole,
   listAllUsers,
+  sortAdminRecords,
+  type RegistryEntry,
 } from "@/lib/admin-approvals";
 
 export const dynamic = "force-dynamic";
@@ -33,44 +37,90 @@ export async function GET(request: Request) {
   if (!auth.ok) return auth.response;
 
   try {
-    const users = (await listAllUsers(adminClientOr500())).map((u) => {
+    const supabaseAdmin = adminClientOr500();
+    const [rawUsers, specialistsRegistry, shopsRegistry] = await Promise.all([
+      listAllUsers(supabaseAdmin),
+      readStorageJsonList<RegistryEntry>(REGISTRY_PATHS.specialist, supabaseAdmin).catch(() => []),
+      readStorageJsonList<RegistryEntry>(REGISTRY_PATHS.shop, supabaseAdmin).catch(() => []),
+    ]);
+
+    const mapped = rawUsers.map((u) => {
       const meta = (u.user_metadata || {}) as Record<string, unknown>;
       const appMeta = (u.app_metadata || {}) as Record<string, unknown>;
       const shopDetails = (meta.shop_details as Record<string, unknown> | undefined) ?? {};
-      const isSuperAdmin = u.email?.toLowerCase() === SUPER_ADMIN_EMAIL;
-      // app_metadata is the only source of role and status: it is what grants the rights, and
-      // user_metadata is writable by the user (it used to be the fallback, so the console could
-      // show a status the account did not have).
-      const role = isSuperAdmin || appMeta.role === "admin" ? "admin" : isGrantableRole(appMeta.role) ? appMeta.role : "customer";
-      const status = isSuperAdmin ? "active" : isAccountStatus(appMeta.status) ? appMeta.status : "active";
+      const email = u.email || "";
+      const isSuperAdmin = email.toLowerCase() === SUPER_ADMIN_EMAIL;
+      const specEntry = findRegistryEntry(specialistsRegistry, u.id, email);
+      const shopEntry = findRegistryEntry(shopsRegistry, u.id, email);
+
+      // app_metadata is the authority for runtime rights; if an applicant has an open pending
+      // server-side registry application while app_metadata wasn't tagged yet, keep it visible
+      // in the admin queue so the admin can review and approve/reject it.
+      let role =
+        isSuperAdmin || appMeta.role === "admin"
+          ? "admin"
+          : isGrantableRole(appMeta.role)
+            ? appMeta.role
+            : "customer";
+      let status = isSuperAdmin ? "active" : isAccountStatus(appMeta.status) ? appMeta.status : "active";
+
+      if (!isSuperAdmin && role === "customer") {
+        if (specEntry?.status === "pending" || specEntry?.status === "rejected") {
+          role = "specialist";
+          status = specEntry.status;
+        } else if (shopEntry?.status === "pending" || shopEntry?.status === "rejected") {
+          role = "shop";
+          status = shopEntry.status;
+        }
+      }
+
+      const submittedAt =
+        (role === "specialist" ? text(specEntry?.submittedAt) : role === "shop" ? text(shopEntry?.submittedAt) : "") ||
+        text(meta.submitted_at) ||
+        u.created_at ||
+        "";
 
       return {
         id: u.id,
         name: isSuperAdmin
           ? "Trần Thị Ngọc Hà (Super Admin)"
-          : text(meta.full_name) || text(meta.name) || u.email?.split("@")[0] || "Người dùng",
-        email: u.email || "",
-        phone: text(meta.phone_number) || u.phone || "",
+          : (role === "specialist" ? text(specEntry?.name) : role === "shop" ? text(shopEntry?.ownerName) : "") ||
+            text(meta.full_name) ||
+            text(meta.name) ||
+            email.split("@")[0] ||
+            "Người dùng",
+        email,
+        phone:
+          (role === "specialist" ? text(specEntry?.phone) : role === "shop" ? text(shopEntry?.phone) : "") ||
+          text(meta.phone_number) ||
+          u.phone ||
+          "",
         role,
         status,
         createdAt: u.created_at ? u.created_at.split("T")[0] : "",
+        submittedAt,
         avatarUrl: text(meta.avatar_url) || text(meta.picture) || undefined,
         shopDetails:
           role === "shop"
             ? {
-                shopName: text(meta.shop_name) || text(shopDetails.shopName) || text(meta.full_name),
-                license: text(meta.license) || text(shopDetails.license),
-                category: text(meta.category) || text(shopDetails.category),
-                address: text(meta.address) || text(shopDetails.address),
+                shopName: text(shopEntry?.shopName) || text(meta.shop_name) || text(shopDetails.shopName) || text(meta.full_name),
+                license: text(shopEntry?.license) || text(meta.license) || text(shopDetails.license),
+                category: text(shopEntry?.category) || text(meta.category) || text(shopDetails.category),
+                address: text(shopEntry?.address) || text(meta.address) || text(shopDetails.address),
               }
             : undefined,
         specialistDetails:
           role === "specialist"
-            ? { hospital: text(meta.hospital), licenseId: text(meta.license_id), specialty: text(meta.specialty) }
+            ? {
+                hospital: text(specEntry?.hospital) || text(meta.hospital),
+                licenseId: text(specEntry?.licenseId) || text(meta.license_id),
+                specialty: text(specEntry?.specialty) || text(meta.specialty),
+              }
             : undefined,
       };
     });
 
+    const users = sortAdminRecords(mapped);
     return NextResponse.json({ ok: true, users });
   } catch (err) {
     return errorResponse(err, "Không tải được danh sách người dùng.");

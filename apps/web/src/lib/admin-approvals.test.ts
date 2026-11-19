@@ -112,4 +112,26 @@ describe("applyAccountDecision", () => {
     await expect(applyAccountDecision(fakeClient(), "u1", { status: "active" })).rejects.toThrow(/chưa đồng bộ được hồ sơ/);
     expect(files["shops/shops_registry.json"]).toHaveLength(2);
   });
+
+  it("allows approving a legacy specialist whose pending application exists in specialists_registry.json", async () => {
+    user = {
+      id: "u2",
+      email: "legacy.doc@example.test",
+      app_metadata: {},
+      user_metadata: { role: "specialist", status: "pending", full_name: "BS Legacy" },
+    };
+    files["specialists/specialists_registry.json"] = [
+      { id: "u2", email: "legacy.doc@example.test", status: "pending", licenseId: "CCHN-111" },
+    ];
+    const result = await applyAccountDecision(fakeClient(), "u2", {
+      role: "specialist",
+      status: "active",
+      expectRole: "specialist",
+    });
+    expect(result).toMatchObject({ id: "u2", role: "specialist", status: "active" });
+    expect(updateUserById.mock.calls[0][1].app_metadata).toMatchObject({ role: "specialist", status: "active" });
+    expect(files["specialists/specialists_registry.json"]).toEqual([
+      expect.objectContaining({ id: "u2", status: "active" }),
+    ]);
+  });
 });

@@ -266,6 +266,43 @@ test("a doctor applies on the landing page, is approved in Duyệt Bác sĩ, and
   }
 });
 
+test("a signed-in customer applies as a doctor from /specialist and appears at the top of the admin queue without searching", async ({ browser }) => {
+  test.setTimeout(180_000);
+  const tag = runTag();
+  const customer = await pool("customer", `cust-doc-${tag}`, { fullName: `BS. Customer ${tag}` });
+  const adminUser = await pool("admin");
+
+  await withContext(browser, customer, async (_ctx, docPage) => {
+    const errors = collectPageErrors(docPage);
+    await docPage.goto("/specialist");
+    await docPage.getByRole("button", { name: /Gửi hồ sơ đăng ký Bác sĩ ngay/ }).click();
+    await expect(docPage.getByPlaceholder("bacsi.tuan@gmail.com")).toHaveValue(customer.email);
+    await docPage.getByPlaceholder("CCHN-008812/BYT").fill(`CCHN-CUST-${tag}`);
+    await docPage.getByPlaceholder("Bệnh viện Da Liễu Trung Ương").fill("BV Da Liễu E2E");
+    await docPage.getByPlaceholder("0918 222 333").fill("0900000019");
+    await docPage.getByRole("button", { name: "Gửi yêu cầu duyệt Bác sĩ" }).click();
+    await expect(docPage.getByText(/Hồ sơ Bác sĩ đã được gửi thành công/)).toBeVisible({ timeout: 20_000 });
+    expect(errors).toEqual([]);
+  });
+
+  await withContext(browser, adminUser, async (_ctx, adminPage) => {
+    const errors = collectPageErrors(adminPage);
+    await adminPage.goto("/admin");
+    await expect(adminPage.getByRole("button", { name: /Cần duyệt \([1-9]/ })).toBeVisible({ timeout: 30_000 });
+    await expect(adminPage.getByRole("button", { name: "Duyệt Bác sĩ ngay →" })).toBeVisible();
+    await adminPage.getByRole("button", { name: "Duyệt Bác sĩ ngay →" }).click();
+    const topRows = adminPage.locator("tbody tr");
+    await expect(topRows.first()).toContainText(`CCHN-CUST-${tag}`, { timeout: 20_000 });
+    await adminPage.getByRole("row").filter({ hasText: customer.email }).getByRole("button", { name: "Phê duyệt" }).click();
+    await expect(adminPage.getByText(/Đã phê duyệt CCHN & kích hoạt tài khoản Bác sĩ/)).toBeVisible({ timeout: 20_000 });
+    expect(errors).toEqual([]);
+  });
+
+  await withContext(browser, customer, async (context) => {
+    expect((await context.request.get("/api/specialist/cases")).status()).toBe(200);
+  });
+});
+
 test("the admin rejects a doctor application: rejected, and the portal stays closed", async ({ browser, request }) => {
   const doctor = await applyByApi(request, "specialist", runTag());
   const adminUser = await pool("admin");

@@ -34,8 +34,9 @@
     "data": "Data",
     "history": "Photo history",
     "export": "Export data (.csv)",
-    "sellerGroup": "For shops",
-    "sellerLink": "Seller channel"
+    "sellerGroup": "For shops & partners",
+    "sellerLink": "Seller channel",
+    "doctorLink": "Doctor portal / Apply"
   },
   "Feedback": {
     "title": "Feedback",

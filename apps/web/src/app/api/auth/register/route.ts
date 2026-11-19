@@ -99,6 +99,12 @@ export async function POST(request: Request) {
         );
       }
       const currentApp = (existingUser.app_metadata || {}) as Record<string, unknown>;
+      if (currentApp.role === "admin") {
+        return NextResponse.json(
+          { error: "Tài khoản quản trị viên không thể đăng ký lại qua biểu mẫu." },
+          { status: 409 },
+        );
+      }
       const alreadyApproved = currentApp.role === effectiveRole && currentApp.status === "active";
       const { data: updated, error: updateErr } = await supabaseAdmin.auth.admin.updateUserById(existingUser.id, {
         user_metadata: {

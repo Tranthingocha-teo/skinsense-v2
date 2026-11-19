@@ -5,8 +5,10 @@ import {
   ApprovalError,
   REGISTRY_PATHS,
   applyAccountDecision,
+  findRegistryEntry,
   isAccountStatus,
   listAllUsers,
+  sortAdminRecords,
 } from "@/lib/admin-approvals";
 
 export const dynamic = "force-dynamic";
@@ -44,25 +46,39 @@ export async function GET(request: Request) {
       listAllUsers(admin),
     ]);
 
-    const specialists = users
-      .filter((u) => u.app_metadata?.role === "specialist")
+    const mapped = users
       .map((u) => {
         const email = (u.email ?? "").toLowerCase();
-        const entry = registry.find((s) => s.id === u.id || s.email?.toLowerCase() === email) ?? {};
+        const entry = findRegistryEntry(registry, u.id, email);
+        const isPendingRegistry =
+          (!u.app_metadata?.role || u.app_metadata?.role === "customer") &&
+          (entry?.status === "pending" || entry?.status === "rejected");
+        if (u.app_metadata?.role !== "specialist" && !isPendingRegistry) return null;
+
         const meta = (u.user_metadata ?? {}) as Record<string, string | undefined>;
+        const status =
+          u.app_metadata?.role === "specialist" && isAccountStatus(u.app_metadata?.status)
+            ? u.app_metadata.status
+            : isAccountStatus(entry?.status)
+              ? entry.status
+              : "active";
         return {
-          ...entry,
+          ...(entry ?? {}),
           id: u.id,
           email,
-          name: entry.name || meta.full_name || email.split("@")[0],
-          phone: entry.phone || meta.phone_number || "",
-          specialty: entry.specialty || meta.specialty || "",
-          licenseId: entry.licenseId || meta.license_id || "",
-          hospital: entry.hospital || meta.hospital || "",
-          submittedAt: entry.submittedAt || meta.submitted_at || u.created_at,
-          status: isAccountStatus(u.app_metadata?.status) ? u.app_metadata.status : "active",
+          name: entry?.name || meta.full_name || email.split("@")[0],
+          phone: entry?.phone || meta.phone_number || "",
+          specialty: entry?.specialty || meta.specialty || "",
+          licenseId: entry?.licenseId || meta.license_id || "",
+          hospital: entry?.hospital || meta.hospital || "",
+          submittedAt: entry?.submittedAt || meta.submitted_at || u.created_at,
+          createdAt: u.created_at,
+          status,
         };
-      });
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== null);
+
+    const specialists = sortAdminRecords(mapped);
 
     return NextResponse.json({ ok: true, specialists });
   } catch (err) {
