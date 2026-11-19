@@ -1,7 +1,7 @@
 "use client";
 
 import { ZONES, type CaptureIssue, type Landmark } from "@skinsense/domain";
-import { useFormatter, useTranslations } from "next-intl";
+import { useFormatter, useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { useEffect, useReducer, useRef, useState, type ReactNode } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -81,6 +81,7 @@ export function Capture({ api = realApi }: { api?: CaptureApi }) {
   const t = useTranslations("Capture");
   const tc = useTranslations("Common");
   const format = useFormatter();
+  const locale = useLocale();
   const videoRef = useRef<HTMLVideoElement>(null);
   const overlayRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<Engine>(null);
@@ -293,8 +294,20 @@ export function Capture({ api = realApi }: { api?: CaptureApi }) {
       </div>
     );
   } else {
+    const prepTips =
+      locale === "vi"
+        ? ["Mặt mộc không trang điểm", "Ánh sáng đều từ phía trước", "Giữ thẳng mặt trong khung"]
+        : ["Bare skin, no makeup", "Even front lighting", "Center face in oval"];
     aside = (
-      <div className="flex w-[300px] shrink-0 flex-col gap-9">
+      <div className="flex w-[300px] shrink-0 flex-col gap-7">
+        <ul className="flex flex-col gap-2 rounded-2xl border border-foreground/10 bg-card px-4 py-3.5 text-[12.5px] font-light text-muted-foreground">
+          {prepTips.map((tip) => (
+            <li key={tip} className="flex items-center gap-2">
+              <span className="size-1.5 shrink-0 rounded-full bg-success" aria-hidden />
+              <span>{tip}</span>
+            </li>
+          ))}
+        </ul>
         <p className="text-[15px] leading-[1.6] font-light text-pretty text-muted-foreground">{t("keepDistance")}</p>
         <div className={`flex items-center gap-4 ${phase === "live" ? "" : "opacity-40"}`}>
           <button
@@ -302,7 +315,7 @@ export function Capture({ api = realApi }: { api?: CaptureApi }) {
             onClick={shutter}
             disabled={phase !== "live"}
             aria-label={shutterLabel}
-            className="grid size-[68px] place-items-center rounded-4xl border-[1.5px] border-foreground/55"
+            className="grid size-[68px] place-items-center rounded-4xl border-[1.5px] border-foreground/55 transition-colors hover:border-foreground cursor-pointer disabled:cursor-default"
           >
             <span className="size-[54px] rounded-4xl bg-primary" />
           </button>

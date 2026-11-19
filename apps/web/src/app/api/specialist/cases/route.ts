@@ -211,3 +211,70 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: err instanceof Error ? err.message : "Lưu phác đồ thất bại" }, { status: 500 });
   }
 }
+
+/** Updates a shared clinical case status (e.g. completing treatment lifecycle) under atomic store lock. */
+export async function PATCH(request: Request) {
+  const auth = await requireRoleActor(request, ["specialist", "admin"]);
+  if (!auth.ok) return auth.response;
+  const { actor } = auth;
+
+  try {
+    const body = (await request.json().catch(() => null)) as {
+      caseId?: unknown;
+      status?: unknown;
+      clinicalSummary?: unknown;
+    } | null;
+
+    const caseId = typeof body?.caseId === "string" ? body.caseId.trim() : "";
+    const status = body?.status === "completed" || body?.status === "in_treatment" ? body.status : null;
+    if (!caseId || !status) {
+      return NextResponse.json({ ok: false, error: "Thiếu caseId hoặc trạng thái cập nhật không hợp lệ." }, { status: 400 });
+    }
+
+    const clinicalSummary = typeof body?.clinicalSummary === "string" ? body.clinicalSummary.trim() : "";
+    const supabase = getSupabaseAdmin();
+    let updatedCase: StoredClinicalCase | null = null;
+
+    await withStoreLock(CASES_PATH, async () => {
+      const fresh = await downloadStorageJson<StoredClinicalCase[]>(CASES_PATH, supabase);
+      if (!Array.isArray(fresh)) throw new Error("Không đọc được danh sách bệnh án, vui lòng thử lại.");
+      const target = fresh.find((c) => c.id === caseId || c.caseCode === caseId);
+      if (!target) {
+        return;
+      }
+
+      updatedCase = {
+        ...target,
+        status,
+        ...(status === "completed"
+          ? { completedAt: new Date().toISOString(), treatmentDay: "Đã hoàn tất liệu trình" }
+          : {}),
+        ...(clinicalSummary ? { clinicalSummary } : {}),
+        updatedBy: actor.fullName,
+      };
+
+      const nextList = fresh.map((c) => (c.id === target.id ? updatedCase! : c));
+      if (!(await uploadStorageJson(CASES_PATH, nextList, supabase))) {
+        throw new Error("Không cập nhật được trạng thái bệnh án, vui lòng thử lại.");
+      }
+    });
+
+    if (!updatedCase) {
+      return NextResponse.json({ ok: false, error: "Không tìm thấy hồ sơ bệnh án cần cập nhật." }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      ok: true,
+      case: updatedCase,
+      message:
+        status === "completed"
+          ? "Đã đánh dấu hoàn tất liệu trình theo dõi cho bệnh án."
+          : "Đã mở lại trạng thái đang điều trị cho bệnh án.",
+    });
+  } catch (err) {
+    return NextResponse.json(
+      { ok: false, error: err instanceof Error ? err.message : "Cập nhật trạng thái bệnh án thất bại" },
+      { status: 500 },
+    );
+  }
+}

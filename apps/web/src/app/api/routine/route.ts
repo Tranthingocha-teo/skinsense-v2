@@ -77,39 +77,43 @@ async function downloadJsonFromStorage<T = unknown>(supabase: SupabaseClient, pa
   return null;
 }
 
+/** Resolves the authenticated Supabase user from session cookies or Bearer authorization header. */
+async function resolveAuthenticatedUser(request: Request) {
+  let user = null;
+  try {
+    const supabaseServer = await createServerClient();
+    const { data } = await supabaseServer.auth.getUser();
+    user = data?.user ?? null;
+  } catch {
+    user = null;
+  }
+
+  if (!user) {
+    const authHeader = request.headers.get("authorization");
+    if (
+      authHeader &&
+      authHeader.startsWith("Bearer ") &&
+      process.env.NEXT_PUBLIC_SUPABASE_URL &&
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    ) {
+      const supabaseAdmin = getSupabaseAdmin();
+      const token = authHeader.slice(7).trim();
+      const { data: tokenData } = await supabaseAdmin.auth.getUser(token);
+      if (tokenData?.user) {
+        user = tokenData.user;
+      }
+    }
+  }
+  return user;
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const timeOfDay = searchParams.get("timeOfDay") || "evening"; // "morning" | "evening"
     const today = new Date().toISOString().split("T")[0];
 
-    // 1. Get current authenticated user
-    let user = null;
-    try {
-      const supabaseServer = await createServerClient();
-      const { data } = await supabaseServer.auth.getUser();
-      user = data?.user ?? null;
-    } catch {
-      user = null;
-    }
-
-    // If not found in cookie, check Authorization header (e.g. Bearer token / mobile app)
-    if (!user) {
-      const authHeader = request.headers.get("authorization");
-      if (
-        authHeader &&
-        authHeader.startsWith("Bearer ") &&
-        process.env.NEXT_PUBLIC_SUPABASE_URL &&
-        process.env.SUPABASE_SERVICE_ROLE_KEY
-      ) {
-        const supabaseAdmin = getSupabaseAdmin();
-        const token = authHeader.slice(7).trim();
-        const { data: tokenData } = await supabaseAdmin.auth.getUser(token);
-        if (tokenData?.user) {
-          user = tokenData.user;
-        }
-      }
-    }
+    const user = await resolveAuthenticatedUser(request);
 
     // Fallback if not authenticated (guest or demo) - Strict: No Mock Data, Empty if None
     if (!user) {
@@ -306,6 +310,10 @@ export async function GET(request: Request) {
       title: routineTitle,
       description: routineDescription,
       isPrescribed,
+      isDoctorPrescribed: Boolean(matchedCase?.currentRoutine?.products?.length),
+      protocolProductIds: isPrescribed
+        ? (prescribedRoutine?.products ?? []).map((p) => p.id).filter((id): id is string => Boolean(id))
+        : [],
       steps: finalSteps,
       completedCount: completed,
       totalCount: total,
@@ -319,26 +327,11 @@ export async function GET(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
-    const supabaseServer = await createServerClient();
-    let { data: { user } } = await supabaseServer.auth.getUser();
-
-    const supabaseAdmin = getSupabaseAdmin();
-
-    // If not found in cookie, check Authorization header (e.g. Bearer token / mobile app)
-    if (!user) {
-      const authHeader = request.headers.get("authorization");
-      if (authHeader && authHeader.startsWith("Bearer ")) {
-        const token = authHeader.slice(7).trim();
-        const { data: tokenData } = await supabaseAdmin.auth.getUser(token);
-        if (tokenData?.user) {
-          user = tokenData.user;
-        }
-      }
-    }
-
+    const user = await resolveAuthenticatedUser(request);
     if (!user) {
       return NextResponse.json({ error: "Vui lòng đăng nhập để lưu routine." }, { status: 401 });
     }
+    const supabaseAdmin = getSupabaseAdmin();
 
     const body = await request.json();
     const { label, isCompleted, night } = body;
@@ -390,5 +383,100 @@ export async function PATCH(request: Request) {
     });
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : "Cập nhật Supabase thất bại" }, { status: 500 });
+  }
+}
+
+/** Saves the signed-in user's self-built routine builder list to Storage and Postgres routine_items. */
+export async function PUT(request: Request) {
+  try {
+    const user = await resolveAuthenticatedUser(request);
+    if (!user) {
+      return NextResponse.json({ error: "Vui lòng đăng nhập để lưu Routine cá nhân." }, { status: 401 });
+    }
+
+    const body = (await request.json().catch(() => null)) as {
+      routineTitle?: unknown;
+      products?: unknown;
+    } | null;
+
+    if (!body || !Array.isArray(body.products)) {
+      return NextResponse.json({ error: "Danh sách sản phẩm không hợp lệ." }, { status: 400 });
+    }
+
+    const supabaseAdmin = getSupabaseAdmin();
+    const userId = user.id;
+    const meta = (user.user_metadata || {}) as Record<string, string | undefined>;
+    const userEmail = user.email?.trim().toLowerCase() || "";
+    const userName = meta.full_name || meta.name || userEmail.split("@")[0] || "Bạn";
+
+    const normalizedProducts = (body.products as RoutineProductItem[])
+      .filter((p) => typeof p?.name === "string" && p.name.trim().length > 0)
+      .slice(0, 12)
+      .map((p, idx) => ({
+        id: typeof p.id === "string" && p.id.trim() ? p.id.trim() : `custom_${idx + 1}`,
+        name: String(p.name).trim(),
+        brand: typeof p.brand === "string" && p.brand.trim() ? p.brand.trim() : "Dược mỹ phẩm",
+        category: typeof p.category === "string" && p.category.trim() ? p.category.trim() : "Chăm sóc da",
+        imageUrl: ownImageUrl(p.imageUrl) ?? "",
+        activeIngredients:
+          typeof p.activeIngredients === "string" && p.activeIngredients.trim()
+            ? p.activeIngredients.trim()
+            : "Hoạt chất chuẩn y khoa",
+        stepTime: p.stepTime === "morning" || p.stepTime === "evening" ? p.stepTime : "both",
+        dosage: typeof p.dosage === "string" && p.dosage.trim() ? p.dosage.trim() : "1 lượng vừa đủ",
+        usageGuide:
+          typeof p.usageGuide === "string" && p.usageGuide.trim()
+            ? p.usageGuide.trim()
+            : "Sử dụng đều đặn theo thứ tự bước chăm sóc da.",
+      }));
+
+    const routineTitle =
+      typeof body.routineTitle === "string" && body.routineTitle.trim()
+        ? body.routineTitle.trim()
+        : `Routine Cá Nhân · ${userName}`;
+
+    const customProtocol = {
+      userId,
+      patientEmail: userEmail,
+      patientName: userName,
+      allocatedBy: `Cá nhân (${userName})`,
+      prescribedBy: `Cá nhân (${userName})`,
+      routineTitle,
+      doctorNotes: "Chu trình cá nhân được lưu từ Sàn Dược Mỹ Phẩm SkinSense.",
+      products: normalizedProducts,
+      updatedAt: new Date().toISOString(),
+    };
+
+    const { error: uploadErr } = await supabaseAdmin.storage.from("photos").upload(
+      `routines/protocol_${userId}.json`,
+      Buffer.from(JSON.stringify(customProtocol, null, 2)),
+      { upsert: true, contentType: "application/json" },
+    );
+    if (uploadErr) {
+      throw new Error(uploadErr.message);
+    }
+
+    try {
+      await supabaseAdmin.from("routine_items").delete().eq("user_id", userId);
+      for (let i = 0; i < normalizedProducts.length; i++) {
+        await supabaseAdmin.from("routine_items").insert({
+          user_id: userId,
+          label: normalizedProducts[i].name,
+          position: i,
+        });
+      }
+    } catch {}
+
+    return NextResponse.json({
+      ok: true,
+      savedCount: normalizedProducts.length,
+      protocolProductIds: normalizedProducts.map((p) => p.id),
+      message:
+        normalizedProducts.length > 0
+          ? `Đã lưu ${normalizedProducts.length} bước vào Routine cá nhân trên tài khoản của bạn.`
+          : "Đã làm mới danh sách Routine cá nhân.",
+    });
+  } catch (err) {
+    return NextResponse.json({ error: err instanceof Error ? err.message : "Lưu Routine thất bại" }, { status: 500 });
   }
 }

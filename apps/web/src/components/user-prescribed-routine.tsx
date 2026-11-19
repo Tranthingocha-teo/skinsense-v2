@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Calendar,
@@ -90,8 +91,13 @@ export function UserPrescribedRoutine({ routine }: { routine: PrescribedRoutineD
   const eveningCount = routine.products.filter((p) => p.timing === "evening" || p.timing === "both").length;
 
   function handleGoToShop() {
+    const matchedIds = routine.products.map((p) => p.productId).filter(Boolean);
     toast.success("Đang chuyển đến trang thanh toán...");
-    router.push("/shop/checkout");
+    if (matchedIds.length > 0) {
+      router.push(`/shop/checkout?productIds=${encodeURIComponent(matchedIds.join(","))}`);
+      return;
+    }
+    router.push("/products");
   }
 
   return (
@@ -309,11 +315,19 @@ export function UserPrescribedRoutine({ routine }: { routine: PrescribedRoutineD
               </div>
             </div>
 
-            {/* Giá tham khảo tại Shop (KHÔNG CÓ NÚT MUA LẺ) */}
-            <div className="pt-2 border-t border-[#D8D4CA]/60 flex items-center justify-between text-xs">
-              <div className="flex items-center gap-1.5 text-[#5C605C]">
+            {/* Giá tham khảo tại Shop + Liên kết chi tiết nếu sản phẩm đang bán trên sàn */}
+            <div className="pt-2 border-t border-[#D8D4CA]/60 flex flex-wrap items-center justify-between gap-2 text-xs">
+              <div className="flex items-center gap-2 text-[#5C605C]">
                 <ShieldCheck className="size-4 text-[#2D5A43]" />
                 <span>Chính hãng tại SkinSense Mall</span>
+                {prod.productId && (
+                  <Link
+                    href={`/products?productId=${encodeURIComponent(prod.productId)}`}
+                    className="font-bold text-[#2D5A43] hover:underline"
+                  >
+                    Xem sản phẩm →
+                  </Link>
+                )}
               </div>
 
               {prod.priceVnd > 0 && <div className="flex items-baseline gap-2">

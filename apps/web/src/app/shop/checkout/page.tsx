@@ -190,12 +190,36 @@ function CheckoutInner() {
   const searchParams = useSearchParams();
 
   const productIdParam = searchParams.get("productId");
+  const productIdsParam = searchParams.get("productIds");
   const variantParam = parseInt(searchParams.get("variant") || "0", 10);
   const qtyParam = Math.max(1, parseInt(searchParams.get("quantity") || searchParams.get("qty") || "1", 10));
   const modeParam = searchParams.get("mode");
 
-  // Khởi tạo sản phẩm thanh toán: Ưu tiên đúng 1 sản phẩm được bấm "Mua Ngay"
+  // Khởi tạo sản phẩm thanh toán: Ưu tiên đúng 1 sản phẩm được bấm "Mua Ngay" hoặc nhiều sản phẩm trong Routine (`productIds`)
   const [items, setItems] = useState<CheckoutItem[]>(() => {
+    if (productIdsParam && !productIdParam) {
+      const ids = productIdsParam.split(",").map((s) => s.trim()).filter(Boolean);
+      const matched = ids
+        .map((id) => INITIAL_SHOPEE_PRODUCTS.find((p) => p.id === id))
+        .filter((p): p is ShopeeProduct => Boolean(p));
+      if (matched.length > 0 && matched.length === ids.length) {
+        return matched.map((p) => ({
+          id: `item_${p.id}`,
+          productId: p.id,
+          name: p.name,
+          brand: p.brand,
+          variant: p.variants[0]?.name || `Dung tích ${p.specifications.volume}`,
+          volume: p.specifications.volume,
+          image: p.coverImage,
+          priceVnd: p.priceVnd,
+          originalPriceVnd: p.originalPriceVnd,
+          quantity: 1,
+          selected: true,
+        }));
+      }
+      if (ids.length > 0) return [];
+    }
+
     if (productIdParam) {
       const found = INITIAL_SHOPEE_PRODUCTS.find((p) => p.id === productIdParam);
       if (found) {
@@ -323,7 +347,69 @@ function CheckoutInner() {
         cancelled = true;
       };
     }
-  }, [productIdParam, variantParam, qtyParam]);
+
+    if (productIdsParam) {
+      const ids = productIdsParam.split(",").map((s) => s.trim()).filter(Boolean);
+      const seedMatches = ids
+        .map((id) => INITIAL_SHOPEE_PRODUCTS.find((p) => p.id === id))
+        .filter((p): p is ShopeeProduct => Boolean(p));
+
+      if (seedMatches.length === ids.length && seedMatches.length > 0) {
+        return;
+      }
+
+      let cancelled = false;
+      fetch("/api/admin/products", { cache: "no-store" })
+        .then((res) => res.json())
+        .then((data: { ok?: boolean; products?: MarketplaceProduct[] }) => {
+          if (cancelled || !data?.ok || !Array.isArray(data.products)) return;
+          const resolved: CheckoutItem[] = [];
+          for (const id of ids) {
+            const seed = INITIAL_SHOPEE_PRODUCTS.find((p) => p.id === id);
+            if (seed) {
+              resolved.push({
+                id: `item_${seed.id}`,
+                productId: seed.id,
+                name: seed.name,
+                brand: seed.brand,
+                variant: seed.variants[0]?.name || `Dung tích ${seed.specifications.volume}`,
+                volume: seed.specifications.volume,
+                image: seed.coverImage,
+                priceVnd: seed.priceVnd,
+                originalPriceVnd: seed.originalPriceVnd,
+                quantity: 1,
+                selected: true,
+              });
+              continue;
+            }
+            const approvedProd = data.products.find((p) => p.id === id && p.status === "approved");
+            if (approvedProd) {
+              resolved.push({
+                id: `item_${approvedProd.id}`,
+                productId: approvedProd.id,
+                name: approvedProd.name,
+                brand: approvedProd.brand || approvedProd.shopName,
+                variant: "Dung tích tiêu chuẩn",
+                volume: "",
+                image: approvedProd.coverImage || "",
+                priceVnd: approvedProd.price,
+                originalPriceVnd: approvedProd.price,
+                quantity: 1,
+                selected: true,
+                shopName: approvedProd.shopName,
+              });
+            }
+          }
+          if (resolved.length > 0) {
+            setItems(resolved);
+          }
+        })
+        .catch(() => {});
+      return () => {
+        cancelled = true;
+      };
+    }
+  }, [productIdParam, productIdsParam, variantParam, qtyParam]);
 
   // Thông tin địa chỉ giao hàng
   // Prefilled from the signed-in buyer's own profile. It used to be one fixed person's name, phone

@@ -10,6 +10,7 @@ vi.mock("@supabase/supabase-js", () => {
         from: vi.fn(() => ({
           createSignedUrl: vi.fn().mockResolvedValue({ data: null }),
           download: vi.fn().mockResolvedValue({ data: null }),
+          upload: vi.fn().mockResolvedValue({ error: null }),
         })),
       },
       from: vi.fn(() => ({
@@ -22,6 +23,7 @@ vi.mock("@supabase/supabase-js", () => {
           ],
         }),
         upsert: vi.fn().mockResolvedValue({ error: null }),
+        insert: vi.fn().mockResolvedValue({ error: null }),
         delete: vi.fn().mockReturnThis(),
         maybeSingle: vi.fn().mockResolvedValue({ data: null }),
       })),
@@ -115,5 +117,49 @@ describe("Routine API Multi-Tenancy (/api/routine)", () => {
     expect(json.ok).toBe(true);
     expect(json.steps).toEqual([]);
     expect(json.totalCount).toBe(0);
+  });
+
+  it("handles PUT request to persist custom routine products for signed-in user and rejects guests", async () => {
+    const { createClient } = await import("@/lib/supabase/server");
+    type ServerClient = Awaited<ReturnType<typeof createClient>>;
+    vi.mocked(createClient).mockResolvedValueOnce({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user: null } }),
+      },
+    } as unknown as ServerClient);
+
+    const { PUT } = await import("./route");
+    const guestRes = await PUT(
+      new Request("http://localhost:3000/api/routine", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ products: [{ id: "p1", name: "CeraVe Cleanser" }] }),
+      }),
+    );
+    expect(guestRes.status).toBe(401);
+
+    const saveRes = await PUT(
+      new Request("http://localhost:3000/api/routine", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          routineTitle: "Routine Cá Nhân Của Tôi",
+          products: [
+            {
+              id: "sp_01",
+              name: "Kem dưỡng Effaclar Duo+M",
+              brand: "La Roche-Posay",
+              stepTime: "both",
+              activeIngredients: "Niacinamide, LHA",
+            },
+          ],
+        }),
+      }),
+    );
+    expect(saveRes.status).toBe(200);
+    const json = await saveRes.json();
+    expect(json.ok).toBe(true);
+    expect(json.savedCount).toBe(1);
+    expect(json.protocolProductIds).toEqual(["sp_01"]);
   });
 });

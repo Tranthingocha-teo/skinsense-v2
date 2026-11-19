@@ -19,6 +19,11 @@ import {
   Check,
   AlertTriangle,
   User,
+  ZoomIn,
+  ZoomOut,
+  ArrowRight,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { LogoMark } from "@/components/site-header";
@@ -26,6 +31,7 @@ import { SafeProductImage } from "@/components/safe-product-image";
 import { PatientPhoto } from "@/components/patient-photo";
 import { ImageUploader } from "@/components/cloudinary-product-uploader";
 import { AuthModal } from "@/components/auth-modal";
+import { detectActiveConflicts, inferUsageSlot } from "@/lib/routine-builder";
 
 function computeFutureDateIso(daysAhead: number): string {
   return new Date(Date.now() + daysAhead * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
@@ -324,6 +330,66 @@ export const INITIAL_PATIENT_CASES: PatientCase[] = [
 ];
 
 function SpecialistContent() {
+  const [showSandboxPreview, setShowSandboxPreview] = useState(false);
+  const [activeSplitCaseId, setActiveSplitCaseId] = useState<string | null>(null);
+  const [photoZoom, setPhotoZoom] = useState<1 | 2>(1);
+  const [isUpdatingCaseStatus, setIsUpdatingCaseStatus] = useState(false);
+  const [approvedShopPresets, setApprovedShopPresets] = useState<Omit<RoutineProduct, "id" | "stepNumber">[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/admin/products", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then(
+        (
+          data: {
+            ok?: boolean;
+            products?: Array<{
+              id: string;
+              name: string;
+              brand?: string;
+              shopName?: string;
+              category?: string;
+              status?: string;
+              coverImage?: string;
+              description?: string;
+            }>;
+          } | null,
+        ) => {
+          if (cancelled || !data?.ok || !Array.isArray(data.products)) return;
+          const existingNames = new Set(PRESET_PRODUCTS.map((p) => p.name.toLowerCase()));
+          const mapped = data.products
+            .filter((p) => p.status === "approved" && p.name && !existingNames.has(p.name.toLowerCase()))
+            .map((p) => {
+              const slot = inferUsageSlot({ name: p.name, category: p.category });
+              return {
+                name: p.name,
+                brand: p.brand || p.shopName || "Đối tác SkinSense",
+                category: p.category || "Dược mỹ phẩm đã duyệt",
+                imageUrl: p.coverImage || undefined,
+                activeIngredients: p.description ? p.description.slice(0, 80) : "Hoạt chất chuẩn y khoa",
+                stepTime: (slot === "AM" ? "morning" : slot === "PM" ? "evening" : "both") as
+                  | "morning"
+                  | "evening"
+                  | "both",
+                dosage: "Theo chỉ định Bác sĩ",
+                usageGuide: "Sử dụng theo thứ tự bước chăm sóc da Sáng/Tối.",
+              };
+            });
+          setApprovedShopPresets(mapped);
+        },
+      )
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const presetCatalog = useMemo(
+    () => [...PRESET_PRODUCTS, ...approvedShopPresets],
+    [approvedShopPresets],
+  );
+
   // Filled from the signed-in account only: the old defaults named a made-up doctor and licence.
   const [doctorProfile, setDoctorProfile] = useState<DoctorProfile>({
     name: "",
@@ -451,7 +517,7 @@ function SpecialistContent() {
     let newProd: RoutineProduct;
 
     if (productSource === "preset") {
-      const preset = PRESET_PRODUCTS[selectedPresetIndex];
+      const preset = presetCatalog[selectedPresetIndex] ?? PRESET_PRODUCTS[0];
       newProd = {
         id: `prod_${Date.now()}`,
         name: preset.name,
@@ -549,6 +615,43 @@ function SpecialistContent() {
     toast.success(`Đã xuất và gửi phác đồ Routine thành công cho bệnh nhân ${target.patientName}!`);
   }
 
+  async function handleToggleCaseCompletion(patientCase: PatientCase) {
+    if (isUpdatingCaseStatus) return;
+    const nextStatus: CaseStatus = patientCase.status === "completed" ? "in_treatment" : "completed";
+    setIsUpdatingCaseStatus(true);
+    try {
+      const res = await fetch("/api/specialist/cases", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ caseId: patientCase.id, status: nextStatus }),
+      });
+      const json = (await res.json().catch(() => null)) as { ok?: boolean; message?: string; error?: string } | null;
+      if (!res.ok || !json?.ok) {
+        toast.error(json?.error || "Cập nhật trạng thái bệnh án thất bại.");
+        return;
+      }
+      setPatientCases((prev) =>
+        prev.map((c) =>
+          c.id === patientCase.id
+            ? {
+                ...c,
+                status: nextStatus,
+                treatmentDay: nextStatus === "completed" ? "Đã hoàn tất liệu trình" : c.treatmentDay,
+              }
+            : c,
+        ),
+      );
+      if (selectedCase?.id === patientCase.id) {
+        setSelectedCase((prev) => (prev ? { ...prev, status: nextStatus } : prev));
+      }
+      toast.success(json.message || "Đã cập nhật trạng thái liệu trình.");
+    } catch {
+      toast.error("Lỗi kết nối khi cập nhật trạng thái bệnh án.");
+    } finally {
+      setIsUpdatingCaseStatus(false);
+    }
+  }
+
   function formatDateVi(dateStr: string) {
     if (!dateStr) return "";
     if (dateStr.includes("/")) return dateStr;
@@ -559,35 +662,133 @@ function SpecialistContent() {
 
   const pendingCount = patientCases.filter((c) => c.status === "pending_routine").length;
   const inTreatmentCount = patientCases.filter((c) => c.status === "in_treatment").length;
+  const completedCount = patientCases.filter((c) => c.status === "completed").length;
 
   if (access === "signed-out" || access === "denied") {
     return (
-      <div className="min-h-screen bg-[#E8E5DE] text-[#191B19] antialiased flex items-center justify-center p-6">
-        <div className="max-w-md w-full rounded-3xl border border-[#D8D4CA] bg-white p-8 text-center space-y-4 shadow-xs">
-          <div className="mx-auto size-14 rounded-2xl bg-[#2D5A43]/10 text-[#2D5A43] flex items-center justify-center">
-            <Stethoscope className="size-7" />
+      <div className="min-h-screen bg-[#E8E5DE] text-[#191B19] antialiased flex items-center justify-center p-4 sm:p-6">
+        <div
+          className={`w-full rounded-3xl border border-[#D8D4CA] bg-white p-6 sm:p-8 shadow-xs space-y-5 ${
+            access === "denied" && isPending ? "max-w-2xl" : "max-w-md text-center"
+          }`}
+        >
+          <div className={access === "denied" && isPending ? "flex flex-col sm:flex-row sm:items-center gap-4 border-b border-[#D8D4CA]/70 pb-5" : "space-y-4"}>
+            <div
+              className={`size-14 rounded-2xl bg-[#2D5A43]/10 text-[#2D5A43] flex items-center justify-center shrink-0 ${
+                access === "denied" && isPending ? "" : "mx-auto"
+              }`}
+            >
+              <Stethoscope className="size-7" />
+            </div>
+            <div className={access === "denied" && isPending ? "space-y-1 text-left" : "space-y-2"}>
+              <h1 className="font-serif text-2xl font-bold text-[#191B19]">Cổng dành cho Bác sĩ</h1>
+              <p className="text-sm text-[#5C605C]">
+                {access === "signed-out"
+                  ? "Vui lòng đăng nhập bằng tài khoản Bác sĩ đã được duyệt để xem bệnh án."
+                  : "Tài khoản của bạn chưa được cấp quyền Bác sĩ. Hồ sơ đăng ký Bác sĩ cần được Ban quản trị duyệt trước."}
+              </p>
+            </div>
           </div>
-          <h1 className="font-serif text-2xl font-bold">Cổng dành cho Bác sĩ</h1>
-          <p className="text-sm text-[#5C605C]">
-            {access === "signed-out"
-              ? "Vui lòng đăng nhập bằng tài khoản Bác sĩ đã được duyệt để xem bệnh án."
-              : "Tài khoản của bạn chưa được cấp quyền Bác sĩ. Hồ sơ đăng ký Bác sĩ cần được Ban quản trị duyệt trước."}
-          </p>
+
           {access === "denied" && isPending && (
-            <div className="rounded-2xl border border-amber-600/30 bg-amber-500/10 p-4 text-left text-xs text-amber-950 space-y-1">
-              <div className="font-bold">Hồ sơ Bác sĩ đang chờ Super Admin duyệt</div>
-              {doctorProfile.licenseNumber && (
-                <div>Số CCHN: <span className="font-mono font-semibold">{doctorProfile.licenseNumber}</span></div>
-              )}
-              {doctorProfile.hospital && <div>Đơn vị: {doctorProfile.hospital}</div>}
+            <div className="space-y-4 text-left">
+              <div className="rounded-2xl border border-amber-600/30 bg-amber-500/10 p-4 text-xs text-amber-950 space-y-1.5">
+                <div className="font-bold flex items-center gap-1.5 text-sm">
+                  <Clock className="size-4 text-amber-700 shrink-0" />
+                  <span>Hồ sơ Bác sĩ đang chờ Super Admin duyệt</span>
+                </div>
+                {doctorProfile.licenseNumber && (
+                  <div>
+                    Số CCHN: <span className="font-mono font-semibold">{doctorProfile.licenseNumber}</span>
+                  </div>
+                )}
+                {doctorProfile.hospital && <div>Đơn vị công tác: {doctorProfile.hospital}</div>}
+              </div>
+
+              {/* Thanh tiến trình đối soát 3 bước chuẩn Teledermatology */}
+              <div className="rounded-2xl border border-[#D8D4CA] bg-[#FAF8F5] p-4 space-y-3">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#5C605C] block">
+                  Tiến trình xác minh chứng chỉ hành nghề
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+                  <div className="rounded-xl border border-[#2D5A43]/25 bg-white p-3 space-y-1">
+                    <span className="inline-flex items-center gap-1 font-bold text-[#2D5A43]">
+                      <CheckCircle2 className="size-3.5" /> Bước 1 · Hoàn tất
+                    </span>
+                    <p className="font-medium text-[#191B19]">Nộp hồ sơ & CCHN</p>
+                  </div>
+                  <div className="rounded-xl border border-amber-500/40 bg-amber-50/70 p-3 space-y-1">
+                    <span className="inline-flex items-center gap-1 font-bold text-amber-900">
+                      <Clock className="size-3.5" /> Bước 2 · Đang xử lý
+                    </span>
+                    <p className="font-medium text-[#191B19]">Admin đối soát chuyên môn</p>
+                  </div>
+                  <div className="rounded-xl border border-[#D8D4CA] bg-white/60 p-3 space-y-1 text-[#5C605C]">
+                    <span className="inline-flex items-center gap-1 font-bold">
+                      Bước 3 · Sắp mở khóa
+                    </span>
+                    <p>Tiếp nhận bệnh án & Kê phác đồ</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Chế độ xem trước Không gian Bác sĩ (Chỉ đọc, dữ liệu minh họa tĩnh) */}
+              <div className="space-y-3">
+                <button
+                  type="button"
+                  onClick={() => setShowSandboxPreview((v) => !v)}
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-[#2D5A43] hover:underline cursor-pointer"
+                >
+                  <Sparkles className="size-3.5" />
+                  <span>
+                    {showSandboxPreview
+                      ? "Thu gọn giao diện xem thử"
+                      : "Xem thử Không gian Tiếp nhận Bệnh án (Chế độ chỉ đọc)"}
+                  </span>
+                  <ArrowRight className="size-3.5" />
+                </button>
+
+                {showSandboxPreview && (
+                  <div className="rounded-2xl border border-dashed border-[#2D5A43]/40 bg-[#FAF8F5] p-4 space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#D8D4CA]/70 pb-2">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-[#2D5A43]">
+                        Chế độ chỉ đọc · Hồ sơ minh họa mẫu
+                      </span>
+                      <span className="rounded-full bg-[#2D5A43]/10 px-2.5 py-0.5 text-[10px] font-bold text-[#2D5A43]">
+                        FITZPATRICK III
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+                      <div className="rounded-xl border border-[#D8D4CA] bg-white p-3">
+                        <span className="text-[#5C605C] block">Chỉ số đỏ da (PIE)</span>
+                        <strong className="text-base text-rose-700">42%</strong>
+                      </div>
+                      <div className="rounded-xl border border-[#D8D4CA] bg-white p-3">
+                        <span className="text-[#5C605C] block">Điểm sức khỏe da</span>
+                        <strong className="text-base text-[#2D5A43]">74/100</strong>
+                      </div>
+                      <div className="rounded-xl border border-[#D8D4CA] bg-white p-3">
+                        <span className="text-[#5C605C] block">Vùng trọng tâm AI</span>
+                        <strong className="text-[#191B19]">Má trái · Vùng chữ T</strong>
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-[#5C605C] leading-relaxed">
+                      Sau khi Admin phê duyệt CCHN, Bác sĩ có thể phóng to ảnh da bệnh nhân, xem lịch sử dị ứng và xuất phác đồ Morning/Evening Routine trực tiếp về tài khoản người dùng.
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
-          <div className="flex flex-col gap-2.5 pt-1">
+
+          <div className={`flex flex-col gap-2.5 pt-1 ${access === "denied" && isPending ? "sm:flex-row" : ""}`}>
             {access === "denied" && (
               <AuthModal
                 defaultTab="doctor-approval"
                 triggerLabel={isPending ? "Cập nhật hồ sơ Bác sĩ" : "Gửi hồ sơ đăng ký Bác sĩ ngay"}
-                triggerClassName="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#2D5A43]/40 bg-[#2D5A43]/10 px-5 py-2.5 text-sm font-semibold text-[#2D5A43] hover:bg-[#2D5A43]/20 transition cursor-pointer"
+                triggerClassName={`inline-flex items-center justify-center gap-2 rounded-xl border border-[#2D5A43]/40 bg-[#2D5A43]/10 px-5 py-2.5 text-sm font-semibold text-[#2D5A43] hover:bg-[#2D5A43]/20 transition cursor-pointer ${
+                  isPending ? "flex-1" : "w-full"
+                }`}
                 onSubmitted={() => {
                   refreshAuthMe();
                   refreshCases();
@@ -596,7 +797,9 @@ function SpecialistContent() {
             )}
             <Link
               href={access === "signed-out" ? "/" : "/app"}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#2D5A43] px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90 transition"
+              className={`inline-flex items-center justify-center gap-2 rounded-xl bg-[#2D5A43] px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90 transition ${
+                access === "denied" && isPending ? "flex-1" : "w-full"
+              }`}
             >
               <Home className="size-4" />
               <span>{access === "signed-out" ? "Về trang chủ để đăng nhập" : "Về trang soi da"}</span>
@@ -634,23 +837,25 @@ function SpecialistContent() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Link
               href="/specialist/profile"
-              className="flex items-center gap-1.5 rounded-xl border border-[#D8D4CA] bg-white px-3.5 py-2 text-xs font-bold text-[#191B19] shadow-2xs hover:border-[#191B19] transition"
+              className="flex items-center gap-1.5 rounded-xl border border-[#D8D4CA] bg-white px-3 py-2 text-xs font-bold text-[#191B19] shadow-2xs hover:border-[#191B19] transition whitespace-nowrap"
               title="Hồ sơ Bác sĩ"
             >
-              <User className="size-4 text-[#2D5A43]" />
-              <span>Hồ Sơ Bác Sĩ</span>
+              <User className="size-4 text-[#2D5A43] shrink-0" />
+              <span className="hidden sm:inline">Hồ Sơ Bác Sĩ</span>
+              <span className="sm:hidden">Hồ sơ</span>
             </Link>
 
             <Link
               href="/app"
-              className="flex items-center gap-1.5 rounded-xl border border-[#D8D4CA] bg-[#F6F4EF] px-3.5 py-2 text-xs font-semibold text-[#5C605C] transition hover:text-[#191B19]"
+              className="flex items-center gap-1.5 rounded-xl border border-[#D8D4CA] bg-[#F6F4EF] px-3 py-2 text-xs font-semibold text-[#5C605C] transition hover:text-[#191B19] whitespace-nowrap"
               title="Về trang soi da (Hôm nay)"
             >
-              <Home className="size-4" />
-              <span>Trang chủ (Soi da)</span>
+              <Home className="size-4 shrink-0" />
+              <span className="hidden sm:inline">Trang chủ (Soi da)</span>
+              <span className="sm:hidden">Soi da</span>
             </Link>
           </div>
         </div>
@@ -830,27 +1035,28 @@ function SpecialistContent() {
             />
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5">
-            <div className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-[#D8D4CA] bg-white px-3.5 py-2 text-sm sm:flex-none">
-              <Filter className="size-4 text-[#5C605C]" />
+          <div className="grid grid-cols-1 sm:flex sm:flex-wrap items-center gap-2.5">
+            <div className="flex min-w-0 items-center gap-2 rounded-xl border border-[#D8D4CA] bg-white px-3.5 py-2 text-sm sm:flex-none">
+              <Filter className="size-4 text-[#5C605C] shrink-0" />
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
                 aria-label="Lọc theo trạng thái"
-                className="min-w-0 flex-1 bg-transparent text-sm font-medium text-[#191B19] focus:outline-none cursor-pointer"
+                className="min-w-0 w-full bg-transparent pr-2 text-sm font-medium text-[#191B19] focus:outline-none cursor-pointer"
               >
                 <option value="all">Tất cả trạng thái ({patientCases.length})</option>
                 <option value="pending_routine">Chờ xuất phác đồ ({pendingCount})</option>
                 <option value="in_treatment">Đang điều trị ({inTreatmentCount})</option>
+                <option value="completed">Hoàn tất liệu trình ({completedCount})</option>
               </select>
             </div>
 
-            <div className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-[#D8D4CA] bg-white px-3.5 py-2 text-sm sm:flex-none">
+            <div className="flex min-w-0 items-center gap-2 rounded-xl border border-[#D8D4CA] bg-white px-3.5 py-2 text-sm sm:flex-none">
               <select
                 value={severityFilter}
                 onChange={(e) => setSeverityFilter(e.target.value)}
                 aria-label="Lọc theo mức độ"
-                className="min-w-0 flex-1 bg-transparent text-sm font-medium text-[#191B19] focus:outline-none cursor-pointer"
+                className="min-w-0 w-full bg-transparent pr-2 text-sm font-medium text-[#191B19] focus:outline-none cursor-pointer"
               >
                 <option value="all">Mức độ: Tất cả</option>
                 <option value="severe">Nặng (Bùng phát)</option>
@@ -861,7 +1067,7 @@ function SpecialistContent() {
           </div>
         </div>
 
-        {/* 3. DANH SÁCH BỆNH ÁN: CHỌN HỒ SƠ ĐỂ XUẤT */}
+        {/* 3. DANH SÁCH BỆNH ÁN: MASTER-DETAIL CLINICAL COCKPIT */}
         <div id="cases-list" className="space-y-4">
           {filteredCases.length === 0 ? (
             <div className="rounded-3xl border border-[#D8D4CA] bg-[#FAF8F5] p-12 text-center space-y-3">
@@ -884,178 +1090,347 @@ function SpecialistContent() {
                 Đặt lại bộ lọc
               </button>
             </div>
-          ) : (
-            filteredCases.map((patientCase) => (
-            <div
-              key={patientCase.id}
-              className="rounded-3xl border border-[#D8D4CA] bg-[#FAF8F5] p-6 shadow-xs hover:border-[#2D5A43]/60 transition-all flex flex-col xl:flex-row xl:items-center justify-between gap-6 min-h-[224px]"
-            >
-              {/* Cột 1: Thông tin bệnh nhân */}
-              <div className="flex items-center gap-4 w-full xl:w-[290px] shrink-0">
-                <div className="relative size-20 shrink-0 overflow-hidden rounded-2xl border-2 border-[#D8D4CA] bg-neutral-200 shadow-2xs">
-                  <PatientPhoto src={patientCase.skinPhotoUrl} name={patientCase.patientName} seed={patientCase.id} className="size-full" />
-                </div>
+          ) : (() => {
+            const activeSplitCase = filteredCases.find((c) => c.id === activeSplitCaseId) ?? filteredCases[0];
+            return (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:items-start">
+                {/* LEFT PANE: TRIAGE QUEUE */}
+                <div className="lg:col-span-7 space-y-3.5">
+                  {filteredCases.map((patientCase) => {
+                    const isFocused = activeSplitCase?.id === patientCase.id;
+                    const priorityAccent =
+                      patientCase.status === "pending_routine"
+                        ? "border-l-amber-600"
+                        : patientCase.status === "in_treatment"
+                        ? "border-l-[#2D5A43]"
+                        : "border-l-stone-400";
 
-                <div className="space-y-1 min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <h4 className="font-bold text-base sm:text-lg text-[#191B19] truncate leading-tight">
-                      {patientCase.patientName}
-                    </h4>
-                    <span className="text-xs text-[#5C605C] shrink-0">
-                      ({patientCase.patientAge}t • {patientCase.patientGender})
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-2 text-xs text-[#5C605C] font-mono">
-                    <span className="font-semibold text-[#191B19]">{patientCase.caseCode}</span>
-                    <span>•</span>
-                    <span>{patientCase.submittedDate}</span>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-2 pt-1">
-                    {patientCase.status === "in_treatment" ? (
-                      <span className="rounded-full bg-[#2D5A43]/15 px-3 py-0.5 text-xs font-bold text-[#2D5A43]">
-                        ● Đang điều trị ({patientCase.treatmentDay || "14 ngày"})
-                      </span>
-                    ) : (
-                      <span className="rounded-full bg-[#78350F]/15 px-3 py-0.5 text-xs font-bold text-[#78350F]">
-                        ⏳ Chờ kê Routine
-                      </span>
-                    )}
-
-                    <span
-                      className={`text-xs font-bold px-2.5 py-0.5 rounded-lg ${
-                        patientCase.severity === "severe"
-                          ? "bg-rose-100 text-rose-800"
-                          : patientCase.severity === "moderate"
-                          ? "bg-amber-100 text-amber-800"
-                          : "bg-emerald-100 text-emerald-800"
-                      }`}
-                    >
-                      {patientCase.severity === "severe"
-                        ? "Mức độ: Nặng"
-                        : patientCase.severity === "moderate"
-                        ? "Mức độ: Vừa"
-                        : "Mức độ: Nhẹ"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Cột 2: Triệu chứng & Chỉ số lâm sàng & Phác đồ Routine */}
-              <div className="flex-1 min-w-0 space-y-2.5 flex flex-col justify-between">
-                {/* Hàng 1: Triệu chứng */}
-                <div className="h-11 flex items-center px-4 rounded-2xl bg-white/80 border border-[#D8D4CA] text-sm text-[#191B19]">
-                  <span className="font-bold text-[#2D5A43] shrink-0 mr-2">Triệu chứng:</span>
-                  <span className="text-[#4A4D4A] truncate">{patientCase.symptoms}</span>
-                </div>
-
-                {/* Hàng 2: Thanh chỉ số lâm sàng */}
-                <div className="h-12 grid grid-cols-2 sm:grid-cols-4 items-center gap-3 rounded-2xl bg-white border border-[#D8D4CA] px-4 text-xs sm:text-sm">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-[#5C605C] font-medium shrink-0">Đỏ (PIE):</span>
-                    <span className="font-bold text-rose-700">{patientCase.aiAnalysis.rednessIndex}%</span>
-                    <div className="w-12 h-2 rounded-full bg-neutral-200 overflow-hidden hidden md:block shrink-0">
+                    return (
                       <div
-                        className="h-full bg-rose-600 rounded-full"
-                        style={{ width: `${patientCase.aiAnalysis.rednessIndex}%` }}
-                      />
-                    </div>
-                  </div>
+                        key={patientCase.id}
+                        onClick={() => {
+                          setActiveSplitCaseId(patientCase.id);
+                          setPhotoZoom(1);
+                        }}
+                        className={`rounded-3xl border border-l-4 ${priorityAccent} p-5 transition-all cursor-pointer space-y-4 ${
+                          isFocused
+                            ? "border-[#2D5A43] bg-white shadow-sm ring-1 ring-[#2D5A43]/25"
+                            : "border-[#D8D4CA] bg-[#FAF8F5] shadow-xs hover:border-[#2D5A43]/60 hover:bg-white/90"
+                        }`}
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                          {/* Thông tin bệnh nhân */}
+                          <div className="flex items-center gap-3.5 min-w-0">
+                            <div className="relative size-16 sm:size-[72px] shrink-0 overflow-hidden rounded-2xl border border-[#D8D4CA] bg-neutral-200 shadow-2xs">
+                              <PatientPhoto src={patientCase.skinPhotoUrl} name={patientCase.patientName} seed={patientCase.id} className="size-full" />
+                            </div>
 
-                  <div className="flex items-center gap-1.5 border-l border-[#D8D4CA]/60 pl-3">
-                    <span className="text-[#5C605C] font-medium shrink-0">Điểm da:</span>
-                    <span className="font-bold text-[#191B19]">
-                      {patientCase.aiAnalysis.skinHealthScore}/100
-                    </span>
-                  </div>
+                            <div className="space-y-1 min-w-0">
+                              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                                <h4 className="font-bold text-base text-[#191B19] truncate leading-tight">
+                                  {patientCase.patientName}
+                                </h4>
+                                <span className="text-xs text-[#5C605C] shrink-0">
+                                  ({patientCase.patientAge}t • {patientCase.patientGender})
+                                </span>
+                              </div>
 
-                  <div className="flex items-center gap-1.5 border-l border-[#D8D4CA]/60 pl-3">
-                    <span className="text-[#5C605C] font-medium shrink-0">Mụn viêm:</span>
-                    <span className="font-bold text-amber-800">
-                      {patientCase.aiAnalysis.inflammatorySpots} nốt
-                    </span>
-                  </div>
+                              <div className="flex items-center gap-2 text-xs text-[#5C605C] font-mono">
+                                <span className="font-semibold text-[#191B19]">{patientCase.caseCode}</span>
+                                <span>•</span>
+                                <span>{patientCase.submittedDate}</span>
+                              </div>
 
-                  <div className="flex items-center gap-1.5 border-l border-[#D8D4CA]/60 pl-3 min-w-0">
-                    <span className="text-[#5C605C] font-medium shrink-0">Loại da:</span>
-                    <span className="font-bold text-[#191B19] truncate">
-                      {patientCase.skinType}
-                    </span>
-                  </div>
+                              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                                {patientCase.status === "completed" ? (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-stone-200 px-2.5 py-0.5 text-[11px] font-bold text-[#191B19]">
+                                    <CheckCircle2 className="size-3 text-[#2D5A43]" />
+                                    Hoàn tất liệu trình
+                                  </span>
+                                ) : patientCase.status === "in_treatment" ? (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-[#2D5A43]/12 px-2.5 py-0.5 text-[11px] font-bold text-[#2D5A43]">
+                                    <CheckCircle2 className="size-3" />
+                                    Đang điều trị ({patientCase.treatmentDay || "14 ngày"})
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-[#78350F]/12 px-2.5 py-0.5 text-[11px] font-bold text-[#78350F]">
+                                    <Clock className="size-3" />
+                                    Chờ kê Routine
+                                  </span>
+                                )}
+
+                                <span
+                                  className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
+                                    patientCase.severity === "severe"
+                                      ? "bg-rose-100 text-rose-800"
+                                      : patientCase.severity === "moderate"
+                                      ? "bg-amber-100 text-amber-800"
+                                      : "bg-emerald-100 text-emerald-800"
+                                  }`}
+                                >
+                                  {patientCase.severity === "severe"
+                                    ? "Mức độ: Nặng"
+                                    : patientCase.severity === "moderate"
+                                    ? "Mức độ: Vừa"
+                                    : "Mức độ: Nhẹ"}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Thao tác chính cho hồ sơ */}
+                          <div
+                            className="flex sm:flex-col items-center gap-2 shrink-0 sm:w-[190px]"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedCase(patientCase);
+                                setPhotoZoom(1);
+                                setIsCaseDetailOpen(true);
+                              }}
+                              className="h-10 flex items-center justify-center gap-1.5 rounded-xl border border-[#D8D4CA] bg-white px-3.5 text-xs font-semibold text-[#191B19] hover:bg-[#E8E5DE] transition cursor-pointer w-full"
+                            >
+                              <Eye className="size-3.5" />
+                              <span>Xem Bệnh án</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleOpenPrescribeModal(patientCase)}
+                              className="h-10 flex items-center justify-center gap-1.5 rounded-xl bg-[#2D5A43] px-3.5 text-xs font-bold text-white shadow-xs hover:bg-[#234835] transition cursor-pointer w-full"
+                            >
+                              <Stethoscope className="size-3.5" />
+                              <span>
+                                {patientCase.currentRoutine ? "Xuất & Sửa gửi BN" : "Chọn hồ sơ để xuất"}
+                              </span>
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Triệu chứng & Chỉ số lâm sàng gọn */}
+                        <div className="space-y-2">
+                          <div className="flex items-center px-3.5 py-2.5 rounded-2xl bg-[#FAF8F5] border border-[#D8D4CA]/80 text-xs sm:text-sm text-[#191B19]">
+                            <span className="font-bold text-[#2D5A43] shrink-0 mr-2">Triệu chứng:</span>
+                            <span className="text-[#4A4D4A] truncate">{patientCase.symptoms}</span>
+                          </div>
+
+                          <div className="grid grid-cols-2 sm:grid-cols-4 items-center gap-2 rounded-2xl bg-[#FAF8F5] border border-[#D8D4CA]/80 px-3.5 py-2.5 text-xs">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[#5C605C] shrink-0">Đỏ (PIE):</span>
+                              <span className="font-bold text-rose-700 tabular-nums">{patientCase.aiAnalysis.rednessIndex}%</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 border-l border-[#D8D4CA]/70 pl-2.5">
+                              <span className="text-[#5C605C] shrink-0">Điểm da:</span>
+                              <span className="font-bold text-[#191B19] tabular-nums">{patientCase.aiAnalysis.skinHealthScore}/100</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 sm:border-l border-[#D8D4CA]/70 sm:pl-2.5">
+                              <span className="text-[#5C605C] shrink-0">Mụn viêm:</span>
+                              <span className="font-bold text-amber-800 tabular-nums">{patientCase.aiAnalysis.inflammatorySpots} nốt</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 border-l border-[#D8D4CA]/70 pl-2.5 min-w-0">
+                              <span className="text-[#5C605C] shrink-0">Loại da:</span>
+                              <span className="font-bold text-[#191B19] truncate">{patientCase.skinType}</span>
+                            </div>
+                          </div>
+
+                          {patientCase.currentRoutine ? (
+                            <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-[#2D5A43]/6 border border-[#2D5A43]/20 px-3.5 py-2">
+                              <div className="flex items-center gap-2 min-w-0 flex-1">
+                                <Sparkles className="size-3.5 text-[#2D5A43] shrink-0" />
+                                <span className="font-bold text-xs text-[#2D5A43] truncate">
+                                  {patientCase.currentRoutine.routineTitle}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                {patientCase.currentRoutine.products.map((p) => (
+                                  <span key={p.id} title={p.name} className="shrink-0">
+                                    <SafeProductImage
+                                      src={p.imageUrl}
+                                      alt={p.name}
+                                      brand={p.brand}
+                                      category={p.category}
+                                      className="size-7 rounded-lg object-cover border border-[#D8D4CA] shadow-2xs"
+                                    />
+                                  </span>
+                                ))}
+                                <span className="text-[11px] text-[#5C605C] font-mono ml-1">
+                                  Tái khám: <strong>{formatDateVi(patientCase.currentRoutine.revisitDate)}</strong>
+                                </span>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-between gap-2 rounded-2xl bg-[#78350F]/6 border border-dashed border-[#78350F]/30 px-3.5 py-2">
+                              <div className="flex items-center gap-2 text-xs text-[#78350F] font-semibold truncate">
+                                <Clock className="size-3.5 shrink-0" />
+                                <span className="truncate">Chưa thiết lập phác đồ (Chờ xuất Routine)</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenPrescribeModal(patientCase);
+                                }}
+                                className="text-xs font-bold text-[#2D5A43] hover:underline shrink-0 cursor-pointer"
+                              >
+                                + Kê Routine ngay
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
 
-                {/* Hàng 3: Phác đồ Routine */}
-                {patientCase.currentRoutine ? (
-                  <div className="min-h-[52px] flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 rounded-2xl bg-[#2D5A43]/5 border border-[#2D5A43]/20 px-4 py-2">
-                    <div className="flex basis-full items-center gap-2.5 min-w-0 sm:basis-auto sm:flex-1">
-                      <Sparkles className="size-4 text-[#2D5A43] shrink-0" />
-                      <span className="font-bold text-xs sm:text-sm text-[#2D5A43] truncate">
-                        {patientCase.currentRoutine.routineTitle}
+                {/* RIGHT STICKY CLINICAL COCKPIT (DESKTOP SPLIT VIEW) */}
+                {activeSplitCase && (
+                  <aside
+                    aria-label="Khung soi chi tiết ca bệnh đang chọn"
+                    className="hidden lg:block lg:col-span-5 lg:sticky lg:top-24 rounded-3xl border border-[#D8D4CA] bg-white p-5 shadow-xs space-y-4"
+                  >
+                    <div className="flex items-center justify-between gap-2 border-b border-[#D8D4CA]/70 pb-3">
+                      <div className="min-w-0">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-[#2D5A43] block">
+                          Soi nhanh lâm sàng · {activeSplitCase.caseCode}
+                        </span>
+                        <p className="text-xs text-[#5C605C] truncate">
+                          Chọn thẻ bên trái để chuyển nhanh bệnh nhân cần đối soát
+                        </p>
+                      </div>
+                      <span className="rounded-lg border border-[#D8D4CA] bg-[#FAF8F5] px-2.5 py-1 text-[11px] font-bold text-[#191B19] shrink-0">
+                        {activeSplitCase.fitzpatrickScale}
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
-                      {patientCase.currentRoutine.products.map((p) => (
-                        <span key={p.id} title={p.name} className="shrink-0">
-                          <SafeProductImage
-                            src={p.imageUrl}
-                            alt={p.name}
-                            brand={p.brand}
-                            category={p.category}
-                            className="size-8 rounded-lg object-cover border border-[#D8D4CA] shadow-2xs"
-                          />
-                        </span>
-                      ))}
-                      <span className="text-xs text-[#5C605C] font-mono ml-1">
-                        Tái khám: <strong>{formatDateVi(patientCase.currentRoutine.revisitDate)}</strong>
-                      </span>
+                    {/* Ảnh da bệnh nhân kèm nút Zoom 1x / 2x */}
+                    <div className="relative overflow-hidden rounded-2xl border border-[#D8D4CA] bg-[#FAF8F5]">
+                      <div
+                        className={`h-60 w-full transition-transform duration-300 origin-center ${
+                          photoZoom === 2 ? "scale-[1.75]" : "scale-100"
+                        }`}
+                      >
+                        <PatientPhoto
+                          src={activeSplitCase.skinPhotoUrl}
+                          name={activeSplitCase.patientName}
+                          seed={activeSplitCase.id}
+                          large
+                          className="size-full"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setPhotoZoom((z) => (z === 1 ? 2 : 1))}
+                        className="absolute bottom-2.5 right-2.5 inline-flex items-center gap-1 rounded-xl border border-[#D8D4CA] bg-white/95 backdrop-blur-xs px-2.5 py-1.5 text-[11px] font-bold text-[#191B19] shadow-xs hover:border-[#2D5A43] cursor-pointer"
+                      >
+                        {photoZoom === 2 ? <ZoomOut className="size-3.5" /> : <ZoomIn className="size-3.5" />}
+                        <span>{photoZoom === 2 ? "Thu nhỏ (1x)" : "Phóng to tổn thương (2x)"}</span>
+                      </button>
                     </div>
-                  </div>
-                ) : (
-                  <div className="h-[52px] flex items-center justify-between gap-3 rounded-2xl bg-[#78350F]/5 border border-dashed border-[#78350F]/30 px-4">
-                    <div className="flex items-center gap-2 text-xs sm:text-sm text-[#78350F] font-semibold truncate">
-                      <Clock className="size-4 shrink-0" />
-                      <span>Chưa thiết lập phác đồ (Đang chờ Bác sĩ chọn hồ sơ xuất Routine)</span>
+
+                    {/* Vùng tổn thương & Cảnh báo dị ứng */}
+                    <div className="space-y-2.5 text-xs">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="text-[#5C605C] font-semibold mr-1">Vùng AI ghi nhận:</span>
+                        {activeSplitCase.aiAnalysis.affectedZones.map((z) => (
+                          <span
+                            key={z}
+                            className="rounded-md border border-[#D8D4CA] bg-[#FAF8F5] px-2 py-0.5 font-semibold text-[#191B19]"
+                          >
+                            {z}
+                          </span>
+                        ))}
+                      </div>
+
+                      {activeSplitCase.allergies && !["Không", "Không có", "None"].includes(activeSplitCase.allergies.trim()) ? (
+                        <div className="flex items-start gap-2 rounded-2xl border border-rose-200 bg-rose-50 p-3 text-rose-900 font-medium">
+                          <AlertTriangle className="size-4 text-rose-600 shrink-0 mt-0.5" />
+                          <span>
+                            Tiền sử dị ứng cần lưu ý: <strong>{activeSplitCase.allergies}</strong>
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 rounded-2xl border border-emerald-200/70 bg-emerald-50/70 p-2.5 text-emerald-900">
+                          <CheckCircle2 className="size-3.5 text-emerald-600 shrink-0" />
+                          <span>Chưa ghi nhận dị ứng hoạt chất</span>
+                        </div>
+                      )}
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => handleOpenPrescribeModal(patientCase)}
-                      className="text-xs font-bold text-[#2D5A43] hover:underline shrink-0 cursor-pointer"
-                    >
-                      + Kê Routine ngay
-                    </button>
-                  </div>
+
+                    {/* Biểu đồ thanh PIE & tóm tắt routine Sáng/Tối */}
+                    <div className="rounded-2xl border border-[#D8D4CA] bg-[#FAF8F5] p-3.5 space-y-2.5 text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-[#5C605C]">Mức độ hồng ban (PIE)</span>
+                        <strong className="text-rose-700 tabular-nums">{activeSplitCase.aiAnalysis.rednessIndex}%</strong>
+                      </div>
+                      <div className="h-2 w-full overflow-hidden rounded-full bg-[#E8E5DE]">
+                        <div
+                          className="h-full rounded-full bg-rose-600 transition-all duration-300"
+                          style={{ width: `${Math.min(100, activeSplitCase.aiAnalysis.rednessIndex)}%` }}
+                        />
+                      </div>
+
+                      {activeSplitCase.currentRoutine?.products.length ? (
+                        <div className="pt-2 border-t border-[#D8D4CA]/70 space-y-1.5">
+                          <span className="font-bold text-[#2D5A43] block">
+                            Các bước đang áp dụng ({activeSplitCase.currentRoutine.products.length})
+                          </span>
+                          <div className="space-y-1">
+                            {activeSplitCase.currentRoutine.products.slice(0, 3).map((rp) => (
+                              <div key={rp.id} className="flex items-center justify-between gap-2 text-[11px]">
+                                <span className="truncate font-medium text-[#191B19]">• {rp.name}</span>
+                                <span className="inline-flex items-center gap-0.5 shrink-0 text-[#5C605C] font-semibold">
+                                  {rp.stepTime === "morning" ? (
+                                    <Sun className="size-3 text-amber-600" />
+                                  ) : rp.stepTime === "evening" ? (
+                                    <Moon className="size-3 text-[#2D5A43]" />
+                                  ) : (
+                                    <span>AM/PM</span>
+                                  )}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="pt-1 text-[11px] text-[#78350F] font-medium">
+                          Bệnh nhân chưa có phác đồ Routine. Nhấn nút bên dưới để mở biểu mẫu kê đơn.
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenPrescribeModal(activeSplitCase)}
+                        className="w-full h-11 rounded-2xl bg-[#191B19] hover:bg-[#2D5A43] text-white text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer shadow-xs"
+                      >
+                        <Stethoscope className="size-4" />
+                        <span>Mở trình kê phác đồ cho ca này</span>
+                      </button>
+
+                      {activeSplitCase.status !== "pending_routine" && (
+                        <button
+                          type="button"
+                          onClick={() => handleToggleCaseCompletion(activeSplitCase)}
+                          disabled={isUpdatingCaseStatus}
+                          className="w-full h-10 rounded-2xl border border-[#D8D4CA] bg-[#FAF8F5] hover:border-[#2D5A43] hover:text-[#2D5A43] text-xs font-semibold text-[#191B19] flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50"
+                        >
+                          <CheckCircle2 className="size-3.5" />
+                          <span>
+                            {activeSplitCase.status === "completed"
+                              ? "Mở lại trạng thái Đang điều trị"
+                              : "Đánh dấu Hoàn tất liệu trình"}
+                          </span>
+                        </button>
+                      )}
+                    </div>
+                  </aside>
                 )}
               </div>
-
-              {/* Cột 3: Nút thao tác: Xem Bệnh án & Chọn hồ sơ để xuất gửi bệnh nhân */}
-              <div className="flex sm:flex-row xl:flex-col items-center justify-center gap-2.5 shrink-0 w-full xl:w-[220px]">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedCase(patientCase);
-                    setIsCaseDetailOpen(true);
-                  }}
-                  className="h-11 flex items-center justify-center gap-2 rounded-2xl border border-[#D8D4CA] bg-white px-4 text-sm font-semibold text-[#191B19] hover:bg-[#E8E5DE] transition cursor-pointer w-full"
-                >
-                  <Eye className="size-4" />
-                  <span>Xem Bệnh án</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleOpenPrescribeModal(patientCase)}
-                  className="h-11 flex items-center justify-center gap-2 rounded-2xl bg-[#2D5A43] px-4 text-sm font-bold text-white shadow-xs hover:bg-[#234835] transition cursor-pointer w-full"
-                >
-                  <Stethoscope className="size-4" />
-                  <span>
-                    {patientCase.currentRoutine ? "Xuất & Sửa gửi BN" : "Chọn hồ sơ để xuất"}
-                  </span>
-                </button>
-              </div>
-            </div>
-          )))}
+            );
+          })()}
         </div>
       </main>
 
@@ -1081,13 +1456,29 @@ function SpecialistContent() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 text-sm">
               <div className="space-y-2.5">
-                <PatientPhoto
-                  src={selectedCase.skinPhotoUrl}
-                  name={selectedCase.patientName}
-                  seed={selectedCase.id}
-                  large
-                  className="w-full h-56 rounded-2xl border border-[#D8D4CA]"
-                />
+                <div className="relative overflow-hidden rounded-2xl border border-[#D8D4CA] bg-[#F6F4EF]">
+                  <div
+                    className={`h-56 w-full transition-transform duration-300 origin-center ${
+                      photoZoom === 2 ? "scale-[1.75]" : "scale-100"
+                    }`}
+                  >
+                    <PatientPhoto
+                      src={selectedCase.skinPhotoUrl}
+                      name={selectedCase.patientName}
+                      seed={selectedCase.id}
+                      large
+                      className="w-full h-56"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setPhotoZoom((z) => (z === 1 ? 2 : 1))}
+                    className="absolute bottom-2.5 right-2.5 inline-flex items-center gap-1 rounded-xl border border-[#D8D4CA] bg-white/95 px-2.5 py-1 text-[11px] font-bold text-[#191B19] shadow-xs hover:border-[#2D5A43] cursor-pointer"
+                  >
+                    {photoZoom === 2 ? <ZoomOut className="size-3.5" /> : <ZoomIn className="size-3.5" />}
+                    <span>{photoZoom === 2 ? "1x" : "2x"}</span>
+                  </button>
+                </div>
                 <div className="text-xs text-[#5C605C] bg-[#F6F4EF] p-2.5 rounded-xl">
                   Vùng tổn thương AI phân tích: <strong className="text-[#191B19]">{selectedCase.aiAnalysis.affectedZones.join(", ")}</strong>
                 </div>
@@ -1181,7 +1572,7 @@ function SpecialistContent() {
               )}
             </div>
 
-            <div className="flex justify-end gap-3 pt-3 border-t border-[#D8D4CA]">
+            <div className="flex flex-wrap justify-end gap-2.5 pt-3 border-t border-[#D8D4CA]">
               <button
                 type="button"
                 onClick={() => setIsCaseDetailOpen(false)}
@@ -1189,6 +1580,19 @@ function SpecialistContent() {
               >
                 Đóng
               </button>
+              {selectedCase.status !== "pending_routine" && (
+                <button
+                  type="button"
+                  onClick={() => handleToggleCaseCompletion(selectedCase)}
+                  disabled={isUpdatingCaseStatus}
+                  className="flex items-center gap-1.5 rounded-2xl border border-[#2D5A43]/35 bg-[#2D5A43]/8 px-4 py-2.5 text-sm font-semibold text-[#2D5A43] hover:bg-[#2D5A43]/15 cursor-pointer disabled:opacity-50"
+                >
+                  <CheckCircle2 className="size-4" />
+                  <span>
+                    {selectedCase.status === "completed" ? "Mở lại điều trị" : "Hoàn tất liệu trình"}
+                  </span>
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => {
@@ -1331,6 +1735,34 @@ function SpecialistContent() {
                     ))
                   )}
                 </div>
+
+                {/* Cảnh báo tương tác hoạt chất thời gian thực cho Bác sĩ */}
+                {modalProducts.length >= 2 && (() => {
+                  const rxConflicts = detectActiveConflicts(
+                    modalProducts.map((mp) => ({
+                      id: mp.id,
+                      name: mp.name,
+                      specifications: { actives: mp.activeIngredients },
+                    })),
+                  );
+                  if (rxConflicts.length === 0) return null;
+                  return (
+                    <div className="space-y-1.5 pt-1">
+                      {rxConflicts.map((warn) => (
+                        <div
+                          key={warn.id}
+                          className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-xs text-amber-950 flex items-start gap-2"
+                        >
+                          <AlertTriangle className="size-4 text-amber-700 shrink-0 mt-0.5" />
+                          <div>
+                            <div className="font-bold">{warn.title}</div>
+                            <div className="text-[#5C605C] mt-0.5">{warn.advice}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
               </div>
 
               <div className="flex justify-end gap-3 pt-3 border-t border-[#D8D4CA]">
@@ -1394,7 +1826,7 @@ function SpecialistContent() {
 
             {productSource === "preset" ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[320px] overflow-y-auto pr-1">
-                {PRESET_PRODUCTS.map((prod, idx) => (
+                {presetCatalog.map((prod, idx) => (
                   <div
                     key={idx}
                     onClick={() => setSelectedPresetIndex(idx)}

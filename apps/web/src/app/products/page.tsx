@@ -18,21 +18,51 @@ import {
   Store,
   BadgeCheck,
   User,
+  Sun,
+  Moon,
+  Droplets,
+  Leaf,
+  AlertTriangle,
+  CheckCircle2,
+  Plus,
+  Layers,
 } from "lucide-react";
 import { toast } from "sonner";
 import { LogoMark } from "@/components/site-header";
 import { INITIAL_SHOPEE_PRODUCTS, type ShopeeProduct } from "@/app/shop/page";
 import { SafeProductImage } from "@/components/safe-product-image";
+import {
+  detectActiveConflicts,
+  extractProductActives,
+  inferRoutineStepCategory,
+  inferUsageSlot,
+  ROUTINE_STEP_LABELS,
+} from "@/lib/routine-builder";
 
 const ALL_BRANDS = "Tất cả";
 
 const SKIN_TYPES = [
   { id: "all", label: "Tất Cả Loại Da" },
-  { id: "oily_acne", label: "🌿 Da Dầu Mụn" },
-  { id: "sensitive", label: "💧 Da Nhạy Cảm" },
-  { id: "dry", label: "✨ Da Khô Thiếu Ẩm" },
-  { id: "recovery", label: "🛡️ Phục Hồi B5" },
+  { id: "oily_acne", label: "Da Dầu & Mụn" },
+  { id: "sensitive", label: "Da Nhạy Cảm" },
+  { id: "dry", label: "Da Khô & Thiếu Ẩm" },
+  { id: "recovery", label: "Phục Hồi B5" },
 ];
+
+function renderSkinTypeIcon(id: string) {
+  switch (id) {
+    case "oily_acne":
+      return <Leaf className="size-3.5" strokeWidth={1.6} />;
+    case "sensitive":
+      return <Droplets className="size-3.5" strokeWidth={1.6} />;
+    case "dry":
+      return <Sun className="size-3.5" strokeWidth={1.6} />;
+    case "recovery":
+      return <ShieldCheck className="size-3.5" strokeWidth={1.6} />;
+    default:
+      return <Sparkles className="size-3.5" strokeWidth={1.6} />;
+  }
+}
 
 function formatVnd(amount: number): string {
   return new Intl.NumberFormat("vi-VN", {
@@ -119,6 +149,10 @@ function UserProductsMarketplaceContent() {
   // Gồm sản phẩm mẫu đang bán và sản phẩm của gian hàng đối tác đã được Admin duyệt
   // (GET /api/admin/products chỉ trả về sản phẩm đã duyệt cho người mua; checkout mua đúng sản phẩm đó).
   const [marketplaceProducts, setMarketplaceProducts] = useState<ShopeeProduct[]>([]);
+  const [routineIds, setRoutineIds] = useState<string[]>([]);
+  const [isRoutineOpen, setIsRoutineOpen] = useState(false);
+  const [isSavingRoutine, setIsSavingRoutine] = useState(false);
+  const [routineSaveStatus, setRoutineSaveStatus] = useState<"idle" | "saved" | "need-auth">("idle");
   useEffect(() => {
     let cancelled = false;
     fetch("/api/admin/products", { cache: "no-store" })
@@ -131,6 +165,22 @@ function UserProductsMarketplaceContent() {
             .filter((ap) => ap.status === "approved" && !seedIds.has(ap.id))
             .map(toStorefrontProduct),
         );
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/routine", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { ok?: boolean; userId?: string; protocolProductIds?: string[] } | null) => {
+        if (cancelled || !data?.ok || !data.userId || data.userId === "demo") return;
+        if (Array.isArray(data.protocolProductIds) && data.protocolProductIds.length > 0) {
+          setRoutineIds((prev) => (prev.length > 0 ? prev : data.protocolProductIds!));
+        }
       })
       .catch(() => {});
     return () => {
@@ -184,7 +234,8 @@ function UserProductsMarketplaceContent() {
           !searchTerm.trim() ||
           p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
           p.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          p.category.toLowerCase().includes(searchTerm.toLowerCase());
+          p.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (p.specifications?.actives ?? "").toLowerCase().includes(searchTerm.toLowerCase());
 
         const matchBrand = selectedBrand === ALL_BRANDS || p.brand === selectedBrand;
 
@@ -225,6 +276,84 @@ function UserProductsMarketplaceContent() {
     router.push(`/shop/checkout?productId=${encodeURIComponent(productId)}&variant=${variantIdx}&quantity=${qty}`);
   };
 
+  const routineProducts = useMemo(
+    () => routineIds.map((id) => productsList.find((p) => p.id === id)).filter((p): p is ShopeeProduct => Boolean(p)),
+    [routineIds, productsList],
+  );
+
+  const routineConflicts = useMemo(() => detectActiveConflicts(routineProducts), [routineProducts]);
+
+  const toggleRoutineProduct = (prod: ShopeeProduct) => {
+    setRoutineSaveStatus("idle");
+    setRoutineIds((prev) => {
+      if (prev.includes(prod.id)) {
+        toast.info(`Đã gỡ "${prod.name}" khỏi Routine thử nghiệm.`);
+        return prev.filter((id) => id !== prod.id);
+      }
+      toast.success(`Đã thêm "${prod.name}" vào Routine thử nghiệm.`);
+      setIsRoutineOpen(true);
+      return [...prev, prod.id];
+    });
+  };
+
+  const handleSaveRoutineToAccount = async () => {
+    if (isSavingRoutine) return;
+    setIsSavingRoutine(true);
+    try {
+      const payloadProducts = routineProducts.map((p, idx) => {
+        const slot = inferUsageSlot(p);
+        const activesList = extractProductActives(p.specifications?.actives, p.name);
+        return {
+          id: p.id,
+          name: p.name,
+          brand: p.brand,
+          category: p.category,
+          imageUrl: p.coverImage || p.images?.[0] || "",
+          activeIngredients: activesList.length > 0 ? activesList.join(", ") : p.specifications?.actives || p.category,
+          stepTime: slot === "AM" ? "morning" : slot === "PM" ? "evening" : "both",
+          stepNumber: idx + 1,
+          dosage: p.specifications?.volume || "1 lượng vừa đủ",
+          usageGuide: p.howToUse || "Sử dụng theo thứ tự Làm sạch → Đặc trị → Dưỡng ẩm → Chống nắng.",
+        };
+      });
+
+      const res = await fetch("/api/routine", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          routineTitle: "Routine Dưỡng Da Cá Nhân",
+          products: payloadProducts,
+        }),
+      });
+
+      if (res.status === 401) {
+        setRoutineSaveStatus("need-auth");
+        toast.error("Vui lòng đăng nhập để lưu Routine vào tài khoản của bạn.");
+        return;
+      }
+
+      const json = (await res.json().catch(() => null)) as { ok?: boolean; message?: string; error?: string } | null;
+      if (!res.ok || !json?.ok) {
+        toast.error(json?.error || "Không lưu được Routine, vui lòng thử lại.");
+        return;
+      }
+
+      setRoutineSaveStatus("saved");
+      toast.success(json.message || "Đã lưu Routine vào tài khoản thành công!");
+    } catch {
+      toast.error("Lỗi kết nối khi lưu Routine.");
+    } finally {
+      setIsSavingRoutine(false);
+    }
+  };
+
+  const handleBuyRoutineBundle = () => {
+    if (routineProducts.length === 0) return;
+    const ids = routineProducts.map((p) => p.id).join(",");
+    toast.success("Đang chuyển bộ sản phẩm Routine sang trang thanh toán...");
+    router.push(`/shop/checkout?productIds=${encodeURIComponent(ids)}`);
+  };
+
   const currentVariant = selectedProduct
     ? selectedProduct.variants?.[selectedVariantIndex] || {
         name: "Tuýp tiêu chuẩn",
@@ -235,7 +364,7 @@ function UserProductsMarketplaceContent() {
     : null;
 
   return (
-    <div className="min-h-screen bg-[#F6F4EF] text-[#191B19]">
+    <div className="min-h-screen bg-[#FAF8F5] text-[#191B19]">
       {/* 1. HEADER DÀNH CHO KHÁCH HÀNG (KHÔNG CÓ GIỎ HÀNG, KHÔNG LINK SANG SHOP) */}
       <header className="sticky top-0 z-40 border-b border-[#D8D4CA] bg-[#E8E5DE]/95 backdrop-blur-md">
         <div className="mx-auto flex max-w-[1360px] items-center justify-between px-4 py-3 sm:px-6">
@@ -249,7 +378,7 @@ function UserProductsMarketplaceContent() {
               <LogoMark className="size-8 transition group-hover:scale-105" />
               <div className="flex flex-col">
                 <span className="font-serif text-lg font-bold tracking-tight text-[#191B19] leading-tight">
-                  SkinSense <span className="text-[#C2410C] font-sans text-xs font-bold tracking-wider">MALL</span>
+                  SkinSense <span className="text-[#2D5A43] font-sans text-xs font-bold tracking-wider">CLINICAL</span>
                 </span>
                 <span className="text-[11px] font-medium text-[#5C605C]">
                   Dược Mỹ Phẩm Chính Hãng 100%
@@ -261,9 +390,9 @@ function UserProductsMarketplaceContent() {
 
             {/* Badges cam kết */}
             <div className="hidden lg:flex items-center gap-2 text-xs font-semibold text-[#2D5A43]">
-              <span className="flex items-center gap-1 rounded-full bg-[#2D5A43]/10 px-2.5 py-0.5">
+              <span className="flex items-center gap-1 rounded-full bg-[#2D5A43]/10 px-2.5 py-0.5 border border-[#2D5A43]/20">
                 <ShieldCheck className="size-3.5 text-[#2D5A43]" />
-                100% Chính Hãng
+                Kiểm Nghiệm Da Liễu
               </span>
             </div>
           </div>
@@ -276,7 +405,7 @@ function UserProductsMarketplaceContent() {
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Tìm kem chống nắng, serum B5, nước tẩy trang..."
+                placeholder="Tìm kem chống nắng, serum B5, hoạt chất..."
                 className="w-full h-9 rounded-xl border border-[#D8D4CA] bg-white pl-9 pr-3 text-xs text-[#191B19] placeholder:text-[#8C8F8A] focus:border-[#2D5A43] focus:outline-none shadow-2xs"
               />
               {searchTerm && (
@@ -291,16 +420,35 @@ function UserProductsMarketplaceContent() {
             </div>
           </div>
 
-          {/* Actions Người Mua: Thêm Sản Phẩm, Đơn Mua, Profile */}
+          {/* Actions Người Mua: Routine, Đơn Mua, Tài khoản */}
           <div className="flex items-center gap-2 sm:gap-2.5">
+            {!selectedProduct && (
+              <button
+                type="button"
+                onClick={() => setIsRoutineOpen((v) => !v)}
+                className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition cursor-pointer shadow-2xs ${
+                  isRoutineOpen || routineProducts.length > 0
+                    ? "border-[#2D5A43] bg-[#2D5A43] text-white hover:bg-[#234835]"
+                    : "border-[#D8D4CA] bg-white text-[#191B19] hover:border-[#2D5A43] hover:text-[#2D5A43]"
+                }`}
+                title="Kiểm tra xung đột hoạt chất và sắp xếp routine Sáng/Tối"
+              >
+                <Layers className="size-3.5" />
+                <span className="hidden sm:inline">Routine</span>
+                <span className="tabular-nums rounded-full bg-black/15 px-1.5 py-0.2 text-[10px]">
+                  {routineProducts.length}
+                </span>
+              </button>
+            )}
             {/* Đơn mua của người đang đăng nhập */}
             <Link
               href="/user/profile"
-              className="flex items-center gap-1.5 rounded-xl border border-[#D8D4CA] bg-white px-3.5 py-1.5 text-xs font-bold text-[#191B19] hover:border-[#2D5A43] hover:text-[#2D5A43] transition shadow-2xs"
+              className="flex items-center gap-1.5 rounded-xl border border-[#D8D4CA] bg-white px-3 py-1.5 text-xs font-bold text-[#191B19] hover:border-[#2D5A43] hover:text-[#2D5A43] transition shadow-2xs whitespace-nowrap"
               title="Xem lịch sử đơn mua, theo dõi tiến trình đơn hàng và Đánh giá"
             >
-              <Package className="size-3.5 text-[#C2410C]" />
-              <span>Đơn Mua Của Tôi</span>
+              <Package className="size-3.5 text-[#C2410C] shrink-0" />
+              <span className="hidden sm:inline">Đơn Mua Của Tôi</span>
+              <span className="sm:hidden">Đơn Mua</span>
             </Link>
 
             {/* Tài khoản: hồ sơ dựng từ phiên đăng nhập (lib/profile-from-user.ts) */}
@@ -353,14 +501,14 @@ function UserProductsMarketplaceContent() {
                     seed={selectedProduct.id}
                     className="absolute inset-0 size-full object-cover"
                   />
-                  {/* Badge Mall đỏ góc trái */}
-                  <div className="absolute top-3 left-3 rounded-md bg-[#D0011B] px-2.5 py-1 text-xs font-bold text-white shadow-xs flex items-center gap-1">
-                    <BadgeCheck className="size-3.5" />
-                    <span>Mall</span>
+                  {/* Badge Mall đỏ cũ thay bằng badge Y khoa tinh tế */}
+                  <div className="absolute top-3 left-3 rounded-lg bg-[#191B19]/85 backdrop-blur-xs px-2.5 py-1 text-xs font-bold text-white shadow-xs flex items-center gap-1">
+                    <BadgeCheck className="size-3.5 text-[#7AE5A6]" />
+                    <span>Chính Hãng</span>
                   </div>
                   {/* Tag giảm giá vàng cam góc phải */}
                   {selectedProduct.discountPercent > 0 && (
-                    <span className="absolute top-3 right-3 rounded-md bg-[#FEF08A] px-2 py-0.5 text-xs font-bold text-[#854D0E] shadow-2xs">
+                    <span className="absolute top-3 right-3 rounded-lg border border-[#F59E0B]/40 bg-[#FEF3C7] px-2.5 py-0.5 text-xs font-bold text-[#92400E] shadow-2xs">
                       GIẢM {selectedProduct.discountPercent}%
                     </span>
                   )}
@@ -590,7 +738,21 @@ function UserProductsMarketplaceContent() {
                 </div>
                 <div className="grid grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] gap-2 py-2 sm:grid-cols-3">
                   <span className="text-[#5C605C]">Thành Phần Hoạt Chất</span>
-                  <span className="font-bold text-[#2D5A43] sm:col-span-2">{selectedProduct.specifications.actives}</span>
+                  <div className="sm:col-span-2 space-y-1.5">
+                    <span className="font-bold text-[#2D5A43] block">{selectedProduct.specifications.actives}</span>
+                    {extractProductActives(selectedProduct.specifications.actives, selectedProduct.name).length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {extractProductActives(selectedProduct.specifications.actives, selectedProduct.name).map((active) => (
+                          <span
+                            key={active}
+                            className="inline-flex items-center rounded-md border border-[#2D5A43]/25 bg-[#2D5A43]/8 px-2 py-0.5 text-[11px] font-semibold text-[#2D5A43]"
+                          >
+                            {active}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="grid grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] gap-2 py-2 sm:grid-cols-3">
                   <span className="text-[#5C605C]">Dung Tích / Khối Lượng</span>
@@ -632,24 +794,81 @@ function UserProductsMarketplaceContent() {
       ) : (
         /* 3. MÀN HÌNH ĐẦU TIÊN CỦA USER: DANH SÁCH CÁC SẢN PHẨM ĐỂ CHỌN MUA */
         <>
-          {/* BANNER GIỚI THIỆU - TUYỆT ĐỐI KHÔNG CÓ NÚT MOMO HAY THANH TOÁN */}
-          <section className="bg-gradient-to-r from-[#2D5A43] via-[#356B50] to-[#2D5A43] text-white py-6 px-4 shadow-sm">
-            <div className="mx-auto max-w-[1360px] space-y-1.5 text-center md:text-left">
-              <div className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-0.5 text-xs font-bold text-white backdrop-blur-xs">
-                <Sparkles className="size-3.5 text-amber-300" />
-                SkinSense Mall
+          {/* EDITORIAL CLINICAL HERO - ẤM ÁP, TINH TẾ & TẬP TRUNG HOẠT CHẤT */}
+          <section className="border-b border-[#D8D4CA] bg-[#FAF8F5] py-7 px-4 sm:px-6">
+            <div className="mx-auto max-w-[1360px] rounded-3xl border border-[#D8D4CA] bg-white p-5 sm:p-7 shadow-xs">
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:items-center">
+                <div className="space-y-2.5 lg:col-span-7">
+                  <div className="inline-flex items-center gap-1.5 rounded-full border border-[#2D5A43]/25 bg-[#2D5A43]/8 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[#2D5A43]">
+                    <Sparkles className="size-3.5" />
+                    <span>SkinSense Clinical Apothecary</span>
+                  </div>
+                  <h1 className="text-2xl sm:text-3xl font-serif font-semibold tracking-tight text-[#191B19] leading-snug">
+                    Sàn Dược Mỹ Phẩm Chuẩn Y Khoa Cho Hàng Rào Da
+                  </h1>
+                  <p className="text-xs sm:text-sm text-[#5C605C] max-w-2xl leading-relaxed">
+                    Minh bạch nồng độ hoạt chất, số công bố Bộ Y tế và hướng dẫn chia bước Sáng/Tối từ các thương hiệu{" "}
+                    <strong className="font-semibold text-[#191B19]">La Roche-Posay, Bioderma, CeraVe</strong>.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 lg:col-span-5">
+                  <div className="rounded-2xl border border-[#D8D4CA] bg-[#FAF8F5] p-3 space-y-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#2D5A43] block">
+                      Công bố BYT
+                    </span>
+                    <p className="text-xs font-semibold text-[#191B19]">100% Chính hãng & VAT</p>
+                  </div>
+                  <div className="rounded-2xl border border-[#D8D4CA] bg-[#FAF8F5] p-3 space-y-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#2D5A43] block">
+                      Hoạt chất rõ ràng
+                    </span>
+                    <p className="text-xs font-semibold text-[#191B19]">Gắn nhãn AM / PM</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsRoutineOpen((v) => !v)}
+                    className="col-span-2 sm:col-span-1 rounded-2xl border border-[#2D5A43]/30 bg-[#2D5A43]/8 hover:bg-[#2D5A43]/15 p-3 text-left transition cursor-pointer space-y-1"
+                  >
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#2D5A43] flex items-center gap-1">
+                      <Layers className="size-3" />
+                      Routine Builder
+                    </span>
+                    <p className="text-xs font-bold text-[#191B19]">
+                      {isRoutineOpen ? "Thu gọn" : `Kiểm tra (${routineProducts.length}) →`}
+                    </p>
+                  </button>
+                </div>
               </div>
-              <h1 className="text-xl sm:text-2xl font-serif font-bold tracking-tight">
-                Sàn Dược Mỹ Phẩm Chuẩn Y Khoa Cho Làn Da Nhạy Cảm
-              </h1>
-              <p className="text-xs sm:text-sm text-white/85 max-w-2xl">
-                Chọn mua sản phẩm đã qua kiểm nghiệm lâm sàng từ La Roche-Posay, Bioderma, CeraVe.
-              </p>
             </div>
           </section>
 
           {/* BỘ LỌC THƯƠNG HIỆU & LOẠI DA (SHOPPING FILTERS) */}
-          <section className="mx-auto max-w-[1360px] px-4 pt-6 sm:px-6 space-y-4">
+          <section className="mx-auto max-w-[1360px] px-4 pt-5 sm:px-6 space-y-4">
+            {/* Thanh tìm kiếm trên màn hình nhỏ */}
+            <div className="md:hidden">
+              <div className="relative w-full">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[#8C8F8A]" />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Tìm sản phẩm, hãng, hoạt chất (B5, BHA...)"
+                  className="w-full h-10 rounded-xl border border-[#D8D4CA] bg-white pl-9 pr-8 text-xs text-[#191B19] placeholder:text-[#8C8F8A] focus:border-[#2D5A43] focus:outline-none shadow-2xs"
+                />
+                {searchTerm && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchTerm("")}
+                    aria-label="Xóa từ khóa"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#8C8F8A] hover:text-[#191B19]"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
+
             {/* Bộ lọc nhanh theo thương hiệu */}
             <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
               <span className="text-xs font-bold text-[#5C605C] shrink-0 flex items-center gap-1">
@@ -672,25 +891,26 @@ function UserProductsMarketplaceContent() {
               ))}
             </div>
 
-            {/* Bộ lọc loại da & Sắp xếp */}
+            {/* Bộ lọc theo vấn đề / loại da & Sắp xếp */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-[#D8D4CA]/60 pt-3">
               <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
                 <span className="text-xs font-bold text-[#5C605C] shrink-0 flex items-center gap-1">
                   <Filter className="size-3.5 text-[#2D5A43]" />
-                  Loại da:
+                  Nhu cầu da:
                 </span>
                 {SKIN_TYPES.map((st) => (
                   <button
                     key={st.id}
                     type="button"
                     onClick={() => setSelectedSkinType(st.id)}
-                    className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition shrink-0 cursor-pointer ${
+                    className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition shrink-0 cursor-pointer ${
                       selectedSkinType === st.id
-                        ? "bg-[#C2410C] text-white shadow-2xs"
-                        : "border border-[#D8D4CA]/80 bg-[#FAF8F5] text-[#5C605C] hover:bg-white"
+                        ? "bg-[#191B19] text-white shadow-2xs"
+                        : "border border-[#D8D4CA]/80 bg-white text-[#5C605C] hover:border-[#2D5A43] hover:text-[#191B19]"
                     }`}
                   >
-                    {st.label}
+                    {renderSkinTypeIcon(st.id)}
+                    <span>{st.label}</span>
                   </button>
                 ))}
               </div>
@@ -700,26 +920,188 @@ function UserProductsMarketplaceContent() {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-                  className="h-8 rounded-lg border border-[#D8D4CA] bg-white px-2.5 text-xs font-bold text-[#191B19] focus:outline-none focus:border-[#2D5A43]"
+                  className="h-9 rounded-xl border border-[#D8D4CA] bg-white px-3 text-xs font-bold text-[#191B19] focus:outline-none focus:border-[#2D5A43]"
                 >
                   <option value="default">Mặc định</option>
-                  <option value="price-asc">💵 Giá: Thấp đến Cao</option>
-                  <option value="price-desc">💎 Giá: Cao đến Thấp</option>
+                  <option value="price-asc">Giá: Thấp đến Cao</option>
+                  <option value="price-desc">Giá: Cao đến Thấp</option>
                 </select>
               </div>
             </div>
           </section>
 
           {/* DANH SÁCH CÁC SẢN PHẨM: MỖI SẢN PHẨM CÓ 2 NÚT [CHI TIẾT] VÀ [MUA NGAY] */}
-          <main className="mx-auto max-w-[1360px] px-4 py-6 sm:px-6">
-            <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+          <main className="mx-auto max-w-[1360px] px-4 py-6 sm:px-6 space-y-5">
+            {/* BẢNG XẾP ROUTINE & KIỂM TRA XUNG ĐỘT HOẠT CHẤT */}
+            {isRoutineOpen && (
+              <section
+                aria-label="Xây dựng chu trình dưỡng da"
+                className="rounded-3xl border border-[#2D5A43]/30 bg-white p-5 sm:p-6 shadow-xs space-y-4"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#D8D4CA]/70 pb-3">
+                  <div>
+                    <h3 className="font-serif text-lg font-bold text-[#191B19] flex items-center gap-2">
+                      <Layers className="size-4 text-[#2D5A43]" />
+                      Xây dựng Routine & Kiểm tra xung đột hoạt chất
+                    </h3>
+                    <p className="text-xs text-[#5C605C]">
+                      Chọn &ldquo;+ Routine&rdquo; ở từng sản phẩm để kiểm tra thứ tự bước Làm sạch → Đặc trị → Phục hồi → Chống nắng và cảnh báo tương tác hoạt chất.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {routineProducts.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setRoutineIds([])}
+                        className="rounded-xl border border-[#D8D4CA] bg-[#FAF8F5] px-3 py-1.5 text-xs font-semibold text-[#5C605C] hover:text-[#191B19] cursor-pointer"
+                      >
+                        Làm mới danh sách
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setIsRoutineOpen(false)}
+                      aria-label="Đóng bảng xây dựng routine"
+                      className="rounded-xl border border-[#D8D4CA] p-1.5 text-[#5C605C] hover:text-[#191B19] cursor-pointer"
+                    >
+                      <X className="size-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {routineProducts.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-[#D8D4CA] bg-[#FAF8F5] p-6 text-center text-xs text-[#5C605C]">
+                    Chưa có sản phẩm nào trong Routine thử nghiệm. Nhấn <strong>&ldquo;+ Routine&rdquo;</strong> trên bất kỳ thẻ sản phẩm nào bên dưới để thêm.
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {/* Cảnh báo hoặc xác nhận tương thích hoạt chất */}
+                    {routineConflicts.length > 0 ? (
+                      <div className="space-y-2">
+                        {routineConflicts.map((warn) => (
+                          <div
+                            key={warn.id}
+                            className={`rounded-2xl border p-3.5 text-xs flex items-start gap-2.5 ${
+                              warn.severity === "caution"
+                                ? "border-amber-300 bg-amber-50 text-amber-950"
+                                : "border-[#D8D4CA] bg-[#FAF8F5] text-[#191B19]"
+                            }`}
+                          >
+                            <AlertTriangle className="size-4 shrink-0 text-amber-700 mt-0.5" />
+                            <div className="space-y-0.5">
+                              <div className="font-bold">{warn.title}</div>
+                              <div className="text-[#5C605C] leading-relaxed">{warn.advice}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="rounded-2xl border border-[#2D5A43]/25 bg-[#2D5A43]/8 p-3 text-xs text-[#2D5A43] flex items-center gap-2 font-semibold">
+                        <CheckCircle2 className="size-4 shrink-0" />
+                        <span>Các hoạt chất trong chu trình hiện tại tương thích an toàn, chưa ghi nhận xung đột.</span>
+                      </div>
+                    )}
+
+                    {/* Các sản phẩm đã chọn */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                      {routineProducts.map((rp) => {
+                        const slot = inferUsageSlot(rp);
+                        const stepCat = inferRoutineStepCategory(rp);
+                        return (
+                          <div
+                            key={rp.id}
+                            className="flex items-start gap-2.5 rounded-2xl border border-[#D8D4CA] bg-[#FAF8F5] p-3 text-xs"
+                          >
+                            <SafeProductImage
+                              src={rp.coverImage || rp.images?.[0]}
+                              alt={rp.name}
+                              brand={rp.brand}
+                              category={rp.category}
+                              seed={rp.id}
+                              className="size-12 rounded-xl object-cover border border-[#D8D4CA] shrink-0"
+                            />
+                            <div className="min-w-0 flex-1 space-y-1">
+                              <div className="flex items-center justify-between gap-1">
+                                <span className="text-[10px] font-bold text-[#2D5A43] uppercase tracking-wider">
+                                  {ROUTINE_STEP_LABELS[stepCat]}
+                                </span>
+                                <span className="rounded bg-white px-1.5 py-0.5 text-[10px] font-bold border border-[#D8D4CA] text-[#191B19]">
+                                  {slot}
+                                </span>
+                              </div>
+                              <p className="font-semibold text-[#191B19] line-clamp-2 leading-snug">{rp.name}</p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => toggleRoutineProduct(rp)}
+                              aria-label={`Gỡ ${rp.name} khỏi routine`}
+                              className="text-[#8C8F8A] hover:text-[#191B19] shrink-0 cursor-pointer"
+                            >
+                              <X className="size-3.5" />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Thanh đồng bộ Supabase / Mua trọn bộ Routine */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-[#D8D4CA]/70 pt-3.5">
+                      <div className="text-xs text-[#5C605C]">
+                        {routineSaveStatus === "saved" ? (
+                          <span className="inline-flex items-center gap-1.5 font-semibold text-[#2D5A43]">
+                            <CheckCircle2 className="size-4" />
+                            <span>Đã đồng bộ lên tài khoản!</span>
+                            <Link href="/app/routine" className="underline hover:text-[#191B19] ml-1">
+                              Mở Routine hàng ngày →
+                            </Link>
+                          </span>
+                        ) : routineSaveStatus === "need-auth" ? (
+                          <span className="text-amber-800 font-medium">
+                            Bạn chưa đăng nhập.{" "}
+                            <Link href="/" className="font-bold underline text-[#2D5A43]">
+                              Đăng nhập Google ở Trang chủ
+                            </Link>{" "}
+                            để lưu vĩnh viễn vào tài khoản.
+                          </span>
+                        ) : (
+                          <span>
+                            Lưu chu trình này vào <strong>Routine Sáng/Tối</strong> trên tài khoản hoặc đặt mua trọn bộ.
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={handleSaveRoutineToAccount}
+                          disabled={isSavingRoutine}
+                          className="h-9 rounded-xl bg-[#2D5A43] px-4 text-xs font-bold text-white hover:bg-[#234835] disabled:opacity-60 transition cursor-pointer inline-flex items-center gap-1.5 shadow-2xs"
+                        >
+                          <CheckCircle2 className="size-3.5" />
+                          <span>{isSavingRoutine ? "Đang lưu..." : "Lưu vào Routine của tôi"}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleBuyRoutineBundle}
+                          className="h-9 rounded-xl border border-[#191B19] bg-[#191B19] px-4 text-xs font-bold text-white hover:bg-[#2D5A43] hover:border-[#2D5A43] transition cursor-pointer inline-flex items-center gap-1.5"
+                        >
+                          <ShoppingBag className="size-3.5" />
+                          <span>Đặt mua cả bộ ({routineProducts.length} SP)</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </section>
+            )}
+
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <h2 className="text-sm sm:text-base font-bold text-[#191B19] uppercase tracking-wide flex items-center gap-2">
                 <span>Danh Sách Sản Phẩm</span>
                 <span className="text-xs font-normal text-[#5C605C]">
                   ({filteredProducts.length} sản phẩm sẵn có)
                 </span>
               </h2>
-
             </div>
 
             {filteredProducts.length === 0 ? (
@@ -740,20 +1122,24 @@ function UserProductsMarketplaceContent() {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 sm:gap-4">
+              <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 sm:gap-4">
                 {filteredProducts.map((prod) => {
                   const defaultVariant = prod.variants?.[0] || { name: "Mặc định", priceVnd: prod.priceVnd };
                   const discountPercent = prod.discountPercent;
+                  const actives = extractProductActives(prod.specifications?.actives, prod.name).slice(0, 2);
+                  const slot = inferUsageSlot(prod);
+                  const stepLabel = ROUTINE_STEP_LABELS[inferRoutineStepCategory(prod)];
+                  const inRoutine = routineIds.includes(prod.id);
 
                   return (
                     <div
                       key={prod.id}
-                      className="group flex flex-col rounded-2xl border border-[#D8D4CA]/80 bg-white p-3 shadow-2xs hover:shadow-md hover:border-[#2D5A43]/50 transition-all duration-200"
+                      className="group flex flex-col rounded-2xl border border-[#D8D4CA] bg-white p-3.5 shadow-2xs hover:shadow-md hover:border-[#2D5A43]/60 transition-all duration-200"
                     >
-                      {/* Ảnh sản phẩm + Badge Mall */}
+                      {/* Ảnh sản phẩm + Badge Y khoa & AM/PM */}
                       <div
                         onClick={() => handleOpenDetail(prod)}
-                        className="relative aspect-square w-full overflow-hidden rounded-xl bg-[#F6F4EF] cursor-pointer mb-2.5"
+                        className="relative aspect-square w-full overflow-hidden rounded-xl bg-[#FAF8F5] cursor-pointer mb-3 border border-[#D8D4CA]/40"
                       >
                         <SafeProductImage
                           src={prod.coverImage || prod.images?.[0]}
@@ -763,13 +1149,27 @@ function UserProductsMarketplaceContent() {
                           seed={prod.id}
                           className="absolute inset-0 size-full object-cover transition duration-300 group-hover:scale-105"
                         />
-                        {/* Badge Mall */}
-                        <span className="absolute top-2 left-2 rounded-md bg-[#D0011B] px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-white shadow-xs">
-                          Mall
+                        {/* Badge Chính Hãng */}
+                        <span className="absolute top-2 left-2 rounded-md bg-[#191B19]/85 backdrop-blur-xs px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white shadow-xs">
+                          Chính Hãng
                         </span>
-                        {/* Tag giảm giá */}
+                        {/* Nhãn AM/PM */}
+                        <span className="absolute top-2 right-2 inline-flex items-center gap-0.5 rounded-md border border-[#D8D4CA] bg-white/95 px-1.5 py-0.5 text-[9px] font-bold text-[#191B19] shadow-2xs">
+                          {slot === "AM" ? (
+                            <Sun className="size-2.5 text-amber-600" />
+                          ) : slot === "PM" ? (
+                            <Moon className="size-2.5 text-[#2D5A43]" />
+                          ) : (
+                            <>
+                              <Sun className="size-2.5 text-amber-600" />
+                              <Moon className="size-2.5 text-[#2D5A43]" />
+                            </>
+                          )}
+                          <span>{slot}</span>
+                        </span>
+                        {/* Tag giảm giá ở góc dưới phải ảnh */}
                         {discountPercent > 0 && (
-                          <span className="absolute top-2 right-2 rounded bg-[#FEF08A] px-1.5 py-0.5 text-[9px] font-bold text-[#854D0E] shadow-2xs">
+                          <span className="absolute bottom-2 right-2 rounded-md border border-[#F59E0B]/40 bg-[#FEF3C7] px-1.5 py-0.5 text-[9px] font-bold text-[#92400E] shadow-2xs">
                             -{discountPercent}%
                           </span>
                         )}
@@ -777,31 +1177,66 @@ function UserProductsMarketplaceContent() {
 
                       {/* Thông tin sản phẩm */}
                       <div className="flex-1 flex flex-col">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#2D5A43] mb-1">
-                          {prod.brand}
-                        </span>
+                        <div className="flex items-center justify-between gap-1 mb-1">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-[#2D5A43] truncate">
+                            {prod.brand}
+                          </span>
+                          <span className="text-[10px] font-medium text-[#5C605C] shrink-0">
+                            {stepLabel}
+                          </span>
+                        </div>
+
                         <h3
                           onClick={() => handleOpenDetail(prod)}
-                          className="text-xs font-semibold text-[#191B19] line-clamp-2 leading-snug cursor-pointer group-hover:text-[#2D5A43] transition mb-1.5"
+                          className="text-xs font-semibold text-[#191B19] line-clamp-2 leading-snug cursor-pointer group-hover:text-[#2D5A43] transition mb-2 min-h-[34px]"
                           title={prod.name}
                         >
                           {prod.name}
                         </h3>
 
-                        {/* Giá tiền */}
-                        <div className="mt-auto pt-2 border-t border-[#D8D4CA]/40">
-                          <div className="flex items-baseline gap-1.5">
-                            <span className="text-sm font-bold text-[#191B19]">
-                              {formatVnd(prod.priceVnd)}
-                            </span>
-                            {prod.originalPriceVnd > prod.priceVnd && (
-                              <span className="text-[10px] text-[#8C8F8A] line-through">
-                                {formatVnd(prod.originalPriceVnd)}
+                        {/* Active-Ingredient Pills */}
+                        {actives.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mb-2.5">
+                            {actives.map((act) => (
+                              <span
+                                key={act}
+                                className="rounded-md border border-[#2D5A43]/20 bg-[#2D5A43]/6 px-1.5 py-0.5 text-[10px] font-medium text-[#2D5A43] truncate max-w-full"
+                              >
+                                {act}
                               </span>
-                            )}
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Giá tiền + Nút thêm nhanh vào Routine */}
+                        <div className="mt-auto pt-2 border-t border-[#D8D4CA]/50 space-y-1">
+                          <div className="flex items-baseline justify-between gap-1">
+                            <div className="flex items-baseline gap-1.5 min-w-0">
+                              <span className="text-sm font-bold text-[#191B19] tabular-nums">
+                                {formatVnd(prod.priceVnd)}
+                              </span>
+                              {prod.originalPriceVnd > prod.priceVnd && (
+                                <span className="text-[10px] text-[#8C8F8A] line-through tabular-nums truncate">
+                                  {formatVnd(prod.originalPriceVnd)}
+                                </span>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => toggleRoutineProduct(prod)}
+                              aria-label={inRoutine ? `Bỏ ${prod.name} khỏi routine` : `Thêm ${prod.name} vào routine`}
+                              className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-bold transition cursor-pointer inline-flex items-center gap-0.5 ${
+                                inRoutine
+                                  ? "bg-[#2D5A43] text-white"
+                                  : "border border-[#D8D4CA] bg-[#FAF8F5] text-[#5C605C] hover:border-[#2D5A43] hover:text-[#2D5A43]"
+                              }`}
+                            >
+                              {inRoutine ? <CheckCircle2 className="size-2.5" /> : <Plus className="size-2.5" />}
+                              <span>Routine</span>
+                            </button>
                           </div>
 
-                          <span className="text-[10px] text-[#5C605C] block truncate mt-0.5">
+                          <span className="text-[10px] text-[#5C605C] block truncate">
                             Dung tích: {defaultVariant.name}
                           </span>
                         </div>

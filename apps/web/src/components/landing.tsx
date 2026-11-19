@@ -1,4 +1,5 @@
 import { ZONES } from "@skinsense/domain";
+import { ShoppingBag } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { AuthModal } from "@/components/auth-modal";
@@ -112,9 +113,10 @@ export function Landing() {
               />
               <Link
                 href="/products"
-                className="flex h-[54px] w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[#C2410C] px-6 text-[15px] font-bold text-white shadow-md hover:bg-[#9A3412] transition hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                className="flex h-[52px] w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[#2D5A43] px-6 text-[15px] font-semibold text-white shadow-sm transition hover:bg-[#234835] active:scale-[0.98] cursor-pointer"
               >
-                <span>{locale === "vi" ? "🛍️ Sàn Dược Mỹ Phẩm" : "🛍️ Skincare store"}</span>
+                <ShoppingBag className="size-4 shrink-0" strokeWidth={1.75} aria-hidden />
+                <span>{locale === "vi" ? "Sàn Dược Mỹ Phẩm" : "Skincare store"}</span>
               </Link>
             </div>
           </div>

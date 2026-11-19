@@ -188,4 +188,53 @@ describe("Specialist Cases API (/api/specialist/cases)", () => {
     );
     expect(res.status).toBe(404);
   });
+
+  it("handles PATCH request to mark a shared clinical case as completed and enforces specialist role", async () => {
+    const { PATCH } = await import("./route");
+
+    currentAuthUser = {
+      id: "cust-01",
+      email: "customer@example.com",
+      user_metadata: { role: "customer" },
+    };
+    const forbidden = await PATCH(
+      new Request("http://localhost:3000/api/specialist/cases", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ caseId: "case-01", status: "completed" }),
+      }),
+    );
+    expect(forbidden.status).toBe(403);
+
+    currentAuthUser = {
+      id: "spec-01",
+      email: "bacsi.hoa@skinsense.vn",
+      app_metadata: { role: "specialist", status: "active" },
+      user_metadata: { role: "specialist", full_name: "BS. Mai Hoa" },
+    };
+    const missing = await PATCH(
+      new Request("http://localhost:3000/api/specialist/cases", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ caseId: "no-such-case", status: "completed" }),
+      }),
+    );
+    expect(missing.status).toBe(404);
+
+    const okRes = await PATCH(
+      new Request("http://localhost:3000/api/specialist/cases", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          caseId: "case-01",
+          status: "completed",
+          clinicalSummary: "Da giảm đỏ rõ, hết mụn viêm",
+        }),
+      }),
+    );
+    expect(okRes.status).toBe(200);
+    const json = await okRes.json();
+    expect(json.ok).toBe(true);
+    expect(json.case?.status).toBe("completed");
+  });
 });

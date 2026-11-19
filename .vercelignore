@@ -2,8 +2,15 @@ node_modules
 .next
 .turbo
 .expo
+.claude
+.agents
+.vercel
+apps/web/.vercel
+apps/web/test-results
+apps/web/playwright-report
 apps/mobile/android
 apps/mobile/ios
+apps/mobile/dist
 mpbench/photos
 mpbench/dist
 .scratch
