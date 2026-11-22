@@ -1,123 +1,242 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 
 import '@/i18n';
+import * as api from '@/lib/api';
+import * as auth from '@/lib/auth';
 import { AdminPortal } from './admin-portal';
 
 jest.mock('react-native-safe-area-context', () => require('react-native-safe-area-context/jest/mock').default);
-
-const mockPush = jest.fn();
-const mockBack = jest.fn();
-
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ back: mockBack, push: mockPush }),
+  useRouter: () => ({ back: jest.fn(), push: jest.fn(), replace: jest.fn() }),
 }));
-
-jest.mock('expo-image', () => ({
-  Image: 'Image',
-}));
-
 jest.mock('expo-haptics', () => ({
   impactAsync: jest.fn().mockResolvedValue(undefined),
   notificationAsync: jest.fn().mockResolvedValue(undefined),
-  selectionAsync: jest.fn().mockResolvedValue(undefined),
-  ImpactFeedbackStyle: { Medium: 'medium', Light: 'light' },
+  ImpactFeedbackStyle: { Light: 'light', Medium: 'medium' },
   NotificationFeedbackType: { Success: 'success' },
 }));
 
-describe('AdminPortal Component', () => {
-  it('renders store admin header and core metrics', async () => {
-    await render(<AdminPortal />);
+jest.mock('@/lib/auth', () => ({
+  useCurrentUser: jest.fn(),
+  signOut: jest.fn().mockResolvedValue(undefined),
+}));
 
-    await waitFor(() => {
-      expect(screen.getByText('Quản Trị Cửa Hàng SkinSense')).toBeTruthy();
-      expect(screen.getByText('Doanh thu thực')).toBeTruthy();
-      expect(screen.getByText('Đơn đặt hàng')).toBeTruthy();
-      expect(screen.getByText('Kho hàng')).toBeTruthy();
+jest.mock('@/lib/api', () => {
+  const actual = jest.requireActual('@/lib/api');
+  return {
+    ...actual,
+    loadAdminUsersRemote: jest.fn(),
+    loadAdminSpecialistsRemote: jest.fn(),
+    loadAdminRoutinesRemote: jest.fn(),
+    loadAdminProductsRemote: jest.fn(),
+    loadAdminOrdersRemote: jest.fn(),
+    patchAdminUserRemote: jest.fn(),
+    decideSpecialistApplicationRemote: jest.fn(),
+    moderateProductRemote: jest.fn(),
+    updateAdminOrderStatusRemote: jest.fn(),
+  };
+});
+
+describe('AdminPortal Component (7-Tab Web Admin Parity)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (auth.useCurrentUser as jest.Mock).mockReturnValue({
+      id: 'super-admin',
+      fullName: 'Trần Thị Ngọc Hà',
+      email: 'hattn.23itb@vku.udn.vn',
+      role: 'admin',
+      isSuperAdmin: true,
+      status: 'active',
+    });
+
+    (api.loadAdminUsersRemote as jest.Mock).mockResolvedValue({
+      ok: true,
+      status: 200,
+      data: {
+        ok: true,
+        users: [
+          {
+            id: 'u-admin',
+            name: 'Trần Thị Ngọc Hà',
+            email: 'hattn.23itb@vku.udn.vn',
+            role: 'admin',
+            status: 'active',
+          },
+          {
+            id: 'u-shop-pending',
+            name: 'An Tâm Cosmetics',
+            email: 'antam@shop.vn',
+            role: 'shop',
+            status: 'pending',
+            shopDetails: { shopName: 'An Tâm Mall', license: 'GPKD-777' },
+          },
+        ],
+      },
+    });
+    (api.loadAdminSpecialistsRemote as jest.Mock).mockResolvedValue({
+      ok: true,
+      status: 200,
+      data: {
+        ok: true,
+        specialists: [
+          {
+            id: 'doc-1',
+            name: 'BS. Nguyễn Lan Anh',
+            email: 'lananh@clinic.vn',
+            licenseId: 'CCHN-9988',
+            hospital: 'BV Da Liễu Đà Nẵng',
+            specialty: 'Chuyên khoa I Da liễu',
+            status: 'pending',
+          },
+        ],
+      },
+    });
+    (api.loadAdminRoutinesRemote as jest.Mock).mockResolvedValue({
+      ok: true,
+      status: 200,
+      data: { ok: true, routines: {} },
+    });
+    (api.loadAdminProductsRemote as jest.Mock).mockResolvedValue({
+      ok: true,
+      status: 200,
+      data: {
+        ok: true,
+        products: [
+          {
+            id: 'p-pend',
+            name: 'Serum Niacinamide 10%',
+            shopName: 'An Tâm Mall',
+            price: 320000,
+            stock: 50,
+            status: 'pending',
+          },
+        ],
+      },
+    });
+    (api.loadAdminOrdersRemote as jest.Mock).mockResolvedValue({
+      ok: true,
+      status: 200,
+      data: {
+        ok: true,
+        orders: [
+          {
+            id: 'ord-1',
+            orderCode: 'SS-123456',
+            customerName: 'Nguyễn Minh',
+            shopName: 'An Tâm Mall',
+            totalAmount: 300000,
+            commission: 24000,
+            status: 'pending',
+            paymentStatus: 'unpaid',
+            paymentMethod: 'cod',
+            createdAt: '2026-11-20T00:00:00Z',
+          },
+          {
+            id: 'ord-2',
+            orderCode: 'SS-654321',
+            customerName: 'Trần Hà',
+            shopName: 'An Tâm Mall',
+            totalAmount: 650000,
+            commission: 52000,
+            status: 'delivered',
+            paymentStatus: 'paid',
+            paymentMethod: 'vietqr',
+            createdAt: '2026-11-20T01:00:00Z',
+          },
+        ],
+      },
+    });
+    (api.patchAdminUserRemote as jest.Mock).mockResolvedValue({
+      ok: true,
+      status: 200,
+      data: { ok: true },
+    });
+    (api.decideSpecialistApplicationRemote as jest.Mock).mockResolvedValue({
+      ok: true,
+      status: 200,
+      data: { ok: true },
+    });
+    (api.moderateProductRemote as jest.Mock).mockResolvedValue({
+      ok: true,
+      status: 200,
+      data: { ok: true },
+    });
+    (api.updateAdminOrderStatusRemote as jest.Mock).mockResolvedValue({
+      ok: true,
+      status: 200,
+      data: { ok: true },
     });
   });
 
-  it('switches between tabs: Đơn hàng, Bán thêm sản phẩm, Tài chính & Ví Shop', async () => {
+  it('renders Super Admin header, users tab, and approves pending shop partner', async () => {
     await render(<AdminPortal />);
 
     await waitFor(() => {
-      expect(screen.getByText(/Bán thêm sản phẩm/i)).toBeTruthy();
-      expect(screen.getByText(/Tài chính & Ví Shop/i)).toBeTruthy();
+      expect(screen.getByText('Cổng Quản Trị Hệ Thống Sàn')).toBeTruthy();
+      expect(screen.getByText('An Tâm Cosmetics')).toBeTruthy();
+      expect(screen.getByText('Duyệt Shop')).toBeTruthy();
     });
 
-    // Switch to Products tab
-    fireEvent.press(screen.getByText(/Bán thêm sản phẩm/i));
-
+    await fireEvent.press(screen.getByText('Duyệt Shop'));
     await waitFor(() => {
-      expect(screen.getByText(/\+ Bán thêm sản phẩm mới/i)).toBeTruthy();
-      expect(screen.getAllByText(/SkinSense Gốc/i).length).toBeGreaterThan(0);
-    });
-
-    // Switch to Finance / Analytics tab
-    fireEvent.press(screen.getByText(/Tài chính & Ví Shop/i));
-
-    await waitFor(() => {
-      expect(screen.getByText('Tài Chính & Doanh Thu Sàn SkinSense')).toBeTruthy();
-      expect(screen.getByText(/Duyệt Lệnh Rút Tiền Ví Shop/i)).toBeTruthy();
+      expect(api.patchAdminUserRemote).toHaveBeenCalledWith({
+        userId: 'u-shop-pending',
+        status: 'active',
+        expectRole: 'shop',
+      });
     });
   });
 
-  it('opens modal to add new product when clicking + Bán thêm sản phẩm mới', async () => {
+  it('approves doctor CCHN inside Duyệt Bác sĩ Da liễu tab', async () => {
     await render(<AdminPortal />);
 
+    const specTab = await screen.findByText('Duyệt Bác sĩ Da liễu');
+    await fireEvent.press(specTab);
     await waitFor(() => {
-      expect(screen.getByText(/Bán thêm sản phẩm/i)).toBeTruthy();
+      expect(screen.getByText('BS. Nguyễn Lan Anh')).toBeTruthy();
+      expect(screen.getByText('CCHN: CCHN-9988')).toBeTruthy();
+      expect(screen.getByText('Phê duyệt CCHN')).toBeTruthy();
     });
 
-    fireEvent.press(screen.getByText(/Bán thêm sản phẩm/i));
-
+    await fireEvent.press(screen.getByText('Phê duyệt CCHN'));
     await waitFor(() => {
-      expect(screen.getByText(/\+ Bán thêm sản phẩm mới/i)).toBeTruthy();
-    });
-
-    fireEvent.press(screen.getByText(/\+ Bán thêm sản phẩm mới/i));
-
-    await waitFor(() => {
-      expect(screen.getByText('Lưu & Bày bán ngay')).toBeTruthy();
-      expect(screen.queryByText('Chọn ảnh sản phẩm mẫu')).toBeNull(); // no stock photos to pick
+      expect(api.decideSpecialistApplicationRemote).toHaveBeenCalledWith('doc-1', 'approve');
     });
   });
 
-  it('switches to Duyệt Shop tab and renders shop management controls', async () => {
+  it('moderates pending products inside Duyệt Sản phẩm Shop tab', async () => {
     await render(<AdminPortal />);
 
+    const prodTab = await screen.findByText('Duyệt Sản phẩm Shop');
+    await fireEvent.press(prodTab);
     await waitFor(() => {
-      expect(screen.getByText(/Duyệt Shop/i)).toBeTruthy();
+      expect(screen.getByText('Serum Niacinamide 10%')).toBeTruthy();
+      expect(screen.getByText('Phê duyệt')).toBeTruthy();
     });
 
-    fireEvent.press(screen.getByText(/Duyệt Shop/i));
-
+    await fireEvent.press(screen.getByText('Phê duyệt'));
     await waitFor(() => {
-      expect(screen.getByText(/\+ Tạo Shop Bán Hàng Mới/i)).toBeTruthy();
-      expect(screen.getAllByText(/La Roche-Posay Official Store/i).length).toBeGreaterThan(0);
-    });
-
-    // Tap + Tạo Shop Bán Hàng Mới
-    fireEvent.press(screen.getByText(/\+ Tạo Shop Bán Hàng Mới/i));
-
-    await waitFor(() => {
-      expect(screen.getByText('Tạo & Nộp Duyệt')).toBeTruthy();
-      expect(screen.getByPlaceholderText(/Cocolux Dược Mỹ Phẩm/i)).toBeTruthy();
+      expect(api.moderateProductRemote).toHaveBeenCalledWith('p-pend', 'approved');
     });
   });
 
-  it('switches to Người dùng tab and displays users list with lock status', async () => {
+  it('manages orders, analytics revenue, and platform settings across tabs', async () => {
     await render(<AdminPortal />);
 
+    const ordTab = await screen.findByText('Đơn hàng');
+    await fireEvent.press(ordTab);
+    expect(await screen.findByText('SS-123456')).toBeTruthy();
+    await fireEvent.press(screen.getByText('Xác nhận đơn'));
     await waitFor(() => {
-      expect(screen.getByText(/Người dùng/i)).toBeTruthy();
+      expect(api.updateAdminOrderStatusRemote).toHaveBeenCalledWith('SS-123456', 'processing');
     });
 
-    fireEvent.press(screen.getByText(/Người dùng/i));
+    await fireEvent.press(screen.getByText('Doanh thu & Hoa hồng'));
+    expect(await screen.findByText('Tổng doanh thu thực')).toBeTruthy();
+    expect(screen.getByText('650.000₫')).toBeTruthy();
+    expect(screen.getByText('52.000₫')).toBeTruthy();
 
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText('Tìm theo tên, email, SĐT...')).toBeTruthy();
-      expect(screen.getAllByText(/Hoạt động|Đang bị khóa/i).length).toBeGreaterThan(0);
-      expect(screen.getAllByText(/Khóa tài khoản|Tài khoản cố định/i).length).toBeGreaterThan(0);
-    });
+    await fireEvent.press(screen.getByText('Cấu hình Sàn'));
+    expect(await screen.findByText('Cấu hình vận hành sàn')).toBeTruthy();
   });
 });

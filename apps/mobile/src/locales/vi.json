@@ -45,6 +45,7 @@
     "reminder": "Nhắc routine buổi tối",
     "reminderEvery": "{{time}} mỗi tối",
     "reminderDays": "{{time}} · {{days}}",
+    "avatar": "Ảnh đại diện",
     "reminderOff": "Đang tắt",
     "biometric": "Khóa sinh trắc học",
     "biometricPrompt": "Khóa ứng dụng khi mở lại",

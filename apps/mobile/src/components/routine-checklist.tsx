@@ -1,14 +1,20 @@
 import { isDuplicateRoutineLabel, routineCompletionPercent } from '@skinsense/domain';
 import * as Haptics from 'expo-haptics';
-import { Link } from 'expo-router';
+import { Link, type Href } from 'expo-router';
 import {
   Check,
   ChevronLeft,
   Clock,
+  Droplets,
   EllipsisVertical,
+  FlaskConical,
+  Leaf,
+  Moon,
   Plus,
   ShieldCheck,
   Sparkles,
+  Stethoscope,
+  Sun,
   X,
 } from 'lucide-react-native';
 import { useCallback, useEffect, useReducer, useState } from 'react';
@@ -38,6 +44,11 @@ import { Icon } from '@/components/ui/icon';
 import { Input } from '@/components/ui/input';
 import { Text } from '@/components/ui/text';
 import {
+  loadPersonalRoutineRemote,
+  toggleRemoteRoutineTick,
+  type RemoteRoutineProtocol,
+} from '@/lib/api';
+import {
   addItem,
   deleteItem,
   loadRoutine,
@@ -54,6 +65,9 @@ function localDate() {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
+// Không dùng bước mẫu: routine buổi sáng lấy từ dữ liệu thật của tài khoản.
+const MORNING_DEFAULT_ITEMS: RoutineItem[] = [];
+
 // Dr. Whitney Bowe (FAAD) 4-night skin cycling phases
 const SKIN_CYCLING_PHASES = [
   {
@@ -61,7 +75,7 @@ const SKIN_CYCLING_PHASES = [
     phase: 'Exfoliation',
     label: 'Đêm 1: Tẩy tế bào chết (AHA/BHA)',
     labelEn: 'Night 1: Exfoliation (AHA/BHA)',
-    icon: '✨',
+    icon: Sparkles,
     tag: 'Thông thoáng lỗ chân lông',
     desc: 'Làm sạch tế bào sừng với BHA 2% hoặc AHA dịu nhẹ. Giúp da thông thoáng hấp thụ tối đa các đêm sau.',
     dermatologistNote: 'Chỉ tẩy da chết hóa học 1 lần/chu kỳ để tránh làm tổn thương màng bảo vệ da.',
@@ -71,7 +85,7 @@ const SKIN_CYCLING_PHASES = [
     phase: 'Retinoid',
     label: 'Đêm 2: Retinoid Tái tạo sâu',
     labelEn: 'Night 2: Retinoid Renewal',
-    icon: '🌙',
+    icon: Moon,
     tag: 'Tăng sinh Collagen & Mờ thâm',
     desc: 'Bôi một lượng bằng hạt đậu Retinol/Tretinoin trên nền da khô ráo. Tránh vùng mắt nhạy cảm.',
     dermatologistNote: 'Mẹo da liễu: Dùng phương pháp kẹp ẩm (Sandwich method) nếu da bạn dễ kích ứng.',
@@ -81,7 +95,7 @@ const SKIN_CYCLING_PHASES = [
     phase: 'Recovery 1',
     label: 'Đêm 3: Phục hồi màng ẩm (I)',
     labelEn: 'Night 3: Barrier Recovery (I)',
-    icon: '🌿',
+    icon: Leaf,
     tag: 'Ceramides & B5 Cấp ẩm',
     desc: 'Ngưng toàn bộ acid/retinol. Bổ sung Hyaluronic Acid, B5, Ceramides để làm dịu và phục hồi màng lipid.',
     dermatologistNote: 'Không dùng hoạt chất mạnh trong 2 đêm phục hồi để hàng rào da nghỉ ngơi và tái tạo.',
@@ -91,7 +105,7 @@ const SKIN_CYCLING_PHASES = [
     phase: 'Recovery 2',
     label: 'Đêm 4: Khóa ẩm chuyên sâu (II)',
     labelEn: 'Night 4: Moisture Seal (II)',
-    icon: '💧',
+    icon: Droplets,
     tag: 'Peptides & Khóa ẩm sâu',
     desc: 'Củng cố màng lipid với kem dưỡng ẩm giàu Peptides & Ceramides trước khi bước sang chu kỳ mới.',
     dermatologistNote: 'Làn da khỏe mạnh có màng bảo vệ vững chãi sẽ giảm 80% nguy cơ bùng phát mụn viêm.',
@@ -150,6 +164,9 @@ function Tick({ ticked, disabled, onToggle, label, children }: { ticked: boolean
 export function RoutineChecklist({ embedded = false }: { embedded?: boolean }) {
   const { t, i18n } = useTranslation();
   const [night] = useState(localDate);
+  const [timeOfDay, setTimeOfDay] = useState<'evening' | 'morning'>('evening');
+  const [remoteProtocol, setRemoteProtocol] = useState<RemoteRoutineProtocol | null>(null);
+  const [morningTickedLabels, setMorningTickedLabels] = useState<string[]>([]);
   const [status, setStatus] = useState<'loading' | 'failed' | 'ready'>('loading');
   const [attempt, retry] = useReducer((n: number) => n + 1, 0);
   const [items, setItems] = useState<RoutineItem[]>([]);
@@ -203,13 +220,57 @@ export function RoutineChecklist({ embedded = false }: { embedded?: boolean }) {
     reload().then(() => setStatus('ready'), () => setStatus('failed'));
   }, [reload, attempt]);
 
+  // Hydrate Web-synced morning/evening routine protocol (doctor-prescribed or user-built in /store)
+  useEffect(() => {
+    let cancelled = false;
+    void loadPersonalRoutineRemote(timeOfDay).then((res) => {
+      if (cancelled || !res.ok || !res.data?.ok || !Array.isArray(res.data.steps) || res.data.steps.length === 0) {
+        return;
+      }
+      setRemoteProtocol(res.data);
+      if (timeOfDay === 'morning') {
+        setMorningTickedLabels(res.data.steps.filter((s) => s.isCompleted).map((s) => s.label));
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [timeOfDay]);
+
   // Optimistic UI; a failed write reloads so the screen never shows an unsaved state.
   function persist(write: () => Promise<unknown>) {
     write().catch(() => reload().catch(() => setStatus('failed')));
   }
 
-  const ticked = new Set(entry?.completed_labels ?? []);
-  const done = items.filter((i) => ticked.has(i.label)).length;
+  const hasRemoteSteps = Boolean(
+    remoteProtocol &&
+      remoteProtocol.timeOfDay === timeOfDay &&
+      remoteProtocol.steps.length > 0 &&
+      (remoteProtocol.isPrescribed || timeOfDay === 'morning'),
+  );
+
+  const visibleItems: RoutineItem[] =
+    timeOfDay === 'morning'
+      ? hasRemoteSteps && remoteProtocol
+        ? remoteProtocol.steps.map((s, idx) => ({
+            id: s.id || `remote-am-${idx}`,
+            label: s.label,
+            position: idx,
+          }))
+        : MORNING_DEFAULT_ITEMS
+      : hasRemoteSteps && remoteProtocol?.isPrescribed
+      ? remoteProtocol.steps.map((s, idx) => ({
+          id: s.id || `remote-pm-${idx}`,
+          label: s.label,
+          position: idx,
+        }))
+      : items;
+
+  const ticked =
+    timeOfDay === 'morning'
+      ? new Set(morningTickedLabels)
+      : new Set(entry?.completed_labels ?? []);
+  const done = visibleItems.filter((i) => ticked.has(i.label)).length;
 
   function edit(target: string | null, text = '') {
     setEditing(target);
@@ -219,14 +280,26 @@ export function RoutineChecklist({ embedded = false }: { embedded?: boolean }) {
 
   function toggle(item: RoutineItem) {
     const isNowTicking = !ticked.has(item.label);
-    const labels = items
+    if (timeOfDay === 'morning') {
+      const nextLabels = isNowTicking
+        ? [...morningTickedLabels.filter((l) => l !== item.label), item.label]
+        : morningTickedLabels.filter((l) => l !== item.label);
+      setMorningTickedLabels(nextLabels);
+      void toggleRemoteRoutineTick(item.label, isNowTicking, night);
+      return;
+    }
+
+    const labels = visibleItems
       .filter((i) => (i.id === item.id ? isNowTicking : ticked.has(i.label)))
       .map((i) => i.label);
-    setEntry({ night, completed_labels: labels, item_count: items.length });
-    persist(() => saveEntry(night, labels, items.length));
+    setEntry({ night, completed_labels: labels, item_count: visibleItems.length });
+    persist(() => saveEntry(night, labels, visibleItems.length));
+    if (remoteProtocol?.ok) {
+      void toggleRemoteRoutineTick(item.label, isNowTicking, night);
+    }
 
     // When all items complete (100%): trigger Apple HIG celebratory haptic
-    if (isNowTicking && labels.length === items.length) {
+    if (isNowTicking && labels.length === visibleItems.length) {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     }
   }
@@ -288,12 +361,41 @@ export function RoutineChecklist({ embedded = false }: { embedded?: boolean }) {
 
   const progress = (
     <View className="flex-row items-center gap-3">
-      <ProgressLine percent={routineCompletionPercent(done, items.length)} />
-      <Text className="text-[12.5px] font-light text-muted-foreground">{t('routine.progress', { done, total: items.length })}</Text>
+      <ProgressLine percent={routineCompletionPercent(done, visibleItems.length)} />
+      <Text className="text-[12.5px] font-light text-muted-foreground">{t('routine.progress', { done, total: visibleItems.length })}</Text>
     </View>
   );
 
-  const rows = items.map((item, index) => {
+  const timeToggle = (
+    <View className="flex-row items-center gap-2">
+      <Pressable
+        role="tab"
+        aria-selected={timeOfDay === 'morning'}
+        onPress={() => setTimeOfDay('morning')}
+        className={`flex-1 flex-row items-center justify-center gap-1.5 rounded-pill border py-1.5 ${
+          timeOfDay === 'morning' ? 'border-foreground bg-foreground' : 'border-border bg-surface-2'
+        }`}>
+        <Icon as={Sun} size={13} className={timeOfDay === 'morning' ? 'text-background' : 'text-amber-500'} />
+        <Text className={`text-[12px] font-medium ${timeOfDay === 'morning' ? 'text-background' : 'text-foreground'}`}>
+          Buổi Sáng
+        </Text>
+      </Pressable>
+      <Pressable
+        role="tab"
+        aria-selected={timeOfDay === 'evening'}
+        onPress={() => setTimeOfDay('evening')}
+        className={`flex-1 flex-row items-center justify-center gap-1.5 rounded-pill border py-1.5 ${
+          timeOfDay === 'evening' ? 'border-foreground bg-foreground' : 'border-border bg-surface-2'
+        }`}>
+        <Icon as={Moon} size={13} className={timeOfDay === 'evening' ? 'text-background' : 'text-primary'} />
+        <Text className={`text-[12px] font-medium ${timeOfDay === 'evening' ? 'text-background' : 'text-foreground'}`}>
+          Buổi Tối
+        </Text>
+      </Pressable>
+    </View>
+  );
+
+  const rows = visibleItems.map((item, index) => {
     const isTicked = ticked.has(item.label);
     const lower = item.label.toLowerCase();
     const isTimerEligible = lower.includes('rửa mặt') || lower.includes('cleanser') || lower.includes('serum') || lower.includes('mụn');
@@ -342,7 +444,7 @@ export function RoutineChecklist({ embedded = false }: { embedded?: boolean }) {
             </View>
           )}
         </Tick>
-        {!embedded && (
+        {!embedded && timeOfDay === 'evening' && (
           <DropdownMenu onOpenChange={(open) => setOpenMenu(open ? item.id : null)}>
             <DropdownMenuTrigger asChild>
               <Pressable
@@ -384,7 +486,7 @@ export function RoutineChecklist({ embedded = false }: { embedded?: boolean }) {
     return (
       <Animated.View entering={FadeIn.duration(200)}>
         <View className="gap-3 px-5 pb-3 pt-[20px]">
-          {/* Editorial Luxury Header matching uploaded reference */}
+          {/* Editorial Luxury Header */}
           <View className="flex-row items-start justify-between">
             <View>
               <Text className="font-display text-[32px] font-normal leading-[36px] tracking-tight text-foreground">
@@ -405,19 +507,30 @@ export function RoutineChecklist({ embedded = false }: { embedded?: boolean }) {
             </Link>
           </View>
 
+          {timeToggle}
+
+          {remoteProtocol?.isPrescribed && (
+            <View className="flex-row items-center gap-2 rounded-control border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5">
+              <Icon as={Stethoscope} size={13} className="text-emerald-500" />
+              <Text className="flex-1 text-[11px] font-medium text-emerald-500">
+                Phác đồ từ {remoteProtocol.allocatedBy}
+              </Text>
+            </View>
+          )}
+
           {/* Skin Cycling Intelligence Badge */}
           <Pressable
             role="button"
             onPress={() => setShowCycleModal(true)}
             className="flex-row items-center justify-between rounded-control border border-border/60 bg-surface-2/40 px-3 py-2">
             <View className="flex-1 flex-row items-center gap-2">
-              <Text className="text-[13px]">{currentPhase.icon}</Text>
+              <Icon as={currentPhase.icon} size={14} className="text-primary" />
               <View className="flex-1">
                 <Text className="text-[11.5px] font-semibold text-foreground" numberOfLines={1}>
                   {i18n.language === 'vi' ? currentPhase.label : currentPhase.labelEn}
                 </Text>
                 <Text className="text-[10px] text-muted-foreground" numberOfLines={1}>
-                  {currentPhase.tag} • Chu kỳ Dr. Whitney Bowe
+                  {currentPhase.tag} · Chu kỳ Dr. Whitney Bowe
                 </Text>
               </View>
             </View>
@@ -431,16 +544,16 @@ export function RoutineChecklist({ embedded = false }: { embedded?: boolean }) {
           <View>{rows}</View>
 
           {/* 100% Completion Moment */}
-          {done === items.length && items.length > 0 && (
+          {done === visibleItems.length && visibleItems.length > 0 && (
             <Animated.View entering={FadeIn.duration(400)} className="mt-2 rounded-control border border-success/30 bg-success/10 p-3">
               <View className="flex-row items-center gap-2">
                 <Icon as={Sparkles} size={15} className="text-success" />
                 <Text className="text-[13px] font-semibold text-success">
-                  Nghi thức trọn vẹn tối nay!
+                  {timeOfDay === 'morning' ? 'Nghi thức buổi sáng đã hoàn tất!' : 'Nghi thức trọn vẹn tối nay!'}
                 </Text>
               </View>
               <Text className="mt-1 text-[11.5px] text-muted-foreground leading-4">
-                Làn da đã được bảo vệ và nuôi dưỡng tối ưu. Chúc bạn một giấc ngủ ngon để tế bào phục hồi rạng rỡ! ✨
+                Làn da đã được bảo vệ và nuôi dưỡng tối ưu đúng quy trình khoa học.
               </Text>
             </Animated.View>
           )}
@@ -456,7 +569,7 @@ export function RoutineChecklist({ embedded = false }: { embedded?: boolean }) {
             <View className="w-full max-w-sm rounded-[24px] border border-border bg-card p-5 shadow-lg">
               <View className="flex-row items-center justify-between pb-3 border-b border-border">
                 <View className="flex-row items-center gap-2">
-                  <Text className="text-[18px]">🌙</Text>
+                  <Icon as={Moon} size={18} className="text-primary" />
                   <Text className="font-display text-[18px] font-semibold text-foreground">
                     Skin Cycling Khoa Học
                   </Text>
@@ -482,9 +595,12 @@ export function RoutineChecklist({ embedded = false }: { embedded?: boolean }) {
                         idx === cycleIndex ? 'border-primary bg-primary/10' : 'border-border/60 bg-surface-2/30'
                       }`}>
                       <View className="flex-row items-center justify-between">
-                        <Text className="text-[12px] font-semibold text-foreground">
-                          {p.icon} {p.label}
-                        </Text>
+                        <View className="flex-row items-center gap-1.5 flex-1">
+                          <Icon as={p.icon} size={13} className="text-primary" />
+                          <Text className="text-[12px] font-semibold text-foreground">
+                            {p.label}
+                          </Text>
+                        </View>
                         {idx === cycleIndex && (
                           <View className="rounded-pill bg-primary px-2 py-0.5">
                             <Text className="text-[9.5px] font-bold text-primary-foreground">Đêm nay</Text>
@@ -497,9 +613,12 @@ export function RoutineChecklist({ embedded = false }: { embedded?: boolean }) {
                 </View>
 
                 <View className="mt-3.5 rounded-control border border-success/30 bg-success/10 p-2.5">
-                  <Text className="text-[11px] font-semibold text-success">
-                    🛡️ Lời khuyên da liễu đêm nay:
-                  </Text>
+                  <View className="flex-row items-center gap-1.5">
+                    <Icon as={ShieldCheck} size={13} className="text-success" />
+                    <Text className="text-[11px] font-semibold text-success">
+                      Lời khuyên da liễu đêm nay:
+                    </Text>
+                  </View>
                   <Text className="mt-0.5 text-[10.5px] text-muted-foreground leading-4">
                     {currentPhase.dermatologistNote}
                   </Text>
@@ -540,8 +659,9 @@ export function RoutineChecklist({ embedded = false }: { embedded?: boolean }) {
           </Text>
         </View>
 
-        <View className="gap-3.5 px-1 pb-2 pt-1">
+        <View className="gap-3 px-1 pb-2 pt-1">
           <Text className="text-[11.5px] font-medium uppercase tracking-[1.6px]">{dateLabel}</Text>
+          {timeToggle}
           {progress}
         </View>
 
@@ -571,6 +691,21 @@ export function RoutineChecklist({ embedded = false }: { embedded?: boolean }) {
             <Text className="text-[15px] text-muted-foreground">{t('routine.addStep')}</Text>
           </Pressable>
         )}
+
+        <View className="flex-row gap-2.5 pt-1">
+          <Link href={'/store' as Href} asChild>
+            <Pressable role="button" className="flex-1 flex-row items-center justify-center gap-2 rounded-control border border-border bg-card py-3">
+              <Icon as={FlaskConical} size={15} className="text-primary" />
+              <Text className="text-[12.5px] font-semibold text-foreground">Xếp Routine từ Sàn</Text>
+            </Pressable>
+          </Link>
+          <Link href={'/prescribed' as Href} asChild>
+            <Pressable role="button" className="flex-1 flex-row items-center justify-center gap-2 rounded-control border border-border bg-card py-3">
+              <Icon as={Stethoscope} size={15} className="text-emerald-500" />
+              <Text className="text-[12.5px] font-semibold text-foreground">Phác đồ Bác sĩ</Text>
+            </Pressable>
+          </Link>
+        </View>
 
         <View className="-mx-[18px] mt-2">
           <RecommendedProductsSection

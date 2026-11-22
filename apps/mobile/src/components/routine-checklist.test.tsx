@@ -6,6 +6,29 @@ import * as routine from '@/lib/routine';
 import { RoutineChecklist } from './routine-checklist';
 
 // A factory, not automock: automock would load the real module and its native storage.
+jest.mock('@/lib/api', () => ({
+  loadPersonalRoutineRemote: jest.fn(async (timeOfDay: string) => ({
+    ok: true,
+    status: 200,
+    data:
+      timeOfDay === 'morning'
+        ? {
+            ok: true,
+            timeOfDay,
+            title: 'Routine sáng',
+            description: '',
+            allocatedBy: 'Cá nhân',
+            isPrescribed: false,
+            steps: [{ id: 'am1', stepNumber: 1, label: 'Kem chống nắng phổ rộng SPF50+', stepTime: 'morning', isCompleted: false }],
+            completedCount: 0,
+            totalCount: 1,
+            percent: 0,
+          }
+        : { ok: true, timeOfDay, steps: [] },
+  })),
+  toggleRemoteRoutineTick: jest.fn().mockResolvedValue({ ok: true, status: 200, data: null }),
+  fetchApprovedMarketplaceProducts: jest.fn().mockResolvedValue([]),
+}));
 jest.mock('@/lib/routine', () => ({
   loadRoutine: jest.fn(),
   addItem: jest.fn(),
@@ -145,5 +168,16 @@ describe('RoutineChecklist', () => {
     await pickMenuItem(0, 'Move down');
     expect(labels()).toEqual(['Cleanser', 'Makeup remover', 'Acne serum', 'Moisturizer']);
     await waitFor(() => expect(mocked.swapPositions).toHaveBeenCalledWith(items[0], items[1]));
+  });
+
+  it('switches between Buổi Sáng and Buổi Tối tabs cleanly', async () => {
+    await renderChecklist();
+    await fireEvent.press(screen.getByRole('tab', { name: 'Buổi Sáng' }));
+    expect(await screen.findByRole('checkbox', { name: 'Kem chống nắng phổ rộng SPF50+' })).toBeTruthy();
+    await fireEvent.press(screen.getByRole('checkbox', { name: 'Kem chống nắng phổ rộng SPF50+' }));
+    expect(screen.getByText('1/1 done')).toBeTruthy();
+
+    await fireEvent.press(screen.getByRole('tab', { name: 'Buổi Tối' }));
+    expect(screen.getByRole('checkbox', { name: 'Cleanser' })).toBeTruthy();
   });
 });

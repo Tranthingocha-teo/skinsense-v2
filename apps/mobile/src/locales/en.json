@@ -47,6 +47,7 @@
     "reminder": "Evening routine reminder",
     "reminderEvery": "{{time}} every night",
     "reminderDays": "{{time}} · {{days}}",
+    "avatar": "Profile photo",
     "reminderOff": "Off",
     "biometric": "Biometric lock",
     "biometricPrompt": "Lock app when reopened",

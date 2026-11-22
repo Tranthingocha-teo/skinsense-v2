@@ -29,6 +29,8 @@
   {"name":"expo-glass-effect","package":"expo-glass-effect","license":"MIT"},
   {"name":"expo-haptics","package":"expo-haptics","license":"MIT"},
   {"name":"expo-image","package":"expo-image","license":"MIT"},
+  {"name":"expo-image-picker","package":"expo-image-picker","license":"MIT"},
+  {"name":"expo-image-picker","package":"expo-image-picker","license":"MIT"},
   {"name":"expo-linking","package":"expo-linking","license":"MIT"},
   {"name":"expo-local-authentication","package":"expo-local-authentication","license":"MIT"},
   {"name":"expo-localization","package":"expo-localization","license":"MIT"},

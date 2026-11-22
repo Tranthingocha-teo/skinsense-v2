@@ -379,95 +379,8 @@ export async function saveListing(input: {
 // Orders Management (Shopee Multi-Vendor Operational Lifecycle)
 // -------------------------------------------------------------
 
-const INITIAL_DEMO_ORDERS: Order[] = [
-  {
-    id: 'ORD-982104-SS1',
-    shopId: 'shop-duocmypham-hanoi',
-    shopName: 'Dược Mỹ Phẩm Hà Nội',
-    productId: 'lrp-effaclar-duo-m',
-    productName: 'Effaclar Duo+M Giảm Mụn & Ngừa Thâm 40ml',
-    productImage: '',
-    priceVnd: 375000,
-    quantity: 1,
-    totalVnd: 375000,
-    totalFormatted: '375.000₫',
-    customerName: 'Trần Thị Ngọc Hà',
-    customerPhone: '0912345678',
-    customerAddress: 'Tòa Landmark 72, Phạm Hùng, Mễ Trì, Nam Từ Liêm, Hà Nội',
-    note: 'Giao giờ hành chính giúp em',
-    paymentMethod: 'cod',
-    status: 'shipping',
-    trackingCode: 'SS-VN982104',
-    shippingProvider: 'Giao nhanh',
-    trackingTimeline: generateTrackingTimeline(
-      'shipping',
-      'SS-VN982104',
-      new Date(Date.now() - 3600000 * 5).toISOString(),
-    ),
-    shopEarningsVnd: 356250,
-    platformFeeVnd: 18750,
-    createdAt: new Date(Date.now() - 3600000 * 5).toISOString(),
-    updatedAt: new Date(Date.now() - 3600000 * 2).toISOString(),
-  },
-  {
-    id: 'ORD-639201-SS2',
-    shopId: 'shop-kbeauty-vietnam',
-    shopName: 'K-Beauty Mall Vietnam',
-    productId: 'skin1004-centella-ampoule',
-    productName: 'Tinh Chất Rau Má Madagascar Centella Ampoule 100ml',
-    productImage: '',
-    priceVnd: 330000,
-    quantity: 1,
-    totalVnd: 330000,
-    totalFormatted: '330.000₫',
-    customerName: 'Trần Thị Ngọc Hà',
-    customerPhone: '0912345678',
-    customerAddress: 'Tòa Landmark 72, Phạm Hùng, Mễ Trì, Nam Từ Liêm, Hà Nội',
-    note: '',
-    paymentMethod: 'vietqr',
-    status: 'processing',
-    trackingCode: 'SS-VN639201',
-    shippingProvider: 'Giao nhanh',
-    trackingTimeline: generateTrackingTimeline(
-      'processing',
-      'SS-VN639201',
-      new Date(Date.now() - 3600000 * 12).toISOString(),
-    ),
-    shopEarningsVnd: 313500,
-    platformFeeVnd: 16500,
-    createdAt: new Date(Date.now() - 3600000 * 12).toISOString(),
-  },
-  {
-    id: 'ORD-119832-SS3',
-    shopId: 'shop-skinsense-official',
-    shopName: 'SkinSense Official Store',
-    productId: 'lrp-cicaplast-b5-plus',
-    productName: 'Cicaplast Baume B5+ Phục Hồi & Làm Dịu Da 40ml',
-    productImage: '',
-    priceVnd: 365000,
-    quantity: 1,
-    totalVnd: 365000,
-    totalFormatted: '365.000₫',
-    customerName: 'Trần Thị Ngọc Hà',
-    customerPhone: '0912345678',
-    customerAddress: 'Tòa Landmark 72, Phạm Hùng, Mễ Trì, Nam Từ Liêm, Hà Nội',
-    paymentMethod: 'vietqr',
-    status: 'completed',
-    trackingCode: 'SS-VN119832',
-    shippingProvider: 'Giao nhanh',
-    trackingTimeline: generateTrackingTimeline(
-      'completed',
-      'SS-VN119832',
-      new Date(Date.now() - 3600000 * 48).toISOString(),
-    ),
-    shopEarningsVnd: 346750,
-    platformFeeVnd: 18250,
-    rating: 5,
-    reviewComment: 'Kem dùng rất thích, đóng gói cẩn thận 100% chính hãng!',
-    reviewedAt: new Date(Date.now() - 3600000 * 24).toISOString(),
-    createdAt: new Date(Date.now() - 3600000 * 48).toISOString(),
-  },
-];
+// Không còn đơn mẫu: chỉ hiển thị đơn thật của người dùng.
+const INITIAL_DEMO_ORDERS: Order[] = [];
 
 export async function loadOrders(filter?: {
   shopId?: string;
@@ -650,7 +563,7 @@ export async function getShopWallet(shopId: string): Promise<{
 }> {
   const [shops, orders] = await Promise.all([loadShops(), loadOrders({ shopId })]);
   const shop = shops.find((s) => s.id === shopId);
-  const baseBalance = shop?.walletBalanceVnd ?? 1500000;
+  const baseBalance = shop?.walletBalanceVnd ?? 0;
 
   const completed = orders.filter((o) => o.status === 'completed');
   const inProgress = orders.filter(
@@ -678,7 +591,7 @@ export async function addShopWalletBalance(shopId: string, amountVnd: number): P
   const shops = await loadShops();
   const updated = shops.map((s) => {
     if (s.id === shopId) {
-      const currentBalance = s.walletBalanceVnd ?? 1500000;
+      const currentBalance = s.walletBalanceVnd ?? 0;
       return { ...s, walletBalanceVnd: currentBalance + amountVnd };
     }
     return s;
@@ -692,7 +605,7 @@ export async function deductShopWalletBalance(shopId: string, amountVnd: number)
   let success = false;
   const updated = shops.map((s) => {
     if (s.id === shopId) {
-      const currentBalance = s.walletBalanceVnd ?? 1500000;
+      const currentBalance = s.walletBalanceVnd ?? 0;
       if (currentBalance >= amountVnd) {
         success = true;
         return { ...s, walletBalanceVnd: currentBalance - amountVnd };
@@ -711,20 +624,7 @@ export async function deductShopWalletBalance(shopId: string, amountVnd: number)
 // Withdrawal Requests (Ví Người Bán -> Ngân Hàng)
 // -------------------------------------------------------------
 
-const INITIAL_WITHDRAWALS: WithdrawalRequest[] = [
-  {
-    id: 'WD-001-MB',
-    shopId: 'shop-duocmypham-hanoi',
-    shopName: 'Dược Mỹ Phẩm Hà Nội',
-    amountVnd: 500000,
-    amountFormatted: '500.000₫',
-    bankName: 'MB Bank',
-    accountNumber: '0912345678',
-    accountHolder: 'NGUYEN THU HA',
-    status: 'pending',
-    createdAt: new Date(Date.now() - 3600000 * 6).toISOString(),
-  },
-];
+const INITIAL_WITHDRAWALS: WithdrawalRequest[] = [];
 
 export async function loadWithdrawalRequests(shopId?: string): Promise<WithdrawalRequest[]> {
   const json = await AsyncStorage.getItem(WITHDRAWALS_KEY);

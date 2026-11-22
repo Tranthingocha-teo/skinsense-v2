@@ -74,3 +74,36 @@ export {
 
 export type { ProductShape } from "./artwork";
 export { initialsOf, ownImageUrl, productShape, tintIndex, vietQrPayload } from "./artwork";
+export type {
+  RoutineCandidateProduct,
+  RoutineConflictWarning,
+  RoutineStepCategory,
+  UsageSlot,
+} from "./routine-builder";
+export {
+  detectActiveConflicts,
+  extractProductActives,
+  inferRoutineStepCategory,
+  inferUsageSlot,
+  ROUTINE_STEP_LABELS,
+} from "./routine-builder";
+export type {
+  ApprovalValidationResult,
+  DoctorApprovalInput,
+  ProductApprovalStatus,
+  ShopApprovalInput,
+  ShopApprovalStatus,
+  ShopUserSession,
+} from "./approval";
+export {
+  canShopPostProduct,
+  canShopSignIn,
+  filterProductsByShop,
+  getProductApprovalBadge,
+  isProductVisibleToBuyer,
+  matchesShop,
+  sanitizeDoctorApprovalInput,
+  sanitizeShopApprovalInput,
+  validateDoctorApprovalInput,
+  validateShopApprovalInput,
+} from "./approval";

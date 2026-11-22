@@ -1,35 +1,23 @@
-import { color } from '@skinsense/tokens/tokens.json';
 import Constants from 'expo-constants';
 import { Link } from 'expo-router';
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, ScrollView, useColorScheme, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import { Modal, Pressable, ScrollView, View } from 'react-native';
 
-import { ExternalLink } from '@/components/external-link';
 import { Mark } from '@/components/mark';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import licenses from '@/lib/licenses.json';
 
-// Canvas AndroidAbout. The license list is checked in (src/lib/licenses.json, guarded by
-// licenses.test.ts); its first five entries are the canvas preview, "Xem tất cả" shows the rest.
 const CARD = 'rounded-card border border-border bg-card';
 const LINE = 'border-t border-border';
 const PREVIEW = 5;
-// The web app's public privacy page (same URL as settings.tsx and sign-in.tsx).
-const PRIVACY_URL = 'https://skinsense-v2-topaz.vercel.app/privacy';
-const SOURCE_URL = 'https://github.com/Tranthingocha-teo/skinsense-v2';
 
 export function About() {
   const { t } = useTranslation();
-  const muted = color[useColorScheme() === 'dark' ? 'dark' : 'light'].muted;
   const [all, setAll] = useState(false);
-  const links = [
-    [t('settings.privacy'), PRIVACY_URL],
-    [t('about.source'), SOURCE_URL],
-  ] as const;
+  const [modalContent, setModalContent] = useState<{ title: string; body: string } | null>(null);
 
   return (
     <ScrollView contentContainerClassName="pb-10 pt-4">
@@ -53,18 +41,36 @@ export function About() {
 
       <View className="gap-2.5 px-5 pt-5">
         <View className={`${CARD} pl-[18px] pr-3`}>
-          {links.map(([label, url], i) => (
-            <ExternalLink key={url} href={url} asChild>
-              <Pressable className={`min-h-[52px] flex-row items-center justify-between ${i ? LINE : ''}`}>
-                <Text className="text-[15px]">{label}</Text>
-                <View className="size-11 items-center justify-center">
-                  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={muted} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                    <Path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
-                  </Svg>
-                </View>
-              </Pressable>
-            </ExternalLink>
-          ))}
+          <Pressable
+            role="button"
+            onPress={() =>
+              setModalContent({
+                title: t('settings.privacy'),
+                body: 'Ảnh chụp da, hồ sơ bệnh án chuyên khoa và thông tin đơn hàng SkinSense được lưu bảo mật trên hệ thống Supabase với cơ chế phân quyền 4 vai trò (Khách hàng, Bác sĩ, Gian hàng, Quản trị viên).',
+              })
+            }
+            className="min-h-[52px] flex-row items-center justify-between"
+          >
+            <Text className="text-[15px]">{t('settings.privacy')}</Text>
+            <View className="size-11 items-center justify-center">
+              <Icon as={ChevronRight} size={18} strokeWidth={1.5} className="text-muted-foreground" />
+            </View>
+          </Pressable>
+          <Pressable
+            role="button"
+            onPress={() =>
+              setModalContent({
+                title: t('about.source'),
+                body: 'SkinSense v2 Mobile (Expo React Native + Domain Rules + Supabase Backend APIs). Mọi luồng 4 vai trò hoạt động trực tiếp bằng giao diện native di động.',
+              })
+            }
+            className={`min-h-[52px] flex-row items-center justify-between ${LINE}`}
+          >
+            <Text className="text-[15px]">{t('about.source')}</Text>
+            <View className="size-11 items-center justify-center">
+              <Icon as={ChevronRight} size={18} strokeWidth={1.5} className="text-muted-foreground" />
+            </View>
+          </Pressable>
         </View>
 
         <Text className="px-1 pt-2.5 text-[11px] font-medium uppercase tracking-[1.32px] text-muted-foreground">{t('about.licenses')}</Text>
@@ -85,6 +91,22 @@ export function About() {
           )}
         </View>
       </View>
+
+      <Modal visible={modalContent !== null} animationType="slide" transparent onRequestClose={() => setModalContent(null)}>
+        <View className="flex-1 justify-end bg-black/75">
+          <View className="rounded-t-3xl border-t border-border bg-card p-5 pb-14 gap-3">
+            <Text className="font-display text-[18px] font-semibold text-foreground">{modalContent?.title}</Text>
+            <Text className="text-[13px] leading-5 text-muted-foreground">{modalContent?.body}</Text>
+            <Pressable
+              role="button"
+              onPress={() => setModalContent(null)}
+              className="mt-2 h-11 items-center justify-center rounded-control bg-primary"
+            >
+              <Text className="text-[14px] font-semibold text-primary-foreground">Đóng</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }

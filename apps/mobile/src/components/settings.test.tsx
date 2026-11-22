@@ -9,15 +9,20 @@ import { supabase } from '@/lib/supabase';
 import { Settings } from './settings';
 
 let mockCurrentUser: any = null;
+const mockSession = { user: { email: 'e2e@skinsense.test', user_metadata: { full_name: 'Test User' } as Record<string, unknown> } };
 jest.mock('@/lib/auth', () => ({
-  useSession: () => ({ user: { email: 'e2e@skinsense.test', user_metadata: { full_name: 'Test User' } } }),
+  useSession: () => mockSession,
   useCurrentUser: () => mockCurrentUser,
   signOut: jest.fn(),
 }));
 jest.mock('@/lib/supabase', () => ({ supabase: { auth: { signOut: jest.fn() }, functions: { invoke: jest.fn() } } }));
 const mocked = supabase as unknown as { auth: { signOut: jest.Mock }; functions: { invoke: jest.Mock } };
 
-beforeEach(() => jest.clearAllMocks());
+beforeEach(() => {
+  jest.clearAllMocks();
+  mockCurrentUser = null;
+  delete mockSession.user.user_metadata.picture;
+});
 afterEach(() => i18n.changeLanguage('en'));
 
 async function renderSettings() {
@@ -52,6 +57,29 @@ describe('Settings', () => {
     expect(await screen.findByText('Cài đặt')).toBeTruthy();
     expect(screen.getByRole('radio', { name: 'Tiếng Việt' })).toBeChecked();
     expect(AsyncStorage.setItem).toHaveBeenCalledWith('language', 'vi');
+  });
+
+  // Spec 002 (specs/002-mobile-avatar-display): ưu tiên avatarUrl (Cloudinary) → ảnh Google → gradient.
+  it('shows the uploaded avatar from the current user instead of the Google picture', async () => {
+    mockCurrentUser = { id: 'u1', email: 'e2e@skinsense.test', fullName: 'Test User', role: 'customer', avatarUrl: 'https://res.cloudinary.com/demo/image/upload/v1/avatars/a.jpg' };
+    mockSession.user.user_metadata.picture = 'https://lh3.googleusercontent.com/google.jpg';
+    await renderSettings();
+    expect(screen.getByLabelText('Profile photo').props.source).toEqual({ uri: 'https://res.cloudinary.com/demo/image/upload/v1/avatars/a.jpg' });
+  });
+
+  it('falls back to the Google picture when the avatar fails to load', async () => {
+    mockCurrentUser = { id: 'u1', email: 'e2e@skinsense.test', fullName: 'Test User', role: 'customer', avatarUrl: 'https://res.cloudinary.com/broken.jpg' };
+    mockSession.user.user_metadata.picture = 'https://lh3.googleusercontent.com/google.jpg';
+    await renderSettings();
+    await fireEvent(screen.getByLabelText('Profile photo'), 'error');
+    expect(screen.getByLabelText('Profile photo').props.source).toEqual({ uri: 'https://lh3.googleusercontent.com/google.jpg' });
+  });
+
+  it('keeps the Google picture for a user saved by an older app version without avatarUrl', async () => {
+    mockCurrentUser = { id: 'u1', email: 'e2e@skinsense.test', fullName: 'Test User', role: 'customer' };
+    mockSession.user.user_metadata.picture = 'https://lh3.googleusercontent.com/google.jpg';
+    await renderSettings();
+    expect(screen.getByLabelText('Profile photo').props.source).toEqual({ uri: 'https://lh3.googleusercontent.com/google.jpg' });
   });
 
   it('opens the photo history from the Data group', async () => {
@@ -134,6 +162,18 @@ describe('Settings', () => {
     await renderSettings();
     expect(screen.getByText('Cửa Hàng & Quản Trị SkinSense')).toBeTruthy();
     expect(screen.getByText('Đơn mua của tôi')).toBeTruthy();
+    expect(screen.getByText('Sàn Dược Mỹ Phẩm & Routine')).toBeTruthy();
+    expect(screen.getByText('Phác đồ Bác sĩ & Bệnh án')).toBeTruthy();
+    expect(screen.getByText('Đăng ký Bác sĩ / Đối tác Shop')).toBeTruthy();
     expect(screen.queryByText('Quản Trị Cửa Hàng (Admin)')).toBeNull();
+  });
+
+  it('opens Doctor / Shop partner application modal from Settings', async () => {
+    mockCurrentUser = null;
+    await renderSettings();
+    await fireEvent.press(screen.getByText('Đăng ký Bác sĩ / Đối tác Shop'));
+    expect(await screen.findByText('Đăng ký Bác sĩ / Gian hàng')).toBeTruthy();
+    expect(screen.getByPlaceholderText('Số Chứng chỉ hành nghề (CCHN) *')).toBeTruthy();
+    expect(screen.getByText('Gửi hồ sơ xét duyệt')).toBeTruthy();
   });
 });

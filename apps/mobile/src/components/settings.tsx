@@ -3,17 +3,18 @@ import { color } from '@skinsense/tokens/tokens.json';
 import * as Haptics from 'expo-haptics';
 import { Link, router, useRouter } from 'expo-router';
 import {
+  CheckCircle2,
   ChevronRight,
   CircleAlert,
-  Lock,
-  Package,
+  FileText,
+  FlaskConical,
   ShieldCheck,
   ShoppingBag,
   Stethoscope,
   Store,
   X,
 } from 'lucide-react-native';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -26,14 +27,13 @@ import {
   useColorScheme,
   View,
 } from 'react-native';
-import Svg, { Circle, Defs, LinearGradient, Path, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { exportNotesAndTagsCsv, exportRoutineCsv, exportSpotsCsv, exportZoneReadingsCsv } from '@skinsense/domain';
+import { submitRoleApplicationRemote } from '@/lib/api';
 import { useBiometricsSetting } from '@/lib/biometrics';
-import { getCurrentRole, setCurrentRole } from '@/lib/marketplace';
 
-import { ExternalLink } from '@/components/external-link';
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -43,6 +43,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Icon } from '@/components/ui/icon';
+import { BottomSheetFrame, MODERN_INPUT } from '@/components/ui/portal-chrome';
 import { Text } from '@/components/ui/text';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { LANGUAGE_KEY } from '@/i18n';
@@ -54,13 +55,11 @@ import { supabase } from '@/lib/supabase';
 // Canvas AndroidSettings. Feature rows (reminder, lock, photo history, export, feedback,
 // about) are added by their own tickets: each one is a new row (with LINE from the second
 // row on) inside the Group it belongs to, or a new Group in the canvas order.
-const CARD = 'rounded-card border border-border bg-card';
-const LABEL = 'px-1 pt-2.5 text-[11px] font-medium uppercase tracking-[1.32px] text-muted-foreground';
+const CARD = 'rounded-[20px] border border-border/80 bg-card';
+const LABEL = 'px-1 pt-2.5 text-[11px] font-semibold uppercase tracking-[1.32px] text-muted-foreground';
 const ROW = 'min-h-14 flex-row items-center justify-between gap-3';
-const LINE = 'border-t border-border';
-const BUTTON = 'h-[52px] flex-1 flex-row items-center justify-center gap-2.5 rounded-control px-3';
-// The web app's public privacy page (also linked from sign-in.tsx).
-const PRIVACY_URL = 'https://skinsense-v2-topaz.vercel.app/privacy';
+const LINE = 'border-t border-border/70';
+const BUTTON = 'h-[52px] flex-1 flex-row items-center justify-center gap-2.5 rounded-[14px] px-3';
 const LANGUAGES = [
   ['vi', 'Tiếng Việt'],
   ['en', 'English'],
@@ -78,9 +77,24 @@ function Group({ label, className = 'px-[18px]', children }: { label?: string; c
 }
 
 // Canvas .hit .photo circle: the Google avatar, or the photo placeholder gradient without one.
-function Avatar({ uri }: { uri?: string }) {
+// Thứ tự ưu tiên (spec 002): ảnh đã tải lên (Cloudinary) → ảnh Google → gradient. Ảnh lỗi thì rơi xuống bậc kế.
+function Avatar({ uris }: { uris: (string | undefined)[] }) {
   const palette = usePalette();
-  if (uri) return <Image source={{ uri }} className="size-11 rounded-pill" accessibilityIgnoresInvertColors />;
+  const { t } = useTranslation();
+  const candidates = uris.filter((u): u is string => !!u);
+  const [failed, setFailed] = useState<string[]>([]);
+  const uri = candidates.find((u) => !failed.includes(u));
+  if (uri) {
+    return (
+      <Image
+        source={{ uri }}
+        onError={() => setFailed((f) => [...f, uri])}
+        accessibilityLabel={t('settings.avatar')}
+        className="size-11 rounded-pill"
+        accessibilityIgnoresInvertColors
+      />
+    );
+  }
   return (
     <Svg width={44} height={44} aria-hidden>
       <Defs>
@@ -260,6 +274,64 @@ function ExportRow() {
 
 function MarketplaceSection({ role = 'customer' }: { role?: UserRole }) {
   const router = useRouter();
+  const session = useSession();
+  const currentUser = useCurrentUser();
+  const [showApplyModal, setShowApplyModal] = useState(false);
+  const [applyRole, setApplyRole] = useState<'specialist' | 'shop'>('specialist');
+  const [applyName, setApplyName] = useState(currentUser?.fullName || '');
+  const [applyEmail, setApplyEmail] = useState(currentUser?.email || session?.user?.email || '');
+  const [applyPhone, setApplyPhone] = useState(currentUser?.phoneNumber || '');
+  const [licenseId, setLicenseId] = useState('');
+  const [hospital, setHospital] = useState('');
+  const [specialty, setSpecialty] = useState('Da liễu Thẩm mỹ & Trị mụn');
+  const [shopName, setShopName] = useState('');
+  const [shopAddress, setShopAddress] = useState('');
+  const [submittingApply, setSubmittingApply] = useState(false);
+  const [applySuccessMessage, setApplySuccessMessage] = useState<string | null>(null);
+  const [applyErrorMessage, setApplyErrorMessage] = useState<string | null>(null);
+
+  async function handleSubmitRoleApplication() {
+    if (!applyEmail.trim() || !applyName.trim()) {
+      setApplyErrorMessage('Vui lòng nhập đầy đủ họ tên và email.');
+      return;
+    }
+    if (applyRole === 'specialist' && !licenseId.trim()) {
+      setApplyErrorMessage('Vui lòng nhập số Chứng chỉ hành nghề (CCHN).');
+      return;
+    }
+    if (applyRole === 'shop' && !shopName.trim()) {
+      setApplyErrorMessage('Vui lòng nhập tên gian hàng.');
+      return;
+    }
+    setApplyErrorMessage(null);
+    setSubmittingApply(true);
+    const res = await submitRoleApplicationRemote({
+      role: applyRole,
+      email: applyEmail.trim(),
+      fullName: applyName.trim(),
+      doctorName: applyRole === 'specialist' ? applyName.trim() : undefined,
+      ownerName: applyRole === 'shop' ? applyName.trim() : undefined,
+      phoneNumber: applyPhone.trim() || undefined,
+      licenseId: applyRole === 'specialist' ? licenseId.trim() : undefined,
+      hospital: applyRole === 'specialist' ? hospital.trim() : undefined,
+      specialty: applyRole === 'specialist' ? specialty.trim() : undefined,
+      shopName: applyRole === 'shop' ? shopName.trim() : undefined,
+      address: applyRole === 'shop' ? shopAddress.trim() : undefined,
+      license: applyRole === 'shop' ? licenseId.trim() || undefined : undefined,
+    });
+    setSubmittingApply(false);
+    if (res.ok) {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      setApplySuccessMessage(
+        res.data?.message ||
+          (applyRole === 'specialist'
+            ? 'Đã gửi hồ sơ Bác sĩ (CCHN) thành công! Admin sẽ phê duyệt sớm.'
+            : 'Đã gửi hồ sơ mở Gian hàng đối tác thành công!'),
+      );
+    } else {
+      setApplyErrorMessage(res.error || 'Không thể gửi hồ sơ lúc này. Vui lòng thử lại.');
+    }
+  }
 
   return (
     <Group label="Cửa Hàng & Quản Trị SkinSense" className="px-[18px]">
@@ -274,7 +346,7 @@ function MarketplaceSection({ role = 'customer' }: { role?: UserRole }) {
         className={ROW}
       >
         <View className="flex-row items-center gap-3">
-          <View className="size-8 items-center justify-center rounded-pill bg-primary/10">
+          <View className="size-9 items-center justify-center rounded-[11px] border border-primary/20 bg-primary/10">
             <Icon as={ShoppingBag} size={16} className="text-primary" />
           </View>
           <View className="gap-0.5">
@@ -287,18 +359,94 @@ function MarketplaceSection({ role = 'customer' }: { role?: UserRole }) {
         <Icon as={ChevronRight} size={18} strokeWidth={1.5} className="text-muted-foreground" />
       </Pressable>
 
-      {/* Specialist Consultation */}
-      {role === 'specialist' && (
+      {/* Clinical Storefront + Routine Builder */}
+      <Pressable
+        role="button"
+        accessibilityLabel="Sàn Dược Mỹ Phẩm & Routine"
+        onPress={() => {
+          void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          router.push('/store' as any);
+        }}
+        className={`${ROW} ${LINE}`}
+      >
+        <View className="flex-row items-center gap-3">
+          <View className="size-9 items-center justify-center rounded-[11px] border border-primary/20 bg-primary/10">
+            <Icon as={FlaskConical} size={16} className="text-primary" />
+          </View>
+          <View className="gap-0.5">
+            <Text className="text-[14.5px] font-medium">Sàn Dược Mỹ Phẩm & Routine</Text>
+            <Text className="text-[12px] font-light text-muted-foreground">
+              Tìm theo hoạt chất, xếp AM/PM & check xung đột
+            </Text>
+          </View>
+        </View>
+        <Icon as={ChevronRight} size={18} strokeWidth={1.5} className="text-muted-foreground" />
+      </Pressable>
+
+      {/* Prescribed Routine & Clinical Records */}
+      <Pressable
+        role="button"
+        accessibilityLabel="Phác đồ Bác sĩ & Bệnh án"
+        onPress={() => {
+          void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          router.push('/prescribed' as any);
+        }}
+        className={`${ROW} ${LINE}`}
+      >
+        <View className="flex-row items-center gap-3">
+          <View className="size-9 items-center justify-center rounded-[11px] border border-emerald-500/25 bg-emerald-500/10">
+            <Icon as={FileText} size={16} className="text-emerald-500" />
+          </View>
+          <View className="gap-0.5">
+            <Text className="text-[14.5px] font-medium">Phác đồ Bác sĩ & Bệnh án</Text>
+            <Text className="text-[12px] font-light text-muted-foreground">
+              Theo dõi đơn kê chuyên khoa & trạng thái BA
+            </Text>
+          </View>
+        </View>
+        <Icon as={ChevronRight} size={18} strokeWidth={1.5} className="text-muted-foreground" />
+      </Pressable>
+
+      {/* Register Doctor / Shop Partner */}
+      {role === 'customer' && (
         <Pressable
           role="button"
+          accessibilityLabel="Đăng ký Bác sĩ / Đối tác Shop"
           onPress={() => {
-            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            router.push('/(tabs)' as any);
+            setApplySuccessMessage(null);
+            setApplyErrorMessage(null);
+            setShowApplyModal(true);
           }}
           className={`${ROW} ${LINE}`}
         >
           <View className="flex-row items-center gap-3">
-            <View className="size-8 items-center justify-center rounded-pill bg-emerald-500/10">
+            <View className="size-9 items-center justify-center rounded-[11px] border border-amber-500/25 bg-amber-500/10">
+              <Icon as={Stethoscope} size={16} className="text-amber-500" />
+            </View>
+            <View className="gap-0.5">
+              <Text className="text-[14.5px] font-medium">Đăng ký Bác sĩ / Đối tác Shop</Text>
+              <Text className="text-[12px] font-light text-muted-foreground">
+                Nộp hồ sơ CCHN chuyên khoa hoặc mở gian hàng mall
+              </Text>
+            </View>
+          </View>
+          <Icon as={ChevronRight} size={18} strokeWidth={1.5} className="text-muted-foreground" />
+        </Pressable>
+      )}
+
+      {/* Specialist Consultation */}
+      {role === 'specialist' && (
+        <Pressable
+          role="button"
+          accessibilityLabel="Cổng Bác Sĩ Da Liễu"
+          onPress={() => {
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push('/specialist' as any);
+          }}
+          className={`${ROW} ${LINE}`}
+        >
+          <View className="flex-row items-center gap-3">
+            <View className="size-9 items-center justify-center rounded-[11px] border border-emerald-500/25 bg-emerald-500/10">
               <Icon as={Stethoscope} size={16} className="text-emerald-500" />
             </View>
             <View className="gap-0.5">
@@ -324,7 +472,7 @@ function MarketplaceSection({ role = 'customer' }: { role?: UserRole }) {
           className={`${ROW} ${LINE}`}
         >
           <View className="flex-row items-center gap-3">
-            <View className="size-8 items-center justify-center rounded-pill bg-amber-500/10">
+            <View className="size-9 items-center justify-center rounded-[11px] border border-amber-500/25 bg-amber-500/10">
               <Icon as={Store} size={16} className="text-amber-500" />
             </View>
             <View className="gap-0.5">
@@ -350,8 +498,8 @@ function MarketplaceSection({ role = 'customer' }: { role?: UserRole }) {
           className={`${ROW} ${LINE}`}
         >
           <View className="flex-row items-center gap-3">
-            <View className="size-8 items-center justify-center rounded-pill bg-purple-500/10">
-              <Icon as={ShieldCheck} size={16} className="text-purple-500" />
+            <View className="size-9 items-center justify-center rounded-[11px] border border-amber-500/25 bg-amber-500/10">
+              <Icon as={ShieldCheck} size={16} className="text-amber-500" />
             </View>
             <View className="gap-0.5">
               <Text className="text-[14.5px] font-medium">Quản Trị Cửa Hàng (Admin)</Text>
@@ -365,13 +513,13 @@ function MarketplaceSection({ role = 'customer' }: { role?: UserRole }) {
       )}
 
       {/* Role Isolation Summary Badge */}
-      <View className={`${LINE} py-2.5 flex-row items-center justify-between`}>
+      <View className={`${LINE} py-3 flex-row items-center justify-between`}>
         <View className="flex-row items-center gap-2">
           <View className="size-2 rounded-full bg-emerald-500" />
           <Text className="text-[12px] text-muted-foreground">Phân quyền tài khoản:</Text>
         </View>
-        <View className="rounded-pill bg-primary/10 px-2.5 py-0.5">
-          <Text className="text-[11.5px] font-semibold text-primary capitalize">
+        <View className="rounded-full border border-primary/25 bg-primary/10 px-2.5 py-0.5">
+          <Text className="text-[11px] font-semibold text-primary capitalize">
             {role === 'admin'
               ? 'Quản trị viên'
               : role === 'shop'
@@ -382,6 +530,153 @@ function MarketplaceSection({ role = 'customer' }: { role?: UserRole }) {
           </Text>
         </View>
       </View>
+
+      {/* Role Application Modal: Doctor CCHN or Shop Partner */}
+      <Modal visible={showApplyModal} animationType="slide" transparent>
+        <BottomSheetFrame bottomInset={36} maxHeightClass="max-h-[85%]">
+          <View className="mb-3 flex-row items-center justify-between">
+            <View>
+              <Text className="text-[10.5px] font-bold uppercase tracking-[0.12em] text-primary">
+                Hồ sơ đối tác SkinSense
+              </Text>
+              <Text className="font-display text-[20px] font-normal text-foreground">
+                Đăng ký Bác sĩ / Gian hàng
+              </Text>
+            </View>
+            <Pressable onPress={() => setShowApplyModal(false)} className="size-8 items-center justify-center rounded-full bg-surface-2">
+              <Icon as={X} size={17} className="text-muted-foreground" />
+            </Pressable>
+          </View>
+
+          {applySuccessMessage ? (
+            <View className="items-center gap-3 py-5">
+              <Icon as={CheckCircle2} size={36} className="text-emerald-500" />
+              <Text className="text-center text-[14px] font-medium text-foreground">
+                {applySuccessMessage}
+              </Text>
+              <Pressable
+                onPress={() => setShowApplyModal(false)}
+                className="mt-2 h-12 w-full items-center justify-center rounded-[14px] bg-primary active:scale-[0.98]">
+                <Text className="text-[14px] font-semibold text-primary-foreground">Đóng</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="gap-3 pb-2">
+              <View className="flex-row gap-2">
+                {[
+                  { id: 'specialist' as const, label: 'Bác sĩ Da liễu (CCHN)' },
+                  { id: 'shop' as const, label: 'Gian hàng Đối tác' },
+                ].map((opt) => (
+                  <Pressable
+                    key={opt.id}
+                    onPress={() => setApplyRole(opt.id)}
+                    className={`flex-1 items-center rounded-full border py-2.5 active:scale-[0.98] ${
+                      applyRole === opt.id ? 'border-foreground bg-foreground' : 'border-border/80 bg-surface-2'
+                    }`}>
+                    <Text className={`text-[12px] font-medium ${applyRole === opt.id ? 'text-background' : 'text-foreground'}`}>
+                      {opt.label}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+
+              <TextInput
+                value={applyName}
+                onChangeText={setApplyName}
+                placeholder={applyRole === 'specialist' ? 'Họ và tên Bác sĩ *' : 'Họ và tên Chủ gian hàng *'}
+                placeholderTextColor="#888"
+                className={MODERN_INPUT}
+              />
+              <TextInput
+                value={applyEmail}
+                onChangeText={setApplyEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                placeholder="Email đăng nhập tài khoản *"
+                placeholderTextColor="#888"
+                className={MODERN_INPUT}
+              />
+              <TextInput
+                value={applyPhone}
+                onChangeText={setApplyPhone}
+                keyboardType="phone-pad"
+                placeholder="Số điện thoại liên hệ"
+                placeholderTextColor="#888"
+                className={MODERN_INPUT}
+              />
+
+              {applyRole === 'specialist' ? (
+                <>
+                  <TextInput
+                    value={licenseId}
+                    onChangeText={setLicenseId}
+                    placeholder="Số Chứng chỉ hành nghề (CCHN) *"
+                    placeholderTextColor="#888"
+                    className={MODERN_INPUT}
+                  />
+                  <TextInput
+                    value={hospital}
+                    onChangeText={setHospital}
+                    placeholder="Bệnh viện / Phòng khám công tác"
+                    placeholderTextColor="#888"
+                    className={MODERN_INPUT}
+                  />
+                  <TextInput
+                    value={specialty}
+                    onChangeText={setSpecialty}
+                    placeholder="Chuyên khoa"
+                    placeholderTextColor="#888"
+                    className={MODERN_INPUT}
+                  />
+                </>
+              ) : (
+                <>
+                  <TextInput
+                    value={shopName}
+                    onChangeText={setShopName}
+                    placeholder="Tên Gian hàng Chính hãng *"
+                    placeholderTextColor="#888"
+                    className={MODERN_INPUT}
+                  />
+                  <TextInput
+                    value={shopAddress}
+                    onChangeText={setShopAddress}
+                    placeholder="Địa chỉ kho / chi nhánh"
+                    placeholderTextColor="#888"
+                    className={MODERN_INPUT}
+                  />
+                  <TextInput
+                    value={licenseId}
+                    onChangeText={setLicenseId}
+                    placeholder="Số GPKD / Công bố mỹ phẩm"
+                    placeholderTextColor="#888"
+                    className={MODERN_INPUT}
+                  />
+                </>
+              )}
+
+              {applyErrorMessage && (
+                <Text role="alert" className="text-[12px] text-destructive">
+                  {applyErrorMessage}
+                </Text>
+              )}
+
+              <Pressable
+                disabled={submittingApply}
+                onPress={() => void handleSubmitRoleApplication()}
+                className="mt-1 h-12 items-center justify-center rounded-[14px] bg-primary active:scale-[0.98] disabled:opacity-50">
+                {submittingApply ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text className="text-[14px] font-semibold text-primary-foreground">
+                    Gửi hồ sơ xét duyệt
+                  </Text>
+                )}
+              </Pressable>
+            </ScrollView>
+          )}
+        </BottomSheetFrame>
+      </Modal>
     </Group>
   );
 }
@@ -390,8 +685,9 @@ export function Settings() {
   const { t, i18n } = useTranslation();
   const session = useSession();
   const currentUser = useCurrentUser();
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const isDemo = useDemoActive();
-  const palette = usePalette();
+  const routerNav = useRouter();
   // Google puts the display name in user_metadata (full_name, or name on some accounts) and the avatar in picture.
   const meta = session?.user.user_metadata as { full_name?: string; name?: string; picture?: string; role?: UserRole } | undefined;
   const role: UserRole = currentUser?.role ?? meta?.role ?? 'customer';
@@ -416,25 +712,29 @@ export function Settings() {
 
   const roleBadgeColor =
     role === 'admin'
-      ? 'text-purple-400 bg-purple-500/10 border-purple-500/25'
+      ? 'text-amber-400 bg-amber-500/12 border-amber-500/30'
       : role === 'specialist'
-        ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/25'
+        ? 'text-emerald-400 bg-emerald-500/12 border-emerald-500/30'
         : role === 'shop'
-          ? 'text-amber-400 bg-amber-500/10 border-amber-500/25'
-          : 'text-sky-400 bg-sky-500/10 border-sky-500/25';
+          ? 'text-amber-400 bg-amber-500/12 border-amber-500/30'
+          : 'text-emerald-500 bg-emerald-500/12 border-emerald-500/25';
 
   return (
-    <ScrollView contentContainerClassName="gap-2.5 px-[18px] pb-24 pt-4">
-      <Text role="heading" aria-level="1" className="px-1 pb-3 font-display text-[50px] font-light leading-[56px]">
+    <ScrollView contentContainerClassName="gap-3 px-[18px] pb-24 pt-4">
+      <Text role="heading" aria-level="1" className="px-1 pb-2 font-display text-[46px] font-light leading-[52px]">
         {t('settings.title')}
       </Text>
 
-      <View className={`flex-row items-center gap-3.5 px-[18px] py-3.5 ${CARD}`}>
-        <Avatar uri={meta?.picture} />
+      <Pressable
+        role="button"
+        onPress={() => routerNav.push('/profile' as any)}
+        className={`flex-row items-center gap-3.5 px-[18px] py-4 ${CARD} active:scale-[0.99]`}
+      >
+        <Avatar uris={[currentUser?.avatarUrl, meta?.picture]} />
         <View className="min-w-0 flex-1 gap-1">
-          <View className="flex-row items-center gap-2">
-            {name && <Text className="text-[15.5px] font-medium">{name}</Text>}
-            <View className={`rounded-pill border px-2 py-0.5 ${roleBadgeColor}`}>
+          <View className="flex-row items-center gap-2 flex-wrap">
+            {name && <Text className="text-[15.5px] font-semibold">{name}</Text>}
+            <View className={`rounded-full border px-2.5 py-0.5 ${roleBadgeColor}`}>
               <Text className="text-[10px] font-semibold">{roleBadgeText}</Text>
             </View>
           </View>
@@ -442,8 +742,21 @@ export function Settings() {
           {currentUser?.phoneNumber && (
             <Text className="text-[11.5px] font-light text-muted-foreground">SĐT: {currentUser.phoneNumber}</Text>
           )}
+          {role === 'specialist' && (currentUser?.licenseId || currentUser?.hospital) && (
+            <Text className="text-[11.5px] text-emerald-500">
+              CCHN: {currentUser.licenseId || 'Đang xác minh'} {currentUser.hospital ? `· ${currentUser.hospital}` : ''}
+            </Text>
+          )}
+          {role === 'shop' && (currentUser?.shopName || currentUser?.shopDetails?.license) && (
+            <Text className="text-[11.5px] text-amber-500">
+              {currentUser.shopName || 'Gian hàng đối tác'}{' '}
+              {currentUser.status === 'pending' ? '(Chờ duyệt GPKD)' : '(Đang hoạt động)'}
+            </Text>
+          )}
+          <Text className="text-[11px] font-medium text-primary">Chỉnh sửa hồ sơ & Routine phân bổ →</Text>
         </View>
-      </View>
+        <Icon as={ChevronRight} size={18} strokeWidth={1.5} className="text-muted-foreground" />
+      </Pressable>
 
       <MarketplaceSection role={role} />
 
@@ -458,13 +771,13 @@ export function Settings() {
               void i18n.changeLanguage(code);
               void AsyncStorage.setItem(LANGUAGE_KEY, code);
             }}
-            className="rounded-control border border-border">
+            className="rounded-[13px] border border-border/80 bg-surface-2 p-0.5">
             {LANGUAGES.map(([code, label]) => (
               <ToggleGroupItem
                 key={code}
                 value={code}
-                className={`h-11 rounded-control px-3.5 active:bg-transparent ${i18n.language === code ? 'bg-primary' : 'bg-transparent'}`}>
-                <Text className={`text-[13px] ${i18n.language === code ? 'font-medium text-primary-foreground' : 'font-normal text-muted-foreground'}`}>{label}</Text>
+                className={`h-10 rounded-[11px] px-3.5 active:bg-transparent ${i18n.language === code ? 'bg-primary' : 'bg-transparent'}`}>
+                <Text className={`text-[13px] ${i18n.language === code ? 'font-semibold text-primary-foreground' : 'font-normal text-muted-foreground'}`}>{label}</Text>
               </ToggleGroupItem>
             ))}
           </ToggleGroup>
@@ -515,17 +828,33 @@ export function Settings() {
             </View>
           </Pressable>
         </Link>
-        <ExternalLink href={PRIVACY_URL} asChild>
-          <Pressable className={`${ROW} ${LINE}`}>
-            <Text className="text-[15px]">{t('settings.privacy')}</Text>
-            <View className="size-11 items-center justify-center">
-              <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={palette.muted} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <Path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
-              </Svg>
-            </View>
-          </Pressable>
-        </ExternalLink>
+        <Pressable role="button" onPress={() => setShowPrivacyModal(true)} className={`${ROW} ${LINE}`}>
+          <Text className="text-[15px]">{t('settings.privacy')}</Text>
+          <View className="size-11 items-center justify-center">
+            <Icon as={ChevronRight} size={20} strokeWidth={1.5} className="text-muted-foreground" />
+          </View>
+        </Pressable>
       </Group>
+
+      <Modal visible={showPrivacyModal} animationType="slide" transparent onRequestClose={() => setShowPrivacyModal(false)}>
+        <BottomSheetFrame bottomInset={36}>
+          <View className="gap-3">
+            <Text className="font-display text-[20px] font-normal text-foreground">
+              {t('settings.privacy')}
+            </Text>
+            <Text className="text-[13.5px] leading-5 text-muted-foreground">
+              Dữ liệu chụp da, bệnh án tư vấn và đơn hàng SkinSense được lưu bảo mật trên tài khoản Supabase của bạn và phân quyền nghiêm ngặt theo vai trò (Khách hàng, Bác sĩ, Gian hàng, Quản trị viên).
+            </Text>
+            <Pressable
+              role="button"
+              onPress={() => setShowPrivacyModal(false)}
+              className="mt-2 h-12 items-center justify-center rounded-[14px] bg-primary active:scale-[0.98]"
+            >
+              <Text className="text-[14px] font-semibold text-primary-foreground">Đóng</Text>
+            </Pressable>
+          </View>
+        </BottomSheetFrame>
+      </Modal>
 
       <View className="mt-2.5">
         <Group>
@@ -535,6 +864,9 @@ export function Settings() {
               void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
               await signOut();
               await supabase.auth.signOut();
+              try {
+                router.replace('/sign-in' as any);
+              } catch {}
             }}
             className={ROW}>
             <Text className="text-[15px]">{t('shell.signOut')}</Text>

@@ -7,6 +7,7 @@ import '@/i18n';
 jest.mock('@/lib/supabase', () => ({
   supabase: {
     auth: {
+      signInWithPassword: jest.fn(),
       signInWithIdToken: jest.fn(),
       signOut: jest.fn().mockResolvedValue({}),
       getSession: jest.fn().mockResolvedValue({ data: { session: null } }),
@@ -19,6 +20,7 @@ import * as auth from '@/lib/auth';
 import SignInScreen from '../app/sign-in';
 
 jest.mock('expo-router', () => ({
+  Link: ({ children }: { children: unknown }) => children,
   router: {
     replace: jest.fn(),
     push: jest.fn(),
@@ -30,9 +32,8 @@ jest.mock('@/lib/auth', () => {
   return {
     ...original,
     signInWithEmail: jest.fn(),
+    signInWithGoogle: jest.fn(),
     registerAccount: jest.fn(),
-    resetPassword: jest.fn(),
-    findAccountByPhone: jest.fn(),
   };
 });
 
@@ -42,93 +43,78 @@ async function renderSignIn() {
       initialMetrics={{
         insets: { top: 0, left: 0, right: 0, bottom: 0 },
         frame: { x: 0, y: 0, width: 375, height: 812 },
-      }}>
+      }}
+    >
       <SignInScreen />
     </SafeAreaProvider>,
   );
 }
 
-describe('SignInScreen Component', () => {
+describe('SignInScreen Component (Web-Parity Auth & 4-Role Portal Flow)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it('renders Sign In screen with inputs and role access pills', async () => {
+  it('renders Web-matched 4 auth tabs and Google OAuth card without hardcoded 1-touch demo pills', async () => {
     await renderSignIn();
 
-    expect(screen.getAllByText('Đăng Nhập').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByPlaceholderText('name@example.com')).toBeTruthy();
-    expect(screen.getByPlaceholderText('Nhập mật khẩu...')).toBeTruthy();
-    expect(screen.getByText('ĐĂNG NHẬP NHANH 1-CHẠM (4 ROLE)')).toBeTruthy();
-    expect(screen.getByText('Khách hàng')).toBeTruthy();
-    expect(screen.getByText('Chuyên viên')).toBeTruthy();
-    expect(screen.getByText('Shop bán hàng')).toBeTruthy();
-    expect(screen.getByText('Quản lý chung')).toBeTruthy();
+    expect(screen.getByText('SKINSENSE AUTH & XÉT DUYỆT')).toBeTruthy();
+    expect(screen.getByRole('tab', { name: 'Đăng nhập' })).toBeTruthy();
+    expect(screen.getByRole('tab', { name: 'Đăng ký' })).toBeTruthy();
+    expect(screen.getByRole('tab', { name: 'Bác sĩ duyệt' })).toBeTruthy();
+    expect(screen.getByRole('tab', { name: 'Mở Gian hàng' })).toBeTruthy();
+    expect(screen.getByText('Tiếp tục bằng Gmail (Google OAuth)')).toBeTruthy();
+    expect(screen.queryByText('ĐĂNG NHẬP NHANH 1-CHẠM (4 ROLE)')).toBeNull();
   });
 
-  it('switches to Register mode and renders role selector', async () => {
-    await renderSignIn();
-
-    fireEvent.press(screen.getByText('Đăng ký ngay'));
-
-    await waitFor(() => {
-      expect(screen.getByText('Đăng Ký Tài Khoản')).toBeTruthy();
-      expect(screen.getByText('Khách Hàng')).toBeTruthy();
-      expect(screen.getByText('Chuyên Viên')).toBeTruthy();
-      expect(screen.getByText('Shop Bán Hàng')).toBeTruthy();
-      expect(screen.getByText('Tạo Tài Khoản & Bắt Đầu')).toBeTruthy();
-    });
-  });
-
-  it('switches to Recovery mode and shows password and account tabs', async () => {
-    await renderSignIn();
-
-    fireEvent.press(screen.getByText('Quên tài khoản?'));
-
-    await waitFor(() => {
-      expect(screen.getByText('Khôi Phục Tài Khoản')).toBeTruthy();
-      expect(screen.getByText('Quên Mật Khẩu')).toBeTruthy();
-      expect(screen.getByText('Tìm Email / Tài Khoản')).toBeTruthy();
-    });
-
-    fireEvent.press(screen.getByText('Tìm Email / Tài Khoản'));
-    await waitFor(() => {
-      expect(screen.getByText('Tra Cứu Tài Khoản')).toBeTruthy();
-    });
-  });
-
-  it('handles quick 1-touch demo login', async () => {
+  it('routes Super Admin to /admin after real Supabase sign-in', async () => {
     (auth.signInWithEmail as jest.Mock).mockResolvedValueOnce({
-      id: 'admin',
+      id: 'admin-1',
+      email: 'hattn.23itb@vku.udn.vn',
       role: 'admin',
-      fullName: 'Ban Quản Trị Hệ Thống',
+      status: 'active',
+      isSuperAdmin: true,
+      fullName: 'Trần Thị Ngọc Hà (Super Admin)',
+      phoneNumber: '',
+      createdAt: '',
     });
 
     await renderSignIn();
 
-    fireEvent.press(screen.getByText('Quản lý chung'));
+    await fireEvent.changeText(
+      screen.getByPlaceholderText('nhap-email-cua-ban@gmail.com'),
+      'hattn.23itb@vku.udn.vn',
+    );
+    await fireEvent.changeText(screen.getByPlaceholderText('••••••••'), 'mypassword');
+    await fireEvent.press(screen.getByText('Đăng nhập ngay'));
 
     await waitFor(() => {
-      expect(auth.signInWithEmail).toHaveBeenCalledWith('admin@skinsense.vn', 'admin123456');
-      expect(router.replace).toHaveBeenCalledWith('/');
+      expect(auth.signInWithEmail).toHaveBeenCalledWith('hattn.23itb@vku.udn.vn', 'mypassword');
+      expect(router.replace).toHaveBeenCalledWith('/admin');
     });
   });
 
-  it('displays error feedback when account is blocked or credentials invalid', async () => {
-    (auth.signInWithEmail as jest.Mock).mockRejectedValueOnce(
-      new Error('Tài khoản này đã bị Ban Quản Trị tạm khóa. Vui lòng liên hệ bộ phận hỗ trợ.'),
-    );
-
+  it('switches to Bác sĩ duyệt tab and validates CCHN fields cleanly', async () => {
     await renderSignIn();
 
-    await fireEvent.changeText(screen.getByPlaceholderText('name@example.com'), 'khachhang@gmail.com');
-    await fireEvent.changeText(screen.getByPlaceholderText('Nhập mật khẩu...'), '123456');
+    await fireEvent.press(screen.getByRole('tab', { name: 'Bác sĩ duyệt' }));
 
-    const signInBtn = screen.getByLabelText('Nút đăng nhập');
-    await fireEvent.press(signInBtn);
+    expect(screen.getByText('Quy trình xét duyệt Bác sĩ Chuyên khoa Da liễu')).toBeTruthy();
+    expect(screen.getByPlaceholderText('Số Chứng chỉ hành nghề (CCHN) *')).toBeTruthy();
+    expect(screen.getByPlaceholderText('Đơn vị / Bệnh viện công tác *')).toBeTruthy();
 
-    await waitFor(() => {
-      expect(screen.getByText('Tài khoản này đã bị Ban Quản Trị tạm khóa. Vui lòng liên hệ bộ phận hỗ trợ.')).toBeTruthy();
-    });
+    await fireEvent.press(screen.getByText('Gửi yêu cầu duyệt Bác sĩ'));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Vui lòng nhập Họ và tên Bác sĩ.');
+  });
+
+  it('switches to Mở Gian hàng tab and shows GPKD + kho fields', async () => {
+    await renderSignIn();
+
+    await fireEvent.press(screen.getByRole('tab', { name: 'Mở Gian hàng' }));
+
+    expect(screen.getByText('Quy trình xét duyệt Mở Gian Hàng Đối Tác')).toBeTruthy();
+    expect(screen.getByPlaceholderText('Tên Gian hàng / Thương hiệu kinh doanh *')).toBeTruthy();
+    expect(screen.getByPlaceholderText('Mã số thuế / Số ĐKKD mỹ phẩm *')).toBeTruthy();
+    expect(screen.getByPlaceholderText('Địa chỉ gian hàng / Kho xuất hàng *')).toBeTruthy();
   });
 });

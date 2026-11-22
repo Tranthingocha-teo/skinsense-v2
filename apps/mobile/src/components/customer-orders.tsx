@@ -37,6 +37,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
+import {
+  loadUserOrdersRemote,
+  mapRemoteOrderToDomainOrder,
+  mutateUserOrderRemote,
+  payOrderRemote,
+} from '@/lib/api';
+import { ShopChatModal } from '@/components/shop-chat-modal';
 import { loadOrders, updateOrderStatus } from '@/lib/marketplace';
 import { ProductImage, QrImage } from '@/components/artwork';
 
@@ -62,6 +69,11 @@ export function CustomerOrders() {
   async function fetchOrders() {
     setLoading(true);
     try {
+      const remoteRes = await loadUserOrdersRemote('customer').catch(() => null);
+      if (remoteRes?.ok && remoteRes.data?.ok && Array.isArray(remoteRes.data.orders)) {
+        setOrders(remoteRes.data.orders.map(mapRemoteOrderToDomainOrder));
+        return;
+      }
       const data = await loadOrders();
       setOrders(data);
     } finally {
@@ -89,7 +101,8 @@ export function CustomerOrders() {
           style: 'destructive',
           onPress: async () => {
             void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-            await updateOrderStatus(orderId, 'cancelled');
+            await mutateUserOrderRemote({ orderCode: orderId, action: 'cancel' }).catch(() => null);
+            await updateOrderStatus(orderId, 'cancelled').catch(() => null);
             await fetchOrders();
           },
         },
@@ -333,16 +346,25 @@ export function CustomerOrders() {
                 </View>
 
                 {/* Action buttons */}
-                <View className="flex-row items-center justify-end gap-2 border-t border-border/40 pt-2.5">
+                <View className="flex-row flex-wrap items-center justify-end gap-2 border-t border-border/40 pt-2.5">
+                  <CustomerOrderChatButton order={order} />
+
                   {order.status === 'pending' && isVietQr && (
-                    <Pressable
-                      role="button"
-                      onPress={() => setQrModalOrder(order)}
-                      className="flex-row items-center gap-1 rounded-control border border-primary/30 bg-primary/10 px-3 py-1.5"
-                    >
-                      <Icon as={QrCode} size={13} className="text-primary" />
-                      <Text className="text-[12px] font-semibold text-primary">Xem mã VietQR</Text>
-                    </Pressable>
+                    <>
+                      <Pressable
+                        role="button"
+                        onPress={() => setQrModalOrder(order)}
+                        className="flex-row items-center gap-1 rounded-control border border-primary/30 bg-primary/10 px-3 py-1.5"
+                      >
+                        <Icon as={QrCode} size={13} className="text-primary" />
+                        <Text className="text-[12px] font-semibold text-primary">Xem mã VietQR</Text>
+                      </Pressable>
+                      <OrderPayButton order={order} onDone={fetchOrders} />
+                    </>
+                  )}
+
+                  {(order.status === 'shipping' || order.status === 'delivered') && (
+                    <OrderCompleteButton orderId={order.id} onDone={fetchOrders} />
                   )}
 
                   {order.status === 'pending' && (
@@ -427,17 +449,138 @@ export function CustomerOrders() {
                 )}
               </View>
 
-              <Pressable
-                role="button"
-                onPress={() => setQrModalOrder(null)}
-                className="h-11 items-center justify-center rounded-control bg-primary active:opacity-90"
-              >
-                <Text className="text-[14px] font-medium text-primary-foreground">Đóng</Text>
-              </Pressable>
+              <View className="flex-row gap-2">
+                <View className="flex-1">
+                  <OrderPayButton
+                    order={qrModalOrder}
+                    onDone={async () => {
+                      setQrModalOrder(null);
+                      await fetchOrders();
+                    }}
+                  />
+                </View>
+                <Pressable
+                  role="button"
+                  onPress={() => setQrModalOrder(null)}
+                  className="h-11 flex-1 items-center justify-center rounded-control bg-primary active:opacity-90"
+                >
+                  <Text className="text-[14px] font-medium text-primary-foreground">Đóng</Text>
+                </Pressable>
+              </View>
             </View>
           </View>
         </Modal>
       )}
     </View>
+  );
+}
+
+function CustomerOrderChatButton({ order }: { order: Order }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Pressable
+        role="button"
+        onPress={() => setOpen(true)}
+        className="flex-row items-center gap-1 rounded-control border border-border bg-card px-3 py-1.5"
+      >
+        <Icon as={Store} size={13} className="text-primary" />
+        <Text className="text-[12px] font-medium text-foreground">Chat Shop</Text>
+      </Pressable>
+      <ShopChatModal
+        visible={open}
+        onClose={() => setOpen(false)}
+        shopId={order.shopId || order.shopName || 'skinsense_mall'}
+        shopName={order.shopName || 'SkinSense Official'}
+        orderCode={order.id}
+      />
+    </>
+  );
+}
+
+function OrderPayButton({
+  order,
+  onDone,
+}: {
+  order: Order;
+  onDone: () => Promise<void> | void;
+}) {
+  const [paying, setPaying] = useState(false);
+
+  async function onPay() {
+    setPaying(true);
+    try {
+      const res = await payOrderRemote(order.id).catch(() => null);
+      if (res?.ok && res.data?.ok) {
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+        Alert.alert('Thanh toán thành công', res.data.message || `Đơn ${order.id} đã được xác nhận thanh toán.`);
+        await onDone();
+        return;
+      }
+      Alert.alert(
+        'Chưa thể xác nhận thanh toán',
+        res?.data?.message || 'Vui lòng kiểm tra kết nối mạng hoặc thử lại sau.',
+      );
+    } finally {
+      setPaying(false);
+    }
+  }
+
+  return (
+    <Pressable
+      role="button"
+      disabled={paying}
+      onPress={() => void onPay()}
+      className="h-11 flex-row items-center justify-center gap-1 rounded-control bg-emerald-600 px-3 active:opacity-90 disabled:opacity-60"
+    >
+      {paying ? (
+        <ActivityIndicator size="small" color="#fff" />
+      ) : (
+        <Icon as={CheckCircle2} size={13} className="text-white" />
+      )}
+      <Text className="text-[12px] font-semibold text-white">Thanh toán ngay</Text>
+    </Pressable>
+  );
+}
+
+function OrderCompleteButton({
+  orderId,
+  onDone,
+}: {
+  orderId: string;
+  onDone: () => Promise<void> | void;
+}) {
+  const [completing, setCompleting] = useState(false);
+
+  async function onComplete() {
+    setCompleting(true);
+    try {
+      const res = await mutateUserOrderRemote({ orderCode: orderId, action: 'complete' }).catch(() => null);
+      if (res?.ok && res.data?.ok) {
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+        await onDone();
+      } else {
+        await updateOrderStatus(orderId, 'completed').catch(() => null);
+        await onDone();
+      }
+    } finally {
+      setCompleting(false);
+    }
+  }
+
+  return (
+    <Pressable
+      role="button"
+      disabled={completing}
+      onPress={() => void onComplete()}
+      className="flex-row items-center gap-1 rounded-control bg-primary px-3 py-1.5 active:opacity-90 disabled:opacity-60"
+    >
+      {completing ? (
+        <ActivityIndicator size="small" color="#fff" />
+      ) : (
+        <Icon as={CheckCircle2} size={13} className="text-primary-foreground" />
+      )}
+      <Text className="text-[12px] font-semibold text-primary-foreground">Đã nhận hàng</Text>
+    </Pressable>
   );
 }

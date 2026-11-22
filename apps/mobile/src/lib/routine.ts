@@ -29,32 +29,10 @@ export async function loadRoutine(night: string, defaults: string[]) {
     fail(items.error);
     fail(entry.error);
     fail(entryCount.error);
-    let list = items.data as RoutineItem[];
-    // ponytail: "no items and no entries" = new user (see the web copy for the
-    // delete-everything corner). unique (user_id, label) dedupes concurrent seeds.
-    if (list.length === 0 && entryCount.count === 0) {
-      const seeded = await supabase
-        .from('routine_items')
-        .upsert(defaults.map((label, position) => ({ label, position })), {
-          onConflict: 'user_id,label',
-          ignoreDuplicates: true,
-        });
-      fail(seeded.error);
-      const reread = await supabase.from('routine_items').select(ITEM_COLUMNS).order('position');
-      fail(reread.error);
-      list = reread.data as RoutineItem[];
-    }
+    const list = (items.data ?? []) as RoutineItem[];
     return { items: list, entry: entry.data as RoutineEntry | null };
-  } catch {
-    // Graceful offline fallback: when supabase has no network or session, load demo routine
-    const demo = getMobileDemoData();
-    const entry = demo.entries.find((e) => e.night === night) || null;
-    const defaultItems: RoutineItem[] = defaults.map((label, position) => ({
-      id: `def-${position}`,
-      label,
-      position,
-    }));
-    return { items: demo.routineItems.length > 0 ? demo.routineItems : defaultItems, entry };
+  } catch (err) {
+    throw err;
   }
 }
 

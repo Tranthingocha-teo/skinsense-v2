@@ -4,6 +4,7 @@ import { File, Paths } from 'expo-file-system';
 
 import { ZONES, type Zone, type ZoneReadings } from '@skinsense/domain';
 
+import { uploadImageRemote } from './api';
 import { fail } from './routine';
 import { supabase } from './supabase';
 
@@ -91,10 +92,13 @@ export async function savePhoto(input: {
     throw new Error('not signed in');
   }
   const id = Crypto.randomUUID();
-  const storagePath = `${userId}/${id}.jpg`;
-
-  const upload = await supabase.storage.from(BUCKET).upload(storagePath, input.image, { contentType: 'image/jpeg' });
-  fail(upload.error);
+  // Ảnh mặt lưu trên Cloudinary; cột storage_path giữ link https trả về.
+  const local = new File(Paths.cache, `${id}.jpg`);
+  if (!local.exists) local.create({ overwrite: true });
+  local.write(new Uint8Array(input.image));
+  const up = await uploadImageRemote({ uri: local.uri, mimeType: 'image/jpeg', fileName: `${id}.jpg`, folder: 'skin-photos' });
+  if (!up.ok || !up.url) throw new Error(up.error || 'Tải ảnh lên Cloudinary thất bại');
+  const storagePath = up.url;
 
   // A Photo row without its readings would read as a valid capture everywhere
   // else; roll both the row (cascade) and the object back if either insert fails.
@@ -115,7 +119,6 @@ export async function savePhoto(input: {
     fail(readings.error);
   } catch (error) {
     await supabase.from('photos').delete().eq('id', id);
-    await supabase.storage.from(BUCKET).remove([storagePath]);
     throw error;
   }
   return id;
@@ -132,9 +135,14 @@ export async function loadPhoto(id: string): Promise<string> {
   }
   const photo = await supabase.from('photos').select('storage_path').eq('id', id).single();
   fail(photo.error);
-  const signed = await supabase.storage.from(BUCKET).createSignedUrl(photo.data!.storage_path, GHOST_URL_TTL_SECONDS);
-  fail(signed.error);
-  const file = await File.downloadFileAsync(signed.data!.signedUrl, new File(Paths.cache, `${id}.jpg`), { idempotent: true });
+  const path = photo.data!.storage_path as string;
+  let url = path;
+  if (!/^https?:\/\//.test(path)) {
+    const signed = await supabase.storage.from(BUCKET).createSignedUrl(path, GHOST_URL_TTL_SECONDS);
+    fail(signed.error);
+    url = signed.data!.signedUrl;
+  }
+  const file = await File.downloadFileAsync(url, new File(Paths.cache, `${id}.jpg`), { idempotent: true });
   return file.uri;
 }
 
