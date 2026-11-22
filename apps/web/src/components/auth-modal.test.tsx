@@ -33,6 +33,28 @@ describe("AuthModal", () => {
     } as Response);
   });
 
+  it("renders the dialog in document.body, outside a sticky blurred header, and closes with X or Esc", async () => {
+    // A backdrop-blur header makes fixed children position against the header, not the screen.
+    const { container } = render(
+      <header className="sticky top-0 backdrop-blur-md">
+        <AuthModal defaultTab="sign-in" triggerLabel="Mở đăng nhập" />
+      </header>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Mở đăng nhập" }));
+
+    const dialog = screen.getByRole("dialog");
+    expect(container.contains(dialog)).toBe(false);
+    expect(document.body.contains(dialog)).toBe(true);
+
+    fireEvent.click(screen.getByRole("button", { name: "Đóng" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Mở đăng nhập" }));
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
   it("authenticates Super Admin via Supabase Auth instead of bypassing signInWithPassword", async () => {
     signInWithPassword.mockResolvedValueOnce({ data: { user: null }, error: { message: "Invalid login credentials" } });
     render(<AuthModal defaultTab="sign-in" triggerLabel="Mở đăng nhập" />);

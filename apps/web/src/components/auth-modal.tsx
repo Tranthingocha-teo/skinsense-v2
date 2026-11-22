@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import {
   Eye,
@@ -51,6 +52,16 @@ export function AuthModal({
 }) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
+
+  // Esc closes the dialog, like its X button.
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isOpen]);
   const [tab, setTab] = useState<AuthModalTab>(defaultTab);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -467,7 +478,10 @@ export function AuthModal({
         {triggerLabel || "Đăng nhập / Đăng ký"}
       </button>
 
-      {isOpen && (
+      {/* Rendered into document.body: the trigger sits inside sticky headers with backdrop-blur, which
+          make a fixed child position against the header instead of the screen, pushing the dialog (and
+          its close button) off the top of the viewport. */}
+      {isOpen && typeof document !== "undefined" && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in-0 duration-200">
           <div
             className="relative flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl"
@@ -1153,7 +1167,8 @@ export function AuthModal({
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );
