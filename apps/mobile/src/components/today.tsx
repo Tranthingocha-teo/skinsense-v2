@@ -1,35 +1,33 @@
-import { dailySeries, localDay, rednessShare, streak, trendDirection, windowDays, ZONES } from '@skinsense/domain';
+import {
+  dailySeries,
+  localDay,
+  rednessShare,
+  streak,
+  trendDirection,
+  windowDays,
+  ZONES,
+} from '@skinsense/domain';
 import { color } from '@skinsense/tokens/tokens.json';
 import * as Haptics from 'expo-haptics';
-import { Image } from 'expo-image';
-import { Link, useRouter } from 'expo-router';
+import { Link, useRouter, type Href } from 'expo-router';
 import {
-  Activity,
-  AlertCircle,
-  Award,
   Camera,
   CheckCircle2,
   ChevronRight,
-  ClipboardList,
-  Clock,
-  DollarSign,
   FileText,
+  FlaskConical,
+  LogOut,
   Package,
-  Plus,
   Send,
   ShieldCheck,
-  ShoppingBag,
-  Sparkles,
   Stethoscope,
   Store,
-  TrendingUp,
-  User,
-  Users,
   X,
 } from 'lucide-react-native';
 import { useEffect, useReducer, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  ActivityIndicator,
   Modal,
   Pressable,
   ScrollView,
@@ -55,11 +53,17 @@ import { BuyerOrdersModal } from '@/components/buyer-orders';
 import { LoadState } from '@/components/load-state';
 import { Mark } from '@/components/mark';
 import { RecommendedProductsSection } from '@/components/recommended-products';
+import { AdminTodayWorkstation, ShopTodayWorkstation } from '@/components/role-workstations';
 import { RoutineChecklist } from '@/components/routine-checklist';
+import { SpecialistPortal } from '@/components/specialist-portal';
 import { FLAT_TOLERANCE } from '@/components/trends';
 import { Icon } from '@/components/ui/icon';
+import { BottomSheetFrame } from '@/components/ui/portal-chrome';
 import { Text } from '@/components/ui/text';
-import { useCurrentUser, type AuthUser } from '@/lib/auth';
+import { submitClinicalRecordRemote } from '@/lib/api';
+import { uploadPhotoToCloudinary } from '@/lib/history';
+import * as auth from '@/lib/auth';
+import { useCurrentUser, type AuthUser, type StaffTodayViewMode } from '@/lib/auth';
 import { useDemoActive } from '@/lib/demo';
 import { loadTrends, type TrendData } from '@/lib/trends';
 
@@ -190,565 +194,36 @@ function Loading() {
   );
 }
 
-// =========================================================================
-// ROLE 2: CHUYÊN VIÊN DA LIỄU WORKSTATION
-// =========================================================================
-interface PatientCase {
-  id: string;
-  name: string;
-  age: number;
-  timeAgo: string;
-  redness: { forehead: string; leftCheek: string; rightCheek: string; nose: string; chin: string };
-  diagnosis: string;
-  recommendedRoutine: string;
-  urgent?: boolean;
-}
 
-const INITIAL_PATIENTS: PatientCase[] = [
-  {
-    id: 'pt-1',
-    name: 'Trần Thị Ngọc Hà',
-    age: 24,
-    timeAgo: '15 phút trước',
-    redness: { forehead: '-0.8 ↓', leftCheek: '+0.4 ↓', rightCheek: '-0.9 ↓', nose: '+2.9 ↑', chin: '+4.0 ↑' },
-    diagnosis: 'Mụn sưng viêm sưng đỏ vùng cằm & bít tắc lỗ chân lông vùng chữ T',
-    recommendedRoutine: 'Effaclar Duo+M 40ml & Tinh chất B5 phục hồi da',
-    urgent: true,
-  },
-  {
-    id: 'pt-2',
-    name: 'Lê Hoàng Nam',
-    age: 27,
-    timeAgo: '1 giờ trước',
-    redness: { forehead: '+2.5 ↑', leftCheek: '+1.2', rightCheek: '+3.1 ↑', nose: '+0.8', chin: '+1.5' },
-    diagnosis: 'Da dầu mụn kích ứng nhạy cảm, hàng rào bảo vệ suy giảm',
-    recommendedRoutine: 'Centella Ampoule 100ml làm dịu & Gel rửa mặt dịu nhẹ',
-  },
-  {
-    id: 'pt-3',
-    name: 'Đỗ Thu Trang',
-    age: 22,
-    timeAgo: 'Hôm nay',
-    redness: { forehead: '-1.1 ↓', leftCheek: '-0.9 ↓', rightCheek: '-1.2 ↓', nose: '-0.4 ↓', chin: '-0.6 ↓' },
-    diagnosis: 'Nền da phục hồi rất tốt sau phác đồ tuần trước, giảm viêm 80%',
-    recommendedRoutine: 'Routine dưỡng ẩm duy trì & Chống nắng hàng ngày',
-  },
-];
 
-function SpecialistTodayWorkstation({ user, date }: { user: AuthUser; date: string }) {
-  const enter = useEnter();
-  const { bottom } = useSafeAreaInsets();
-  const [patients, setPatients] = useState(INITIAL_PATIENTS);
-  const [activePatient, setActivePatient] = useState<PatientCase | null>(null);
-  const [adviceText, setAdviceText] = useState('');
-  const [selectedProduct, setSelectedProduct] = useState('Effaclar Duo+M Giảm Mụn 40ml');
-  const [routinePhase, setRoutinePhase] = useState<'Buổi sáng' | 'Buổi tối' | 'Sáng & Tối' | 'Cách ngày'>('Sáng & Tối');
-  const [productSpecificNote, setProductSpecificNote] = useState('');
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!toastMessage) return;
-    const timer = setTimeout(() => setToastMessage(null), 3000);
-    return () => clearTimeout(timer);
-  }, [toastMessage]);
 
-  function handleOpenPrescribe(pt: PatientCase) {
-    setActivePatient(pt);
-    setAdviceText(`Dặn dò bệnh nhân: ${pt.name} cần vệ sinh sạch vùng mũi và cằm, tuân thủ đúng lộ trình routine.`);
-    setProductSpecificNote('Thoa lượng cỡ 1 hạt đậu xanh sau bước làm sạch, massage nhẹ 30s. Tránh vùng mắt.');
-    setRoutinePhase('Sáng & Tối');
-  }
 
-  function handleSendPrescription() {
-    if (!activePatient) return;
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setPatients((prev) =>
-      prev.map((p) =>
-        p.id === activePatient.id
-          ? {
-              ...p,
-              recommendedRoutine: `${selectedProduct} [${routinePhase}]: ${productSpecificNote || adviceText}`,
-            }
-          : p,
-      ),
-    );
-    setToastMessage(
-      `Đã gửi phác đồ điều trị thành công (${selectedProduct}) kèm ảnh chỉ định tới bệnh nhân ${activePatient.name}!`,
-    );
-    setActivePatient(null);
-  }
 
-  return (
-    <Frame photo={false} date={date}>
-      {/* Toast */}
-      {toastMessage && (
-        <View className="mb-2 flex-row items-center gap-2 rounded-card border border-emerald-500/30 bg-emerald-500/15 p-3.5">
-          <Icon as={CheckCircle2} size={18} className="text-emerald-500" />
-          <Text className="flex-1 text-[13px] font-medium text-emerald-400">{toastMessage}</Text>
-        </View>
-      )}
 
-      {/* Specialist Header Card */}
-      <Animated.View entering={enter(1)} className={`gap-3 p-5 ${CARD}`}>
-        <View className="flex-row items-center justify-between">
-          <View className="flex-row items-center gap-2">
-            <View className="size-9 items-center justify-center rounded-pill bg-emerald-500/15 border border-emerald-500/20">
-              <Icon as={Stethoscope} size={18} className="text-emerald-400" />
-            </View>
-            <View>
-              <Text className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">
-                Bác Sĩ / Chuyên Viên Da Liễu
-              </Text>
-              <Text className="font-display text-[17px] font-semibold text-foreground">{user.fullName}</Text>
-            </View>
-          </View>
-          <View className="flex-row items-center gap-1.5 rounded-pill border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1">
-            <View className="size-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
-            <Text className="text-[11px] font-medium text-emerald-400">Đang trực tuyến</Text>
-          </View>
-        </View>
-        <Text className="text-[13px] text-muted-foreground">
-          Chuyên khoa: {user.specialty || 'Da liễu & Điều trị mụn chuyên sâu'}
-        </Text>
-      </Animated.View>
 
-      {/* Specialist Quick Metrics */}
-      <Animated.View entering={enter(2)} className="flex-row gap-2.5">
-        <View className={`flex-1 gap-1 p-3.5 ${CARD}`}>
-          <Text className={LABEL}>Bệnh nhân</Text>
-          <Text className="font-display text-[26px] font-bold text-primary">24</Text>
-          <Text className="text-[11px] text-muted-foreground">đang quản lý</Text>
-        </View>
-        <View className={`flex-1 gap-1 border-amber-500/25 bg-amber-500/5 p-3.5 ${CARD}`}>
-          <Text className={LABEL}>Chờ tư vấn</Text>
-          <Text className="font-display text-[26px] font-bold text-amber-400">8 ca</Text>
-          <Text className="text-[11px] text-amber-500/80">hôm nay</Text>
-        </View>
-        <View className={`flex-1 gap-1 p-3.5 ${CARD}`}>
-          <Text className={LABEL}>Phác đồ</Text>
-          <Text className="font-display text-[26px] font-bold text-primary">18</Text>
-          <Text className="text-[11px] text-muted-foreground">đã gửi tuần này</Text>
-        </View>
-      </Animated.View>
 
-      {/* Patient Queue Section */}
-      <Animated.View entering={enter(3)} className="gap-2.5">
-        <View className="flex-row items-center justify-between px-1 pt-2">
-          <Text className={LABEL}>Hồ sơ da & Yêu cầu tư vấn mới nhất</Text>
-          <Text className="text-[12px] font-medium text-primary">3 hồ sơ</Text>
-        </View>
-
-        {patients.map((pt) => (
-          <View key={pt.id} className={`gap-3 p-4 ${CARD}`}>
-            <View className="flex-row items-start justify-between">
-              <View className="gap-0.5">
-                <View className="flex-row items-center gap-2">
-                  <Text className="text-[15.5px] font-semibold">{pt.name}</Text>
-                  <Text className="text-[13px] text-muted-foreground">({pt.age} tuổi)</Text>
-                  {pt.urgent && (
-                    <View className="rounded-pill bg-rose-500/15 border border-rose-500/30 px-2 py-0.5">
-                      <Text className="text-[10px] font-bold text-rose-400">Mới gửi ảnh</Text>
-                    </View>
-                  )}
-                </View>
-                <Text className="text-[11.5px] text-muted-foreground">{pt.timeAgo}</Text>
-              </View>
-            </View>
-
-            {/* Redness telemetry pills */}
-            <View className="rounded-control bg-surface-2 p-2.5 border border-border/60">
-              <Text className="mb-1 text-[11px] font-semibold text-muted-foreground">
-                Số đo vi diện mẩn đỏ AI:
-              </Text>
-              <View className="flex-row flex-wrap gap-2">
-                <Text className="text-[12px]">Trán: <Text className="font-semibold">{pt.redness.forehead}</Text></Text>
-                <Text className="text-[12px]">Má T: <Text className="font-semibold">{pt.redness.leftCheek}</Text></Text>
-                <Text className="text-[12px]">Má P: <Text className="font-semibold">{pt.redness.rightCheek}</Text></Text>
-                <Text className="text-[12px]">Mũi: <Text className="font-semibold text-rose-400">{pt.redness.nose}</Text></Text>
-                <Text className="text-[12px]">Cằm: <Text className="font-semibold text-rose-400">{pt.redness.chin}</Text></Text>
-              </View>
-            </View>
-
-            <View className="gap-1">
-              <Text className="text-[12.5px] font-medium text-foreground">Chẩn đoán sơ bộ:</Text>
-              <Text className="text-[12.5px] text-muted-foreground">{pt.diagnosis}</Text>
-            </View>
-
-            <View className="gap-1">
-              <Text className="text-[12.5px] font-medium text-emerald-400">Phác đồ gợi ý:</Text>
-              <Text className="text-[12.5px] text-muted-foreground">{pt.recommendedRoutine}</Text>
-            </View>
-
-            <Pressable
-              role="button"
-              onPress={() => handleOpenPrescribe(pt)}
-              className="mt-1 flex-row items-center justify-center gap-2 rounded-control bg-emerald-600/90 py-2.5 active:scale-[0.98]">
-              <Icon as={FileText} size={15} className="text-white" />
-              <Text className="text-[13.5px] font-semibold text-white">Kê Phác Đồ & Dặn Dò</Text>
-            </Pressable>
-          </View>
-        ))}
-      </Animated.View>
-
-      {/* Modal Prescribe */}
-      <Modal visible={activePatient !== null} animationType="slide" transparent>
-        <View className="flex-1 justify-end bg-black/75">
-          <View
-            style={{ paddingBottom: Math.max(bottom, 24) }}
-            className="max-h-[85%] rounded-t-3xl border-t border-border/80 bg-card p-5 shadow-lg">
-            <View className="mb-4 flex-row items-center justify-between">
-              <View>
-                <Text className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">
-                  Kê phác đồ điều trị
-                </Text>
-                <Text className="font-display text-[18px] font-semibold text-foreground">{activePatient?.name}</Text>
-              </View>
-              <Pressable onPress={() => setActivePatient(null)} className="size-8 items-center justify-center rounded-full bg-surface-2 active:scale-[0.98]">
-                <Icon as={X} size={18} className="text-muted-foreground" />
-              </Pressable>
-            </View>
-
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="gap-3.5 pb-2">
-              <View className="gap-1.5">
-                <Text className="text-[12px] font-semibold text-primary uppercase tracking-[0.08em]">Sản phẩm điều trị chỉ định</Text>
-                <View className="flex-row flex-wrap gap-2">
-                  {[
-                    'Effaclar Duo+M Giảm Mụn 40ml',
-                    'Centella Ampoule Rau Má 100ml',
-                    'Serum B5 Tái Tạo Phục Hồi',
-                    'Gel Rửa Mặt Dịu Nhẹ Cân Bằng',
-                  ].map((p) => (
-                    <Pressable
-                      key={p}
-                      onPress={() => setSelectedProduct(p)}
-                      className={`rounded-control border px-3 py-2 active:scale-[0.98] ${
-                        selectedProduct === p
-                          ? 'border-emerald-500 bg-emerald-500/15'
-                          : 'border-border/80 bg-surface-2'
-                      }`}>
-                      <Text
-                        className={`text-[12px] ${
-                          selectedProduct === p ? 'font-semibold text-emerald-400' : 'text-foreground'
-                        }`}>
-                        {p}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-              </View>
-
-              {/* Routine Phase selector */}
-              <View className="gap-1.5">
-                <Text className="text-[12px] font-semibold text-primary uppercase tracking-[0.08em]">Lộ trình áp dụng trong Routine *</Text>
-                <View className="flex-row flex-wrap gap-2">
-                  {(['Buổi sáng', 'Buổi tối', 'Sáng & Tối', 'Cách ngày'] as const).map((phase) => (
-                    <Pressable
-                      key={phase}
-                      onPress={() => setRoutinePhase(phase)}
-                      className={`rounded-pill border px-3 py-1.5 active:scale-[0.98] ${
-                        routinePhase === phase
-                          ? 'border-emerald-500 bg-emerald-500/20'
-                          : 'border-border/80 bg-surface-2'
-                      }`}>
-                      <Text
-                        className={`text-[12px] ${
-                          routinePhase === phase ? 'font-bold text-emerald-400' : 'text-foreground'
-                        }`}>
-                        {phase}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-              </View>
-
-              {/* Product specific note for routine */}
-              <View className="gap-1.5">
-                <View className="flex-row items-center justify-between">
-                  <Text className="text-[12px] font-semibold text-primary uppercase tracking-[0.08em]">Chỉ định riêng cho sản phẩm theo lộ trình *</Text>
-                  <Text className="text-[10px] text-muted-foreground">Liều lượng / Cách thoa</Text>
-                </View>
-                <TextInput
-                  value={productSpecificNote}
-                  onChangeText={setProductSpecificNote}
-                  placeholder="Ghi chú chỉ định theo lộ trình (liều lượng hạt đậu/giọt, thời điểm bôi, lưu ý...)"
-                  placeholderTextColor="#777"
-                  className="rounded-control border border-border/80 bg-surface-2 p-2.5 text-[12.5px] text-foreground"
-                />
-              </View>
-
-              {/* Diagnosis and clinical advice */}
-              <View className="gap-1.5">
-                <Text className="text-[12px] font-semibold text-primary uppercase tracking-[0.08em]">Chẩn đoán & Lời dặn chuyên khoa *</Text>
-                <TextInput
-                  value={adviceText}
-                  onChangeText={setAdviceText}
-                  multiline
-                  numberOfLines={3}
-                  className="min-h-[80px] rounded-control border border-border/80 bg-surface-2 p-3 text-[13px] text-foreground"
-                  placeholder="Nhập hướng dẫn liều dùng, lưu ý chăm sóc da cho bệnh nhân..."
-                  placeholderTextColor="#777"
-                />
-              </View>
-            </ScrollView>
-
-            <View className="mt-4 flex-row gap-3 pt-2">
-              <Pressable
-                onPress={() => setActivePatient(null)}
-                className="flex-1 items-center justify-center rounded-control border border-border/80 py-3 active:scale-[0.98]">
-                <Text className="text-[14px]">Huỷ</Text>
-              </Pressable>
-              <Pressable
-                onPress={handleSendPrescription}
-                className="flex-1 flex-row items-center justify-center gap-2 rounded-control bg-emerald-600 py-3 active:scale-[0.98]">
-                <Icon as={Send} size={15} className="text-white" />
-                <Text className="text-[14px] font-semibold text-white">Gửi Cho Bệnh Nhân</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
-    </Frame>
-  );
-}
-
-// =========================================================================
-// ROLE 3: QUẢN LÝ CHUNG HẾT (SUPER ADMIN) WORKSTATION
-// =========================================================================
-function AdminTodayWorkstation({ user, date }: { user: AuthUser; date: string }) {
-  const router = useRouter();
-  const enter = useEnter();
-
-  return (
-    <Frame photo={false} date={date}>
-      {/* Super Admin Header Card */}
-      <Animated.View entering={enter(1)} className={`gap-3 p-5 ${CARD}`}>
-        <View className="flex-row items-center justify-between">
-          <View className="flex-row items-center gap-2">
-            <View className="size-9 items-center justify-center rounded-pill bg-purple-500/15">
-              <Icon as={ShieldCheck} size={18} className="text-purple-400" />
-            </View>
-            <View>
-              <Text className="text-[11px] font-bold uppercase tracking-wider text-purple-400">
-                Quản Trị Viên Tối Cao
-              </Text>
-              <Text className="text-[17px] font-semibold">{user.fullName}</Text>
-            </View>
-          </View>
-          <View className="flex-row items-center gap-1.5 rounded-pill border border-purple-500/30 bg-purple-500/10 px-2.5 py-1">
-            <Text className="text-[11px] font-medium text-purple-400">Toàn quyền</Text>
-          </View>
-        </View>
-        <Text className="text-[13px] text-muted-foreground">
-          Bảng điều khiển trung tâm quản lý toàn bộ hệ sinh thái SkinSense
-        </Text>
-      </Animated.View>
-
-      {/* System Metrics */}
-      <Animated.View entering={enter(2)} className="flex-row flex-wrap gap-2.5">
-        <View className={`flex-1 min-w-[46%] gap-1 p-3.5 ${CARD}`}>
-          <Text className={LABEL}>Doanh thu toàn sàn</Text>
-          <Text className="font-display text-[26px] font-bold text-emerald-400">740.000₫</Text>
-          <Text className="text-[11px] text-muted-foreground">2 đơn hoàn tất</Text>
-        </View>
-        <View className={`flex-1 min-w-[46%] gap-1 p-3.5 ${CARD}`}>
-          <Text className={LABEL}>Đơn hàng toàn sàn</Text>
-          <Text className="font-display text-[26px] font-bold text-primary">2 đơn</Text>
-          <Text className="text-[11px] text-muted-foreground">0 đơn chờ duyệt</Text>
-        </View>
-        <View className={`flex-1 min-w-[46%] gap-1 p-3.5 ${CARD}`}>
-          <Text className={LABEL}>Shop bán hàng</Text>
-          <Text className="font-display text-[26px] font-bold text-primary">1 shop</Text>
-          <Text className="text-[11px] text-muted-foreground">đang hoạt động</Text>
-        </View>
-        <View className={`flex-1 min-w-[46%] gap-1 p-3.5 ${CARD}`}>
-          <Text className={LABEL}>Chuyên viên tư vấn</Text>
-          <Text className="font-display text-[26px] font-bold text-primary">1 bác sĩ</Text>
-          <Text className="text-[11px] text-muted-foreground">trực tuyến</Text>
-        </View>
-      </Animated.View>
-
-      {/* System Recent Activities */}
-      <Animated.View entering={enter(3)} className={`gap-3 p-4 ${CARD}`}>
-        <Text className={LABEL}>Hoạt động toàn sàn gần nhất</Text>
-        <View className="gap-2.5">
-          <View className="flex-row items-center justify-between border-b border-border/40 pb-2.5">
-            <View className="gap-0.5">
-              <Text className="text-[13.5px] font-medium">Đơn ORD-405503-9548 (Effaclar Duo+M)</Text>
-              <Text className="text-[11.5px] text-muted-foreground">Khách: Nguyen Van A • COD</Text>
-            </View>
-            <Text className="font-display text-[14px] font-bold text-emerald-400">+395.000₫</Text>
-          </View>
-          <View className="flex-row items-center justify-between border-b border-border/40 pb-2.5">
-            <View className="gap-0.5">
-              <Text className="text-[13.5px] font-medium">Đơn ORD-913038-9AAB (Centella Ampoule)</Text>
-              <Text className="text-[11.5px] text-muted-foreground">Khách: Tran Thi Ngoc Ha • COD</Text>
-            </View>
-            <Text className="font-display text-[14px] font-bold text-emerald-400">+345.000₫</Text>
-          </View>
-          <View className="flex-row items-center justify-between">
-            <View className="gap-0.5">
-              <Text className="text-[13.5px] font-medium">Sản phẩm mới trong kho</Text>
-              <Text className="text-[11.5px] text-muted-foreground">Serum B5 SkinSense Tái Tạo</Text>
-            </View>
-            <View className="rounded-pill bg-purple-500/15 border border-purple-500/20 px-2 py-0.5">
-              <Text className="text-[11px] font-semibold text-purple-400">11 SP</Text>
-            </View>
-          </View>
-        </View>
-      </Animated.View>
-
-      {/* Enter Super Admin Portal Button */}
-      <Animated.View entering={enter(4)}>
-        <Pressable
-          role="button"
-          onPress={() => {
-            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            router.push('/admin' as any);
-          }}
-          className="h-[52px] flex-row items-center justify-center gap-2.5 rounded-control bg-purple-600 active:scale-[0.98]">
-          <Icon as={ShieldCheck} size={19} className="text-white" />
-          <Text className="text-[15px] font-semibold text-white">
-            Vào Cổng Quản Trị Hệ Thống (Admin)
-          </Text>
-        </Pressable>
-      </Animated.View>
-    </Frame>
-  );
-}
-
-// =========================================================================
-// ROLE 4: SHOP ĐĂNG KÝ BÁN HÀNG WORKSTATION
-// =========================================================================
-function ShopTodayWorkstation({ user, date }: { user: AuthUser; date: string }) {
-  const router = useRouter();
-  const enter = useEnter();
-  const isPending = user.shopStatus === 'pending';
-
-  return (
-    <Frame photo={false} date={date}>
-      {/* Shop Partner Header Card */}
-      <Animated.View entering={enter(1)} className={`gap-3 p-5 ${CARD}`}>
-        <View className="flex-row items-center justify-between">
-          <View className="flex-row items-center gap-2">
-            <View className="size-9 items-center justify-center rounded-pill bg-amber-500/15 border border-amber-500/20">
-              <Icon as={Store} size={18} className="text-amber-400" />
-            </View>
-            <View>
-              <Text className="text-[11px] font-bold uppercase tracking-wider text-amber-400">
-                Gian Hàng Đối Tác
-              </Text>
-              <Text className="font-display text-[17px] font-semibold text-foreground">
-                {user.shopName || 'Gian Hàng SkinSense Partner'}
-              </Text>
-            </View>
-          </View>
-          {isPending ? (
-            <View className="flex-row items-center gap-1.5 rounded-pill border border-warning/40 bg-warning/15 px-2.5 py-1">
-              <Icon as={Clock} size={12} className="text-warning" />
-              <Text className="text-[11px] font-semibold text-warning">Chờ duyệt</Text>
-            </View>
-          ) : (
-            <View className="flex-row items-center gap-1.5 rounded-pill border border-amber-500/30 bg-amber-500/10 px-2.5 py-1">
-              <View className="size-2 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)]" />
-              <Text className="text-[11px] font-medium text-amber-400">Mở bán</Text>
-            </View>
-          )}
-        </View>
-        <Text className="text-[13px] text-muted-foreground">
-          Chủ gian hàng: {user.fullName} • SĐT: {user.phoneNumber}
-        </Text>
-
-        {isPending && (
-          <View className="rounded-control bg-warning/15 border border-warning/30 p-3.5 gap-1.5">
-            <View className="flex-row items-center gap-2">
-              <Icon as={Clock} size={16} className="text-warning" />
-              <Text className="text-[13px] font-bold text-warning">
-                Hồ sơ gian hàng đang chờ Admin SkinSense duyệt
-              </Text>
-            </View>
-            <Text className="text-[12px] text-muted-foreground leading-4">
-              Sau khi được Admin phê duyệt, gian hàng sẽ được mở bán chính thức trên sàn SkinSense Mall và hiển thị cho khách mua.
-            </Text>
-          </View>
-        )}
-      </Animated.View>
-
-      {/* Shop Metrics */}
-      <Animated.View entering={enter(2)} className="flex-row gap-2.5">
-        <View className={`flex-1 gap-1 p-3.5 ${CARD}`}>
-          <Text className={LABEL}>Doanh thu shop</Text>
-          <Text className="font-display text-[26px] font-bold text-amber-400">395.000₫</Text>
-          <Text className="text-[11px] text-muted-foreground">tháng này</Text>
-        </View>
-        <View className={`flex-1 gap-1 p-3.5 ${CARD}`}>
-          <Text className={LABEL}>Đơn cần gói</Text>
-          <Text className="font-display text-[26px] font-bold text-primary">1 đơn</Text>
-          <Text className="text-[11px] text-muted-foreground">chờ shipper lấy</Text>
-        </View>
-        <View className={`flex-1 gap-1 p-3.5 ${CARD}`}>
-          <Text className={LABEL}>Sản phẩm</Text>
-          <Text className="font-display text-[26px] font-bold text-primary">10 SP</Text>
-          <Text className="text-[11px] text-muted-foreground">đang bày bán</Text>
-        </View>
-      </Animated.View>
-
-      {/* Shop Orders Feed */}
-      <Animated.View entering={enter(3)} className={`gap-3 p-4 ${CARD}`}>
-        <Text className={LABEL}>Đơn đặt mua từ gian hàng của bạn</Text>
-        <View className="gap-2.5">
-          <View className="flex-row items-center justify-between border-b border-border/40 pb-2.5">
-            <View className="gap-0.5">
-              <Text className="text-[13.5px] font-medium">Effaclar Duo+M Giảm Mụn (x1)</Text>
-              <Text className="text-[11.5px] text-muted-foreground">Mã: ORD-405503-9548 • COD</Text>
-            </View>
-            <View className="items-end">
-              <Text className="font-display text-[14px] font-bold text-amber-400">395.000₫</Text>
-              <Text className="text-[11px] text-emerald-400 font-medium">Đã giao</Text>
-            </View>
-          </View>
-          <View className="flex-row items-center justify-between">
-            <View className="gap-0.5">
-              <Text className="text-[13.5px] font-medium">Madagascar Centella Ampoule (x1)</Text>
-              <Text className="text-[11.5px] text-muted-foreground">Mã: ORD-913038-9AAB • COD</Text>
-            </View>
-            <View className="items-end">
-              <Text className="font-display text-[14px] font-bold text-amber-400">345.000₫</Text>
-              <Text className="text-[11px] text-emerald-400 font-medium">Đã giao</Text>
-            </View>
-          </View>
-        </View>
-      </Animated.View>
-
-      {/* Enter Shop Management Portal Button */}
-      <Animated.View entering={enter(4)}>
-        <Pressable
-          role="button"
-          onPress={() => {
-            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            router.push('/shop' as any);
-          }}
-          className="h-[52px] flex-row items-center justify-center gap-2.5 rounded-control bg-amber-600 active:scale-[0.98]">
-          <Icon as={Store} size={19} className="text-white" />
-          <Text className="text-[15px] font-semibold text-white">
-            Quản Trị Gian Hàng & Đăng Bán Sản Phẩm
-          </Text>
-        </Pressable>
-      </Animated.View>
-    </Frame>
-  );
-}
 
 // =========================================================================
 // CUSTOMER WORKSTATION
 // =========================================================================
-function CustomerToday() {
+function CustomerToday({ user }: { user: AuthUser | null }) {
   const { t, i18n } = useTranslation();
   const palette = usePalette();
+  const router = useRouter();
   const enter = useEnter();
+  const { bottom } = useSafeAreaInsets();
   const [today] = useState(() => localDay(new Date()));
   const [data, setData] = useState<TrendData | null>(); // undefined loading, null failed
   const [attempt, retry] = useReducer((n: number) => n + 1, 0);
   const [showOrdersModal, setShowOrdersModal] = useState(false);
+  const [showClinicalExportModal, setShowClinicalExportModal] = useState(false);
+  const [clinicalSymptoms, setClinicalSymptoms] = useState('');
+  const [clinicalAllergies, setClinicalAllergies] = useState('');
+  const [clinicalSkinType, setClinicalSkinType] = useState('Hỗn hợp thiên dầu');
+  const [clinicalPhone, setClinicalPhone] = useState('');
+  const [exportingClinical, setExportingClinical] = useState(false);
+  const [exportedCaseCode, setExportedCaseCode] = useState<string | null>(null);
 
   useEffect(() => {
     // 90 days in one load: the streaks and the 7-day directions both derive from it.
@@ -780,6 +255,50 @@ function CustomerToday() {
   const captureDays = new Set(photoDay.values());
   const routineDays = new Set(data.entries.filter((e) => e.completed_labels.length > 0).map((e) => e.night));
   const latest = last ? data.readings.filter((r) => r.photo_id === last.id) : [];
+  const latestSpots = last ? data.spots.filter((s) => s.photo_id === last.id) : [];
+
+  function handleOpenClinicalExport() {
+    setExportedCaseCode(null);
+    if (!clinicalPhone && user?.phoneNumber) setClinicalPhone(user.phoneNumber);
+    if (!clinicalSymptoms) {
+      const highZones = latest
+        .filter((r) => r.redness >= 1.8)
+        .map((r) => r.zone);
+      setClinicalSymptoms(
+        highZones.length > 0
+          ? `Chỉ số mẩn đỏ tăng tại vùng: ${highZones.join(', ')} (${latestSpots.length} nốt mụn)`
+          : 'Da nhạy cảm, cần bác sĩ kiểm tra và đề xuất routine phù hợp',
+      );
+    }
+    setShowClinicalExportModal(true);
+  }
+
+  async function handleSubmitClinicalRecord() {
+    if (!clinicalSymptoms.trim() || exportingClinical) return;
+    setExportingClinical(true);
+    const avgRedness =
+      latest.length > 0
+        ? Math.min(95, Math.round((latest.reduce((acc, r) => acc + r.redness, 0) / latest.length) * 20))
+        : 35;
+    const skinPhotoUrl = last ? await uploadPhotoToCloudinary(last.storage_path, last.id) : undefined;
+    const res = await submitClinicalRecordRemote({
+      skinPhotoUrl,
+      patientName: user?.fullName || 'Khách hàng SkinSense',
+      patientEmail: user?.email,
+      phone: clinicalPhone || user?.phoneNumber,
+      skinType: clinicalSkinType,
+      symptoms: clinicalSymptoms.trim(),
+      allergies: clinicalAllergies.trim() || 'Không ghi nhận',
+      rednessIndex: avgRedness,
+      spotsCount: latestSpots.length,
+      affectedZones: latest.map((r) => r.zone),
+    });
+    setExportingClinical(false);
+    if (res.ok && res.caseCode) {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setExportedCaseCode(res.caseCode);
+    }
+  }
 
   return (
     <Frame photo={last !== undefined} date={date}>
@@ -796,28 +315,70 @@ function CustomerToday() {
             {last
               ? t('today.last', {
                   when: new Date(last.taken_at).toLocaleString(i18n.language, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }),
-                  count: data.spots.filter((s) => s.photo_id === last.id).length,
+                  count: latestSpots.length,
                 })
               : t('today.noPhoto')}
           </Text>
         </View>
         <Link href="/capture" asChild>
-          <Pressable role="button" className="h-[52px] flex-row items-center justify-center gap-2.5 rounded-control bg-primary">
+          <Pressable role="button" className="h-[52px] flex-row items-center justify-center gap-2.5 rounded-[14px] bg-primary active:scale-[0.99]">
             <Icon as={Camera} size={19} strokeWidth={1.5} className="text-primary-foreground" />
             <Text className="text-[15px] font-medium text-primary-foreground">{tonight ? t('today.captureAnother') : t('today.captureTonight')}</Text>
           </Pressable>
         </Link>
         {last && (
           <Link href={`/spots/${last.id}`} asChild>
-            <Pressable role="button" className="-mt-2 min-h-11 justify-center">
+            <Pressable role="button" className="-mt-1.5 min-h-11 justify-center">
               <Text className="text-sm underline">{t('today.markSpots')}</Text>
             </Pressable>
           </Link>
         )}
       </Animated.View>
 
-      {/* Shopee Buyer Orders Shortcut */}
-      <Animated.View entering={enter(2)}>
+      {/* Editorial Bento Quick Actions: Storefront, Prescribed Routine, Buyer Orders, Clinical Export */}
+      <Animated.View entering={enter(2)} className="gap-2.5">
+        <View className="flex-row gap-2.5">
+          <Link href={'/store' as Href} asChild>
+            <Pressable
+              role="button"
+              className="flex-1 justify-between gap-2.5 rounded-[18px] border border-border/80 bg-card p-4 active:scale-[0.98]"
+            >
+              <View className="flex-row items-center justify-between">
+                <View className="size-9 items-center justify-center rounded-[12px] border border-border/70 bg-surface-2">
+                  <Icon as={FlaskConical} size={17} strokeWidth={1.6} className="text-foreground" />
+                </View>
+                <Icon as={ChevronRight} size={15} className="text-muted-foreground" />
+              </View>
+              <View className="gap-0.5">
+                <Text className="text-[14px] font-semibold text-foreground">Sàn & Xếp Routine</Text>
+                <Text numberOfLines={1} className="text-[11.5px] font-light text-muted-foreground">
+                  Hoạt chất · Check xung đột
+                </Text>
+              </View>
+            </Pressable>
+          </Link>
+
+          <Link href={'/prescribed' as Href} asChild>
+            <Pressable
+              role="button"
+              className="flex-1 justify-between gap-2.5 rounded-[18px] border border-border/80 bg-card p-4 active:scale-[0.98]"
+            >
+              <View className="flex-row items-center justify-between">
+                <View className="size-9 items-center justify-center rounded-[12px] border border-success/25 bg-success/10">
+                  <Icon as={Stethoscope} size={17} strokeWidth={1.6} className="text-success" />
+                </View>
+                <Icon as={ChevronRight} size={15} className="text-muted-foreground" />
+              </View>
+              <View className="gap-0.5">
+                <Text className="text-[14px] font-semibold text-foreground">Phác Đồ Bác Sĩ</Text>
+                <Text numberOfLines={1} className="text-[11.5px] font-light text-muted-foreground">
+                  Đơn kê & Trạng thái BA
+                </Text>
+              </View>
+            </Pressable>
+          </Link>
+        </View>
+
         <Pressable
           role="button"
           accessibilityLabel="Đơn Mua Của Tôi"
@@ -825,24 +386,43 @@ function CustomerToday() {
             void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             setShowOrdersModal(true);
           }}
-          className="flex-row items-center justify-between rounded-card border border-border bg-card p-3.5 active:bg-surface-2"
+          className="flex-row items-center justify-between gap-2.5 rounded-[16px] border border-border/80 bg-card px-4 py-3.5 active:scale-[0.99]"
         >
-          <View className="flex-row items-center gap-2.5">
-            <View className="size-9 rounded-pill bg-primary/15 items-center justify-center">
-              <Icon as={Package} size={18} className="text-primary" />
+          <View className="flex-1 flex-row items-center gap-3">
+            <View className="size-9 items-center justify-center rounded-[12px] border border-border/70 bg-surface-2">
+              <Icon as={Package} size={17} strokeWidth={1.6} className="text-foreground" />
             </View>
-            <View>
-              <Text className="text-[14px] font-semibold text-foreground">
+            <View className="flex-1">
+              <Text numberOfLines={1} className="text-[13.5px] font-semibold text-foreground">
                 Đơn Mua Của Tôi (SkinSense Mall)
               </Text>
-              <Text className="text-[11.5px] text-muted-foreground">
+              <Text numberOfLines={1} className="text-[11.5px] font-light text-muted-foreground">
                 Theo dõi vận đơn, đánh giá 5 sao & quản lý đơn
               </Text>
             </View>
           </View>
-          <View className="rounded-pill bg-primary px-3 py-1">
-            <Text className="text-[11px] font-bold text-primary-foreground">Xem</Text>
+          <View className="shrink-0 rounded-full border border-border bg-surface-2 px-3 py-1">
+            <Text className="text-[11px] font-semibold text-foreground">Xem</Text>
           </View>
+        </Pressable>
+
+        <Pressable
+          role="button"
+          onPress={handleOpenClinicalExport}
+          className="flex-row items-center justify-between gap-2.5 rounded-[16px] border border-border/80 bg-card px-4 py-3.5 active:scale-[0.99]"
+        >
+          <View className="flex-1 flex-row items-center gap-3">
+            <View className="size-9 items-center justify-center rounded-[12px] border border-success/25 bg-success/10">
+              <Icon as={FileText} size={17} strokeWidth={1.6} className="text-success" />
+            </View>
+            <View className="flex-1">
+              <Text className="text-[13.5px] font-semibold text-foreground">Xuất bệnh án gửi Bác sĩ</Text>
+              <Text className="text-[11.5px] font-light text-muted-foreground">
+                Đóng gói số đo AI 5 vùng & triệu chứng nhận phác đồ
+              </Text>
+            </View>
+          </View>
+          <Icon as={ChevronRight} size={16} className="text-muted-foreground" />
         </Pressable>
       </Animated.View>
 
@@ -896,6 +476,133 @@ function CustomerToday() {
         visible={showOrdersModal}
         onClose={() => setShowOrdersModal(false)}
       />
+
+      {/* Clinical Record Export Modal */}
+      <Modal visible={showClinicalExportModal} animationType="slide" transparent>
+        <BottomSheetFrame bottomInset={bottom} maxHeightClass="max-h-[86%]">
+          <View className="mb-3 flex-row items-center justify-between">
+            <View>
+              <Text className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-success">
+                Xuất hồ sơ da liễu AI
+              </Text>
+              <Text className="font-display text-[20px] font-normal text-foreground">
+                Gửi bệnh án tới Bác sĩ
+              </Text>
+            </View>
+            <Pressable
+              onPress={() => setShowClinicalExportModal(false)}
+              className="size-9 items-center justify-center rounded-[12px] border border-border bg-surface-2"
+            >
+              <Icon as={X} size={17} className="text-muted-foreground" />
+            </Pressable>
+          </View>
+
+          {exportedCaseCode ? (
+            <View className="items-center gap-3 py-4">
+              <Icon as={CheckCircle2} size={36} className="text-success" />
+              <Text className="font-display text-[20px] font-normal text-foreground">
+                Đã xuất bệnh án {exportedCaseCode}
+              </Text>
+              <Text className="text-center text-[13px] leading-5 text-muted-foreground">
+                Hồ sơ da liễu và chỉ số 5 vùng mặt đã được chuyển tới hàng đợi của Bác sĩ chuyên khoa.
+              </Text>
+              <Pressable
+                onPress={() => {
+                  setShowClinicalExportModal(false);
+                  router.push('/prescribed' as any);
+                }}
+                className="mt-2 h-12 w-full items-center justify-center rounded-[13px] bg-primary"
+              >
+                <Text className="text-[14px] font-semibold text-primary-foreground">
+                  Theo dõi bệnh án & Phác đồ
+                </Text>
+              </Pressable>
+            </View>
+          ) : (
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="gap-3.5 pb-2">
+              <View className="gap-1.5">
+                <Text className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                  Triệu chứng & vùng da đang gặp vấn đề *
+                </Text>
+                <TextInput
+                  value={clinicalSymptoms}
+                  onChangeText={setClinicalSymptoms}
+                  multiline
+                  numberOfLines={3}
+                  placeholder="Ví dụ: Nổi mụn viêm vùng cằm, ửng đỏ hai má khi dùng acid..."
+                  placeholderTextColor="#888"
+                  className="min-h-[82px] rounded-[13px] border border-border/90 bg-surface-2 p-3.5 text-[13.5px] text-foreground"
+                />
+              </View>
+
+              <View className="gap-1.5">
+                <Text className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                  Loại da nền
+                </Text>
+                <View className="flex-row flex-wrap gap-2">
+                  {['Dầu mụn', 'Hỗn hợp thiên dầu', 'Khô nhạy cảm', 'Thường'].map((type) => (
+                    <Pressable
+                      key={type}
+                      onPress={() => setClinicalSkinType(type)}
+                      className={`rounded-full border px-3.5 py-1.5 ${
+                        clinicalSkinType === type ? 'border-foreground bg-foreground' : 'border-border bg-surface-2'
+                      }`}
+                    >
+                      <Text
+                        className={`text-[12px] ${
+                          clinicalSkinType === type ? 'font-semibold text-background' : 'text-foreground'
+                        }`}
+                      >
+                        {type}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+
+              <View className="gap-1.5">
+                <Text className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                  Tiền sử dị ứng hoạt chất
+                </Text>
+                <TextInput
+                  value={clinicalAllergies}
+                  onChangeText={setClinicalAllergies}
+                  placeholder="Không có / Dị ứng BHA, hương liệu..."
+                  placeholderTextColor="#888"
+                  className="h-11 rounded-[13px] border border-border/90 bg-surface-2 px-3.5 text-[13.5px] text-foreground"
+                />
+              </View>
+
+              <View className="gap-1.5">
+                <Text className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                  Số điện thoại liên hệ (tuỳ chọn)
+                </Text>
+                <TextInput
+                  value={clinicalPhone}
+                  onChangeText={setClinicalPhone}
+                  keyboardType="phone-pad"
+                  placeholder="09xx xxx xxx"
+                  placeholderTextColor="#888"
+                  className="h-11 rounded-[13px] border border-border/90 bg-surface-2 px-3.5 text-[13.5px] text-foreground"
+                />
+              </View>
+
+              <Pressable
+                disabled={exportingClinical || !clinicalSymptoms.trim()}
+                onPress={() => void handleSubmitClinicalRecord()}
+                className="mt-1 h-12 flex-row items-center justify-center gap-2 rounded-[13px] bg-emerald-600 active:scale-[0.99] disabled:opacity-50"
+              >
+                {exportingClinical ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Icon as={Send} size={15} className="text-white" />
+                )}
+                <Text className="text-[14px] font-semibold text-white">Gửi hồ sơ tới Bác sĩ</Text>
+              </Pressable>
+            </ScrollView>
+          )}
+        </BottomSheetFrame>
+      </Modal>
     </Frame>
   );
 }
@@ -905,20 +612,139 @@ function CustomerToday() {
 // =========================================================================
 export function Today() {
   const currentUser = useCurrentUser();
+  const isDemo = useDemoActive();
+  const router = useRouter();
+  const { top } = useSafeAreaInsets();
   const { i18n } = useTranslation();
   const date = new Date().toLocaleDateString(i18n.language, { weekday: 'long', day: 'numeric', month: 'long' });
 
-  // Role-based distinct workstations
-  if (currentUser?.role === 'specialist') {
-    return <SpecialistTodayWorkstation user={currentUser} date={date} />;
-  }
-  if (currentUser?.role === 'admin') {
-    return <AdminTodayWorkstation user={currentUser} date={date} />;
-  }
-  if (currentUser?.role === 'shop') {
-    return <ShopTodayWorkstation user={currentUser} date={date} />;
+  const [fallbackMode, setFallbackMode] = useState<StaffTodayViewMode>('workstation');
+  const sharedModeTuple =
+    typeof auth.useStaffTodayViewMode === 'function' ? auth.useStaffTodayViewMode() : null;
+  const viewMode = sharedModeTuple ? sharedModeTuple[0] : fallbackMode;
+  const setViewMode = sharedModeTuple ? sharedModeTuple[1] : setFallbackMode;
+
+  const isStaff =
+    !isDemo &&
+    (currentUser?.role === 'specialist' ||
+      currentUser?.role === 'admin' ||
+      currentUser?.role === 'shop');
+
+  if (!isStaff || !currentUser) {
+    return <CustomerToday user={isDemo ? null : currentUser} />;
   }
 
-  // Default customer workstation (Routine AI & Skin Telemetry)
-  return <CustomerToday />;
+  const roleMeta =
+    currentUser.role === 'admin'
+      ? {
+          portalLabel: 'Cổng Admin',
+          workstationTab: 'Bàn Quản Trị',
+          portalHref: '/admin' as Href,
+          icon: ShieldCheck,
+          accent: 'text-amber-500',
+        }
+      : currentUser.role === 'specialist'
+        ? {
+            portalLabel: 'Cổng Bác sĩ',
+            workstationTab: 'Ca Bệnh',
+            portalHref: '/specialist' as Href,
+            icon: Stethoscope,
+            accent: 'text-emerald-500',
+          }
+        : {
+            portalLabel: 'Cổng Shop',
+            workstationTab: 'Quản Lý Shop',
+            portalHref: '/shop' as Href,
+            icon: Store,
+            accent: 'text-amber-500',
+          };
+
+  return (
+    <View className="flex-1 bg-background">
+      {/* Staff Role & Skin Analysis Mode Switcher Bar */}
+      <View
+        style={{ paddingTop: Math.max(top, 10) + 4 }}
+        className="flex-row items-center justify-between gap-2 border-b border-border/80 bg-card px-3.5 pb-2.5"
+      >
+        <View className="flex-row items-center gap-1.5 rounded-full border border-border/80 bg-surface-2 p-1">
+          <Pressable
+            role="button"
+            accessibilityLabel="Trang Soi Da AI"
+            onPress={() => setViewMode('skin')}
+            className={`flex-row items-center gap-1.5 rounded-full px-3 py-1.5 ${
+              viewMode === 'skin' ? 'bg-primary' : ''
+            }`}
+          >
+            <Icon
+              as={Camera}
+              size={13}
+              className={viewMode === 'skin' ? 'text-primary-foreground' : 'text-muted-foreground'}
+            />
+            <Text
+              className={`text-[11.5px] font-semibold ${
+                viewMode === 'skin' ? 'text-primary-foreground' : 'text-foreground'
+              }`}
+            >
+              Trang Soi Da AI
+            </Text>
+          </Pressable>
+          <Pressable
+            role="button"
+            accessibilityLabel={roleMeta.workstationTab}
+            onPress={() => setViewMode('workstation')}
+            className={`flex-row items-center gap-1.5 rounded-full px-3 py-1.5 ${
+              viewMode === 'workstation' ? 'bg-primary' : ''
+            }`}
+          >
+            <Icon
+              as={roleMeta.icon}
+              size={13}
+              className={viewMode === 'workstation' ? 'text-primary-foreground' : roleMeta.accent}
+            />
+            <Text
+              className={`text-[11.5px] font-semibold ${
+                viewMode === 'workstation' ? 'text-primary-foreground' : 'text-foreground'
+              }`}
+            >
+              {roleMeta.workstationTab}
+            </Text>
+          </Pressable>
+        </View>
+
+        <View className="flex-row items-center gap-1.5">
+          <Pressable
+            role="button"
+            accessibilityLabel={`Mở ${roleMeta.portalLabel}`}
+            onPress={() => router.push(roleMeta.portalHref)}
+            className="h-8 items-center justify-center rounded-full border border-border/80 bg-surface-2 px-2.5 active:scale-[0.97]"
+          >
+            <Text className={`text-[11px] font-semibold ${roleMeta.accent}`}>
+              {roleMeta.portalLabel} →
+            </Text>
+          </Pressable>
+          <Pressable
+            role="button"
+            accessibilityLabel="Đăng xuất nhanh"
+            onPress={async () => {
+              if (typeof auth.signOut === 'function') await auth.signOut();
+              router.replace('/sign-in' as Href);
+            }}
+            className="size-8 items-center justify-center rounded-full border border-border/80 bg-surface-2 active:scale-[0.96]"
+          >
+            <Icon as={LogOut} size={13} className="text-destructive" />
+          </Pressable>
+        </View>
+      </View>
+
+      {viewMode === 'skin' ? (
+        <CustomerToday user={currentUser} />
+      ) : currentUser.role === 'specialist' ? (
+        <SpecialistPortal embedded />
+      ) : currentUser.role === 'admin' ? (
+        <AdminTodayWorkstation user={currentUser} date={date} />
+      ) : (
+        <ShopTodayWorkstation user={currentUser} date={date} />
+      )}
+    </View>
+  );
 }

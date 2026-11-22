@@ -1,14 +1,14 @@
+import { color } from '@skinsense/tokens/tokens.json';
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, Text, useColorScheme, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
 import { resetDemoData, setDemoActive, useDemoActive } from '@/lib/demo';
 
 export function DemoBanner() {
   const isDemo = useDemoActive();
   const insets = useSafeAreaInsets();
+  const palette = color[useColorScheme() === 'dark' ? 'dark' : 'light'];
 
   if (!isDemo) return null;
 
@@ -22,70 +22,45 @@ export function DemoBanner() {
   }
 
   return (
-    <View style={[styles.banner, { paddingTop: Math.max(insets.top, 12) + 4 }]}>
-      <View style={styles.left}>
-        <ThemedText type="smallBold" style={styles.title}>
+    <View
+      style={{
+        paddingTop: Math.max(insets.top, 12) + 4,
+        backgroundColor: palette.surface,
+        borderBottomColor: palette.line,
+      }}
+      className="z-50 flex-row items-center justify-between border-b px-4 pb-2.5"
+    >
+      <View className="flex-row items-center gap-2">
+        <View style={{ backgroundColor: palette.good }} className="size-2 rounded-full" />
+        <Text style={{ fontFamily: 'Manrope', color: palette.fg }} className="text-[12.5px] font-semibold">
           Dữ liệu mẫu
-        </ThemedText>
-        <ThemedText type="small" style={styles.note}>
+        </Text>
+        <Text style={{ fontFamily: 'Manrope', color: palette.muted }} className="text-[11.5px] font-light">
           (Demo mode)
-        </ThemedText>
+        </Text>
       </View>
-      <View style={styles.actions}>
-        <Pressable role="button" onPress={handleReset} style={styles.resetButton}>
-          <ThemedText type="small">Đặt lại</ThemedText>
+      <View className="flex-row items-center gap-2">
+        <Pressable
+          role="button"
+          onPress={handleReset}
+          style={{ backgroundColor: palette['surface-2'], borderColor: palette.line }}
+          className="rounded-[10px] border px-3 py-1.5 active:opacity-80"
+        >
+          <Text style={{ fontFamily: 'Manrope', color: palette.fg }} className="text-[12px] font-medium">
+            Đặt lại
+          </Text>
         </Pressable>
-        <Pressable role="button" onPress={handleExit} style={styles.signInButton}>
-          <ThemedText type="smallBold" style={styles.signInText}>
+        <Pressable
+          role="button"
+          onPress={handleExit}
+          style={{ backgroundColor: palette.accent }}
+          className="rounded-[10px] px-3.5 py-1.5 active:opacity-85"
+        >
+          <Text style={{ fontFamily: 'Manrope', color: palette['on-accent'] }} className="text-[12px] font-semibold">
             Đăng nhập
-          </ThemedText>
+          </Text>
         </Pressable>
       </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  banner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.two,
-    backgroundColor: '#1E293B',
-    borderBottomWidth: 1,
-    borderBottomColor: '#334155',
-    zIndex: 50,
-  },
-  left: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two,
-  },
-  title: {
-    color: '#38BDF8',
-  },
-  note: {
-    color: '#94A3B8',
-  },
-  actions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two,
-  },
-  resetButton: {
-    paddingHorizontal: Spacing.three,
-    paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: '#334155',
-  },
-  signInButton: {
-    paddingHorizontal: Spacing.three,
-    paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: '#38BDF8',
-  },
-  signInText: {
-    color: '#0F172A',
-  },
-});

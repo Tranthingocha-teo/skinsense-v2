@@ -1,179 +1,246 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+const mockSignInWithPassword = jest.fn();
+const mockSignOut = jest.fn().mockResolvedValue({});
+const mockGetSession = jest.fn().mockResolvedValue({ data: { session: null } });
+const mockOnAuthStateChange = jest.fn().mockReturnValue({
+  data: { subscription: { unsubscribe: jest.fn() } },
+});
+
 jest.mock('@/lib/supabase', () => ({
   supabase: {
     auth: {
+      signInWithPassword: (...args: unknown[]) => mockSignInWithPassword(...args),
       signInWithIdToken: jest.fn(),
-      signOut: jest.fn().mockResolvedValue({}),
-      getSession: jest.fn().mockResolvedValue({ data: { session: null } }),
-      onAuthStateChange: jest.fn().mockReturnValue({ data: { subscription: { unsubscribe: jest.fn() } } }),
+      signOut: (...args: unknown[]) => mockSignOut(...args),
+      getSession: (...args: unknown[]) => mockGetSession(...args),
+      onAuthStateChange: (...args: unknown[]) => mockOnAuthStateChange(...args),
     },
   },
 }));
 
+const mockGoogleConfigure = jest.fn();
+const mockHasPlayServices = jest.fn().mockResolvedValue(true);
+const mockGoogleSignIn = jest.fn();
+const mockGoogleSignOut = jest.fn().mockResolvedValue(undefined);
+const mockOpenAuthSessionAsync = jest.fn();
+
+jest.mock('@react-native-google-signin/google-signin', () => ({
+  GoogleSignin: {
+    configure: (...args: unknown[]) => mockGoogleConfigure(...args),
+    hasPlayServices: (...args: unknown[]) => mockHasPlayServices(...args),
+    signIn: (...args: unknown[]) => mockGoogleSignIn(...args),
+    signOut: (...args: unknown[]) => mockGoogleSignOut(...args),
+  },
+}));
+
+jest.mock('expo-web-browser', () => ({
+  openAuthSessionAsync: (...args: unknown[]) => mockOpenAuthSessionAsync(...args),
+}));
+
 import {
-  findAccountByPhone,
-  getAllUsers,
   getCurrentUser,
-  loadAccounts,
+  getRouteForRole,
   registerAccount,
-  resetPassword,
   setCurrentUser,
   signInWithEmail,
+  signInWithGoogle,
   signOut,
-  toggleUserStatus,
+  SUPER_ADMIN_EMAIL,
 } from './auth';
 
-describe('Authentication & User Role Engine', () => {
+describe('Authentication & Role Engine (Web-Parity Supabase Auth)', () => {
   beforeEach(async () => {
+    jest.clearAllMocks();
     await AsyncStorage.clear();
     await setCurrentUser(null);
   });
 
-  it('loads 4 initial default accounts (admin, specialist, shop, customer)', async () => {
-    const accounts = await loadAccounts();
-    expect(accounts.length).toBeGreaterThanOrEqual(4);
-
-    const admin = accounts.find((a) => a.role === 'admin');
-    const specialist = accounts.find((a) => a.role === 'specialist');
-    const shop = accounts.find((a) => a.role === 'shop');
-    const customer = accounts.find((a) => a.role === 'customer');
-
-    expect(admin).toBeDefined();
-    expect(admin?.email).toBe('admin@skinsense.vn');
-
-    expect(specialist).toBeDefined();
-    expect(specialist?.email).toBe('bacsi.hoa@skinsense.vn');
-
-    expect(shop).toBeDefined();
-    expect(shop?.email).toBe('shop.laroche@skinsense.vn');
-
-    expect(customer).toBeDefined();
-    expect(customer?.email).toBe('khachhang@gmail.com');
-  });
-
-  it('signs in successfully with valid credentials and sets current user', async () => {
-    const user = await signInWithEmail('admin@skinsense.vn', 'admin123456');
-    expect(user.role).toBe('admin');
-    expect(user.fullName).toBe('Ban Quản Trị Hệ Thống');
-
-    const current = await getCurrentUser();
-    expect(current?.id).toBe(user.id);
-  });
-
-  it('throws descriptive error on invalid credentials', async () => {
-    await expect(signInWithEmail('admin@skinsense.vn', 'wrongpass')).rejects.toThrow(
-      'Email hoặc mật khẩu không chính xác',
-    );
-    await expect(signInWithEmail('nonexistent@test.com', '123456')).rejects.toThrow(
-      'Email hoặc mật khẩu không chính xác',
-    );
-  });
-
-  it('registers a new customer account and automatically signs in', async () => {
-    const newUser = await registerAccount({
-      email: 'newbie@example.com',
-      password: 'password123',
-      fullName: 'Nguyen Thi Mai',
-      phoneNumber: '0912345678',
-      role: 'customer',
+  it('signs in real Super Admin account via Supabase Auth and routes to /admin', async () => {
+    mockSignInWithPassword.mockResolvedValueOnce({
+      data: {
+        user: {
+          id: 'uid-admin',
+          email: SUPER_ADMIN_EMAIL,
+          app_metadata: { role: 'admin', status: 'active' },
+          user_metadata: { full_name: 'Trần Thị Ngọc Hà' },
+          created_at: '2026-01-01T00:00:00Z',
+        },
+        session: { access_token: 'jwt-admin' },
+      },
+      error: null,
     });
-
-    expect(newUser.email).toBe('newbie@example.com');
-    expect(newUser.role).toBe('customer');
-
-    const current = await getCurrentUser();
-    expect(current?.email).toBe('newbie@example.com');
-
-    // Reject duplicate email
-    await expect(
-      registerAccount({
-        email: 'newbie@example.com',
-        password: 'password123',
-        fullName: 'Duplicate',
-        phoneNumber: '0999999999',
-        role: 'customer',
+    global.fetch = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        authenticated: true,
+        user: {
+          id: 'uid-admin',
+          email: SUPER_ADMIN_EMAIL,
+          fullName: 'Trần Thị Ngọc Hà (Super Admin)',
+          role: 'admin',
+          status: 'active',
+          isSuperAdmin: true,
+        },
       }),
-    ).rejects.toThrow('Email này đã được đăng ký');
+    })) as unknown as typeof fetch;
+
+    const user = await signInWithEmail(SUPER_ADMIN_EMAIL, 'secret123');
+    expect(user.role).toBe('admin');
+    expect(user.isSuperAdmin).toBe(true);
+    expect(getRouteForRole(user)).toBe('/admin');
+
+    const persisted = await getCurrentUser();
+    expect(persisted?.email).toBe(SUPER_ADMIN_EMAIL);
   });
 
-  it('registers a new shop account with custom shopName', async () => {
-    const shop = await registerAccount({
-      email: 'cosmetics@boutique.vn',
+  it('blocks pending shop sign-in identically to Web canShopSignIn rule', async () => {
+    mockSignInWithPassword.mockResolvedValueOnce({
+      data: {
+        user: {
+          id: 'uid-shop-pending',
+          email: 'pending.shop@test.vn',
+          app_metadata: { role: 'shop', status: 'pending' },
+          user_metadata: { shop_name: 'Shop Cho Duyet' },
+        },
+        session: { access_token: 'jwt-shop' },
+      },
+      error: null,
+    });
+    global.fetch = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        authenticated: true,
+        user: {
+          id: 'uid-shop-pending',
+          email: 'pending.shop@test.vn',
+          fullName: 'Shop Cho Duyet',
+          role: 'shop',
+          status: 'pending',
+        },
+      }),
+    })) as unknown as typeof fetch;
+
+    await expect(signInWithEmail('pending.shop@test.vn', '123456')).rejects.toThrow(
+      /chờ Super Admin/,
+    );
+    expect(mockSignOut).toHaveBeenCalled();
+  });
+
+  it('allows pending specialist sign-in into /specialist?status=pending sandbox', async () => {
+    mockSignInWithPassword.mockResolvedValueOnce({
+      data: {
+        user: {
+          id: 'uid-doc-pending',
+          email: 'dr.test@gmail.com',
+          app_metadata: { role: 'specialist', status: 'pending' },
+          user_metadata: { full_name: 'BS Test', license_id: 'CCHN-999' },
+        },
+        session: { access_token: 'jwt-doc' },
+      },
+      error: null,
+    });
+    global.fetch = jest.fn(async () => ({ ok: false, status: 401, json: async () => null })) as unknown as typeof fetch;
+
+    const doc = await signInWithEmail('dr.test@gmail.com', '123456');
+    expect(doc.role).toBe('specialist');
+    expect(doc.status).toBe('pending');
+    expect(getRouteForRole(doc)).toBe('/specialist?status=pending');
+  });
+
+  it('submits Doctor approval request to POST /api/auth/register cleanly', async () => {
+    global.fetch = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        ok: true,
+        message: 'Hồ sơ Bác sĩ đã được gửi thành công!',
+      }),
+    })) as unknown as typeof fetch;
+
+    const res = await registerAccount({
+      role: 'specialist',
+      email: 'bacsi.moi@gmail.com',
       password: 'password123',
-      fullName: 'Pham Van B',
-      phoneNumber: '0922222222',
-      role: 'shop',
-      shopName: 'Seoul Skincare Boutique',
+      fullName: 'ThS. BS Nguyễn Minh',
+      phoneNumber: '0912345678',
+      licenseId: 'CCHN-008812',
+      hospital: 'BV Da Liễu Trung Ương',
     });
 
-    expect(shop.role).toBe('shop');
-    expect(shop.shopName).toBe('Seoul Skincare Boutique');
-  });
-
-  it('finds account by phone number for recovery', async () => {
-    const found = await findAccountByPhone('0988776655');
-    expect(found).toBeDefined();
-    expect(found?.email).toBe('khachhang@gmail.com');
-
-    const notFound = await findAccountByPhone('0999000111');
-    expect(notFound).toBeNull();
-  });
-
-  it('resets password for existing account', async () => {
-    const success = await resetPassword('khachhang@gmail.com', 'newsecret678');
-    expect(success).toBe(true);
-
-    // Old password should fail
-    await expect(signInWithEmail('khachhang@gmail.com', '123456')).rejects.toThrow();
-
-    // New password should succeed
-    const user = await signInWithEmail('khachhang@gmail.com', 'newsecret678');
-    expect(user.email).toBe('khachhang@gmail.com');
-  });
-
-  it('signs out properly clearing current user', async () => {
-    await signInWithEmail('admin@skinsense.vn', 'admin123456');
-    expect(await getCurrentUser()).not.toBeNull();
+    expect(res.status).toBe('pending_approval');
+    expect(res.message).toContain('Hồ sơ Bác sĩ');
 
     await signOut();
     expect(await getCurrentUser()).toBeNull();
   });
 
-  it('rejects registering as admin and enforces role restrictions', async () => {
-    await expect(
-      registerAccount({
-        email: 'hacker.admin@skinsense.vn',
-        password: 'password123',
-        fullName: 'Fake Admin',
-        phoneNumber: '0911223344',
-        role: 'admin',
-      }),
-    ).rejects.toThrow('Không thể đăng ký tài khoản Quản trị viên');
+  it('keeps signInWithGoogle native without opening external Chrome browser on DEVELOPER_ERROR (10)', async () => {
+    const prevAllow = process.env.EXPO_PUBLIC_ALLOW_BROWSER_OAUTH;
+    const prevClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+    delete process.env.EXPO_PUBLIC_ALLOW_BROWSER_OAUTH;
+    process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID = 'test-web-client.apps.googleusercontent.com';
+    mockGoogleSignIn.mockRejectedValueOnce(new Error('DEVELOPER_ERROR 10: Client not configured'));
+
+    try {
+      await expect(signInWithGoogle()).rejects.toThrow(/Bản Android USB chưa khai báo SHA-1 Android Client ID/);
+      expect(mockGoogleConfigure).toHaveBeenCalledWith({
+        webClientId: 'test-web-client.apps.googleusercontent.com',
+      });
+      expect(mockHasPlayServices).toHaveBeenCalledTimes(1);
+      expect(mockOpenAuthSessionAsync).not.toHaveBeenCalled();
+    } finally {
+      if (prevAllow !== undefined) {
+        process.env.EXPO_PUBLIC_ALLOW_BROWSER_OAUTH = prevAllow;
+      }
+      if (prevClientId !== undefined) {
+        process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID = prevClientId;
+      } else {
+        delete process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+      }
+    }
   });
 
-  it('allows admin to manage user accounts and blocks blocked users from signing in', async () => {
-    const allUsers = await getAllUsers();
-    expect(allUsers.length).toBeGreaterThanOrEqual(4);
+  it('clears cached GoogleSignin account on signOut and ignores mismatched /api/auth/me admin response when switching accounts', async () => {
+    await signOut();
+    expect(mockGoogleSignOut).toHaveBeenCalled();
 
-    const targetCustomer = allUsers.find((u) => u.email === 'khachhang@gmail.com');
-    expect(targetCustomer).toBeDefined();
+    mockSignInWithPassword.mockResolvedValueOnce({
+      data: {
+        user: {
+          id: 'uid-doc-real',
+          email: 'dinhknd3@gmail.com',
+          app_metadata: { role: 'specialist', status: 'active' },
+          user_metadata: { full_name: 'BS. Đinh Khánh' },
+          created_at: '2026-01-01T00:00:00Z',
+        },
+        session: { access_token: 'jwt-doc-real' },
+      },
+      error: null,
+    });
+    // Simulate a stale cached /api/auth/me response for Super Admin
+    global.fetch = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        authenticated: true,
+        user: {
+          id: 'uid-admin',
+          email: SUPER_ADMIN_EMAIL,
+          fullName: 'Trần Thị Ngọc Hà (Super Admin)',
+          role: 'admin',
+          status: 'active',
+          isSuperAdmin: true,
+        },
+      }),
+    })) as unknown as typeof fetch;
 
-    // Toggle to blocked
-    const blocked = await toggleUserStatus(targetCustomer!.id);
-    expect(blocked.status).toBe('blocked');
-
-    // Attempting to sign in while blocked must throw
-    await expect(signInWithEmail('khachhang@gmail.com', '123456')).rejects.toThrow(
-      'tạm khóa',
-    );
-
-    // Unblock
-    const unblocked = await toggleUserStatus(targetCustomer!.id);
-    expect(unblocked.status).toBe('active');
-
-    // Sign in now succeeds
-    const user = await signInWithEmail('khachhang@gmail.com', '123456');
-    expect(user.status).toBe('active');
+    const user = await signInWithEmail('dinhknd3@gmail.com', 'secret123');
+    expect(user.email).toBe('dinhknd3@gmail.com');
+    expect(user.role).toBe('specialist');
+    expect(user.isSuperAdmin).toBeUndefined();
+    expect(getRouteForRole(user)).toBe('/specialist');
   });
 });

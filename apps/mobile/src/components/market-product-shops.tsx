@@ -17,6 +17,7 @@ import {
   Copy,
   CreditCard,
   MapPin,
+  MessageSquare,
   Minus,
   Phone,
   Package,
@@ -45,6 +46,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BuyerOrdersModal } from '@/components/buyer-orders';
+import { ShopChatModal } from '@/components/shop-chat-modal';
 
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
@@ -55,6 +57,7 @@ import {
   type ProductShopVendor,
   type StoreProduct,
 } from '@/lib/marketplace';
+import { apiJson, getAccessToken } from '@/lib/api';
 import { InitialsAvatar, ProductImage, QrImage } from '@/components/artwork';
 
 export function MarketProductShops({ productId }: { productId: string }) {
@@ -83,6 +86,7 @@ export function MarketProductShops({ productId }: { productId: string }) {
   const [submitting, setSubmitting] = useState(false);
   const [placedOrder, setPlacedOrder] = useState<Order | null>(null);
   const [showOrdersModal, setShowOrdersModal] = useState(false);
+  const [showChatModal, setShowChatModal] = useState(false);
   const [tempOrderMemo] = useState(
     () => `SS${productId.slice(0, 6).toUpperCase()}${Date.now().toString().slice(-4)}`,
   );
@@ -182,6 +186,43 @@ export function MarketProductShops({ productId }: { productId: string }) {
     try {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       const chosenShop = selectedVendor?.shop;
+      const remoteCode =
+        paymentMethod === 'vietqr'
+          ? tempOrderMemo
+          : `SS-${Math.floor(100000 + Math.random() * 900000)}`;
+      const token = await getAccessToken().catch(() => null);
+      if (token) {
+        const res = await apiJson<{ ok?: boolean; error?: string }>('/api/orders', {
+          method: 'POST',
+          body: JSON.stringify({
+            orderCode: remoteCode,
+            customerName: customerName.trim(),
+            customerPhone: customerPhone.trim(),
+            shippingAddress: customerAddress.trim(),
+            totalAmount,
+            paymentMethod,
+            shopName: chosenShop?.shopName || 'SkinSense Official',
+            brand: product.brand,
+            items: [
+              {
+                id: product.id,
+                name: product.name,
+                price: activeUnitPrice,
+                quantity,
+                image: product.imageUrl ?? '',
+              },
+            ],
+          }),
+        });
+        if (!res.ok) {
+          Alert.alert(
+            res.status === 401 ? 'Cần đăng nhập' : 'Lỗi đặt hàng',
+            res.data?.error || 'Không thể lưu đơn hàng lên hệ thống. Vui lòng thử lại.',
+          );
+          return;
+        }
+      }
+
       const newOrder = await createOrder({
         shopId: chosenShop?.id,
         shopName: chosenShop?.shopName,
@@ -197,7 +238,11 @@ export function MarketProductShops({ productId }: { productId: string }) {
         paymentMethod,
       });
 
-      setPlacedOrder(newOrder);
+      setPlacedOrder(
+        token
+          ? { ...newOrder, id: remoteCode, trackingCode: remoteCode }
+          : newOrder,
+      );
     } catch {
       Alert.alert('Lỗi', 'Không thể hoàn tất đơn hàng. Vui lòng thử lại.');
     } finally {
@@ -225,15 +270,26 @@ export function MarketProductShops({ productId }: { productId: string }) {
             Boutique phân phối chính ngạch & Hệ thống đối tác
           </Text>
         </View>
-        <Pressable
-          role="button"
-          accessibilityLabel="Đơn mua của tôi"
-          onPress={() => setShowOrdersModal(true)}
-          className="flex-row items-center gap-1.5 rounded-pill bg-surface-2 px-3 py-1.5 active:scale-[0.98] active:bg-surface-3 border border-border/60"
-        >
-          <Icon as={Package} size={14} className="text-primary" />
-          <Text className="text-[11.5px] font-semibold text-foreground">Đơn mua</Text>
-        </Pressable>
+        <View className="flex-row items-center gap-1.5">
+          <Pressable
+            role="button"
+            accessibilityLabel="Chat với Shop"
+            onPress={() => setShowChatModal(true)}
+            className="flex-row items-center gap-1 rounded-pill bg-surface-2 px-2.5 py-1.5 border border-border/60"
+          >
+            <Icon as={MessageSquare} size={13} className="text-primary" />
+            <Text className="text-[11px] font-semibold text-foreground">Hỏi Shop</Text>
+          </Pressable>
+          <Pressable
+            role="button"
+            accessibilityLabel="Đơn mua của tôi"
+            onPress={() => setShowOrdersModal(true)}
+            className="flex-row items-center gap-1 rounded-pill bg-surface-2 px-2.5 py-1.5 active:scale-[0.98] active:bg-surface-3 border border-border/60"
+          >
+            <Icon as={Package} size={14} className="text-primary" />
+            <Text className="text-[11px] font-semibold text-foreground">Đơn mua</Text>
+          </Pressable>
+        </View>
       </View>
 
       <ScrollView
@@ -1024,6 +1080,14 @@ export function MarketProductShops({ productId }: { productId: string }) {
       <BuyerOrdersModal
         visible={showOrdersModal}
         onClose={() => setShowOrdersModal(false)}
+      />
+
+      {/* Native Customer <-> Shop Chat */}
+      <ShopChatModal
+        visible={showChatModal}
+        onClose={() => setShowChatModal(false)}
+        shopId={selectedVendor?.shop.id || 'skinsense_mall'}
+        shopName={selectedVendor?.shop.shopName || 'SkinSense Official'}
       />
     </View>
   );

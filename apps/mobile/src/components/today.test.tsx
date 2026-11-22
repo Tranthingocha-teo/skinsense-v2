@@ -8,6 +8,7 @@ import { Today } from './today';
 
 // Factories, not automocks: the real modules load the supabase client at import time.
 jest.mock('@/lib/trends', () => ({ loadTrends: jest.fn(), signedPhotoUrls: jest.fn() }));
+jest.mock('@/lib/history', () => ({ uploadPhotoToCloudinary: jest.fn() }));
 jest.mock('@/lib/routine', () => ({ loadRoutine: jest.fn(), saveEntry: jest.fn() }));
 jest.mock('expo-image', () => ({ Image: () => null }));
 jest.mock('react-native-safe-area-context', () => require('react-native-safe-area-context/jest/mock').default);

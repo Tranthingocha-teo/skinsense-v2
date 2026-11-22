@@ -10,6 +10,34 @@ jest.mock('expo-router', () => ({
   useRouter: () => ({ back: jest.fn(), push: jest.fn() }),
 }));
 
+jest.mock('@/lib/api', () => {
+  const actual = jest.requireActual('@/lib/api');
+  const mk = (orderCode: string, status: string) => ({
+    id: orderCode,
+    orderCode,
+    customerName: 'Khách thật',
+    customerPhone: '0900000001',
+    shippingAddress: '1 Đường Thật, Đà Nẵng',
+    shopName: 'Shop Thật',
+    totalAmount: 395000,
+    status,
+    paymentMethod: 'cod',
+    paymentStatus: 'unpaid',
+    carrier: 'Giao nhanh',
+    createdAt: new Date().toISOString(),
+    items: [{ id: 'p1', name: 'Kem phục hồi', price: 395000, quantity: 1 }],
+  });
+  return {
+    ...actual,
+    loadUserOrdersRemote: jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      data: { ok: true, orders: [mk('SS-100001', 'pending'), mk('SS-100002', 'delivering'), mk('SS-100003', 'delivered')] },
+    }),
+    mutateUserOrderRemote: jest.fn().mockResolvedValue({ ok: true, status: 200, data: { ok: true } }),
+  };
+});
+
 jest.mock('expo-image', () => ({
   Image: 'Image',
 }));

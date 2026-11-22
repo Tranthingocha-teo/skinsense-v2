@@ -1,1032 +1,856 @@
-import { router } from 'expo-router';
+import {
+  sanitizeDoctorApprovalInput,
+  sanitizeShopApprovalInput,
+  validateDoctorApprovalInput,
+  validateShopApprovalInput,
+} from '@skinsense/domain';
+import { router, type Href } from 'expo-router';
 import {
   AlertCircle,
-  ArrowLeft,
+  Building2,
   CheckCircle2,
   Eye,
   EyeOff,
+  FileCheck2,
   Lock,
   Mail,
   Phone,
-  ShieldCheck,
   Sparkles,
   Stethoscope,
   Store,
   User,
 } from 'lucide-react-native';
 import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
-  StyleSheet,
   TextInput,
+  Modal,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import { Mark } from '@/components/mark';
 import { Icon } from '@/components/ui/icon';
+import { AmbientBackdrop, BottomSheetFrame, GoogleMark } from '@/components/ui/portal-chrome';
 import { Text } from '@/components/ui/text';
 import {
-  DEFAULT_ACCOUNTS,
-  findAccountByPhone,
+  getRouteForRole,
   registerAccount,
-  resetPassword,
   signInWithEmail,
-  type UserRole,
+  signInWithGoogle,
+  signOut,
 } from '@/lib/auth';
+import { setDemoActive } from '@/lib/demo';
 
-type AuthMode = 'sign-in' | 'register' | 'recovery';
-type RecoveryTab = 'password' | 'account';
+type AuthTab = 'sign-in' | 'register' | 'doctor-approval' | 'shop-approval';
 
 export default function SignInScreen() {
-  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
 
-  const [mode, setMode] = useState<AuthMode>('sign-in');
+  const [tab, setTab] = useState<AuthTab>('sign-in');
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Sign In state
+  // Sign In Form
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  // Register state
-  const [registerRole, setRegisterRole] = useState<UserRole>('customer');
+  // Register Form (Customer / Shop matching Web auth-modal.tsx)
+  const [regRole, setRegRole] = useState<'customer' | 'shop'>('customer');
   const [regFullName, setRegFullName] = useState('');
+  const [regShopName, setRegShopName] = useState('');
   const [regEmail, setRegEmail] = useState('');
   const [regPhone, setRegPhone] = useState('');
-  const [regShopName, setRegShopName] = useState('');
-  const [regSpecialty, setRegSpecialty] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [regConfirmPassword, setRegConfirmPassword] = useState('');
-  const [regShowPassword, setRegShowPassword] = useState(false);
+  const [showRegPassword, setShowRegPassword] = useState(false);
 
-  // Recovery state
-  const [recoveryTab, setRecoveryTab] = useState<RecoveryTab>('password');
-  const [recEmail, setRecEmail] = useState('');
-  const [recNewPassword, setRecNewPassword] = useState('');
-  const [recConfirmPassword, setRecConfirmPassword] = useState('');
-  const [recPhone, setRecPhone] = useState('');
-  const [recoveredEmail, setRecoveredEmail] = useState<string | null>(null);
+  // Doctor CCHN Approval Form
+  const [docName, setDocName] = useState('');
+  const [docLicenseId, setDocLicenseId] = useState('');
+  const [docHospital, setDocHospital] = useState('');
+  const [docSpecialty, setDocSpecialty] = useState('Da liễu & Điều trị mụn');
+  const [docEmail, setDocEmail] = useState('');
+  const [docPhone, setDocPhone] = useState('');
+  const [docPassword, setDocPassword] = useState('');
 
-  function resetFeedback() {
+  // Shop Approval Form
+  const [shopNameInput, setShopNameInput] = useState('');
+  const [shopOwnerName, setShopOwnerName] = useState('');
+  const [shopLicense, setShopLicense] = useState('');
+  const [shopCategory, setShopCategory] = useState('Dược mỹ phẩm trị mụn & phục hồi');
+  const [shopAddress, setShopAddress] = useState('');
+  const [shopEmail, setShopEmail] = useState('');
+  const [shopPhone, setShopPhone] = useState('');
+  const [shopPassword, setShopPassword] = useState('');
+
+  function switchTab(nextTab: AuthTab) {
+    setTab(nextTab);
     setError(null);
     setSuccess(null);
   }
 
-  async function handleSignIn(targetEmail?: string, targetPassword?: string) {
-    resetFeedback();
-    const loginEmail = targetEmail ?? email;
-    const loginPassword = targetPassword ?? password;
+  async function handleGoogleLogin() {
+    setError(null);
+    setSuccess(null);
+    setGoogleLoading(true);
+    try {
+      const user = await signInWithGoogle();
+      if (!user) return;
+      router.replace(getRouteForRole(user));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Đăng nhập Google thất bại.');
+    } finally {
+      setGoogleLoading(false);
+    }
+  }
 
-    if (!loginEmail.trim() || !loginPassword) {
+  async function handleSignIn() {
+    setError(null);
+    setSuccess(null);
+    if (!email.trim() || !password) {
       setError('Vui lòng nhập đầy đủ Email và Mật khẩu.');
       return;
     }
-
     setLoading(true);
     try {
-      await signInWithEmail(loginEmail, loginPassword);
-      router.replace('/');
+      const user = await signInWithEmail(email, password);
+      if (user.role === 'admin') {
+        setSuccess('Đăng nhập Super Admin thành công! Đang mở Bảng Quản Trị...');
+      } else if (user.role === 'specialist') {
+        setSuccess('Đăng nhập Bác sĩ thành công! Đang mở Cổng Bác sĩ Chuyên khoa...');
+      } else if (user.role === 'shop') {
+        setSuccess('Đăng nhập Cửa hàng thành công! Đang mở Kênh Người bán...');
+      }
+      router.replace(getRouteForRole(user));
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(e instanceof Error ? e.message : 'Đăng nhập thất bại.');
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleRegister() {
-    resetFeedback();
+  async function handleGeneralRegister() {
+    setError(null);
+    setSuccess(null);
     if (!regFullName.trim()) {
-      setError('Vui lòng nhập họ và tên của bạn.');
+      setError('Vui lòng nhập Họ và tên.');
       return;
     }
     if (!regEmail.trim() || !regEmail.includes('@')) {
-      setError('Vui lòng nhập địa chỉ email hợp lệ.');
+      setError('Vui lòng nhập địa chỉ Email hợp lệ.');
       return;
     }
-    if (!regPhone.trim()) {
-      setError('Vui lòng nhập số điện thoại liên hệ.');
-      return;
-    }
-    if (registerRole === 'shop' && !regShopName.trim()) {
-      setError('Vui lòng nhập tên gian hàng của bạn.');
-      return;
-    }
-    if (registerRole === 'specialist' && !regSpecialty.trim()) {
-      setError('Vui lòng nhập chuyên khoa hoặc nơi công tác.');
-      return;
-    }
-    if (!regPassword || regPassword.length < 6) {
-      setError('Mật khẩu phải có tối thiểu 6 ký tự.');
+    if (regPassword.length < 6) {
+      setError('Mật khẩu phải chứa ít nhất 6 ký tự.');
       return;
     }
     if (regPassword !== regConfirmPassword) {
-      setError('Mật khẩu xác nhận không khớp. Vui lòng kiểm tra lại.');
+      setError('Mật khẩu xác nhận không khớp.');
+      return;
+    }
+    if (regRole === 'shop' && !regShopName.trim()) {
+      setError('Vui lòng nhập Tên Cửa Hàng / Shop Name.');
       return;
     }
 
     setLoading(true);
     try {
-      await registerAccount({
+      const result = await registerAccount({
         email: regEmail,
         password: regPassword,
         fullName: regFullName,
         phoneNumber: regPhone,
-        role: registerRole,
-        shopName: registerRole === 'shop' ? regShopName : undefined,
-        specialty: registerRole === 'specialist' ? regSpecialty : undefined,
+        role: regRole,
+        shopName: regRole === 'shop' ? regShopName : undefined,
       });
-      router.replace('/');
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleResetPassword() {
-    resetFeedback();
-    if (!recEmail.trim() || !recEmail.includes('@')) {
-      setError('Vui lòng nhập email tài khoản của bạn.');
-      return;
-    }
-    if (!recNewPassword || recNewPassword.length < 6) {
-      setError('Mật khẩu mới phải có tối thiểu 6 ký tự.');
-      return;
-    }
-    if (recNewPassword !== recConfirmPassword) {
-      setError('Mật khẩu xác nhận không khớp.');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      await resetPassword(recEmail, recNewPassword);
-      setSuccess('Đặt lại mật khẩu thành công! Bạn có thể đăng nhập ngay với mật khẩu mới.');
-      setEmail(recEmail);
-      setPassword(recNewPassword);
-      setMode('sign-in');
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleFindAccount() {
-    resetFeedback();
-    setRecoveredEmail(null);
-    if (!recPhone.trim()) {
-      setError('Vui lòng nhập số điện thoại liên hệ để tra cứu.');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const found = await findAccountByPhone(recPhone);
-      if (!found) {
-        setError('Không tìm thấy tài khoản nào liên kết với số điện thoại này.');
+      if (result.status === 'signed_in' && result.user) {
+        router.replace(getRouteForRole(result.user));
       } else {
-        setRecoveredEmail(found.email);
-        setSuccess(`Đã tìm thấy tài khoản: ${found.fullName} (${found.role.toUpperCase()})`);
+        setSuccess(result.message);
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(e instanceof Error ? e.message : 'Đăng ký thất bại.');
     } finally {
       setLoading(false);
     }
   }
 
+  async function handleDoctorApprovalSubmit() {
+    setError(null);
+    setSuccess(null);
+    const validation = validateDoctorApprovalInput({
+      fullName: docName,
+      licenseId: docLicenseId,
+      hospital: docHospital,
+      email: docEmail,
+      password: docPassword,
+      phoneNumber: docPhone,
+      specialty: docSpecialty,
+    });
+    if (!validation.isValid) {
+      setError(validation.error || 'Thông tin gửi duyệt không hợp lệ.');
+      return;
+    }
+    const payload = sanitizeDoctorApprovalInput({
+      fullName: docName,
+      licenseId: docLicenseId,
+      hospital: docHospital,
+      email: docEmail,
+      password: docPassword,
+      phoneNumber: docPhone,
+      specialty: docSpecialty,
+    });
+
+    setLoading(true);
+    try {
+      const result = await registerAccount({
+        role: 'specialist',
+        email: payload.email,
+        password: payload.password,
+        fullName: payload.fullName,
+        phoneNumber: payload.phoneNumber,
+        licenseId: payload.licenseId,
+        hospital: payload.hospital,
+        specialty: payload.specialty,
+      });
+      setSuccess(
+        result.message ||
+          'Hồ sơ Bác sĩ đã được gửi thành công! Ban quản trị sẽ xét duyệt Chứng chỉ hành nghề.',
+      );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Gửi yêu cầu thất bại.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleShopApprovalSubmit() {
+    setError(null);
+    setSuccess(null);
+    const validation = validateShopApprovalInput({
+      shopName: shopNameInput,
+      ownerName: shopOwnerName,
+      license: shopLicense,
+      category: shopCategory,
+      address: shopAddress,
+      email: shopEmail,
+      password: shopPassword,
+      phoneNumber: shopPhone,
+    });
+    if (!validation.isValid) {
+      setError(validation.error || 'Thông tin mở gian hàng không hợp lệ.');
+      return;
+    }
+    const payload = sanitizeShopApprovalInput({
+      shopName: shopNameInput,
+      ownerName: shopOwnerName,
+      license: shopLicense,
+      category: shopCategory,
+      address: shopAddress,
+      email: shopEmail,
+      password: shopPassword,
+      phoneNumber: shopPhone,
+    });
+
+    setLoading(true);
+    try {
+      const result = await registerAccount({
+        role: 'shop',
+        email: payload.email,
+        password: payload.password,
+        fullName: payload.ownerName,
+        phoneNumber: payload.phoneNumber,
+        shopName: payload.shopName,
+        license: payload.license,
+        category: payload.category,
+        address: payload.address,
+      });
+      setSuccess(
+        result.message ||
+          'Hồ sơ mở Gian hàng đã được gửi thành công! Super Admin Trần Thị Ngọc Hà sẽ xét duyệt trước khi bạn đăng nhập Kênh Người Bán.',
+      );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Gửi yêu cầu mở gian hàng thất bại.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleEnterDemo() {
+    await signOut();
+    await setDemoActive(true);
+    router.replace('/(tabs)' as Href);
+  }
+
+  const tabs: { id: AuthTab; label: string }[] = [
+    { id: 'sign-in', label: 'Đăng nhập' },
+    { id: 'register', label: 'Đăng ký' },
+    { id: 'doctor-approval', label: 'Bác sĩ duyệt' },
+    { id: 'shop-approval', label: 'Mở Gian hàng' },
+  ];
+
   return (
-    <ThemedView style={styles.container}>
+    <View className="flex-1 bg-background">
+      <AmbientBackdrop height={280} tone="botanical" />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.keyboardAvoid}>
+        className="flex-1"
+      >
         <ScrollView
-          contentContainerStyle={[
-            styles.scrollContent,
-            { paddingTop: Math.max(insets.top, 24), paddingBottom: Math.max(insets.bottom, 24) },
-          ]}
-          keyboardShouldPersistTaps="handled">
-          {/* Header Brand */}
-          <View style={styles.header}>
-            <View style={styles.brandBadge}>
-              <Icon as={Sparkles} size={18} className="text-primary" />
-              <ThemedText style={styles.brandBadgeText}>SKINSENSE 2.0</ThemedText>
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{
+            paddingTop: Math.max(insets.top + 14, 30),
+            paddingBottom: Math.max(insets.bottom + 32, 48),
+            paddingHorizontal: 18,
+            gap: 16,
+          }}
+        >
+          {/* Brand Header */}
+          <View className="items-center gap-2.5 pt-2">
+            <View className="size-12 items-center justify-center rounded-[16px] border border-border/80 bg-card/90">
+              <Mark size={28} />
             </View>
-            <ThemedText type="title" style={styles.title}>
-              {mode === 'sign-in' && 'Đăng Nhập'}
-              {mode === 'register' && 'Đăng Ký Tài Khoản'}
-              {mode === 'recovery' && 'Khôi Phục Tài Khoản'}
-            </ThemedText>
-            <ThemedText style={styles.subtitle}>
-              {mode === 'sign-in' && 'Truy cập phác đồ chăm sóc da và phân quyền hệ thống'}
-              {mode === 'register' && 'Tham gia hệ sinh thái chăm sóc da chuyên sâu SkinSense'}
-              {mode === 'recovery' && 'Đặt lại mật khẩu hoặc tra cứu email đã đăng ký'}
-            </ThemedText>
+            <View className="items-center gap-1">
+              <Text className="font-display text-[21px] tracking-[0.22em] font-normal text-foreground">
+                SKINSENSE
+              </Text>
+              <View className="rounded-full border border-border/80 bg-surface-2/85 px-3 py-1">
+                <Text className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                  SKINSENSE AUTH & XÉT DUYỆT
+                </Text>
+              </View>
+            </View>
+            <Text className="max-w-[310px] text-center text-[13px] font-light leading-5 text-muted-foreground">
+              Đăng nhập đồng bộ 4 vai trò (Khách hàng, Bác sĩ, Gian hàng, Admin)
+            </Text>
           </View>
 
-          {/* Feedback Messages */}
+          {/* 4 Web Tabs Switcher */}
+          <View className="flex-row items-center justify-between gap-1 rounded-[16px] border border-border/85 bg-surface-2/85 p-1">
+            {tabs.map((item) => {
+              const active = tab === item.id;
+              return (
+                <Pressable
+                  key={item.id}
+                  role="tab"
+                  aria-selected={active}
+                  onPress={() => switchTab(item.id)}
+                  className={`flex-grow min-h-10 items-center justify-center rounded-[12px] px-2 py-2 ${
+                    active ? 'border border-border bg-card' : ''
+                  }`}
+                >
+                  <Text
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.85}
+                    className={`text-[11.5px] text-center ${
+                      active ? 'font-semibold text-foreground' : 'text-muted-foreground'
+                    }`}
+                  >
+                    {item.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          {/* Alert Banners */}
           {error && (
-            <View style={styles.errorBanner}>
-              <Icon as={AlertCircle} size={18} className="text-red-500" />
-              <ThemedText style={styles.errorText}>{error}</ThemedText>
+            <View
+              accessible
+              role="alert"
+              className="flex-row items-start gap-2.5 rounded-[16px] border border-destructive/40 bg-destructive/10 p-3.5"
+            >
+              <Icon as={AlertCircle} size={17} className="mt-0.5 text-destructive" />
+              <Text className="flex-1 text-[12.5px] leading-5 text-destructive">{error}</Text>
             </View>
           )}
 
           {success && (
-            <View style={styles.successBanner}>
-              <Icon as={CheckCircle2} size={18} className="text-emerald-500" />
-              <ThemedText style={styles.successText}>{success}</ThemedText>
+            <View
+              role="status"
+              className="flex-row items-start gap-2.5 rounded-[16px] border border-success/40 bg-success/10 p-3.5"
+            >
+              <Icon as={CheckCircle2} size={17} className="mt-0.5 text-success" />
+              <Text className="flex-1 text-[12.5px] leading-5 text-success">{success}</Text>
             </View>
           )}
 
-          {/* MODE: SIGN IN */}
-          {mode === 'sign-in' && (
-            <View style={styles.formCard}>
-              <View style={styles.inputGroup}>
-                <ThemedText style={styles.inputLabel}>Email đăng nhập</ThemedText>
-                <View style={styles.inputContainer}>
-                  <Icon as={Mail} size={18} className="text-muted-foreground mr-2" />
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="name@example.com"
-                    placeholderTextColor="#888"
-                    value={email}
-                    onChangeText={setEmail}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
+          {/* Main Auth Card */}
+          <View className="gap-4 rounded-[22px] border border-border/85 bg-card p-5">
+            {/* Google OAuth Section (on Sign In & Register matching Web) */}
+            {(tab === 'sign-in' || tab === 'register') && (
+              <View className="gap-2.5 rounded-[16px] border border-border/80 bg-surface-2/65 p-4">
+                <View className="flex-row items-start justify-between gap-2">
+                  <View className="flex-row items-center gap-1.5 flex-1">
+                    <Icon as={Sparkles} size={14} className="text-foreground shrink-0" />
+                    <Text className="flex-1 text-[12px] font-semibold leading-4 text-foreground">
+                      Đăng nhập bằng Gmail (Google / Supabase)
+                    </Text>
+                  </View>
+                  <View className="shrink-0 rounded-full border border-border bg-card px-2.5 py-0.5">
+                    <Text className="text-[10px] font-semibold text-success">Khuyên dùng</Text>
+                  </View>
                 </View>
-              </View>
-
-              <View style={styles.inputGroup}>
-                <View style={styles.labelRow}>
-                  <ThemedText style={styles.inputLabel}>Mật khẩu</ThemedText>
-                  <Pressable
-                    onPress={() => {
-                      resetFeedback();
-                      setMode('recovery');
-                    }}>
-                    <ThemedText style={styles.forgotLink}>Quên tài khoản?</ThemedText>
-                  </Pressable>
-                </View>
-                <View style={styles.inputContainer}>
-                  <Icon as={Lock} size={18} className="text-muted-foreground mr-2" />
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="Nhập mật khẩu..."
-                    placeholderTextColor="#888"
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry={!showPassword}
-                    autoCapitalize="none"
-                  />
-                  <Pressable onPress={() => setShowPassword(!showPassword)} style={styles.eyeButton}>
-                    <Icon as={showPassword ? EyeOff : Eye} size={18} className="text-muted-foreground" />
-                  </Pressable>
-                </View>
-              </View>
-
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Nút đăng nhập"
-                onPress={() => handleSignIn()}
-                disabled={loading}
-                style={[styles.primaryButton, loading && styles.disabledButton]}>
-                {loading ? (
-                  <ActivityIndicator color="#fff" size="small" />
-                ) : (
-                  <ThemedText style={styles.primaryButtonText}>Đăng Nhập</ThemedText>
-                )}
-              </Pressable>
-
-              <View style={styles.switchModeContainer}>
-                <ThemedText style={styles.switchModeText}>Chưa có tài khoản? </ThemedText>
+                <Text className="text-[11.5px] leading-4 text-muted-foreground">
+                  Tiếp tục qua Supabase OAuth — Đăng nhập an toàn, đồng bộ cùng tài khoản Web.
+                </Text>
                 <Pressable
-                  onPress={() => {
-                    resetFeedback();
-                    setMode('register');
-                  }}>
-                  <ThemedText style={styles.switchModeLink}>Đăng ký ngay</ThemedText>
+                  role="button"
+                  disabled={googleLoading}
+                  onPress={() => void handleGoogleLogin()}
+                  className="mt-0.5 h-12 flex-row items-center justify-center gap-2.5 rounded-[13px] border border-border bg-background active:scale-[0.99] disabled:opacity-50"
+                >
+                  {googleLoading ? (
+                    <ActivityIndicator size="small" />
+                  ) : (
+                    <>
+                      <GoogleMark size={18} />
+                      <Text className="text-[13.5px] font-semibold text-foreground">
+                        Tiếp tục bằng Gmail (Google OAuth)
+                      </Text>
+                    </>
+                  )}
                 </Pressable>
               </View>
+            )}
 
-              {/* Quick 1-Touch Demo Logins */}
-              <View style={styles.quickAccessSection}>
-                <ThemedText style={styles.quickAccessTitle}>ĐĂNG NHẬP NHANH 1-CHẠM (4 ROLE)</ThemedText>
-                <View style={styles.quickAccessGrid}>
-                  {DEFAULT_ACCOUNTS.map((acc) => {
-                    const roleLabel =
-                      acc.role === 'customer'
-                        ? 'Khách hàng'
-                        : acc.role === 'specialist'
-                          ? 'Chuyên viên'
-                          : acc.role === 'shop'
-                            ? 'Shop bán hàng'
-                            : 'Quản lý chung';
-                    const RoleIcon =
-                      acc.role === 'customer'
-                        ? User
-                        : acc.role === 'specialist'
-                          ? Stethoscope
-                          : acc.role === 'shop'
-                            ? Store
-                            : ShieldCheck;
+            {/* TAB 1: SIGN IN */}
+            {tab === 'sign-in' && (
+              <View className="gap-3.5">
+                <View className="flex-row items-center gap-2.5">
+                  <View className="h-px flex-1 bg-border/70" />
+                  <Text className="text-[10.5px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+                    hoặc đăng nhập với tài khoản & mật khẩu
+                  </Text>
+                  <View className="h-px flex-1 bg-border/70" />
+                </View>
 
+                <View className="gap-1.5">
+                  <Text className="text-[12px] font-medium text-foreground">Địa chỉ Email</Text>
+                  <View className="h-12 flex-row items-center rounded-[13px] border border-border/90 bg-background px-3.5 gap-2.5">
+                    <Icon as={Mail} size={16} className="text-muted-foreground" />
+                    <TextInput
+                      value={email}
+                      onChangeText={setEmail}
+                      placeholder="nhap-email-cua-ban@gmail.com"
+                      placeholderTextColor="#888"
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      className="flex-1 text-[13.5px] text-foreground"
+                    />
+                  </View>
+                </View>
+
+                <View className="gap-1.5">
+                  <Text className="text-[12px] font-medium text-foreground">Mật khẩu</Text>
+                  <View className="h-12 flex-row items-center rounded-[13px] border border-border/90 bg-background px-3.5 gap-2.5">
+                    <Icon as={Lock} size={16} className="text-muted-foreground" />
+                    <TextInput
+                      value={password}
+                      onChangeText={setPassword}
+                      placeholder="••••••••"
+                      placeholderTextColor="#888"
+                      secureTextEntry={!showPassword}
+                      autoCapitalize="none"
+                      className="flex-1 text-[13.5px] text-foreground"
+                    />
+                    <Pressable onPress={() => setShowPassword((s) => !s)} className="p-1.5">
+                      <Icon as={showPassword ? EyeOff : Eye} size={16} className="text-muted-foreground" />
+                    </Pressable>
+                  </View>
+                </View>
+
+                <Pressable
+                  role="button"
+                  disabled={loading}
+                  onPress={() => void handleSignIn()}
+                  className="mt-1 h-12 flex-row items-center justify-center rounded-[13px] bg-primary active:scale-[0.99] disabled:opacity-50"
+                >
+                  {loading ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text className="text-[14.5px] font-semibold text-primary-foreground">
+                      Đăng nhập ngay
+                    </Text>
+                  )}
+                </Pressable>
+              </View>
+            )}
+
+            {/* TAB 2: GENERAL REGISTER */}
+            {tab === 'register' && (
+              <View className="gap-3">
+                <Text className="text-[12px] font-medium text-foreground">
+                  Bạn muốn đăng ký vai trò:
+                </Text>
+                <View className="flex-row gap-2">
+                  {[
+                    { id: 'customer' as const, label: 'Khách hàng (Soi da)', icon: User },
+                    { id: 'shop' as const, label: 'Cửa hàng mỹ phẩm', icon: Store },
+                  ].map((r) => {
+                    const active = regRole === r.id;
                     return (
                       <Pressable
-                        key={acc.id}
-                        onPress={() => handleSignIn(acc.email, acc.password)}
-                        style={styles.quickAccessPill}>
-                        <Icon as={RoleIcon} size={15} className="text-primary mr-1.5" />
-                        <View style={{ flex: 1 }}>
-                          <ThemedText style={styles.quickAccessPillRole}>{roleLabel}</ThemedText>
-                          <ThemedText style={styles.quickAccessPillEmail} numberOfLines={1}>
-                            {acc.email}
-                          </ThemedText>
-                        </View>
+                        key={r.id}
+                        role="button"
+                        onPress={() => setRegRole(r.id)}
+                        className={`flex-1 flex-row items-center justify-center gap-1.5 rounded-[13px] border py-2.5 px-2 ${
+                          active ? 'border-foreground bg-surface-2' : 'border-border/80 bg-background'
+                        }`}
+                      >
+                        <Icon
+                          as={r.icon}
+                          size={15}
+                          className={active ? 'text-foreground' : 'text-muted-foreground'}
+                        />
+                        <Text
+                          className={`text-[12px] ${
+                            active ? 'font-semibold text-foreground' : 'text-muted-foreground'
+                          }`}
+                        >
+                          {r.label}
+                        </Text>
                       </Pressable>
                     );
                   })}
                 </View>
-              </View>
-            </View>
-          )}
 
-          {/* MODE: REGISTER */}
-          {mode === 'register' && (
-            <View style={styles.formCard}>
-              <ThemedText style={styles.inputLabel}>Chọn vai trò đăng ký của bạn *</ThemedText>
-              <View style={styles.rolePickerRow}>
-                <Pressable
-                  onPress={() => setRegisterRole('customer')}
-                  style={[styles.roleOption, registerRole === 'customer' && styles.roleOptionActive]}>
-                  <Icon
-                    as={User}
-                    size={16}
-                    className={registerRole === 'customer' ? 'text-primary' : 'text-muted-foreground'}
-                  />
-                  <ThemedText
-                    style={[
-                      styles.roleOptionText,
-                      registerRole === 'customer' && styles.roleOptionTextActive,
-                    ]}>
-                    Khách Hàng
-                  </ThemedText>
-                </Pressable>
+                <TextInput
+                  value={regFullName}
+                  onChangeText={setRegFullName}
+                  placeholder="Họ và tên *"
+                  placeholderTextColor="#888"
+                  className="h-12 rounded-[13px] border border-border/90 bg-background px-3.5 text-[13.5px] text-foreground"
+                />
 
-                <Pressable
-                  onPress={() => setRegisterRole('specialist')}
-                  style={[styles.roleOption, registerRole === 'specialist' && styles.roleOptionActive]}>
-                  <Icon
-                    as={Stethoscope}
-                    size={16}
-                    className={registerRole === 'specialist' ? 'text-primary' : 'text-muted-foreground'}
-                  />
-                  <ThemedText
-                    style={[
-                      styles.roleOptionText,
-                      registerRole === 'specialist' && styles.roleOptionTextActive,
-                    ]}>
-                    Chuyên Viên
-                  </ThemedText>
-                </Pressable>
-
-                <Pressable
-                  onPress={() => setRegisterRole('shop')}
-                  style={[styles.roleOption, registerRole === 'shop' && styles.roleOptionActive]}>
-                  <Icon
-                    as={Store}
-                    size={16}
-                    className={registerRole === 'shop' ? 'text-primary' : 'text-muted-foreground'}
-                  />
-                  <ThemedText
-                    style={[
-                      styles.roleOptionText,
-                      registerRole === 'shop' && styles.roleOptionTextActive,
-                    ]}>
-                    Shop Bán Hàng
-                  </ThemedText>
-                </Pressable>
-              </View>
-
-              <View style={styles.inputGroup}>
-                <ThemedText style={styles.inputLabel}>Họ và tên người dùng *</ThemedText>
-                <View style={styles.inputContainer}>
-                  <Icon as={User} size={18} className="text-muted-foreground mr-2" />
+                {regRole === 'shop' && (
                   <TextInput
-                    style={styles.textInput}
-                    placeholder="Ví dụ: Nguyễn Văn A"
+                    value={regShopName}
+                    onChangeText={setRegShopName}
+                    placeholder="Tên Cửa Hàng / Shop Name *"
                     placeholderTextColor="#888"
-                    value={regFullName}
-                    onChangeText={setRegFullName}
+                    className="h-12 rounded-[13px] border border-border/90 bg-background px-3.5 text-[13.5px] text-foreground"
                   />
-                </View>
-              </View>
+                )}
 
-              {registerRole === 'shop' && (
-                <View style={styles.inputGroup}>
-                  <ThemedText style={styles.inputLabel}>Tên Gian Hàng / Cửa Hàng *</ThemedText>
-                  <View style={styles.inputContainer}>
-                    <Icon as={Store} size={18} className="text-muted-foreground mr-2" />
-                    <TextInput
-                      style={styles.textInput}
-                      placeholder="Ví dụ: Da Sáng Boutique Official"
-                      placeholderTextColor="#888"
-                      value={regShopName}
-                      onChangeText={setRegShopName}
-                    />
-                  </View>
-                </View>
-              )}
-
-              {registerRole === 'specialist' && (
-                <View style={styles.inputGroup}>
-                  <ThemedText style={styles.inputLabel}>Chuyên khoa / Đơn vị công tác *</ThemedText>
-                  <View style={styles.inputContainer}>
-                    <Icon as={Stethoscope} size={18} className="text-muted-foreground mr-2" />
-                    <TextInput
-                      style={styles.textInput}
-                      placeholder="Ví dụ: Da liễu & Điều trị mụn chuyên sâu"
-                      placeholderTextColor="#888"
-                      value={regSpecialty}
-                      onChangeText={setRegSpecialty}
-                    />
-                  </View>
-                </View>
-              )}
-
-              <View style={styles.inputGroup}>
-                <ThemedText style={styles.inputLabel}>Email liên hệ *</ThemedText>
-                <View style={styles.inputContainer}>
-                  <Icon as={Mail} size={18} className="text-muted-foreground mr-2" />
+                <TextInput
+                  value={regEmail}
+                  onChangeText={setRegEmail}
+                  placeholder="Địa chỉ Email *"
+                  placeholderTextColor="#888"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  className="h-12 rounded-[13px] border border-border/90 bg-background px-3.5 text-[13.5px] text-foreground"
+                />
+                <TextInput
+                  value={regPhone}
+                  onChangeText={setRegPhone}
+                  placeholder="Số điện thoại"
+                  placeholderTextColor="#888"
+                  keyboardType="phone-pad"
+                  className="h-12 rounded-[13px] border border-border/90 bg-background px-3.5 text-[13.5px] text-foreground"
+                />
+                <View className="h-12 flex-row items-center rounded-[13px] border border-border/90 bg-background px-3.5 gap-2">
                   <TextInput
-                    style={styles.textInput}
-                    placeholder="email@example.com"
-                    placeholderTextColor="#888"
-                    value={regEmail}
-                    onChangeText={setRegEmail}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
-                </View>
-              </View>
-
-              <View style={styles.inputGroup}>
-                <ThemedText style={styles.inputLabel}>Số điện thoại *</ThemedText>
-                <View style={styles.inputContainer}>
-                  <Icon as={Phone} size={18} className="text-muted-foreground mr-2" />
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="Ví dụ: 0912345678"
-                    placeholderTextColor="#888"
-                    value={regPhone}
-                    onChangeText={setRegPhone}
-                    keyboardType="phone-pad"
-                  />
-                </View>
-              </View>
-
-              <View style={styles.inputGroup}>
-                <ThemedText style={styles.inputLabel}>Mật khẩu (tối thiểu 6 ký tự) *</ThemedText>
-                <View style={styles.inputContainer}>
-                  <Icon as={Lock} size={18} className="text-muted-foreground mr-2" />
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="Nhập mật khẩu..."
-                    placeholderTextColor="#888"
                     value={regPassword}
                     onChangeText={setRegPassword}
-                    secureTextEntry={!regShowPassword}
-                    autoCapitalize="none"
-                  />
-                  <Pressable
-                    onPress={() => setRegShowPassword(!regShowPassword)}
-                    style={styles.eyeButton}>
-                    <Icon as={regShowPassword ? EyeOff : Eye} size={18} className="text-muted-foreground" />
-                  </Pressable>
-                </View>
-              </View>
-
-              <View style={styles.inputGroup}>
-                <ThemedText style={styles.inputLabel}>Xác nhận mật khẩu *</ThemedText>
-                <View style={styles.inputContainer}>
-                  <Icon as={Lock} size={18} className="text-muted-foreground mr-2" />
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="Nhập lại mật khẩu..."
+                    placeholder="Mật khẩu (≥ 6 ký tự) *"
                     placeholderTextColor="#888"
-                    value={regConfirmPassword}
-                    onChangeText={setRegConfirmPassword}
-                    secureTextEntry={!regShowPassword}
+                    secureTextEntry={!showRegPassword}
                     autoCapitalize="none"
+                    className="flex-1 text-[13.5px] text-foreground"
+                  />
+                  <Pressable onPress={() => setShowRegPassword((s) => !s)} className="p-1.5">
+                    <Icon as={showRegPassword ? EyeOff : Eye} size={16} className="text-muted-foreground" />
+                  </Pressable>
+                </View>
+                <TextInput
+                  value={regConfirmPassword}
+                  onChangeText={setRegConfirmPassword}
+                  placeholder="Xác nhận mật khẩu *"
+                  placeholderTextColor="#888"
+                  secureTextEntry={!showRegPassword}
+                  autoCapitalize="none"
+                  className="h-12 rounded-[13px] border border-border/90 bg-background px-3.5 text-[13.5px] text-foreground"
+                />
+
+                <Pressable
+                  role="button"
+                  disabled={loading}
+                  onPress={() => void handleGeneralRegister()}
+                  className="mt-1 h-12 items-center justify-center rounded-[13px] bg-primary active:scale-[0.99] disabled:opacity-50"
+                >
+                  {loading ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text className="text-[14.5px] font-semibold text-primary-foreground">
+                      Đăng ký tài khoản ngay
+                    </Text>
+                  )}
+                </Pressable>
+              </View>
+            )}
+
+            {/* TAB 3: DOCTOR APPROVAL */}
+            {tab === 'doctor-approval' && (
+              <View className="gap-3">
+                <View className="gap-1.5 rounded-[16px] border border-emerald-500/30 bg-emerald-500/10 p-3.5">
+                  <View className="flex-row items-center gap-2">
+                    <Icon as={Stethoscope} size={15} className="text-emerald-500" />
+                    <Text className="text-[12.5px] font-semibold text-emerald-500">
+                      Quy trình xét duyệt Bác sĩ Chuyên khoa Da liễu
+                    </Text>
+                  </View>
+                  <Text className="text-[11.5px] leading-4 text-muted-foreground">
+                    Bác sĩ gửi thông tin Chứng chỉ hành nghề (CCHN) và đơn vị công tác để kích hoạt tài khoản chuyên môn và quyền kê phác đồ da y khoa.
+                  </Text>
+                </View>
+
+                <View className="h-12 flex-row items-center rounded-[13px] border border-border/90 bg-background px-3.5 gap-2.5">
+                  <Icon as={User} size={15} className="text-muted-foreground" />
+                  <TextInput
+                    value={docName}
+                    onChangeText={setDocName}
+                    placeholder="Họ và tên Bác sĩ / Học vị *"
+                    placeholderTextColor="#888"
+                    className="flex-1 text-[13.5px] text-foreground"
                   />
                 </View>
-              </View>
-
-              <Pressable
-                onPress={handleRegister}
-                disabled={loading}
-                style={[styles.primaryButton, loading && styles.disabledButton]}>
-                {loading ? (
-                  <ActivityIndicator color="#fff" size="small" />
-                ) : (
-                  <ThemedText style={styles.primaryButtonText}>Tạo Tài Khoản & Bắt Đầu</ThemedText>
-                )}
-              </Pressable>
-
-              <View style={styles.switchModeContainer}>
-                <ThemedText style={styles.switchModeText}>Đã có tài khoản? </ThemedText>
-                <Pressable
-                  onPress={() => {
-                    resetFeedback();
-                    setMode('sign-in');
-                  }}>
-                  <ThemedText style={styles.switchModeLink}>Đăng nhập</ThemedText>
-                </Pressable>
-              </View>
-            </View>
-          )}
-
-          {/* MODE: RECOVERY */}
-          {mode === 'recovery' && (
-            <View style={styles.formCard}>
-              {/* Tab Selector */}
-              <View style={styles.recoveryTabsRow}>
-                <Pressable
-                  onPress={() => {
-                    resetFeedback();
-                    setRecoveryTab('password');
-                  }}
-                  style={[
-                    styles.recoveryTabItem,
-                    recoveryTab === 'password' && styles.recoveryTabItemActive,
-                  ]}>
-                  <ThemedText
-                    style={[
-                      styles.recoveryTabText,
-                      recoveryTab === 'password' && styles.recoveryTabTextActive,
-                    ]}>
-                    Quên Mật Khẩu
-                  </ThemedText>
-                </Pressable>
-
-                <Pressable
-                  onPress={() => {
-                    resetFeedback();
-                    setRecoveryTab('account');
-                  }}
-                  style={[
-                    styles.recoveryTabItem,
-                    recoveryTab === 'account' && styles.recoveryTabItemActive,
-                  ]}>
-                  <ThemedText
-                    style={[
-                      styles.recoveryTabText,
-                      recoveryTab === 'account' && styles.recoveryTabTextActive,
-                    ]}>
-                    Tìm Email / Tài Khoản
-                  </ThemedText>
-                </Pressable>
-              </View>
-
-              {/* Sub-Tab 1: Reset Password */}
-              {recoveryTab === 'password' && (
-                <View>
-                  <View style={styles.inputGroup}>
-                    <ThemedText style={styles.inputLabel}>Email tài khoản cần đổi mật khẩu *</ThemedText>
-                    <View style={styles.inputContainer}>
-                      <Icon as={Mail} size={18} className="text-muted-foreground mr-2" />
-                      <TextInput
-                        style={styles.textInput}
-                        placeholder="name@example.com"
-                        placeholderTextColor="#888"
-                        value={recEmail}
-                        onChangeText={setRecEmail}
-                        keyboardType="email-address"
-                        autoCapitalize="none"
-                      />
-                    </View>
-                  </View>
-
-                  <View style={styles.inputGroup}>
-                    <ThemedText style={styles.inputLabel}>Mật khẩu mới *</ThemedText>
-                    <View style={styles.inputContainer}>
-                      <Icon as={Lock} size={18} className="text-muted-foreground mr-2" />
-                      <TextInput
-                        style={styles.textInput}
-                        placeholder="Tối thiểu 6 ký tự..."
-                        placeholderTextColor="#888"
-                        value={recNewPassword}
-                        onChangeText={setRecNewPassword}
-                        secureTextEntry
-                        autoCapitalize="none"
-                      />
-                    </View>
-                  </View>
-
-                  <View style={styles.inputGroup}>
-                    <ThemedText style={styles.inputLabel}>Xác nhận mật khẩu mới *</ThemedText>
-                    <View style={styles.inputContainer}>
-                      <Icon as={Lock} size={18} className="text-muted-foreground mr-2" />
-                      <TextInput
-                        style={styles.textInput}
-                        placeholder="Nhập lại mật khẩu mới..."
-                        placeholderTextColor="#888"
-                        value={recConfirmPassword}
-                        onChangeText={setRecConfirmPassword}
-                        secureTextEntry
-                        autoCapitalize="none"
-                      />
-                    </View>
-                  </View>
-
-                  <Pressable
-                    onPress={handleResetPassword}
-                    disabled={loading}
-                    style={[styles.primaryButton, loading && styles.disabledButton]}>
-                    {loading ? (
-                      <ActivityIndicator color="#fff" size="small" />
-                    ) : (
-                      <ThemedText style={styles.primaryButtonText}>Cập Nhật Mật Khẩu Mới</ThemedText>
-                    )}
-                  </Pressable>
+                <View className="h-12 flex-row items-center rounded-[13px] border border-border/90 bg-background px-3.5 gap-2.5">
+                  <Icon as={FileCheck2} size={15} className="text-muted-foreground" />
+                  <TextInput
+                    value={docLicenseId}
+                    onChangeText={setDocLicenseId}
+                    placeholder="Số Chứng chỉ hành nghề (CCHN) *"
+                    placeholderTextColor="#888"
+                    className="flex-1 text-[13.5px] text-foreground"
+                  />
                 </View>
-              )}
+                <View className="h-12 flex-row items-center rounded-[13px] border border-border/90 bg-background px-3.5 gap-2.5">
+                  <Icon as={Building2} size={15} className="text-muted-foreground" />
+                  <TextInput
+                    value={docHospital}
+                    onChangeText={setDocHospital}
+                    placeholder="Đơn vị / Bệnh viện công tác *"
+                    placeholderTextColor="#888"
+                    className="flex-1 text-[13.5px] text-foreground"
+                  />
+                </View>
+                <TextInput
+                  value={docSpecialty}
+                  onChangeText={setDocSpecialty}
+                  placeholder="Chuyên khoa điều trị"
+                  placeholderTextColor="#888"
+                  className="h-12 rounded-[13px] border border-border/90 bg-background px-3.5 text-[13.5px] text-foreground"
+                />
+                <View className="h-12 flex-row items-center rounded-[13px] border border-border/90 bg-background px-3.5 gap-2.5">
+                  <Icon as={Mail} size={15} className="text-muted-foreground" />
+                  <TextInput
+                    value={docEmail}
+                    onChangeText={setDocEmail}
+                    placeholder="Email liên hệ (Gmail) *"
+                    placeholderTextColor="#888"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    className="flex-1 text-[13.5px] text-foreground"
+                  />
+                </View>
+                <View className="h-12 flex-row items-center rounded-[13px] border border-border/90 bg-background px-3.5 gap-2.5">
+                  <Icon as={Phone} size={15} className="text-muted-foreground" />
+                  <TextInput
+                    value={docPhone}
+                    onChangeText={setDocPhone}
+                    placeholder="Số điện thoại liên hệ *"
+                    placeholderTextColor="#888"
+                    keyboardType="phone-pad"
+                    className="flex-1 text-[13.5px] text-foreground"
+                  />
+                </View>
+                <View className="h-12 flex-row items-center rounded-[13px] border border-border/90 bg-background px-3.5 gap-2.5">
+                  <Icon as={Lock} size={15} className="text-muted-foreground" />
+                  <TextInput
+                    value={docPassword}
+                    onChangeText={setDocPassword}
+                    placeholder="Mật khẩu khởi tạo (≥ 6 ký tự) *"
+                    placeholderTextColor="#888"
+                    secureTextEntry
+                    autoCapitalize="none"
+                    className="flex-1 text-[13.5px] text-foreground"
+                  />
+                </View>
 
-              {/* Sub-Tab 2: Find Account by Phone */}
-              {recoveryTab === 'account' && (
-                <View>
-                  <ThemedText style={styles.guideText}>
-                    Nhập số điện thoại bạn đã đăng ký để tìm lại địa chỉ Email liên kết:
-                  </ThemedText>
-
-                  <View style={styles.inputGroup}>
-                    <ThemedText style={styles.inputLabel}>Số điện thoại đăng ký *</ThemedText>
-                    <View style={styles.inputContainer}>
-                      <Icon as={Phone} size={18} className="text-muted-foreground mr-2" />
-                      <TextInput
-                        style={styles.textInput}
-                        placeholder="Ví dụ: 0988776655"
-                        placeholderTextColor="#888"
-                        value={recPhone}
-                        onChangeText={setRecPhone}
-                        keyboardType="phone-pad"
-                      />
-                    </View>
-                  </View>
-
-                  <Pressable
-                    onPress={handleFindAccount}
-                    disabled={loading}
-                    style={[styles.primaryButton, loading && styles.disabledButton]}>
-                    {loading ? (
-                      <ActivityIndicator color="#fff" size="small" />
-                    ) : (
-                      <ThemedText style={styles.primaryButtonText}>Tra Cứu Tài Khoản</ThemedText>
-                    )}
-                  </Pressable>
-
-                  {recoveredEmail && (
-                    <View style={styles.foundAccountCard}>
-                      <ThemedText style={styles.foundAccountLabel}>Email tài khoản của bạn:</ThemedText>
-                      <ThemedText style={styles.foundAccountEmail}>{recoveredEmail}</ThemedText>
-                      <Pressable
-                        onPress={() => {
-                          setEmail(recoveredEmail);
-                          setMode('sign-in');
-                        }}
-                        style={styles.foundAccountAction}>
-                        <ThemedText style={styles.foundAccountActionText}>
-                          Đăng nhập với email này →
-                        </ThemedText>
-                      </Pressable>
-                    </View>
+                <Pressable
+                  role="button"
+                  disabled={loading}
+                  onPress={() => void handleDoctorApprovalSubmit()}
+                  className="mt-1 h-12 flex-row items-center justify-center gap-2 rounded-[13px] bg-emerald-600 active:scale-[0.99] disabled:opacity-50"
+                >
+                  {loading ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <>
+                      <Icon as={Stethoscope} size={16} className="text-white" />
+                      <Text className="text-[14px] font-semibold text-white">
+                        Gửi yêu cầu duyệt Bác sĩ
+                      </Text>
+                    </>
                   )}
-                </View>
-              )}
+                </Pressable>
+              </View>
+            )}
 
-              {/* Back to sign in */}
-              <Pressable
-                onPress={() => {
-                  resetFeedback();
-                  setMode('sign-in');
-                }}
-                style={styles.backButton}>
-                <Icon as={ArrowLeft} size={16} className="text-muted-foreground mr-1.5" />
-                <ThemedText style={styles.backButtonText}>Quay lại Đăng nhập</ThemedText>
-              </Pressable>
-            </View>
-          )}
+            {/* TAB 4: SHOP APPROVAL */}
+            {tab === 'shop-approval' && (
+              <View className="gap-3">
+                <View className="gap-1.5 rounded-[16px] border border-amber-500/30 bg-amber-500/10 p-3.5">
+                  <View className="flex-row items-center gap-2">
+                    <Icon as={Store} size={15} className="text-amber-500" />
+                    <Text className="text-[12.5px] font-semibold text-amber-500">
+                      Quy trình xét duyệt Mở Gian Hàng Đối Tác
+                    </Text>
+                  </View>
+                  <Text className="text-[11.5px] leading-4 text-muted-foreground">
+                    Chủ shop gửi Giấy phép ĐKKD / Mã số thuế và địa chỉ kho hàng để Super Admin Trần Thị Ngọc Hà kiểm duyệt trước khi mở bán.
+                  </Text>
+                </View>
+
+                <TextInput
+                  value={shopNameInput}
+                  onChangeText={setShopNameInput}
+                  placeholder="Tên Gian hàng / Thương hiệu kinh doanh *"
+                  placeholderTextColor="#888"
+                  className="h-12 rounded-[13px] border border-border/90 bg-background px-3.5 text-[13.5px] text-foreground"
+                />
+                <TextInput
+                  value={shopOwnerName}
+                  onChangeText={setShopOwnerName}
+                  placeholder="Họ tên Chủ sở hữu / Người đại diện *"
+                  placeholderTextColor="#888"
+                  className="h-12 rounded-[13px] border border-border/90 bg-background px-3.5 text-[13.5px] text-foreground"
+                />
+                <TextInput
+                  value={shopLicense}
+                  onChangeText={setShopLicense}
+                  placeholder="Mã số thuế / Số ĐKKD mỹ phẩm *"
+                  placeholderTextColor="#888"
+                  className="h-12 rounded-[13px] border border-border/90 bg-background px-3.5 text-[13.5px] text-foreground"
+                />
+                <TextInput
+                  value={shopCategory}
+                  onChangeText={setShopCategory}
+                  placeholder="Danh mục sản phẩm kinh doanh *"
+                  placeholderTextColor="#888"
+                  className="h-12 rounded-[13px] border border-border/90 bg-background px-3.5 text-[13.5px] text-foreground"
+                />
+                <TextInput
+                  value={shopAddress}
+                  onChangeText={setShopAddress}
+                  placeholder="Địa chỉ gian hàng / Kho xuất hàng *"
+                  placeholderTextColor="#888"
+                  className="h-12 rounded-[13px] border border-border/90 bg-background px-3.5 text-[13.5px] text-foreground"
+                />
+                <TextInput
+                  value={shopEmail}
+                  onChangeText={setShopEmail}
+                  placeholder="Email liên hệ (Gmail) *"
+                  placeholderTextColor="#888"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  className="h-12 rounded-[13px] border border-border/90 bg-background px-3.5 text-[13.5px] text-foreground"
+                />
+                <TextInput
+                  value={shopPhone}
+                  onChangeText={setShopPhone}
+                  placeholder="Số điện thoại Hotline / Zalo *"
+                  placeholderTextColor="#888"
+                  keyboardType="phone-pad"
+                  className="h-12 rounded-[13px] border border-border/90 bg-background px-3.5 text-[13.5px] text-foreground"
+                />
+                <TextInput
+                  value={shopPassword}
+                  onChangeText={setShopPassword}
+                  placeholder="Mật khẩu khởi tạo (≥ 6 ký tự) *"
+                  placeholderTextColor="#888"
+                  secureTextEntry
+                  autoCapitalize="none"
+                  className="h-12 rounded-[13px] border border-border/90 bg-background px-3.5 text-[13.5px] text-foreground"
+                />
+
+                <Pressable
+                  role="button"
+                  disabled={loading}
+                  onPress={() => void handleShopApprovalSubmit()}
+                  className="mt-1 h-12 flex-row items-center justify-center gap-2 rounded-[13px] bg-amber-600 active:scale-[0.99] disabled:opacity-50"
+                >
+                  {loading ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <>
+                      <Icon as={Store} size={16} className="text-white" />
+                      <Text className="text-[14px] font-semibold text-white">
+                        Gửi yêu cầu mở gian hàng
+                      </Text>
+                    </>
+                  )}
+                </Pressable>
+              </View>
+            )}
+          </View>
+
+          {/* Secondary Visitor Actions */}
+          <View className="flex-row items-center justify-center gap-3 pt-1">
+            <Pressable
+              role="button"
+              onPress={() => void handleEnterDemo()}
+              className="rounded-full border border-border/70 bg-surface-2/80 px-4 py-2 active:opacity-80"
+            >
+              <Text className="text-[12.5px] font-medium text-muted-foreground">
+                Xem thử (dữ liệu mẫu)
+              </Text>
+            </Pressable>
+            <Pressable
+              role="button"
+              onPress={() => setShowPrivacyModal(true)}
+              className="rounded-full border border-border/70 bg-surface-2/80 px-4 py-2 active:opacity-80"
+            >
+              <Text className="text-[12.5px] font-medium text-muted-foreground">
+                Chính sách bảo mật
+              </Text>
+            </Pressable>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </ThemedView>
+
+      <Modal visible={showPrivacyModal} animationType="slide" transparent onRequestClose={() => setShowPrivacyModal(false)}>
+        <BottomSheetFrame bottomInset={insets.bottom}>
+          <View className="gap-3">
+            <Text className="font-display text-[20px] font-normal text-foreground">
+              Chính sách Bảo mật SkinSense
+            </Text>
+            <Text className="text-[13.5px] leading-5 text-muted-foreground">
+              Ảnh da, hồ sơ bệnh án và thông tin đặt hàng của bạn được mã hóa và phân quyền nghiêm ngặt theo vai trò (Khách hàng, Bác sĩ Da liễu, Gian hàng, Quản trị viên) trên hệ thống Supabase SkinSense.
+            </Text>
+            <Pressable
+              role="button"
+              onPress={() => setShowPrivacyModal(false)}
+              className="mt-2 h-12 items-center justify-center rounded-[13px] bg-primary active:scale-[0.99]"
+            >
+              <Text className="text-[14px] font-semibold text-primary-foreground">Đã hiểu</Text>
+            </Pressable>
+          </View>
+        </BottomSheetFrame>
+      </Modal>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  keyboardAvoid: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: 20,
-    justifyContent: 'center',
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  brandBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 5,
-    borderRadius: 999,
-    backgroundColor: 'rgba(236, 231, 219, 0.08)',
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(236, 231, 219, 0.2)',
-  },
-  brandBadgeText: {
-    fontSize: 10.5,
-    fontWeight: '700',
-    letterSpacing: 1.8,
-    color: '#ECE7DB',
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '600',
-    textAlign: 'center',
-    marginBottom: 6,
-    letterSpacing: -0.4,
-  },
-  subtitle: {
-    fontSize: 13,
-    color: '#BDB8AD',
-    textAlign: 'center',
-    paddingHorizontal: 16,
-    lineHeight: 19,
-  },
-  errorBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: 'rgba(232, 153, 141, 0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(232, 153, 141, 0.3)',
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    marginBottom: 14,
-  },
-  errorText: {
-    flex: 1,
-    fontSize: 13,
-    color: '#E8998D',
-  },
-  successBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: 'rgba(175, 207, 169, 0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(175, 207, 169, 0.3)',
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    marginBottom: 14,
-  },
-  successText: {
-    flex: 1,
-    fontSize: 13,
-    color: '#AFCFA9',
-  },
-  formCard: {
-    backgroundColor: '#141715',
-    borderWidth: 1,
-    borderColor: 'rgba(242, 239, 232, 0.08)',
-    borderRadius: 18,
-    padding: 20,
-    gap: 16,
-  },
-  inputGroup: {
-    gap: 6,
-  },
-  labelRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  inputLabel: {
-    fontSize: 12.5,
-    fontWeight: '500',
-    color: '#F2EFE8',
-    letterSpacing: 0.2,
-  },
-  forgotLink: {
-    fontSize: 12,
-    color: '#ECE7DB',
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(242, 239, 232, 0.12)',
-    borderRadius: 6,
-    backgroundColor: '#1A1F1C',
-    paddingHorizontal: 12,
-    height: 48,
-  },
-  textInput: {
-    flex: 1,
-    color: '#F2EFE8',
-    fontSize: 14,
-  },
-  eyeButton: {
-    padding: 6,
-  },
-  primaryButton: {
-    backgroundColor: '#ECE7DB',
-    borderRadius: 4,
-    height: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  disabledButton: {
-    opacity: 0.5,
-  },
-  primaryButtonText: {
-    color: '#121412',
-    fontSize: 14.5,
-    fontWeight: '600',
-    letterSpacing: 0.5,
-  },
-  switchModeContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  switchModeText: {
-    fontSize: 13,
-    color: '#BDB8AD',
-  },
-  switchModeLink: {
-    fontSize: 13,
-    color: '#ECE7DB',
-    fontWeight: '600',
-  },
-  quickAccessSection: {
-    marginTop: 10,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(242, 239, 232, 0.08)',
-    gap: 10,
-  },
-  quickAccessTitle: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#BDB8AD',
-    letterSpacing: 1.5,
-    textAlign: 'center',
-  },
-  quickAccessGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  quickAccessPill: {
-    flexBasis: '48%',
-    flexGrow: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1A1F1C',
-    borderWidth: 1,
-    borderColor: 'rgba(242, 239, 232, 0.08)',
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 9,
-  },
-  quickAccessPillRole: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#F2EFE8',
-  },
-  quickAccessPillEmail: {
-    fontSize: 10.5,
-    color: '#BDB8AD',
-  },
-  rolePickerRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  roleOption: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(242, 239, 232, 0.1)',
-    backgroundColor: '#1A1F1C',
-    borderRadius: 6,
-    paddingVertical: 10,
-  },
-  roleOptionActive: {
-    borderColor: '#ECE7DB',
-    backgroundColor: 'rgba(236, 231, 219, 0.12)',
-  },
-  roleOptionText: {
-    fontSize: 12,
-    color: '#BDB8AD',
-    fontWeight: '500',
-  },
-  roleOptionTextActive: {
-    color: '#ECE7DB',
-    fontWeight: '600',
-  },
-  recoveryTabsRow: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(242, 239, 232, 0.08)',
-    marginBottom: 4,
-  },
-  recoveryTabItem: {
-    flex: 1,
-    paddingVertical: 10,
-    alignItems: 'center',
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
-  },
-  recoveryTabItemActive: {
-    borderBottomColor: '#ECE7DB',
-  },
-  recoveryTabText: {
-    fontSize: 13,
-    color: '#BDB8AD',
-  },
-  recoveryTabTextActive: {
-    color: '#ECE7DB',
-    fontWeight: '600',
-  },
-  guideText: {
-    fontSize: 13,
-    color: '#BDB8AD',
-    marginBottom: 12,
-    lineHeight: 18,
-  },
-  foundAccountCard: {
-    marginTop: 14,
-    padding: 14,
-    borderRadius: 8,
-    backgroundColor: 'rgba(236, 231, 219, 0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(236, 231, 219, 0.2)',
-    gap: 6,
-  },
-  foundAccountLabel: {
-    fontSize: 12,
-    color: '#BDB8AD',
-  },
-  foundAccountEmail: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#ECE7DB',
-  },
-  foundAccountAction: {
-    marginTop: 4,
-  },
-  foundAccountActionText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#ECE7DB',
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 6,
-    paddingVertical: 6,
-  },
-  backButtonText: {
-    fontSize: 13,
-    color: '#BDB8AD',
-  },
-});

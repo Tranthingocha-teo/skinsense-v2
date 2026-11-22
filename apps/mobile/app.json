@@ -38,6 +38,10 @@
         }
       ],
       "expo-secure-store",
+      [
+        "expo-image-picker",
+        { "photosPermission": "SkinSense cần truy cập thư viện ảnh để bạn chọn ảnh sản phẩm." }
+      ],
       "expo-localization",
       "react-native-fast-tflite",
       "expo-asset",

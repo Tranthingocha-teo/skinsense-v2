@@ -445,7 +445,14 @@ export function Capture() {
       ) : (
         <View className="shrink-0 gap-1.5 pb-2 pt-0.5">
           {!denied && (
-            <View className="gap-0.5 px-6">
+            <View className="gap-1 px-6">
+              <View className="flex-row flex-wrap items-center justify-center gap-1.5">
+                {['Mặt mộc không makeup', 'Ánh sáng đều phía trước', 'Giữ thẳng máy'].map((tip) => (
+                  <View key={tip} className="rounded-pill border border-border/70 bg-surface-2/80 px-2 py-0.5">
+                    <Text className="text-[10px] font-medium text-muted-foreground">{tip}</Text>
+                  </View>
+                ))}
+              </View>
               <Text className="text-center text-[12px] font-light text-muted-foreground">{t('capture.keepDistance')}</Text>
               <Text className="text-center text-[12px] font-light text-muted-foreground">{t('capture.lightHint')}</Text>
             </View>

@@ -15,6 +15,7 @@ import {
   Clock,
   ExternalLink,
   MapPin,
+  MessageSquare,
   Package,
   RotateCcw,
   Search,
@@ -38,7 +39,9 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/ui/icon';
+import { MODERN_CARD, MODERN_SUBCARD } from '@/components/ui/portal-chrome';
 import { Text } from '@/components/ui/text';
+import { loadUserOrdersRemote, mapRemoteOrderToDomainOrder, mutateUserOrderRemote } from '@/lib/api';
 import {
   cancelOrder,
   completeOrder,
@@ -46,6 +49,7 @@ import {
   onMarketplaceChange,
 } from '@/lib/marketplace';
 import { ProductImage } from '@/components/artwork';
+import { ShopChatModal } from '@/components/shop-chat-modal';
 
 export type BuyerTab = 'all' | 'pending' | 'processing' | 'shipping' | 'completed' | 'cancelled';
 
@@ -82,9 +86,16 @@ export function BuyerOrdersModal({
   const [selectedStars, setSelectedStars] = useState(5);
   const [reviewText, setReviewText] = useState('Sản phẩm chính hãng đóng gói kỹ, dùng rất êm da!');
   const [submittingRating, setSubmittingRating] = useState(false);
+  const [chatTarget, setChatTarget] = useState<{ shopId: string; shopName: string; orderCode: string } | null>(null);
 
-  // Sync orders
+  // Sync orders (Web Backend /api/user/orders first, fallback AsyncStorage only when offline/unauthenticated)
   const refresh = async () => {
+    const remoteRes = await loadUserOrdersRemote().catch(() => null);
+    if (remoteRes?.ok && remoteRes.data?.ok && Array.isArray(remoteRes.data.orders)) {
+      setOrders(remoteRes.data.orders.map(mapRemoteOrderToDomainOrder));
+      setLoading(false);
+      return;
+    }
     const list = await loadOrders();
     setOrders(list);
     setLoading(false);
@@ -122,7 +133,8 @@ export function BuyerOrdersModal({
           style: 'destructive',
           onPress: async () => {
             void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            await cancelOrder(order.id, 'Người mua thay đổi nhu cầu');
+            await mutateUserOrderRemote({ orderCode: order.id, action: 'cancel' }).catch(() => null);
+            await cancelOrder(order.id, 'Người mua thay đổi nhu cầu').catch(() => null);
             void refresh();
           },
         },
@@ -140,7 +152,8 @@ export function BuyerOrdersModal({
     if (!ratingOrder) return;
     setSubmittingRating(true);
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-    await completeOrder(ratingOrder.id, selectedStars, reviewText);
+    await mutateUserOrderRemote({ orderCode: ratingOrder.id, action: 'complete' }).catch(() => null);
+    await completeOrder(ratingOrder.id, selectedStars, reviewText).catch(() => null);
     setSubmittingRating(false);
     setRatingOrder(null);
     void refresh();
@@ -322,10 +335,10 @@ export function BuyerOrdersModal({
               return (
                 <View
                   key={order.id}
-                  className="rounded-card border border-border bg-card p-4 gap-3 shadow-sm"
+                  className={`${MODERN_CARD} p-4 gap-3 shadow-xs`}
                 >
                   {/* Shop Info & Status Header */}
-                  <View className="flex-row items-center justify-between pb-2 border-b border-border/50">
+                  <View className="flex-row items-center justify-between pb-2.5 border-b border-border/60">
                     <View className="flex-row items-center gap-1.5 flex-1 pr-2">
                       <Icon as={Store} size={15} className="text-primary shrink-0" />
                       <Text
@@ -334,13 +347,13 @@ export function BuyerOrdersModal({
                       >
                         {order.shopName}
                       </Text>
-                      <View className="rounded bg-primary/15 px-1.5 py-0.5 border border-primary/25">
+                      <View className="rounded-full bg-primary/15 px-2 py-0.5 border border-primary/25">
                         <Text className="text-[9px] font-bold text-primary uppercase tracking-wider">
                           MALL
                         </Text>
                       </View>
                     </View>
-                    <View className={`rounded-pill px-2.5 py-1 border ${badge.bg} ${badge.border}`}>
+                    <View className={`rounded-full px-2.5 py-1 border ${badge.bg} ${badge.border}`}>
                       <Text className={`text-[11px] font-medium ${badge.text}`}>
                         {badge.label}
                       </Text>
@@ -349,7 +362,7 @@ export function BuyerOrdersModal({
 
                   {/* Product Details Row */}
                   <View className="flex-row gap-3">
-                    <ProductImage uri={order.productImage} name={order.productName} seed={order.productId} className="size-16 rounded-control border border-border" />
+                    <ProductImage uri={order.productImage} name={order.productName} seed={order.productId} className="size-16 rounded-[13px] border border-border/80" />
                     <View className="flex-1 justify-center gap-1">
                       <Text
                         numberOfLines={2}
@@ -369,7 +382,7 @@ export function BuyerOrdersModal({
                   </View>
 
                   {/* Order Total & Tracking Info */}
-                  <View className="rounded-control bg-surface-1 p-2.5 gap-1.5 border border-border/40">
+                  <View className={`${MODERN_SUBCARD} p-3 gap-1.5`}>
                     <View className="flex-row items-center justify-between">
                       <Text className="text-[11.5px] text-muted-foreground">
                         Mã đơn: <Text className="font-mono font-medium text-foreground">{order.id}</Text>
@@ -380,10 +393,10 @@ export function BuyerOrdersModal({
                     </View>
 
                     {order.trackingCode && (
-                      <View className="flex-row items-center justify-between pt-1 border-t border-border/30">
+                      <View className="flex-row items-center justify-between pt-1.5 border-t border-border/40">
                         <View className="flex-row items-center gap-1">
-                          <Icon as={Truck} size={13} className="text-indigo-500" />
-                          <Text className="text-[11.5px] font-mono font-semibold text-indigo-600 dark:text-indigo-400">
+                          <Icon as={Truck} size={13} className="text-emerald-500" />
+                          <Text className="text-[11.5px] font-mono font-semibold text-emerald-500">
                             {order.trackingCode}
                           </Text>
                         </View>
@@ -397,7 +410,7 @@ export function BuyerOrdersModal({
                       <Text className="text-[12.5px] font-medium text-muted-foreground">
                         Tổng thanh toán:
                       </Text>
-                      <Text className="text-[15px] font-bold text-primary">
+                      <Text className="text-[15.5px] font-bold text-primary">
                         {order.totalFormatted}
                       </Text>
                     </View>
@@ -405,7 +418,7 @@ export function BuyerOrdersModal({
 
                   {/* Customer Review if completed */}
                   {order.rating && (
-                    <View className="rounded-control bg-amber-500/10 p-2.5 border border-amber-500/20 gap-1">
+                    <View className="rounded-[13px] bg-amber-500/10 p-3 border border-amber-500/25 gap-1">
                       <View className="flex-row items-center gap-1">
                         <View className="flex-row">
                           {Array.from({ length: order.rating }).map((_, i) => (
@@ -425,14 +438,28 @@ export function BuyerOrdersModal({
                   )}
 
                   {/* Actions Footer */}
-                  <View className="flex-row items-center justify-end gap-2 pt-1 border-t border-border/50">
+                  <View className="flex-row flex-wrap items-center justify-end gap-2 pt-1.5 border-t border-border/60">
+                    <Pressable
+                      role="button"
+                      onPress={() =>
+                        setChatTarget({
+                          shopId: order.shopId || order.shopName || 'skinsense_mall',
+                          shopName: order.shopName || 'SkinSense Official',
+                          orderCode: order.id,
+                        })
+                      }
+                      className="flex-row items-center gap-1 rounded-[12px] border border-border/80 bg-surface-2 px-3 py-2 active:scale-[0.97]"
+                    >
+                      <Icon as={MessageSquare} size={13} className="text-primary" />
+                      <Text className="text-[12px] font-medium text-foreground">Chat Shop</Text>
+                    </Pressable>
                     {/* Pending Actions */}
                     {isPending && (
                       <Pressable
                         role="button"
                         accessibilityLabel="Hủy đơn hàng"
                         onPress={() => handleCancel(order)}
-                        className="rounded-control border border-rose-500/40 bg-rose-500/10 px-3.5 py-1.5 active:opacity-80"
+                        className="rounded-[12px] border border-rose-500/40 bg-rose-500/10 px-3.5 py-2 active:scale-[0.97]"
                       >
                         <Text className="text-[12.5px] font-medium text-rose-600 dark:text-rose-400">
                           Hủy đơn hàng
@@ -443,7 +470,7 @@ export function BuyerOrdersModal({
                     {/* Processing Actions */}
                     {isProcessing && (
                       <View className="flex-row items-center gap-1.5 px-2 py-1">
-                        <Icon as={Clock} size={13} className="text-blue-500" />
+                        <Icon as={Clock} size={13} className="text-amber-500" />
                         <Text className="text-[11.5px] text-muted-foreground">
                           Shop đang chuẩn bị hàng & đóng gói
                         </Text>
@@ -457,7 +484,7 @@ export function BuyerOrdersModal({
                           role="button"
                           accessibilityLabel="Xem hành trình vận đơn"
                           onPress={() => setTrackingOrder(order)}
-                          className="flex-row items-center gap-1.5 rounded-control border border-border bg-surface-2 px-3 py-1.5 active:bg-surface-3"
+                          className="flex-row items-center gap-1.5 rounded-[12px] border border-border/80 bg-surface-2 px-3 py-2 active:scale-[0.97]"
                         >
                           <Icon as={Truck} size={14} className="text-foreground" />
                           <Text className="text-[12px] font-medium text-foreground">
@@ -469,7 +496,7 @@ export function BuyerOrdersModal({
                           role="button"
                           accessibilityLabel="Đã nhận được hàng"
                           onPress={() => handleOpenRating(order)}
-                          className="flex-row items-center gap-1.5 rounded-control bg-primary px-3.5 py-1.5 active:opacity-90"
+                          className="flex-row items-center gap-1.5 rounded-[12px] bg-primary px-3.5 py-2 active:scale-[0.97]"
                         >
                           <Icon as={CheckCircle2} size={14} className="text-primary-foreground" />
                           <Text className="text-[12px] font-semibold text-primary-foreground">
@@ -486,7 +513,7 @@ export function BuyerOrdersModal({
                           role="button"
                           accessibilityLabel="Xem hành trình"
                           onPress={() => setTrackingOrder(order)}
-                          className="rounded-control border border-border bg-surface-2 px-3 py-1.5 active:bg-surface-3"
+                          className="rounded-[12px] border border-border/80 bg-surface-2 px-3 py-2 active:scale-[0.97]"
                         >
                           <Text className="text-[12px] font-medium text-foreground">
                             Chi tiết vận đơn
@@ -497,7 +524,7 @@ export function BuyerOrdersModal({
                           role="button"
                           accessibilityLabel="Đánh giá lại"
                           onPress={() => handleOpenRating(order)}
-                          className="flex-row items-center gap-1 rounded-control border border-amber-500/40 bg-amber-500/10 px-3 py-1.5 active:bg-amber-500/20"
+                          className="flex-row items-center gap-1 rounded-[12px] border border-amber-500/40 bg-amber-500/10 px-3 py-2 active:scale-[0.97]"
                         >
                           <Icon as={Star} size={13} className="text-amber-500 fill-amber-500" />
                           <Text className="text-[12px] font-medium text-amber-600 dark:text-amber-400">
@@ -517,16 +544,19 @@ export function BuyerOrdersModal({
         {/* Giao nhanh Live Tracking Timeline Overlay                    */}
         {/* ------------------------------------------------------------- */}
         {trackingOrder && (
-          <View className="absolute inset-0 z-50 justify-end bg-black/60">
+          <View className="absolute inset-0 z-50 justify-end bg-black/65">
             <View
-              className="rounded-t-3xl bg-background p-5 gap-4 max-h-[85%]"
-              style={{ paddingBottom: Math.max(bottom, 20) }}
+              className="rounded-t-[28px] border-t border-border/90 bg-card px-5 pt-3 gap-4 max-h-[85%]"
+              style={{ paddingBottom: Math.max(bottom + 16, 28) }}
             >
+              <View className="items-center">
+                <View className="h-1 w-10 rounded-full bg-border" />
+              </View>
               {/* Header */}
-              <View className="flex-row items-center justify-between pb-3 border-b border-border">
-                <View className="flex-row items-center gap-2">
-                  <View className="size-8 rounded-full bg-indigo-500/10 items-center justify-center">
-                    <Icon as={Truck} size={18} className="text-indigo-600 dark:text-indigo-400" />
+              <View className="flex-row items-center justify-between pb-3 border-b border-border/70">
+                <View className="flex-row items-center gap-2.5">
+                  <View className="size-9 rounded-[12px] bg-emerald-500/12 border border-emerald-500/25 items-center justify-center">
+                    <Icon as={Truck} size={18} className="text-emerald-500" />
                   </View>
                   <View>
                     <Text className="text-[16px] font-semibold text-foreground">
@@ -543,12 +573,12 @@ export function BuyerOrdersModal({
                   onPress={() => setTrackingOrder(null)}
                   className="size-8 items-center justify-center rounded-full bg-surface-2"
                 >
-                  <Icon as={X} size={18} className="text-foreground" />
+                  <Icon as={X} size={17} className="text-foreground" />
                 </Pressable>
               </View>
 
               {/* Shipping Destination */}
-              <View className="rounded-control bg-surface-2 p-3 gap-1">
+              <View className={`${MODERN_SUBCARD} p-3.5 gap-1`}>
                 <View className="flex-row items-center gap-1.5">
                   <Icon as={MapPin} size={14} className="text-rose-500" />
                   <Text className="text-[12px] font-semibold text-foreground">
@@ -623,7 +653,7 @@ export function BuyerOrdersModal({
               <Pressable
                 role="button"
                 onPress={() => setTrackingOrder(null)}
-                className="rounded-control bg-primary py-2.5 items-center justify-center active:opacity-90"
+                className="h-12 rounded-[14px] bg-primary items-center justify-center active:scale-[0.98]"
               >
                 <Text className="text-[14px] font-semibold text-primary-foreground">
                   Đã Hiểu
@@ -637,13 +667,16 @@ export function BuyerOrdersModal({
         {/* Rating & Review Overlay (Khách bấm Đã Nhận Hàng)              */}
         {/* ------------------------------------------------------------- */}
         {ratingOrder && (
-          <View className="absolute inset-0 z-50 justify-end bg-black/60">
+          <View className="absolute inset-0 z-50 justify-end bg-black/65">
             <View
-              className="rounded-t-3xl bg-background p-5 gap-4"
-              style={{ paddingBottom: Math.max(bottom, 20) }}
+              className="rounded-t-[28px] border-t border-border/90 bg-card px-5 pt-3 gap-4"
+              style={{ paddingBottom: Math.max(bottom + 16, 28) }}
             >
-              <View className="flex-row items-center justify-between pb-2 border-b border-border">
-                <Text className="text-[17px] font-semibold text-foreground">
+              <View className="items-center">
+                <View className="h-1 w-10 rounded-full bg-border" />
+              </View>
+              <View className="flex-row items-center justify-between pb-2.5 border-b border-border/70">
+                <Text className="font-display text-[19px] font-normal text-foreground">
                   Xác Nhận & Đánh Giá Đơn Hàng
                 </Text>
                 <Pressable
@@ -651,13 +684,13 @@ export function BuyerOrdersModal({
                   onPress={() => setRatingOrder(null)}
                   className="size-8 items-center justify-center rounded-full bg-surface-2"
                 >
-                  <Icon as={X} size={18} className="text-foreground" />
+                  <Icon as={X} size={17} className="text-foreground" />
                 </Pressable>
               </View>
 
               {/* Product Summary */}
-              <View className="flex-row items-center gap-3 rounded-control bg-surface-2 p-3">
-                <ProductImage uri={ratingOrder.productImage} name={ratingOrder.productName} seed={ratingOrder.productId} className="size-12 rounded-control" />
+              <View className={`flex-row items-center gap-3 ${MODERN_SUBCARD} p-3`}>
+                <ProductImage uri={ratingOrder.productImage} name={ratingOrder.productName} seed={ratingOrder.productId} className="size-12 rounded-[12px]" />
                 <View className="flex-1">
                   <Text numberOfLines={1} className="text-[13px] font-semibold text-foreground">
                     {ratingOrder.productName}
@@ -720,7 +753,7 @@ export function BuyerOrdersModal({
                   placeholderTextColor="#9ca3af"
                   multiline
                   numberOfLines={3}
-                  className="min-h-[80px] rounded-control border border-border bg-card p-3 text-[13px] text-foreground text-start"
+                  className="min-h-[84px] rounded-[14px] border border-border/90 bg-background p-3.5 text-[13px] text-foreground text-start"
                 />
               </View>
 
@@ -730,7 +763,7 @@ export function BuyerOrdersModal({
                 accessibilityLabel="Gửi đánh giá và hoàn tất đơn hàng"
                 disabled={submittingRating}
                 onPress={handleSubmitRating}
-                className="rounded-control bg-primary py-3 items-center justify-center active:opacity-90"
+                className="h-12 rounded-[14px] bg-primary items-center justify-center active:scale-[0.98]"
               >
                 {submittingRating ? (
                   <ActivityIndicator size="small" color="#000" />
@@ -743,6 +776,14 @@ export function BuyerOrdersModal({
             </View>
           </View>
         )}
+
+        <ShopChatModal
+          visible={chatTarget !== null}
+          onClose={() => setChatTarget(null)}
+          shopId={chatTarget?.shopId}
+          shopName={chatTarget?.shopName}
+          orderCode={chatTarget?.orderCode}
+        />
       </View>
     </Modal>
   );

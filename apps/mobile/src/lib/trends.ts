@@ -64,15 +64,9 @@ export async function loadTrends(firstDay: string): Promise<TrendData> {
       spots: spots.data as TrendData['spots'],
       entries: entries.data as RoutineEntry[],
     };
-  } catch {
-    // Offline / Mock fallback: ensure user interface never gets blocked on error
-    const demo = getMobileDemoData();
-    return {
-      photos: demo.photos.filter((p) => p.taken_at >= firstDay) as TrendPhoto[],
-      readings: demo.readings as TrendData['readings'],
-      spots: demo.spots as TrendData['spots'],
-      entries: demo.entries.filter((e) => e.night >= firstDay) as RoutineEntry[],
-    };
+  } catch (err) {
+    // Không dùng dữ liệu mẫu: lỗi thật thì để màn hình hiện trạng thái lỗi + thử lại.
+    throw err;
   }
 }
 
@@ -82,9 +76,14 @@ export async function signedPhotoUrls(paths: string[]): Promise<string[]> {
     return paths;
   }
   try {
-    const { data, error } = await supabase.storage.from('photos').createSignedUrls(paths, 600);
-    fail(error);
-    return data!.map((d) => d.signedUrl!);
+    const legacy = paths.filter((p) => !/^https?:\/\//.test(p));
+    const map = new Map<string, string>();
+    if (legacy.length > 0) {
+      const { data, error } = await supabase.storage.from('photos').createSignedUrls(legacy, 600);
+      fail(error);
+      legacy.forEach((p, i) => map.set(p, data![i].signedUrl!));
+    }
+    return paths.map((p) => map.get(p) ?? p);
   } catch {
     return paths;
   }

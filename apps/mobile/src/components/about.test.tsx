@@ -1,11 +1,9 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
-import { openBrowserAsync } from 'expo-web-browser';
 
 import '@/i18n';
 import { About } from './about';
 
 jest.mock('expo-constants', () => ({ expoConfig: { version: '1.0.0' } }));
-jest.mock('expo-web-browser', () => ({ openBrowserAsync: jest.fn(), WebBrowserPresentationStyle: {} }));
 
 describe('About', () => {
   it('shows the version from the app config', async () => {
@@ -14,13 +12,10 @@ describe('About', () => {
     expect(screen.getByText('Version 1.0.0')).toBeTruthy();
   });
 
-  it.each([
-    ['Privacy policy', 'https://skinsense-v2-topaz.vercel.app/privacy'],
-    ['Source code on GitHub', 'https://github.com/Tranthingocha-teo/skinsense-v2'],
-  ])('%s opens in the browser', async (label, url) => {
+  it.each(['Privacy policy', 'Source code on GitHub'])('%s opens natively in-app without launching a web browser', async (label) => {
     await render(<About />);
     await fireEvent.press(screen.getByText(label));
-    expect(openBrowserAsync).toHaveBeenCalledWith(url, expect.anything());
+    expect(await screen.findByText('Đóng')).toBeTruthy();
   });
 
   it('shows the highlighted licenses, then every license on Show all', async () => {
