@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { color } from '@skinsense/tokens/tokens.json';
+import { color } from '@lavie/tokens/tokens.json';
 import * as Haptics from 'expo-haptics';
 import { Link, router, useRouter } from 'expo-router';
 import {
@@ -29,7 +29,7 @@ import {
 import Svg, { Circle, Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
-import { exportNotesAndTagsCsv, exportRoutineCsv, exportSpotsCsv, exportZoneReadingsCsv } from '@skinsense/domain';
+import { exportNotesAndTagsCsv, exportRoutineCsv, exportSpotsCsv, exportZoneReadingsCsv } from '@lavie/domain';
 import { useBiometricsSetting } from '@/lib/biometrics';
 import { getCurrentRole, setCurrentRole } from '@/lib/marketplace';
 
@@ -228,7 +228,7 @@ function ExportRow() {
       if (FileSystem.writeAsStringAsync) {
         await FileSystem.writeAsStringAsync(filePath, content);
         if (await Sharing.isAvailableAsync()) {
-          await Sharing.shareAsync(filePath, { mimeType: 'text/csv', dialogTitle: 'SkinSense Data Export' });
+          await Sharing.shareAsync(filePath, { mimeType: 'text/csv', dialogTitle: 'Lavie Data Export' });
         }
       }
       setDone(true);
@@ -262,7 +262,7 @@ function MarketplaceSection({ role = 'customer' }: { role?: UserRole }) {
   const router = useRouter();
 
   return (
-    <Group label="Cửa Hàng & Quản Trị SkinSense" className="px-[18px]">
+    <Group label="Cửa Hàng & Quản Trị Lavie" className="px-[18px]">
       {/* Customer Orders */}
       <Pressable
         role="button"
@@ -396,7 +396,7 @@ export function Settings() {
   const meta = session?.user.user_metadata as { full_name?: string; name?: string; picture?: string; role?: UserRole } | undefined;
   const role: UserRole = currentUser?.role ?? meta?.role ?? 'customer';
   const name = currentUser?.fullName ?? (isDemo ? 'Người dùng thử nghiệm' : (meta?.full_name ?? meta?.name));
-  const email = currentUser?.email ?? (isDemo ? 'demo@skinsense.app' : session?.user.email);
+  const email = currentUser?.email ?? (isDemo ? 'demo@lavie.app' : session?.user.email);
   const reminder = useReminder();
   const time = formatTime(reminder);
   const reminderSummary = !reminder.on

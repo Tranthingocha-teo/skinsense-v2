@@ -1,6 +1,6 @@
 "use client";
 
-import { isDuplicateRoutineLabel, localDay, routineCompletionPercent } from "@skinsense/domain";
+import { isDuplicateRoutineLabel, localDay, routineCompletionPercent } from "@lavie/domain";
 import { useFormatter, useTranslations } from "next-intl";
 import Link from "next/link";
 import { useCallback, useEffect, useReducer, useState } from "react";

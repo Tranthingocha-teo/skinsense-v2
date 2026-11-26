@@ -1,4 +1,4 @@
-import { FEEDBACK_KINDS, FEEDBACK_MESSAGE_MAX, feedbackMessageError, type FeedbackKind } from '@skinsense/domain';
+import { FEEDBACK_KINDS, FEEDBACK_MESSAGE_MAX, feedbackMessageError, type FeedbackKind } from '@lavie/domain';
 import { Link } from 'expo-router';
 import { Check, ChevronLeft, CircleAlert } from 'lucide-react-native';
 import { useState } from 'react';

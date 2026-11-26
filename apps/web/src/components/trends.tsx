@@ -11,7 +11,7 @@ import {
   ZONES,
   type DayPoint,
   type Zone,
-} from "@skinsense/domain";
+} from "@lavie/domain";
 import { useFormatter, useTranslations } from "next-intl";
 import Link from "next/link";
 import { useEffect, useReducer, useState } from "react";

@@ -1,4 +1,4 @@
-import { color } from '@skinsense/tokens/tokens.json';
+import { color } from '@lavie/tokens/tokens.json';
 import { Tabs } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Text, useColorScheme } from 'react-native';

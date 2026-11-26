@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { Zone } from '@skinsense/domain';
+import type { Zone } from '@lavie/domain';
 
 import { getMobileDemoData } from './demo';
 import { fail, type RoutineEntry } from './routine';

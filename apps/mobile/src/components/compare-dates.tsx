@@ -1,5 +1,5 @@
-import { localDay } from '@skinsense/domain';
-import { color } from '@skinsense/tokens/tokens.json';
+import { localDay } from '@lavie/domain';
+import { color } from '@lavie/tokens/tokens.json';
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';

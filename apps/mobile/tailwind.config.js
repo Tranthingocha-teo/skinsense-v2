@@ -1,5 +1,5 @@
 const { hairlineWidth } = require('nativewind/theme');
-const { radius } = require('@skinsense/tokens/tokens.json');
+const { radius } = require('@lavie/tokens/tokens.json');
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {

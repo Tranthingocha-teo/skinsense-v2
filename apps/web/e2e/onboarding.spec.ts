@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { signedInCookies } from "./auth";
 
 // Signs the test account in against the project the env points at (production), reads only: run after Dinh approves.
-const TEST_EMAIL = "e2e@skinsense.test";
+const TEST_EMAIL = "e2e@lavie.test";
 
 test("onboarding appears once per device after sign-in, and Xem thử never shows it", async ({ context, page }) => {
   await page.goto("/demo");

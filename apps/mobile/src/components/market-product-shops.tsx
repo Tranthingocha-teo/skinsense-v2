@@ -6,7 +6,7 @@ import {
   type PaymentMethod,
   type Product,
   type Shop,
-} from '@skinsense/domain';
+} from '@lavie/domain';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
@@ -219,7 +219,7 @@ export function MarketProductShops({ productId }: { productId: string }) {
         </Pressable>
         <View className="items-center">
           <Text className="font-display text-[17px] font-semibold text-foreground tracking-tight">
-            Đặt Mua Chính Hãng SkinSense
+            Đặt Mua Chính Hãng Lavie
           </Text>
           <Text className="text-[11.5px] text-muted-foreground">
             Boutique phân phối chính ngạch & Hệ thống đối tác
@@ -773,7 +773,7 @@ export function MarketProductShops({ productId }: { productId: string }) {
           <View className="flex-row justify-between">
             <Text className="text-[13px] text-muted-foreground">Gian hàng:</Text>
             <Text className="max-w-[62%] text-right text-[13px] font-semibold text-foreground">
-              {selectedVendor?.shop.shopName || 'SkinSense Boutique'}
+              {selectedVendor?.shop.shopName || 'Lavie Boutique'}
             </Text>
           </View>
           <View className="flex-row justify-between">

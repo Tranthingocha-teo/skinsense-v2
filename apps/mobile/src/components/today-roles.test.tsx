@@ -25,7 +25,7 @@ describe('Today Screen - Distinct 4 Role Workstations', () => {
       fullName: 'BS. CKI Nguyễn Mai Hoa',
       role: 'specialist',
       specialty: 'Da liễu & Điều trị mụn chuyên sâu',
-      email: 'bacsi.hoa@skinsense.vn',
+      email: 'bacsi.hoa@lavie.vn',
       phoneNumber: '0900000002',
     });
 
@@ -53,7 +53,7 @@ describe('Today Screen - Distinct 4 Role Workstations', () => {
       id: 'admin-1',
       fullName: 'Ban Quản Trị Hệ Thống',
       role: 'admin',
-      email: 'admin@skinsense.vn',
+      email: 'admin@lavie.vn',
       phoneNumber: '0900000001',
     });
 
@@ -71,7 +71,7 @@ describe('Today Screen - Distinct 4 Role Workstations', () => {
       fullName: 'Đại lý La Roche-Posay',
       role: 'shop',
       shopName: 'La Roche-Posay Official Store',
-      email: 'shop.laroche@skinsense.vn',
+      email: 'shop.laroche@lavie.vn',
       phoneNumber: '0900000003',
     });
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { NOTE_MAX, noteError, reddestReading, TAG_MAX, tagError } from "@skinsense/domain";
+import { NOTE_MAX, noteError, reddestReading, TAG_MAX, tagError } from "@lavie/domain";
 import { useFormatter, useTranslations } from "next-intl";
 import Link from "next/link";
 import { useRouter } from "next/navigation";

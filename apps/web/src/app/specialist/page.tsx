@@ -336,7 +336,7 @@ function SpecialistContent() {
     experienceYears: 8,
     avatarUrl: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400&auto=format&fit=crop&q=80",
     bio: "Chuyên sâu điều trị mụn trứng cá viêm nặng, phục hồi hàng rào bảo vệ da sau treatment kích ứng.",
-    email: "bacsi.hoa@skinsense.vn",
+    email: "bacsi.hoa@lavie.vn",
   });
 
   const [isPending, setIsPending] = useState(false);
@@ -555,7 +555,7 @@ function SpecialistContent() {
               <LogoMark className="size-9 transition group-hover:scale-105" />
               <div className="flex flex-col">
                 <span className="font-serif text-xl font-bold tracking-tight text-[#191B19] leading-tight">
-                  SkinSense <span className="text-[#2D5A43] font-sans text-xs font-bold tracking-wider">CLINICAL</span>
+                  Lavie <span className="text-[#2D5A43] font-sans text-xs font-bold tracking-wider">CLINICAL</span>
                 </span>
                 <span className="text-xs font-medium text-[#5C605C]">
                   Cổng Bác sĩ Da liễu & Kê Phác đồ

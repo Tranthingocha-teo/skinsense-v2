@@ -1,4 +1,4 @@
-import { DEMO_PERSONA, generateDemo, localDay } from "@skinsense/domain";
+import { DEMO_PERSONA, generateDemo, localDay } from "@lavie/domain";
 import type { MarkSpotsApi } from "@/components/mark-spots";
 import type { PhotoDetailApi } from "@/components/photo-detail";
 import type { HistoryApi } from "@/components/photo-history";

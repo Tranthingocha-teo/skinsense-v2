@@ -4,7 +4,7 @@ import {
   type Product,
   type Zone,
   type ZoneTelemetry,
-} from '@skinsense/domain';
+} from '@lavie/domain';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { router, useRouter } from 'expo-router';
@@ -198,7 +198,7 @@ export function ProductDetail({
         <View className="flex-row items-center justify-center gap-2 py-2">
           <Icon as={ShieldCheck} size={16} className="text-success" />
           <Text className="text-[12.5px] font-light text-muted-foreground">
-            Cam kết 100% phân phối chính hãng trực tiếp từ SkinSense Boutique
+            Cam kết 100% phân phối chính hãng trực tiếp từ Lavie Boutique
           </Text>
         </View>
       </ScrollView>

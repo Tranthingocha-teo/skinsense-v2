@@ -96,7 +96,7 @@ export function ShareCompare({
     // Wordmark & Branding header
     ctx.fillStyle = "#F5F5F7";
     ctx.font = "bold 38px sans-serif";
-    ctx.fillText("SkinSense", 40, 90);
+    ctx.fillText("Lavie", 40, 90);
 
     ctx.fillStyle = "#A1A1A6";
     ctx.font = "20px sans-serif";
@@ -181,7 +181,7 @@ export function ShareCompare({
         <DrawerTrigger asChild>{trigger}</DrawerTrigger>
         <DrawerContent className="gap-4 rounded-t-xl border-foreground/14 bg-card px-5 pt-3 pb-7">
           <DrawerTitle className="font-display text-xl font-medium">Chia sẻ ảnh trước / sau</DrawerTitle>
-          <DrawerDescription className="text-xs text-muted-foreground">Tạo ảnh so sánh kèm ngày và chữ ký SkinSense để chia sẻ hoặc lưu máy.</DrawerDescription>
+          <DrawerDescription className="text-xs text-muted-foreground">Tạo ảnh so sánh kèm ngày và chữ ký Lavie để chia sẻ hoặc lưu máy.</DrawerDescription>
           {controls}
           <div className="flex gap-2 pt-2">
             <Button onClick={handleDownload} disabled={generating} className="h-11 flex-1 rounded-lg">
@@ -198,7 +198,7 @@ export function ShareCompare({
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="flex flex-col gap-4 rounded-2xl bg-surface-2 p-6 sm:max-w-[420px]">
         <DialogTitle className="font-display text-xl font-medium">Chia sẻ ảnh trước / sau</DialogTitle>
-        <DialogDescription className="text-xs text-muted-foreground">Tạo ảnh so sánh kèm ngày và chữ ký SkinSense để chia sẻ hoặc lưu máy.</DialogDescription>
+        <DialogDescription className="text-xs text-muted-foreground">Tạo ảnh so sánh kèm ngày và chữ ký Lavie để chia sẻ hoặc lưu máy.</DialogDescription>
         {controls}
         <div className="flex justify-end gap-2 pt-2">
           <DialogClose asChild>

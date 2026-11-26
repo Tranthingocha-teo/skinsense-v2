@@ -50,7 +50,7 @@ describe("Marketplace Domain Entity & VietQR generator", () => {
   it("retrieves shop by id and listings for product", () => {
     const shop = getShopById("shop-skinsense-official");
     expect(shop).toBeDefined();
-    expect(shop?.shopName).toBe("SkinSense Official Store");
+    expect(shop?.shopName).toBe("Lavie Official Store");
     expect(shop?.isOfficial).toBe(true);
 
     const listings = getListingsForProduct("lrp-effaclar-duo-m");

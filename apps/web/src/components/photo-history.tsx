@@ -1,6 +1,6 @@
 "use client";
 
-import { filterHistory, groupByMonth, historyTags, type HistoryFilter } from "@skinsense/domain";
+import { filterHistory, groupByMonth, historyTags, type HistoryFilter } from "@lavie/domain";
 import { useFormatter, useTranslations } from "next-intl";
 import Link from "next/link";
 import { useEffect, useReducer, useState } from "react";

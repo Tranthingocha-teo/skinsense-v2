@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import '@/i18n';
 import { ProductCard, RecommendedProductsSection } from './recommended-products';
-import { getProducts } from '@skinsense/domain';
+import { getProducts } from '@lavie/domain';
 
 jest.mock('expo-router', () => ({
   Link: ({ children }: any) => children,

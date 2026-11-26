@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { DEMO_PERSONA, generateDemo, localDay } from '@skinsense/domain';
+import { DEMO_PERSONA, generateDemo, localDay } from '@lavie/domain';
 import { useEffect, useState } from 'react';
 
 const DEMO_ACTIVE_KEY = 'skinsense_demo_active';

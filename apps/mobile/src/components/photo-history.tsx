@@ -1,5 +1,5 @@
-import { filterHistory, groupByMonth, historyTags, type HistoryFilter } from '@skinsense/domain';
-import { color } from '@skinsense/tokens/tokens.json';
+import { filterHistory, groupByMonth, historyTags, type HistoryFilter } from '@lavie/domain';
+import { color } from '@lavie/tokens/tokens.json';
 import { Image } from 'expo-image';
 import { Link } from 'expo-router';
 import { ChevronLeft, Tag } from 'lucide-react-native';

@@ -1,4 +1,4 @@
-import { isDuplicateRoutineLabel, routineCompletionPercent } from '@skinsense/domain';
+import { isDuplicateRoutineLabel, routineCompletionPercent } from '@lavie/domain';
 import * as Haptics from 'expo-haptics';
 import { Link } from 'expo-router';
 import {

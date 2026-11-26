@@ -1,4 +1,4 @@
-import { localDay, windowDays } from '@skinsense/domain';
+import { localDay, windowDays } from '@lavie/domain';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import '@/i18n';

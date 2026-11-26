@@ -51,7 +51,7 @@
   // canvas at ≤maxSide (domain's ANALYSIS_MAX_SIDE: the app analyses a copy that
   // size, so fixtures, quality signals and live numbers all come from the same
   // pixels the app sees) and runs the MediaPipe pipeline on it. Returns raw
-  // landmarks/mask/pixels only — zone classification is @skinsense/domain's job.
+  // landmarks/mask/pixels only — zone classification is @lavie/domain's job.
   const canvas = document.getElementById("canvas");
   function analyse(source, sourceWidth, sourceHeight, maxSide) {
     const scale = Math.min(1, maxSide / Math.max(sourceWidth, sourceHeight));
@@ -83,7 +83,7 @@
   }
 
   // Exposed to Playwright via page.evaluate. Returns plain JSON-serialisable
-  // data; run.ts (Node) classifies zones with @skinsense/domain.
+  // data; run.ts (Node) classifies zones with @lavie/domain.
   window.runBench = async function runBench(dataUrl, maxSide) {
     const image = await loadImage(dataUrl);
     const result = analyse(image, image.naturalWidth, image.naturalHeight, maxSide);
@@ -91,7 +91,7 @@
     return { ...result, skinMask: Array.from(result.skinMask), rgba: Array.from(result.rgba) };
   };
 
-  // Ticket 17: `bun run --cwd mpbench live` bundles @skinsense/domain to
+  // Ticket 17: `bun run --cwd mpbench live` bundles @lavie/domain to
   // ./dist/domain.js and opens this page with ?live (the still path never
   // needs the bundle, hence the dynamic import). Each frame goes through the
   // same analyse() as a still, then domain's real zone partition + readings,

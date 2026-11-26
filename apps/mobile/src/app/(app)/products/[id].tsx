@@ -1,4 +1,4 @@
-import { type Zone } from '@skinsense/domain';
+import { type Zone } from '@lavie/domain';
 import { useLocalSearchParams } from 'expo-router';
 import { View } from 'react-native';
 

@@ -1,6 +1,6 @@
 import { File, Paths } from 'expo-file-system';
 
-import type { Zone } from '@skinsense/domain';
+import type { Zone } from '@lavie/domain';
 
 import { fail } from './routine';
 import { supabase } from './supabase';

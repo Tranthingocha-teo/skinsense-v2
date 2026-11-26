@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { admin, signedInCookies } from "./auth";
 
-const TEST_EMAIL = "e2e@skinsense.test";
+const TEST_EMAIL = "e2e@lavie.test";
 
 // Capture needs a desktop width: below md the page points phone browsers to the APK.
 test.use({ viewport: { width: 1440, height: 900 } });

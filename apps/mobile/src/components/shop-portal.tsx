@@ -8,7 +8,7 @@ import {
   type Shop,
   type ShopListing,
   type WithdrawalRequest,
-} from '@skinsense/domain';
+} from '@lavie/domain';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
@@ -362,7 +362,7 @@ export function ShopPortal() {
       setShowWithdrawModal(false);
       Alert.alert(
         'Đã gửi yêu cầu rút tiền!',
-        `Lệnh rút ${formatVnd(amount)} về tài khoản ${selectedBank} đã được gửi tới Ban quản trị sàn SkinSense để đối soát phê duyệt.`,
+        `Lệnh rút ${formatVnd(amount)} về tài khoản ${selectedBank} đã được gửi tới Ban quản trị sàn Lavie để đối soát phê duyệt.`,
       );
       await refreshData();
     } catch (err: any) {
@@ -866,7 +866,7 @@ export function ShopPortal() {
         {activeTab === 'inventory' && (
           <View className="gap-3">
             <Text className="text-[12.5px] text-muted-foreground">
-              Thiết lập giá bán cạnh tranh và số lượng tồn kho cho gian hàng của bạn từ danh mục SkinSense chính hãng.
+              Thiết lập giá bán cạnh tranh và số lượng tồn kho cho gian hàng của bạn từ danh mục Lavie chính hãng.
             </Text>
 
             {PRODUCTS.map((prod) => {
@@ -972,7 +972,7 @@ export function ShopPortal() {
                   </Text>
                 </View>
                 <View className="items-end">
-                  <Text className="text-[11px] text-muted-foreground">Phí sàn SkinSense:</Text>
+                  <Text className="text-[11px] text-muted-foreground">Phí sàn Lavie:</Text>
                   <Text className="text-[13px] font-semibold text-foreground">
                     5% / đơn thành công
                   </Text>

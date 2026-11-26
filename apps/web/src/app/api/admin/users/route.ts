@@ -41,7 +41,7 @@ export async function GET() {
         createdAt: u.created_at ? u.created_at.split("T")[0] : new Date().toISOString().split("T")[0],
         avatarUrl: meta.avatar_url || meta.picture,
         shopDetails: role === "shop" ? {
-          shopName: meta.shop_name || "Cửa Hàng Dược Mỹ Phẩm SkinSense",
+          shopName: meta.shop_name || "Cửa Hàng Dược Mỹ Phẩm Lavie",
           license: meta.license || "GPKD-882910-HCM",
           category: meta.category || "Dược mỹ phẩm chăm sóc & phục hồi da",
           address: meta.address || "Quận 1, TP. Hồ Chí Minh",

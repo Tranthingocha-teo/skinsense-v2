@@ -29,7 +29,7 @@ describe("SiteHeader & LogoMark Components", () => {
       </SiteHeader>,
     );
 
-    const homeLink = screen.getByRole("link", { name: "SkinSense Home" });
+    const homeLink = screen.getByRole("link", { name: "Lavie Home" });
     expect(homeLink).toBeInTheDocument();
     expect(homeLink).toHaveAttribute("href", "/");
     expect(screen.getByText("SKINSENSE")).toBeInTheDocument();

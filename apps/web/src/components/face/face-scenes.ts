@@ -1,7 +1,7 @@
 // Pure story math for the "Cách hoạt động" particle face: no three.js, unit-tested.
 // Progress p in [0, 1] follows the section through the viewport (progressFor):
 // 0–0.5 the scatter assembles into the face, 0.5–1 the five zones split apart.
-import { ZONE_INDICES, ZONES } from "@skinsense/domain";
+import { ZONE_INDICES, ZONES } from "@lavie/domain";
 import { FACE_MESH } from "./face-mesh";
 
 export const COUNT = FACE_MESH.length / 3;

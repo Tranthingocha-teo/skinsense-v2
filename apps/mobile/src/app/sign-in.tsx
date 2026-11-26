@@ -230,7 +230,7 @@ export default function SignInScreen() {
             </ThemedText>
             <ThemedText style={styles.subtitle}>
               {mode === 'sign-in' && 'Truy cập phác đồ chăm sóc da và phân quyền hệ thống'}
-              {mode === 'register' && 'Tham gia hệ sinh thái chăm sóc da chuyên sâu SkinSense'}
+              {mode === 'register' && 'Tham gia hệ sinh thái chăm sóc da chuyên sâu Lavie'}
               {mode === 'recovery' && 'Đặt lại mật khẩu hoặc tra cứu email đã đăng ký'}
             </ThemedText>
           </View>

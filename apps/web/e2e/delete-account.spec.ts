@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { admin, signedInCookies } from "./auth";
 
 // Its own account: deletion would otherwise wipe the capture flow's photo history.
-const TEST_EMAIL = "e2e-delete@skinsense.test";
+const TEST_EMAIL = "e2e-delete@lavie.test";
 
 test("delete account removes the storage objects, every row and the auth user", async ({ context, page }) => {
   const { cookies, userId } = await signedInCookies(TEST_EMAIL);

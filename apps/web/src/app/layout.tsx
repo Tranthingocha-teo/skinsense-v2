@@ -28,7 +28,7 @@ export async function generateMetadata(): Promise<Metadata> {
     description: t("tagline"),
     manifest: "/manifest.json",
     icons: { icon: "/icon.svg", apple: "/icon.svg" },
-    openGraph: { title: t("title"), description: t("tagline"), siteName: "SkinSense", type: "website" },
+    openGraph: { title: t("title"), description: t("tagline"), siteName: "Lavie", type: "website" },
   };
 }
 

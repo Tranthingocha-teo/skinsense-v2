@@ -16,7 +16,7 @@ export default function UserRoutinePage() {
               <LogoMark className="size-8 transition group-hover:scale-105" />
               <div className="flex flex-col">
                 <span className="font-serif text-lg font-bold tracking-tight text-[#191B19]">
-                  SkinSense
+                  Lavie
                 </span>
                 <span className="text-[11px] font-medium text-[#5C605C]">
                   Hồ Sơ Điều Trị & Phác Đồ Bác Sĩ Kê

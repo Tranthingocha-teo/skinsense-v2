@@ -35,7 +35,7 @@ export interface UserAccount extends AuthUser {
 export const DEFAULT_ACCOUNTS: UserAccount[] = [
   {
     id: 'user-admin-default',
-    email: 'admin@skinsense.vn',
+    email: 'admin@lavie.vn',
     password: 'admin123456',
     fullName: 'Ban Quản Trị Hệ Thống',
     phoneNumber: '0900000001',
@@ -45,7 +45,7 @@ export const DEFAULT_ACCOUNTS: UserAccount[] = [
   },
   {
     id: 'user-specialist-default',
-    email: 'bacsi.hoa@skinsense.vn',
+    email: 'bacsi.hoa@lavie.vn',
     password: '123456',
     fullName: 'BS. CKI Nguyễn Mai Hoa',
     phoneNumber: '0900000002',
@@ -56,7 +56,7 @@ export const DEFAULT_ACCOUNTS: UserAccount[] = [
   },
   {
     id: 'user-shop-default',
-    email: 'shop.laroche@skinsense.vn',
+    email: 'shop.laroche@lavie.vn',
     password: '123456',
     fullName: 'Đại lý Dược Mỹ Phẩm La Roche-Posay',
     phoneNumber: '0900000003',
@@ -219,8 +219,8 @@ export async function signInWithEmail(email: string, password: string): Promise<
   const account = accounts.find((a) => {
     const isTargetEmail =
       a.email.toLowerCase() === normalizedEmail ||
-      (normalizedEmail === 'doctor@skinsense.vn' && a.email.toLowerCase() === 'bacsi.hoa@skinsense.vn') ||
-      (normalizedEmail === 'customer@skinsense.vn' && a.email.toLowerCase() === 'khachhang@gmail.com');
+      (normalizedEmail === 'doctor@lavie.vn' && a.email.toLowerCase() === 'bacsi.hoa@lavie.vn') ||
+      (normalizedEmail === 'customer@lavie.vn' && a.email.toLowerCase() === 'khachhang@gmail.com');
     if (!isTargetEmail) return false;
 
     return (

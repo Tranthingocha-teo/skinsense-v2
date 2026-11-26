@@ -1,4 +1,4 @@
-import type { Zone } from "@skinsense/domain";
+import type { Zone } from "@lavie/domain";
 import { fail } from "@/lib/routine";
 import { createClient } from "@/lib/supabase/client";
 

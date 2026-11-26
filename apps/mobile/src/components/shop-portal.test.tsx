@@ -30,7 +30,7 @@ describe('ShopPortal Component (Shopee Seller Center)', () => {
       expect(screen.getByText('Kênh Người Bán')).toBeTruthy();
       expect(screen.getByText('Shopee Seller Center')).toBeTruthy();
       expect(screen.getByText(/Gian hàng đang quản lý/i)).toBeTruthy();
-      expect(screen.getByText('SkinSense Official Store')).toBeTruthy();
+      expect(screen.getByText('Lavie Official Store')).toBeTruthy();
       expect(screen.getByText(/Đơn \(/i)).toBeTruthy();
       expect(screen.getByText(/Kho \(/i)).toBeTruthy();
       expect(screen.getByText('Ví Shop')).toBeTruthy();

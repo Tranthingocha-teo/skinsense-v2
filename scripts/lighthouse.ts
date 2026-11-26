@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * SkinSense Lighthouse Audit Runner & Reporter
+ * Lavie Lighthouse Audit Runner & Reporter
  * Evaluates core routes across Performance, Accessibility, Best Practices, and SEO.
  */
 
@@ -36,14 +36,14 @@ async function checkRouteHealth(url: string): Promise<boolean> {
 }
 
 async function runAudit() {
-  console.log("\n⚡ SkinSense Lighthouse Audit Suite\n====================================\n");
+  console.log("\n⚡ Lavie Lighthouse Audit Suite\n====================================\n");
   console.log(`Target Host: ${BASE_URL}\n`);
 
   const serverOnline = await checkRouteHealth(`${BASE_URL}/`);
   if (!serverOnline) {
     console.log("⚠️  Local server not responding at " + BASE_URL);
     console.log("   Please start the web application first: cd apps/web && bun dev\n");
-    console.log("   Displaying benchmark baseline standards for SkinSense v2 production:\n");
+    console.log("   Displaying benchmark baseline standards for Lavie v2 production:\n");
   }
 
   const results: AuditResult[] = [

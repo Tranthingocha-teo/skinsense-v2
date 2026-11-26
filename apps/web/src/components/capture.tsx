@@ -1,6 +1,6 @@
 "use client";
 
-import { ZONES, type CaptureIssue, type Landmark } from "@skinsense/domain";
+import { ZONES, type CaptureIssue, type Landmark } from "@lavie/domain";
 import { useFormatter, useTranslations } from "next-intl";
 import Link from "next/link";
 import { useEffect, useReducer, useRef, useState, type ReactNode } from "react";

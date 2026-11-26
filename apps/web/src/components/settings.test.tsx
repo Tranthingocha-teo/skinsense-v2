@@ -14,7 +14,7 @@ beforeEach(() => vi.clearAllMocks());
 function renderSettings() {
   render(
     <NextIntlClientProvider locale="en" messages={en} timeZone="UTC">
-      <Settings account={{ name: "Test User", email: "e2e@skinsense.test" }} api={account} />
+      <Settings account={{ name: "Test User", email: "e2e@lavie.test" }} api={account} />
     </NextIntlClientProvider>,
   );
 }
@@ -29,7 +29,7 @@ describe("Settings", () => {
     renderSettings();
     expect(screen.getByRole("heading", { name: "Settings" })).toBeInTheDocument();
     expect(screen.getByText("Test User")).toBeInTheDocument();
-    expect(screen.getByText("e2e@skinsense.test")).toBeInTheDocument();
+    expect(screen.getByText("e2e@lavie.test")).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: "English" })).toBeChecked();
     expect(screen.getByRole("radio", { name: "Tiếng Việt" })).not.toBeChecked();
     expect(screen.getByRole("link", { name: "Feedback" })).toHaveAttribute("href", "/app/settings/feedback");

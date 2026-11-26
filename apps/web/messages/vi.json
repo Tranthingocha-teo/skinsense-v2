@@ -42,7 +42,7 @@
     "idea": "Ý tưởng",
     "other": "Khác",
     "message": "Nội dung",
-    "placeholder": "Điều gì chưa ổn, hoặc bạn muốn SkinSense làm thêm gì?",
+    "placeholder": "Điều gì chưa ổn, hoặc bạn muốn Lavie làm thêm gì?",
     "attach": "Đính kèm trình duyệt và phiên bản ứng dụng",
     "noData": "Không gửi kèm ảnh hay số liệu da của bạn.",
     "tooLong": "Nội dung tối đa {max} ký tự.",
@@ -109,7 +109,7 @@
     "duplicate": "Bước này đã có"
   },
   "Landing": {
-    "title": "SkinSense",
+    "title": "Lavie",
     "tagline": "Nhật ký da riêng tư, mỗi đêm một ảnh.",
     "navHow": "Cách hoạt động",
     "navAi": "AI trên thiết bị",
@@ -210,7 +210,7 @@
         "a": "Mỗi lần chụp, ứng dụng tìm điểm mốc khuôn mặt, tách vùng da và chia thành năm vùng. Màu từng điểm ảnh da được đổi sang không gian CIELAB, nơi trục a* đo mức đỏ. Chỉ số mẩn đỏ của một vùng là trung vị a* của vùng đó trừ trung vị a* của toàn bộ da trong cùng bức ảnh: số dương nghĩa là vùng đó đỏ hơn phần da còn lại của chính bạn. Đây là số đo tương đối để theo dõi theo thời gian, không có ngưỡng bệnh."
       },
       {
-        "q": "SkinSense có chẩn đoán bệnh da không?",
+        "q": "Lavie có chẩn đoán bệnh da không?",
         "a": "Không. Đây là nhật ký cá nhân: không có ngưỡng nghiêm trọng, không có điểm số \"sức khỏe da\", không thay thế bác sĩ da liễu."
       },
       {
@@ -218,8 +218,8 @@
         "a": "Ảnh và số liệu nằm trên Supabase (máy chủ tại Sydney, Úc), trong kho riêng tư. Quy tắc bảo mật theo hàng chỉ cho chính tài khoản của bạn đọc hoặc ghi, và ảnh chỉ mở qua liên kết ký tạm thời. Dữ liệu không được chia sẻ, bán hay dùng để huấn luyện mô hình; nút Xóa tài khoản xóa toàn bộ ngay lập tức."
       },
       {
-        "q": "SkinSense có mất phí không?",
-        "a": "Không. SkinSense là dự án tốt nghiệp: miễn phí, không quảng cáo, không có gói trả phí."
+        "q": "Lavie có mất phí không?",
+        "a": "Không. Lavie là dự án tốt nghiệp: miễn phí, không quảng cáo, không có gói trả phí."
       },
       {
         "q": "Dùng được trên thiết bị nào?",
@@ -228,7 +228,7 @@
     ],
     "trustBadge": "Không phải chẩn đoán y khoa",
     "trustTitle": "Đây là nhật ký cá nhân, không phải chẩn đoán.",
-    "trustBody": "SkinSense không thay thế bác sĩ da liễu. Đây là công cụ giúp bạn tự quan sát làn da của mình một cách nhất quán — không có ngưỡng nghiêm trọng, không có điểm số \"sức khỏe da\".",
+    "trustBody": "Lavie không thay thế bác sĩ da liễu. Đây là công cụ giúp bạn tự quan sát làn da của mình một cách nhất quán — không có ngưỡng nghiêm trọng, không có điểm số \"sức khỏe da\".",
     "downloadAndroid": "Tải bản Android (APK)",
     "privacyPolicy": "Chính sách riêng tư",
     "tryDemo": "Xem thử, không cần đăng nhập",
@@ -277,7 +277,7 @@
     "again": "Chụp ảnh khác",
     "markSpots": "Đánh dấu nốt mụn",
     "done": "Xong",
-    "desktopHint": "Trên máy tính, mở SkinSense bằng Chrome hoặc Edge có webcam để chụp."
+    "desktopHint": "Trên máy tính, mở Lavie bằng Chrome hoặc Edge có webcam để chụp."
   },
   "MarkSpots": {
     "title": "Đánh dấu nốt mụn",
@@ -387,7 +387,7 @@
     "title": "Chính sách riêng tư",
     "back": "Trang chủ",
     "updated": "Cập nhật 13/09/2026 · Dự án tốt nghiệp, không thu phí",
-    "intro": "SkinSense là nhật ký da cá nhân. Dữ liệu bạn tạo ra chỉ hiển thị cho chính bạn, trên chính tài khoản của bạn. Trang này liệt kê đúng những gì ứng dụng lưu và vì sao.",
+    "intro": "Lavie là nhật ký da cá nhân. Dữ liệu bạn tạo ra chỉ hiển thị cho chính bạn, trên chính tài khoản của bạn. Trang này liệt kê đúng những gì ứng dụng lưu và vì sao.",
     "sections": [
       {
         "title": "Dữ liệu được lưu",
@@ -419,7 +419,7 @@
         "title": "Xóa dữ liệu",
         "body": [
           "Nút “Xóa tài khoản” trong ứng dụng xóa ngay toàn bộ ảnh, nốt mụn, chỉ số, routine và tài khoản của bạn. Không có bản sao được giữ lại và không thể khôi phục.",
-          "Bạn cũng có thể thu hồi quyền của SkinSense trong phần bảo mật của tài khoản Google."
+          "Bạn cũng có thể thu hồi quyền của Lavie trong phần bảo mật của tài khoản Google."
         ]
       },
       {

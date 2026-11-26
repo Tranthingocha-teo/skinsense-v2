@@ -28,7 +28,7 @@ async function seed() {
   const specialists = [
     {
       id: "f0ebf688-dc15-40fa-8711-5c89923044e8",
-      email: "bacsi.hoa@skinsense.vn",
+      email: "bacsi.hoa@lavie.vn",
       name: "BS. CKI Nguyễn Mai Hoa",
       title: "Bác sĩ Chuyên khoa I Da liễu",
       licenseId: "014289/BYT-CCHN",
@@ -46,7 +46,7 @@ async function seed() {
       id: "45894773-911a-4dcc-890a-69a50154f839",
       email: "dr.ha@gmail.com",
       name: "BS. Trần Thị Ngọc Hà",
-      title: "Bác sĩ Cố vấn Y khoa SkinSense",
+      title: "Bác sĩ Cố vấn Y khoa Lavie",
       licenseId: "034189/BYT-CCHN",
       hospital: "Bệnh viện Da Liễu Đà Nẵng",
       phone: "0905 888 999",

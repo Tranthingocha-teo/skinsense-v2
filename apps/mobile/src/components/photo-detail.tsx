@@ -1,5 +1,5 @@
-import { NOTE_MAX, noteError, reddestReading, TAG_MAX, tagError } from '@skinsense/domain';
-import { color } from '@skinsense/tokens/tokens.json';
+import { NOTE_MAX, noteError, reddestReading, TAG_MAX, tagError } from '@lavie/domain';
+import { color } from '@lavie/tokens/tokens.json';
 import { Image } from 'expo-image';
 import { Link, router } from 'expo-router';
 import { ChevronLeft, Plus, X } from 'lucide-react-native';

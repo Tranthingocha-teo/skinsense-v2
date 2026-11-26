@@ -3,7 +3,7 @@ import {
   type Order,
   type OrderStatus,
   type OrderTrackingEvent,
-} from '@skinsense/domain';
+} from '@lavie/domain';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -719,7 +719,7 @@ export function BuyerOrdersModal({
               {/* Review Comment Input */}
               <View className="gap-1.5">
                 <Text className="text-[12.5px] font-medium text-foreground">
-                  Chia sẻ cảm nhận cho cộng đồng SkinSense:
+                  Chia sẻ cảm nhận cho cộng đồng Lavie:
                 </Text>
                 <TextInput
                   value={reviewText}

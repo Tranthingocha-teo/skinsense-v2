@@ -11,7 +11,7 @@ import {
   type CaptureIssue,
   type Landmark,
   type ZoneReadings,
-} from "@skinsense/domain";
+} from "@lavie/domain";
 
 // Web capture engine (ADR 0001): getUserMedia + @mediapipe/tasks-vision, producing
 // domain's FaceCapture. Same pinned version, model URLs and delegate as mpbench,

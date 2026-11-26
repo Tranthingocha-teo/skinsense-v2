@@ -1,4 +1,4 @@
-import { color } from '@skinsense/tokens/tokens.json';
+import { color } from '@lavie/tokens/tokens.json';
 import { useColorScheme, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';

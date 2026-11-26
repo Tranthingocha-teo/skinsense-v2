@@ -1,5 +1,5 @@
 import DateTimePicker from '@expo/ui/community/datetime-picker';
-import { color } from '@skinsense/tokens/tokens.json';
+import { color } from '@lavie/tokens/tokens.json';
 import Constants from 'expo-constants';
 import { Link } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
@@ -133,7 +133,7 @@ export function Reminder() {
           <View className="flex-row items-center justify-between">
             <View className="flex-row items-center gap-2">
               <Mark size={20} />
-              <Text className="text-[12.5px] font-medium">SkinSense</Text>
+              <Text className="text-[12.5px] font-medium">Lavie</Text>
             </View>
             <Text className="text-xs font-light text-muted-foreground">{time}</Text>
           </View>

@@ -109,7 +109,7 @@ describe('SignInScreen Component', () => {
     fireEvent.press(screen.getByText('Quản lý chung'));
 
     await waitFor(() => {
-      expect(auth.signInWithEmail).toHaveBeenCalledWith('admin@skinsense.vn', 'admin123456');
+      expect(auth.signInWithEmail).toHaveBeenCalledWith('admin@lavie.vn', 'admin123456');
       expect(router.replace).toHaveBeenCalledWith('/');
     });
   });

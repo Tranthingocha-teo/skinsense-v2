@@ -69,7 +69,7 @@ describe('Marketplace Storage & Management Service', () => {
   it('creates and tracks customer orders', async () => {
     const order = await createOrder({
       shopId: 'shop-skinsense-official',
-      shopName: 'SkinSense Official Store',
+      shopName: 'Lavie Official Store',
       productId: 'lrp-effaclar-duo-m',
       productName: 'Effaclar Duo+M',
       productImage: 'https://example.com/p.jpg',
@@ -112,16 +112,16 @@ describe('Marketplace Storage & Management Service', () => {
 
   it('allows admin to add, list and delete custom products for selling', async () => {
     const custom = await saveCustomProduct({
-      name: 'Serum B5 SkinSense Tái Tạo',
-      brand: 'SkinSense Clinic',
+      name: 'Serum B5 Lavie Tái Tạo',
+      brand: 'Lavie Clinic',
       category: 'Serum phục hồi',
       priceVnd: 420000,
       summary: 'Phục hồi cấp ẩm chuyên sâu',
-      description: 'Công thức độc quyền từ phòng khám SkinSense',
+      description: 'Công thức độc quyền từ phòng khám Lavie',
     });
 
     expect(custom.id).toMatch(/^custom-/);
-    expect(custom.name).toBe('Serum B5 SkinSense Tái Tạo');
+    expect(custom.name).toBe('Serum B5 Lavie Tái Tạo');
     expect(custom.priceVnd).toBe(420000);
     expect(custom.isCustom).toBe(true);
 
@@ -133,7 +133,7 @@ describe('Marketplace Storage & Management Service', () => {
     expect(updatedStore.some((p) => p.id === custom.id)).toBe(false);
   });
 
-  it('creates order with default SkinSense boutique info when shopId is omitted', async () => {
+  it('creates order with default Lavie boutique info when shopId is omitted', async () => {
     const order = await createOrder({
       productId: 'skin1004-centella-ampoule',
       productName: 'Rau má Centella',
@@ -145,7 +145,7 @@ describe('Marketplace Storage & Management Service', () => {
       paymentMethod: 'cod',
     });
 
-    expect(order.shopName).toContain('SkinSense');
+    expect(order.shopName).toContain('Lavie');
     expect(order.totalVnd).toBe(345000);
     expect(order.status).toBe('pending');
   });

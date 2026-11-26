@@ -67,7 +67,7 @@ function DesktopNav() {
   const t = useTranslations("Nav");
   return (
     <Sidebar collapsible="none" className="sticky top-0 hidden h-svh gap-7 border-r px-4 py-6 md:flex">
-      <SidebarHeader className="p-0 px-3 font-display text-[26px] font-light leading-tight">SkinSense</SidebarHeader>
+      <SidebarHeader className="p-0 px-3 font-display text-[26px] font-light leading-tight">Lavie</SidebarHeader>
       <SidebarContent>
         <nav aria-label={t("label")}>
           <SidebarMenu className="gap-1">

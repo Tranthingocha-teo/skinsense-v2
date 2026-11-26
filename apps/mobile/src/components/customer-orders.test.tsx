@@ -39,7 +39,7 @@ describe('CustomerOrders Component', () => {
       {
         id: 'ORD-TEST-1234',
         shopId: 'shop-1',
-        shopName: 'SkinSense Official Store',
+        shopName: 'Lavie Official Store',
         productId: 'lrp-effaclar-duo-m',
         productName: 'Effaclar Duo+M Giảm Mụn & Ngừa Thâm 40ml',
         productImage: 'https://example.com/test.jpg',
@@ -59,7 +59,7 @@ describe('CustomerOrders Component', () => {
     await render(<CustomerOrders />);
 
     await waitFor(() => {
-      expect(screen.getByText('SkinSense Official Store')).toBeTruthy();
+      expect(screen.getByText('Lavie Official Store')).toBeTruthy();
       expect(screen.getByText(/Effaclar Duo\+M/i)).toBeTruthy();
       expect(screen.getByText('385.000₫')).toBeTruthy();
       expect(screen.getAllByText('Chờ xác nhận').length).toBeGreaterThan(0);
@@ -73,7 +73,7 @@ describe('CustomerOrders Component', () => {
       {
         id: 'ORD-TEST-9999',
         shopId: 'shop-1',
-        shopName: 'SkinSense Official Store',
+        shopName: 'Lavie Official Store',
         productId: 'lrp-effaclar-duo-m',
         productName: 'Effaclar Duo+M Giảm Mụn & Ngừa Thâm 40ml',
         productImage: 'https://example.com/test.jpg',

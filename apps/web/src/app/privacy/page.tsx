@@ -5,7 +5,7 @@ import { CanvasIcon, SiteHeader } from "@/components/site-header";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("Privacy");
-  return { title: `${t("title")} · SkinSense`, description: t("intro") };
+  return { title: `${t("title")} · Lavie`, description: t("intro") };
 }
 
 // Public (proxy.ts only gates /app); linked from the landing footer and the mobile sign-in screen.

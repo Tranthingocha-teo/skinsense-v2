@@ -1,4 +1,4 @@
-import type { FeedbackKind } from "@skinsense/domain";
+import type { FeedbackKind } from "@lavie/domain";
 import { version } from "../../package.json";
 import { createClient } from "@/lib/supabase/client";
 

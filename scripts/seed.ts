@@ -1,13 +1,13 @@
 #!/usr/bin/env bun
 /**
- * SkinSense Test Data Seeder
+ * Lavie Test Data Seeder
  * Generates sample data for test users or inserts into Supabase Postgres.
  */
 
-import { DEMO_PERSONA, generateDemo, localDay } from "@skinsense/domain";
+import { DEMO_PERSONA, generateDemo, localDay } from "@lavie/domain";
 
 async function seed() {
-  console.log("\n🌱 SkinSense Data Seeder\n=========================\n");
+  console.log("\n🌱 Lavie Data Seeder\n=========================\n");
 
   const today = localDay(new Date());
   const routine = [
@@ -29,7 +29,7 @@ async function seed() {
   const dbUrl = process.env.DATABASE_URL;
   if (!dbUrl) {
     console.log("\n💡 Note: No DATABASE_URL provided.");
-    console.log("   The dataset was generated and verified using @skinsense/domain.");
+    console.log("   The dataset was generated and verified using @lavie/domain.");
     console.log("   To insert directly into a live database, supply DATABASE_URL=postgres://... bun run seed\n");
     return;
   }

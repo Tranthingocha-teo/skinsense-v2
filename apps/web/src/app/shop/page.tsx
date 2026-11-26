@@ -670,7 +670,7 @@ export default function ShopProductPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground antialiased">
-      {/* Top Header - Shopee Style with SkinSense Palette */}
+      {/* Top Header - Shopee Style with Lavie Palette */}
       <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur-md">
         <div className="mx-auto flex max-w-[1440px] flex-col gap-3 px-4 py-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex min-w-0 items-center justify-between gap-3 lg:justify-start">
@@ -678,7 +678,7 @@ export default function ShopProductPage() {
               <LogoMark className="size-8 transition group-hover:scale-105" />
               <div className="flex flex-col">
                 <span className="font-display text-lg font-medium tracking-tight text-foreground leading-tight">
-                  SkinSense <span className="font-sans text-[11px] font-semibold tracking-wider text-primary">GIAN HÀNG</span>
+                  Lavie <span className="font-sans text-[11px] font-semibold tracking-wider text-primary">GIAN HÀNG</span>
                 </span>
                 <span className="text-[11px] font-medium text-muted-foreground">
                   Quản lý sản phẩm và gian hàng

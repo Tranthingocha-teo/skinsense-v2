@@ -1,4 +1,4 @@
-import type { FeedbackKind } from '@skinsense/domain';
+import type { FeedbackKind } from '@lavie/domain';
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 

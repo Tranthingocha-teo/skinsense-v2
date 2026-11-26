@@ -1,4 +1,4 @@
-import { ZONE_INDICES, type Landmark } from "@skinsense/domain";
+import { ZONE_INDICES, type Landmark } from "@lavie/domain";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { beforeEach, describe, expect, it, vi } from "vitest";

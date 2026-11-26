@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { admin, signedInCookies } from "./auth";
 
 // Writes one feedback row to the project the env points at (production): run only after Dinh approves.
-const TEST_EMAIL = "e2e@skinsense.test";
+const TEST_EMAIL = "e2e@lavie.test";
 
 test("feedback submit stores the row with the opted-in browser note and returns to Settings with a toast", async ({ context, page }) => {
   const { cookies, userId } = await signedInCookies(TEST_EMAIL);

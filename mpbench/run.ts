@@ -14,7 +14,7 @@ import {
   sharpness,
   ZONES,
   type Landmark,
-} from "@skinsense/domain";
+} from "@lavie/domain";
 
 const MPBENCH_DIR = new URL(".", import.meta.url).pathname;
 const MIME: Record<string, string> = { ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png" };
@@ -54,14 +54,14 @@ async function toDataUrl(photoPath: string): Promise<string> {
 
 // Runs the real web capture pipeline (FaceLandmarker + ImageSegmenter, via
 // bench.html in an actual browser) against one photo, then reuses
-// @skinsense/domain's real partitionSkinPixels to classify every skin pixel
+// @lavie/domain's real partitionSkinPixels to classify every skin pixel
 // into a zone — so ADR 0003's fixtures exercise the same zone logic the app ships.
 // Ticket 07 rating pass: `bun run.ts --rate <photos...>` prints one row per
 // photo (quality signals + issues), no fixture written — the rated table is
 // what moves the provisional QUALITY cut-offs.
 // Ticket 17 live mode: `bun run.ts --live` opens bench.html?live on the webcam
 // and stays open until the window is closed; the per-frame zone readings are
-// drawn in the page, which imports @skinsense/domain from the bundle built here.
+// drawn in the page, which imports @lavie/domain from the bundle built here.
 async function main() {
   const live = process.argv[2] === "--live";
   const rate = process.argv[2] === "--rate";

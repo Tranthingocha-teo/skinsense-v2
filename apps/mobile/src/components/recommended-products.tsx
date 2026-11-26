@@ -4,7 +4,7 @@ import {
   type Product,
   type Zone,
   type ZoneTelemetry,
-} from '@skinsense/domain';
+} from '@lavie/domain';
 import { Image } from 'expo-image';
 import { Link, router } from 'expo-router';
 import { ExternalLink, Sparkles, Star } from 'lucide-react-native';

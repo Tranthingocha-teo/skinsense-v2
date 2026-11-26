@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { admin, signedInCookies } from "./auth";
 
 // Its own account: deleting would otherwise remove the capture flow's photos.
-const TEST_EMAIL = "e2e-history@skinsense.test";
+const TEST_EMAIL = "e2e-history@lavie.test";
 const ZONES = ["forehead", "leftCheek", "rightCheek", "nose", "chin"];
 
 test("photo history → detail → delete removes the storage object, the Photo row, its spots and zone readings", async ({ context, page }) => {

@@ -116,7 +116,7 @@ const INITIAL_USERS: SystemUser[] = [
   {
     id: "usr_003",
     name: "La Roche-Posay Official Store",
-    email: "shop.laroche@skinsense.vn",
+    email: "shop.laroche@lavie.vn",
     phone: "028 3822 5588",
     role: "shop",
     status: "active",
@@ -131,7 +131,7 @@ const INITIAL_USERS: SystemUser[] = [
   {
     id: "usr_004",
     name: "CeraVe Vietnam Distribution",
-    email: "shop.cerave@skinsense.vn",
+    email: "shop.cerave@lavie.vn",
     phone: "024 3944 6677",
     role: "shop",
     status: "pending",
@@ -146,7 +146,7 @@ const INITIAL_USERS: SystemUser[] = [
   {
     id: "usr_005",
     name: "Innisfree Natural Care",
-    email: "shop.innisfree@skinsense.vn",
+    email: "shop.innisfree@lavie.vn",
     phone: "0988 333 444",
     role: "shop",
     status: "pending",
@@ -161,7 +161,7 @@ const INITIAL_USERS: SystemUser[] = [
   {
     id: "usr_006",
     name: "BS. CKI Nguyễn Mai Hoa",
-    email: "bacsi.hoa@skinsense.vn",
+    email: "bacsi.hoa@lavie.vn",
     phone: "0934 567 890",
     role: "specialist",
     status: "active",
@@ -175,7 +175,7 @@ const INITIAL_USERS: SystemUser[] = [
   {
     id: "usr_007",
     name: "ThS. BS Trần Quốc Tuấn",
-    email: "bacsi.tuan@skinsense.vn",
+    email: "bacsi.tuan@lavie.vn",
     phone: "0918 222 333",
     role: "specialist",
     status: "pending",
@@ -212,7 +212,7 @@ const INITIAL_USERS: SystemUser[] = [
   {
     id: "usr_009",
     name: "Ban Quản Trị Hệ Thống",
-    email: "admin@skinsense.vn",
+    email: "admin@lavie.vn",
     phone: "028 9999 8888",
     role: "admin",
     status: "active",
@@ -765,7 +765,7 @@ export default function AdminDashboardPage() {
               <LogoMark className="size-7 transition group-hover:scale-105" />
               <div className="flex flex-col">
                 <span className="font-display text-sm tracking-[0.2em] uppercase font-bold text-foreground">
-                  SkinSense
+                  Lavie
                 </span>
                 <span className="text-[10px] tracking-wider uppercase text-muted-foreground font-semibold">
                   Cổng Quản Trị Hệ Thống Sàn
@@ -1311,7 +1311,7 @@ export default function AdminDashboardPage() {
             <div className="rounded-xl border border-emerald-600/30 bg-emerald-500/10 p-4 text-xs sm:text-sm">
               <div className="flex items-center gap-2 font-semibold text-emerald-900 dark:text-emerald-200">
                 <ShieldCheck className="size-4.5 text-emerald-600" />
-                <span>Quy trình đảm bảo chuyên môn Y tế SkinSense</span>
+                <span>Quy trình đảm bảo chuyên môn Y tế Lavie</span>
               </div>
               <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
                 Khi Bác sĩ đăng ký, tài khoản mặc định ở trạng thái <strong>Chờ duyệt (Pending)</strong>. Sau khi Super Admin Trần Thị Ngọc Hà kiểm tra số CCHN trên Cổng thông tin Bộ Y tế và bấm <strong>&quot;Phê duyệt&quot;</strong>, Bác sĩ mới có thể truy cập cổng <code>/specialist</code> để kê phác đồ da và tư vấn bệnh nhân.

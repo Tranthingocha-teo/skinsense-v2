@@ -42,7 +42,7 @@
     "idea": "Idea",
     "other": "Other",
     "message": "Message",
-    "placeholder": "What isn't working, or what would you like SkinSense to do?",
+    "placeholder": "What isn't working, or what would you like Lavie to do?",
     "attach": "Attach browser and app version",
     "noData": "Your photos and skin data are never attached.",
     "tooLong": "Keep it to {max} characters.",
@@ -109,7 +109,7 @@
     "duplicate": "This step already exists"
   },
   "Landing": {
-    "title": "SkinSense",
+    "title": "Lavie",
     "tagline": "A private skin diary, one photo a night.",
     "navHow": "How it works",
     "navAi": "On-device AI",
@@ -210,7 +210,7 @@
         "a": "At each capture the app finds the face landmarks, separates the skin and splits it into five zones. Each skin pixel's colour is converted to CIELAB, where the a* axis measures redness. A zone's redness index is the median a* of that zone minus the median a* of all the skin in the same photo: a positive number means the zone is redder than the rest of your own skin. It is a relative measure for tracking over time, with no disease threshold."
       },
       {
-        "q": "Does SkinSense diagnose skin conditions?",
+        "q": "Does Lavie diagnose skin conditions?",
         "a": "No. It is a personal diary: no severity thresholds, no \"skin health\" score, and it does not replace a dermatologist."
       },
       {
@@ -218,8 +218,8 @@
         "a": "Photos and readings live on Supabase (servers in Sydney, Australia) in a private store. Row-level security lets only your own account read or write them, and photos open only through short-lived signed links. Nothing is shared, sold or used to train models; Delete account removes everything immediately."
       },
       {
-        "q": "Does SkinSense cost anything?",
-        "a": "No. SkinSense is a graduation project: free, no ads, no paid plan."
+        "q": "Does Lavie cost anything?",
+        "a": "No. Lavie is a graduation project: free, no ads, no paid plan."
       },
       {
         "q": "Which devices does it work on?",
@@ -228,7 +228,7 @@
     ],
     "trustBadge": "Not a medical diagnosis",
     "trustTitle": "This is a personal diary, not a diagnosis.",
-    "trustBody": "SkinSense does not replace a dermatologist. It is a tool for observing your own skin consistently — no severity thresholds, no \"skin health\" score.",
+    "trustBody": "Lavie does not replace a dermatologist. It is a tool for observing your own skin consistently — no severity thresholds, no \"skin health\" score.",
     "downloadAndroid": "Download for Android (APK)",
     "privacyPolicy": "Privacy policy",
     "tryDemo": "Try it, no sign-in needed",
@@ -277,7 +277,7 @@
     "again": "Take another",
     "markSpots": "Mark spots",
     "done": "Done",
-    "desktopHint": "On a computer, open SkinSense in Chrome or Edge with a webcam to take photos."
+    "desktopHint": "On a computer, open Lavie in Chrome or Edge with a webcam to take photos."
   },
   "MarkSpots": {
     "title": "Mark spots",
@@ -387,7 +387,7 @@
     "title": "Privacy policy",
     "back": "Home",
     "updated": "Updated 13 Sep 2026 · Graduation project, free of charge",
-    "intro": "SkinSense is a personal skin diary. What you create is shown only to you, on your own account. This page lists exactly what the app stores and why.",
+    "intro": "Lavie is a personal skin diary. What you create is shown only to you, on your own account. This page lists exactly what the app stores and why.",
     "sections": [
       {
         "title": "What is stored",
@@ -419,7 +419,7 @@
         "title": "Deleting your data",
         "body": [
           "The “Delete account” button in the app immediately removes every photo, spot, reading, routine and the account itself. No copy is kept and it cannot be undone.",
-          "You can also revoke SkinSense's access in your Google account's security settings."
+          "You can also revoke Lavie's access in your Google account's security settings."
         ]
       },
       {

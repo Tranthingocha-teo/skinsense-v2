@@ -77,7 +77,7 @@ export async function POST(request: Request) {
     const newProd: ProductItem = {
       id: `prod_${Date.now()}`,
       name: name?.trim() || "Sản phẩm dược mỹ phẩm mới",
-      shopName: shopName?.trim() || "Cửa Hàng Đối Tác SkinSense",
+      shopName: shopName?.trim() || "Cửa Hàng Đối Tác Lavie",
       price: Number(price) || 350000,
       category: category?.trim() || "Chăm sóc da chuyên sâu",
       status: "pending",

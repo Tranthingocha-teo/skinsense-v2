@@ -10,7 +10,7 @@ import { Settings } from './settings';
 
 let mockCurrentUser: any = null;
 jest.mock('@/lib/auth', () => ({
-  useSession: () => ({ user: { email: 'e2e@skinsense.test', user_metadata: { full_name: 'Test User' } } }),
+  useSession: () => ({ user: { email: 'e2e@lavie.test', user_metadata: { full_name: 'Test User' } } }),
   useCurrentUser: () => mockCurrentUser,
   signOut: jest.fn(),
 }));
@@ -39,7 +39,7 @@ describe('Settings', () => {
   it('shows the Google name and email, the language, privacy, sign out and delete rows, and remembers the chosen language', async () => {
     await renderSettings();
     expect(screen.getByText('Test User')).toBeTruthy();
-    expect(screen.getByText('e2e@skinsense.test')).toBeTruthy();
+    expect(screen.getByText('e2e@lavie.test')).toBeTruthy();
     expect(screen.getByRole('radio', { name: 'English' })).toBeChecked();
     expect(screen.getByRole('button', { name: 'Feedback' })).toBeTruthy();
     expect(screen.getByText('Privacy policy')).toBeTruthy();
@@ -129,10 +129,10 @@ describe('Settings', () => {
     expect(mocked.auth.signOut).not.toHaveBeenCalled();
   });
 
-  it('renders SkinSense boutique and store admin management section', async () => {
+  it('renders Lavie boutique and store admin management section', async () => {
     mockCurrentUser = null; // defaults to customer
     await renderSettings();
-    expect(screen.getByText('Cửa Hàng & Quản Trị SkinSense')).toBeTruthy();
+    expect(screen.getByText('Cửa Hàng & Quản Trị Lavie')).toBeTruthy();
     expect(screen.getByText('Đơn mua của tôi')).toBeTruthy();
     expect(screen.queryByText('Quản Trị Cửa Hàng (Admin)')).toBeNull();
   });

@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { color } from '@skinsense/tokens/tokens.json';
+import { color } from '@lavie/tokens/tokens.json';
 import { Check } from 'lucide-react-native';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';

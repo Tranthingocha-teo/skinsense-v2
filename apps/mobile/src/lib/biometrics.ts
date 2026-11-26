@@ -27,7 +27,7 @@ export async function setBiometricEnabled(enabled: boolean): Promise<void> {
   await AsyncStorage.setItem(BIOMETRIC_STORAGE_KEY, enabled ? 'true' : 'false');
 }
 
-export async function authenticateWithBiometrics(promptMessage = 'SkinSense biometric lock'): Promise<boolean> {
+export async function authenticateWithBiometrics(promptMessage = 'Lavie biometric lock'): Promise<boolean> {
   try {
     const result = await LocalAuthentication.authenticateAsync({
       promptMessage,

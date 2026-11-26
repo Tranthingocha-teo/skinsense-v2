@@ -75,9 +75,9 @@ export async function GET(request: Request) {
         email.startsWith("dr.") ||
         email.includes("dr_") ||
         email.includes("dr-") ||
-        email === "bacsi.hoa@skinsense.vn" ||
+        email === "bacsi.hoa@lavie.vn" ||
         email === "dr.ha@gmail.com" ||
-        email === "dr.lananh@skinsense.vn" ||
+        email === "dr.lananh@lavie.vn" ||
         email === "thuydung.doctor@gmail.com";
 
       const isSpecialistRole =

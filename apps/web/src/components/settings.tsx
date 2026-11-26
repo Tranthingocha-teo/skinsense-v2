@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Item, ItemContent, ItemDescription, ItemTitle } from "@/components/ui/item";
 import { Spinner } from "@/components/ui/spinner";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { exportNotesAndTagsCsv, exportRoutineCsv, exportSpotsCsv, exportZoneReadingsCsv } from "@skinsense/domain";
+import { exportNotesAndTagsCsv, exportRoutineCsv, exportSpotsCsv, exportZoneReadingsCsv } from "@lavie/domain";
 import type { deleteAccount, signOut } from "@/lib/account";
 
 // The route binds these: Supabase-backed when signed in, inert on the dev fixture page.

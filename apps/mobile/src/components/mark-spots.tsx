@@ -7,8 +7,8 @@ import {
   type Landmark,
   type Point2D,
   type Zone,
-} from '@skinsense/domain';
-import { color } from '@skinsense/tokens/tokens.json';
+} from '@lavie/domain';
+import { color } from '@lavie/tokens/tokens.json';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { Link } from 'expo-router';

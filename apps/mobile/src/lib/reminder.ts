@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { nextReminderTriggers } from '@skinsense/domain';
+import { nextReminderTriggers } from '@lavie/domain';
 import * as Notifications from 'expo-notifications';
 import { useEffect, useState } from 'react';
 

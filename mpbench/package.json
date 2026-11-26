@@ -9,7 +9,7 @@
     "live": "bun run.ts --live"
   },
   "dependencies": {
-    "@skinsense/domain": "workspace:*"
+    "@lavie/domain": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22",

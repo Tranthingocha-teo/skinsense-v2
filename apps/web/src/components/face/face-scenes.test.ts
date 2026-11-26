@@ -1,4 +1,4 @@
-import { ZONE_INDICES, ZONES } from "@skinsense/domain";
+import { ZONE_INDICES, ZONES } from "@lavie/domain";
 import { describe, expect, it } from "vitest";
 import { FACE_MESH } from "./face-mesh";
 import { COUNT, SCATTER, ZONE_OF, ZONE_OFFSET, positionAt, presenceAt, progressFor } from "./face-scenes";

@@ -1,6 +1,6 @@
 "use client";
 
-import { FEEDBACK_KINDS, FEEDBACK_MESSAGE_MAX, feedbackMessageError, type FeedbackKind } from "@skinsense/domain";
+import { FEEDBACK_KINDS, FEEDBACK_MESSAGE_MAX, feedbackMessageError, type FeedbackKind } from "@lavie/domain";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";

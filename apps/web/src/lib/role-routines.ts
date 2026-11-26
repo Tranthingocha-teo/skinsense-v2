@@ -233,7 +233,7 @@ export const DEFAULT_ROLE_ROUTINES: Record<string, RoleRoutine> = {
     role: "admin",
     title: "Phác Đồ Mẫu Hệ Thống Toàn Diện (Master System Protocol)",
     description: "Bộ khung chuẩn y khoa do Super Admin Trần Thị Ngọc Hà ban hành để tự động phân bổ cho người dùng mới.",
-    targetUser: "Toàn bộ tài khoản người dùng đăng ký mới trên hệ thống SkinSense",
+    targetUser: "Toàn bộ tài khoản người dùng đăng ký mới trên hệ thống Lavie",
     allocatedBy: "Super Admin Trần Thị Ngọc Hà (hattn.23itb@vku.udn.vn)",
     treatmentDuration: "Giao thức tiêu chuẩn 30 ngày",
     skinConcern: "Mọi loại da: Chăm sóc cơ bản, Phục hồi & Phòng ngừa mụn tái phát",

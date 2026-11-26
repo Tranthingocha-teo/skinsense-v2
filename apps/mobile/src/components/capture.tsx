@@ -1,5 +1,5 @@
-import { ZONES, type CaptureIssue } from '@skinsense/domain';
-import { color } from '@skinsense/tokens/tokens.json';
+import { ZONES, type CaptureIssue } from '@lavie/domain';
+import { color } from '@lavie/tokens/tokens.json';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import * as Linking from 'expo-linking';

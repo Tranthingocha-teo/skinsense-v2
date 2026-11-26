@@ -9,7 +9,7 @@ import {
   type Landmark,
   type Point2D,
   type Zone,
-} from "@skinsense/domain";
+} from "@lavie/domain";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useEffect, useState, type MouseEvent } from "react";

@@ -145,7 +145,7 @@ describe("Capture", () => {
     renderCapture();
     expect(screen.getByRole("note")).toHaveTextContent("Capture in a phone browser is not supported. Use the Android app instead.");
     expect(screen.getByRole("link", { name: "Download the APK" })).toHaveAttribute("href", expect.stringContaining("apk"));
-    expect(screen.getByText(/open SkinSense in Chrome or Edge/)).toBeInTheDocument();
+    expect(screen.getByText(/open Lavie in Chrome or Edge/)).toBeInTheDocument();
     await waitFor(() => expect(api.loadEngine).not.toHaveBeenCalled());
     expect(api.startCamera).not.toHaveBeenCalled();
   });

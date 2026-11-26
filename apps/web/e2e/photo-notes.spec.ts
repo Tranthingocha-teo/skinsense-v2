@@ -3,7 +3,7 @@ import { admin, signedInCookies } from "./auth";
 
 // Writes to the project the env points at (production): seeds one Photo row for its own account,
 // writes a Note and Tags through the UI, then deletes the Photo (tags cascade). Run only after Dinh approves.
-const TEST_EMAIL = "e2e-notes@skinsense.test";
+const TEST_EMAIL = "e2e-notes@lavie.test";
 
 test("Photo detail Note and Tags persist, and history filters by Tag and by Note", async ({ context, page }) => {
   const { cookies, userId } = await signedInCookies(TEST_EMAIL);

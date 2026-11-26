@@ -1,4 +1,4 @@
-import { ZONE_INDICES, type Landmark } from '@skinsense/domain';
+import { ZONE_INDICES, type Landmark } from '@lavie/domain';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import '@/i18n';

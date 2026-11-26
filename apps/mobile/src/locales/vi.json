@@ -5,7 +5,7 @@
     "retry": "Thử lại"
   },
   "signIn": {
-    "title": "SkinSense",
+    "title": "Lavie",
     "subtitle": "Nhật ký da riêng tư. Đăng nhập bằng Google để bắt đầu.",
     "button": "Đăng nhập bằng Google",
     "privacy": "Chính sách riêng tư",
@@ -72,7 +72,7 @@
     "idea": "Ý tưởng",
     "other": "Khác",
     "message": "Nội dung",
-    "placeholder": "Điều gì chưa ổn, hoặc bạn muốn SkinSense làm thêm gì?",
+    "placeholder": "Điều gì chưa ổn, hoặc bạn muốn Lavie làm thêm gì?",
     "attach": "Đính kèm phiên bản ứng dụng và loại máy",
     "noData": "Không gửi kèm ảnh hay số liệu da của bạn.",
     "tooLong": "Nội dung tối đa {{max}} ký tự.",
@@ -92,7 +92,7 @@
     "lightTitle": "Cùng một chỗ, cùng ánh sáng.",
     "lightBody": "Ngồi đối diện cửa sổ hoặc đèn trắng, đừng để nguồn sáng sau lưng. Giữ khoảng cách và góc như lần trước.",
     "privacyTitle": "Riêng tư, và không chẩn đoán.",
-    "privacyBody": "Chỉ số mẩn đỏ so sánh từng vùng với chính làn da của bạn trong cùng bức ảnh. SkinSense không thay thế bác sĩ da liễu.",
+    "privacyBody": "Chỉ số mẩn đỏ so sánh từng vùng với chính làn da của bạn trong cùng bức ảnh. Lavie không thay thế bác sĩ da liễu.",
     "camera": "Camera",
     "cameraNote": "Để chụp ảnh tối nay",
     "allow": "Cho phép",
@@ -110,7 +110,7 @@
     "notificationTitle": "Routine tối nay",
     "notificationBody": "Chụp ảnh và tick routine trước khi ngủ.",
     "onDevice": "Thông báo được đặt ngay trên máy, không đi qua máy chủ.",
-    "deniedTitle": "Thông báo đang tắt cho SkinSense",
+    "deniedTitle": "Thông báo đang tắt cho Lavie",
     "deniedBody": "Bật lại trong cài đặt của Android để nhận nhắc lúc {{time}}.",
     "openSettings": "Mở cài đặt thông báo",
     "channel": "Nhắc routine",
@@ -272,6 +272,6 @@
     "today": "hôm nay",
     "share": "Chia sẻ",
     "shareTitle": "Chia sẻ so sánh",
-    "shareMessage": "Tiến trình SkinSense: Trước ({{before}}) vs Sau ({{after}})"
+    "shareMessage": "Tiến trình Lavie: Trước ({{before}}) vs Sau ({{after}})"
   }
 }

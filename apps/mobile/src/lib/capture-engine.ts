@@ -17,7 +17,7 @@ import {
   type CaptureIssue,
   type Landmark,
   type ZoneReadings,
-} from '@skinsense/domain';
+} from '@lavie/domain';
 
 // Native capture engine (ADR 0001): a vision-camera Photo → nitro Image → ML Kit
 // face box (the same detector the live guide runs) → 1.5× square crop →

@@ -25,7 +25,7 @@ export function MobileShareCompare({
 
   async function handleShare() {
     try {
-      const message = `${t('trends.shareMessage', { before: beforeDate, after: afterDate })}\n#SkinSense`;
+      const message = `${t('trends.shareMessage', { before: beforeDate, after: afterDate })}\n#Lavie`;
       await Share.share({
         message,
         title: t('trends.shareTitle'),

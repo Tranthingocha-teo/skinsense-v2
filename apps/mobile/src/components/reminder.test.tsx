@@ -81,7 +81,7 @@ describe('Reminder', () => {
     const sendIntent = jest.spyOn(Linking, 'sendIntent').mockResolvedValue();
     await render(<Reminder />);
 
-    expect(await screen.findByText('Notifications are off for SkinSense')).toBeTruthy();
+    expect(await screen.findByText('Notifications are off for Lavie')).toBeTruthy();
     expect(screen.getByText('Turn them back on in Android settings to get reminded at 21:30.')).toBeTruthy();
     expect(toggle()).not.toBeChecked();
     expect(screen.getByRole('button', { name: /Tap to change the time/ })).toBeDisabled();

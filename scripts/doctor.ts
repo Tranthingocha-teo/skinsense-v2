@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * SkinSense Environment & Backend Doctor
+ * Lavie Environment & Backend Doctor
  * Checks system dependencies, environment configuration, and Supabase backend health.
  */
 
@@ -25,7 +25,7 @@ function check(name: string, fn: () => { status: "pass" | "warn" | "fail"; messa
   }
 }
 
-console.log("\n🏥 SkinSense Health Doctor\n============================\n");
+console.log("\n🏥 Lavie Health Doctor\n============================\n");
 
 // 1. Check Runtime Tools
 check("Bun Runtime", () => {

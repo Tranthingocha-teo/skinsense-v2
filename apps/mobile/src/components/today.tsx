@@ -1,5 +1,5 @@
-import { dailySeries, localDay, rednessShare, streak, trendDirection, windowDays, ZONES } from '@skinsense/domain';
-import { color } from '@skinsense/tokens/tokens.json';
+import { dailySeries, localDay, rednessShare, streak, trendDirection, windowDays, ZONES } from '@lavie/domain';
+import { color } from '@lavie/tokens/tokens.json';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { Link, useRouter } from 'expo-router';
@@ -594,7 +594,7 @@ function AdminTodayWorkstation({ user, date }: { user: AuthUser; date: string })
           </View>
         </View>
         <Text className="text-[13px] text-muted-foreground">
-          Bảng điều khiển trung tâm quản lý toàn bộ hệ sinh thái SkinSense
+          Bảng điều khiển trung tâm quản lý toàn bộ hệ sinh thái Lavie
         </Text>
       </Animated.View>
 
@@ -643,7 +643,7 @@ function AdminTodayWorkstation({ user, date }: { user: AuthUser; date: string })
           <View className="flex-row items-center justify-between">
             <View className="gap-0.5">
               <Text className="text-[13.5px] font-medium">Sản phẩm mới trong kho</Text>
-              <Text className="text-[11.5px] text-muted-foreground">Serum B5 SkinSense Tái Tạo</Text>
+              <Text className="text-[11.5px] text-muted-foreground">Serum B5 Lavie Tái Tạo</Text>
             </View>
             <View className="rounded-pill bg-purple-500/15 border border-purple-500/20 px-2 py-0.5">
               <Text className="text-[11px] font-semibold text-purple-400">11 SP</Text>
@@ -693,7 +693,7 @@ function ShopTodayWorkstation({ user, date }: { user: AuthUser; date: string }) 
                 Gian Hàng Đối Tác
               </Text>
               <Text className="font-display text-[17px] font-semibold text-foreground">
-                {user.shopName || 'Gian Hàng SkinSense Partner'}
+                {user.shopName || 'Gian Hàng Lavie Partner'}
               </Text>
             </View>
           </View>
@@ -718,7 +718,7 @@ function ShopTodayWorkstation({ user, date }: { user: AuthUser; date: string }) 
             <View className="flex-row items-center gap-2">
               <Icon as={Clock} size={16} className="text-warning" />
               <Text className="text-[13px] font-bold text-warning">
-                Hồ sơ gian hàng đang chờ Admin SkinSense duyệt
+                Hồ sơ gian hàng đang chờ Admin Lavie duyệt
               </Text>
             </View>
             <Text className="text-[12px] text-muted-foreground leading-4">

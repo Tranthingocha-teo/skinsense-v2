@@ -1,6 +1,6 @@
 {
-  "name": "SkinSense",
-  "short_name": "SkinSense",
+  "name": "Lavie",
+  "short_name": "Lavie",
   "description": "Private skin diary app: guided capture, spot marking, routine checklist, and zone trends.",
   "start_url": "/",
   "display": "standalone",

@@ -6,7 +6,7 @@ import {
   type SkinConditionClass,
   type Zone,
   type ZoneTelemetry,
-} from '@skinsense/domain';
+} from '@lavie/domain';
 import { loadTensorflowModel, type TfliteModel } from 'react-native-fast-tflite';
 
 export const CONDITION_CLASSES: SkinConditionClass[] = [

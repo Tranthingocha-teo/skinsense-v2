@@ -1,4 +1,4 @@
-import { color } from '@skinsense/tokens/tokens.json';
+import { color } from '@lavie/tokens/tokens.json';
 import Constants from 'expo-constants';
 import { Link } from 'expo-router';
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
@@ -46,7 +46,7 @@ export function About() {
 
       <View className="items-center gap-2 px-8 pt-5">
         <Mark size={52} />
-        <Text className="font-display text-[34px] font-light leading-[41px]">SkinSense</Text>
+        <Text className="font-display text-[34px] font-light leading-[41px]">Lavie</Text>
         <Text className="text-[13px] font-light text-muted-foreground">{t('about.version', { version: Constants.expoConfig?.version })}</Text>
         <Text className="pt-1.5 text-center text-[14.5px] font-light leading-[22px]">{t('about.tagline')}</Text>
       </View>

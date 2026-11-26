@@ -1,6 +1,6 @@
 "use client";
 
-import { ZONE_INDICES, ZONES } from "@skinsense/domain";
+import { ZONE_INDICES, ZONES } from "@lavie/domain";
 import { Canvas, invalidate, useFrame, useThree } from "@react-three/fiber";
 import { useTheme } from "next-themes";
 import { type RefObject, useEffect, useRef, useState } from "react";

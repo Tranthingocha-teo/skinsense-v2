@@ -26,11 +26,11 @@ jest.mock('expo-haptics', () => ({
 }));
 
 describe('MarketProductShops Component', () => {
-  it('renders direct official order screen for SkinSense product', async () => {
+  it('renders direct official order screen for Lavie product', async () => {
     await render(<MarketProductShops productId="lrp-effaclar-duo-m" />);
 
     await waitFor(() => {
-      expect(screen.getByText('Đặt Mua Chính Hãng SkinSense')).toBeTruthy();
+      expect(screen.getByText('Đặt Mua Chính Hãng Lavie')).toBeTruthy();
       expect(screen.getAllByText(/La Roche-Posay/i).length).toBeGreaterThanOrEqual(1);
       expect(screen.getByText(/Effaclar Duo\+M/i)).toBeTruthy();
       expect(screen.getByText('100% Chính Hãng')).toBeTruthy();

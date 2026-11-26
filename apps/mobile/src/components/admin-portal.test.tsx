@@ -29,7 +29,7 @@ describe('AdminPortal Component', () => {
     await render(<AdminPortal />);
 
     await waitFor(() => {
-      expect(screen.getByText('Quản Trị Cửa Hàng SkinSense')).toBeTruthy();
+      expect(screen.getByText('Quản Trị Cửa Hàng Lavie')).toBeTruthy();
       expect(screen.getByText('Doanh thu thực')).toBeTruthy();
       expect(screen.getByText('Đơn đặt hàng')).toBeTruthy();
       expect(screen.getByText('Kho hàng')).toBeTruthy();
@@ -49,14 +49,14 @@ describe('AdminPortal Component', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/\+ Bán thêm sản phẩm mới/i)).toBeTruthy();
-      expect(screen.getAllByText(/SkinSense Gốc/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/Lavie Gốc/i).length).toBeGreaterThan(0);
     });
 
     // Switch to Finance / Analytics tab
     fireEvent.press(screen.getByText(/Tài chính & Ví Shop/i));
 
     await waitFor(() => {
-      expect(screen.getByText('Tài Chính & Doanh Thu Sàn SkinSense')).toBeTruthy();
+      expect(screen.getByText('Tài Chính & Doanh Thu Sàn Lavie')).toBeTruthy();
       expect(screen.getByText(/Duyệt Lệnh Rút Tiền Ví Shop/i)).toBeTruthy();
     });
   });

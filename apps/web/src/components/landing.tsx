@@ -1,4 +1,4 @@
-import { ZONES } from "@skinsense/domain";
+import { ZONES } from "@lavie/domain";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { AuthModal } from "@/components/auth-modal";
@@ -271,7 +271,7 @@ export function Landing() {
       </section>
 
       <footer className="flex flex-col border-t border-border px-6 pt-5 pb-3 text-[13px] font-light md:h-[88px] md:flex-row md:items-center md:justify-between md:px-14 md:py-0">
-        <span className="text-muted-foreground">© SkinSense</span>
+        <span className="text-muted-foreground">© Lavie</span>
         <span className="flex flex-col md:flex-row md:gap-6">
           <a href={APK_URL} className="flex min-h-11 items-center">
             {t("downloadAndroid")}

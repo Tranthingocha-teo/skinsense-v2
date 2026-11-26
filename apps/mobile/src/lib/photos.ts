@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
 import { File, Paths } from 'expo-file-system';
 
-import { ZONES, type Zone, type ZoneReadings } from '@skinsense/domain';
+import { ZONES, type Zone, type ZoneReadings } from '@lavie/domain';
 
 import { fail } from './routine';
 import { supabase } from './supabase';

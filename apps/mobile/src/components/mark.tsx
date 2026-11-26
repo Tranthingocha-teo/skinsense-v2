@@ -1,4 +1,4 @@
-import { color } from '@skinsense/tokens/tokens.json';
+import { color } from '@lavie/tokens/tokens.json';
 import { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 import Animated, { Easing, ReduceMotion, useAnimatedProps, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';

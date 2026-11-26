@@ -1,17 +1,17 @@
 {
   "expo": {
-    "name": "SkinSense",
-    "slug": "skinsense",
+    "name": "Lavie",
+    "slug": "lavie",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "skinsense",
+    "scheme": "lavie",
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/expo.icon"
     },
     "android": {
-      "package": "com.skinsense.app",
+      "package": "com.lavie.app",
       "adaptiveIcon": {
         "backgroundColor": "#A7694C",
         "foregroundImage": "./assets/images/android-icon-foreground.png",

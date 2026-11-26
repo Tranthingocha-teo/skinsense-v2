@@ -5,7 +5,7 @@
     "retry": "Try again"
   },
   "signIn": {
-    "title": "SkinSense",
+    "title": "Lavie",
     "subtitle": "A private skin diary. Sign in with Google to start.",
     "button": "Sign in with Google",
     "privacy": "Privacy policy",
@@ -74,7 +74,7 @@
     "idea": "Idea",
     "other": "Other",
     "message": "Message",
-    "placeholder": "What isn't working, or what would you like SkinSense to do?",
+    "placeholder": "What isn't working, or what would you like Lavie to do?",
     "attach": "Attach app version and phone model",
     "noData": "Your photos and skin data are never attached.",
     "tooLong": "Keep it to {{max}} characters.",
@@ -94,7 +94,7 @@
     "lightTitle": "Same place, same light.",
     "lightBody": "Sit facing a window or a white lamp, never with the light behind you. Keep the same distance and angle as last time.",
     "privacyTitle": "Private, and not a diagnosis.",
-    "privacyBody": "The redness index compares each zone with your own skin in the same photo. SkinSense does not replace a dermatologist.",
+    "privacyBody": "The redness index compares each zone with your own skin in the same photo. Lavie does not replace a dermatologist.",
     "camera": "Camera",
     "cameraNote": "To take tonight's photo",
     "allow": "Allow",
@@ -112,7 +112,7 @@
     "notificationTitle": "Tonight's routine",
     "notificationBody": "Take a photo and tick your routine before bed.",
     "onDevice": "The notification is scheduled on this phone, never through a server.",
-    "deniedTitle": "Notifications are off for SkinSense",
+    "deniedTitle": "Notifications are off for Lavie",
     "deniedBody": "Turn them back on in Android settings to get reminded at {{time}}.",
     "openSettings": "Open notification settings",
     "channel": "Routine reminder",
@@ -277,6 +277,6 @@
     "today": "today",
     "share": "Share",
     "shareTitle": "Share comparison",
-    "shareMessage": "SkinSense progress: Before ({{before}}) vs After ({{after}})"
+    "shareMessage": "Lavie progress: Before ({{before}}) vs After ({{after}})"
   }
 }

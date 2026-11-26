@@ -40,20 +40,20 @@ describe('Authentication & User Role Engine', () => {
     const customer = accounts.find((a) => a.role === 'customer');
 
     expect(admin).toBeDefined();
-    expect(admin?.email).toBe('admin@skinsense.vn');
+    expect(admin?.email).toBe('admin@lavie.vn');
 
     expect(specialist).toBeDefined();
-    expect(specialist?.email).toBe('bacsi.hoa@skinsense.vn');
+    expect(specialist?.email).toBe('bacsi.hoa@lavie.vn');
 
     expect(shop).toBeDefined();
-    expect(shop?.email).toBe('shop.laroche@skinsense.vn');
+    expect(shop?.email).toBe('shop.laroche@lavie.vn');
 
     expect(customer).toBeDefined();
     expect(customer?.email).toBe('khachhang@gmail.com');
   });
 
   it('signs in successfully with valid credentials and sets current user', async () => {
-    const user = await signInWithEmail('admin@skinsense.vn', 'admin123456');
+    const user = await signInWithEmail('admin@lavie.vn', 'admin123456');
     expect(user.role).toBe('admin');
     expect(user.fullName).toBe('Ban Quản Trị Hệ Thống');
 
@@ -62,7 +62,7 @@ describe('Authentication & User Role Engine', () => {
   });
 
   it('throws descriptive error on invalid credentials', async () => {
-    await expect(signInWithEmail('admin@skinsense.vn', 'wrongpass')).rejects.toThrow(
+    await expect(signInWithEmail('admin@lavie.vn', 'wrongpass')).rejects.toThrow(
       'Email hoặc mật khẩu không chính xác',
     );
     await expect(signInWithEmail('nonexistent@test.com', '123456')).rejects.toThrow(
@@ -133,7 +133,7 @@ describe('Authentication & User Role Engine', () => {
   });
 
   it('signs out properly clearing current user', async () => {
-    await signInWithEmail('admin@skinsense.vn', 'admin123456');
+    await signInWithEmail('admin@lavie.vn', 'admin123456');
     expect(await getCurrentUser()).not.toBeNull();
 
     await signOut();
@@ -143,7 +143,7 @@ describe('Authentication & User Role Engine', () => {
   it('rejects registering as admin and enforces role restrictions', async () => {
     await expect(
       registerAccount({
-        email: 'hacker.admin@skinsense.vn',
+        email: 'hacker.admin@lavie.vn',
         password: 'password123',
         fullName: 'Fake Admin',
         phoneNumber: '0911223344',

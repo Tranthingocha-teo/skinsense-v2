@@ -1,4 +1,4 @@
-# skinsense-v2
+# lavie
 
 Skin diary app: capture a face photo with a guide, tap-mark spots, tick tonight's routine, watch per-zone trends.
 

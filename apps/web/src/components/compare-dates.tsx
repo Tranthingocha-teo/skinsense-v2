@@ -1,6 +1,6 @@
 "use client";
 
-import { localDay } from "@skinsense/domain";
+import { localDay } from "@lavie/domain";
 import { useFormatter, useTranslations, type DateTimeFormatOptions } from "next-intl";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";

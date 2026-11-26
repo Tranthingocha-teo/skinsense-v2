@@ -18,7 +18,7 @@ import {
   type SkinConditionClass,
   type WithdrawalRequest,
   type Zone,
-} from '@skinsense/domain';
+} from '@lavie/domain';
 
 const SHOPS_KEY = 'skinsense_marketplace_shops';
 const LISTINGS_KEY = 'skinsense_marketplace_listings';
@@ -50,8 +50,8 @@ export function notifyMarketplaceChange(): void {
 
 export const SKINSENSE_STORE_INFO = {
   id: 'shop-skinsense-official',
-  shopName: 'SkinSense Boutique (Chính Hãng)',
-  ownerName: 'Phòng Khám Da Liễu SkinSense',
+  shopName: 'Lavie Boutique (Chính Hãng)',
+  ownerName: 'Phòng Khám Da Liễu Lavie',
   phone: '0901234567',
   address: 'Tòa nhà Keangnam Landmark 72, Mễ Trì, Nam Từ Liêm, Hà Nội',
   rating: 5.0,
@@ -118,7 +118,7 @@ export async function saveCustomProduct(input: {
   const newProd: StoreProduct = {
     id,
     name: input.name.trim(),
-    brand: input.brand?.trim() || 'SkinSense Clinic',
+    brand: input.brand?.trim() || 'Lavie Clinic',
     category: input.category?.trim() || 'Chăm sóc da liễu',
     priceVnd,
     priceFormatted: formatVnd(priceVnd),
@@ -446,7 +446,7 @@ const INITIAL_DEMO_ORDERS: Order[] = [
   {
     id: 'ORD-119832-SPX3',
     shopId: 'shop-skinsense-official',
-    shopName: 'SkinSense Official Store',
+    shopName: 'Lavie Official Store',
     productId: 'lrp-cicaplast-b5-plus',
     productName: 'Cicaplast Baume B5+ Phục Hồi & Làm Dịu Da 40ml',
     productImage:

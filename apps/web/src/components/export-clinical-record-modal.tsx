@@ -299,7 +299,7 @@ export function ExportClinicalRecordModal({
                   BS. CKI Nguyễn Mai Hoa — BV Da Liễu Trung Ương (CCHN: 014289/BYT-CCHN)
                 </option>
                 <option value="BS. Trần Thị Ngọc Hà">
-                  BS. Trần Thị Ngọc Hà — Cố vấn Y khoa SkinSense (CCHN: 034189/BYT-CCHN)
+                  BS. Trần Thị Ngọc Hà — Cố vấn Y khoa Lavie (CCHN: 034189/BYT-CCHN)
                 </option>
               </select>
             </div>

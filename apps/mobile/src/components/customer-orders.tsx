@@ -3,7 +3,7 @@ import {
   generateVietQrUrl,
   type Order,
   type OrderStatus,
-} from '@skinsense/domain';
+} from '@lavie/domain';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
@@ -254,7 +254,7 @@ export function CustomerOrders() {
             <Text className="mt-3 text-[15px] font-semibold">Chưa có đơn hàng nào</Text>
             <Text className="mt-1 text-center text-[12.5px] text-muted-foreground">
               {selectedFilter === 'all'
-                ? 'Bạn chưa đặt mua sản phẩm nào từ SkinSense Boutique.'
+                ? 'Bạn chưa đặt mua sản phẩm nào từ Lavie Boutique.'
                 : `Không có đơn hàng nào ở trạng thái này.`}
             </Text>
             <Pressable
@@ -280,7 +280,7 @@ export function CustomerOrders() {
                 <View className="flex-row items-center justify-between border-b border-border/40 pb-2.5">
                   <View className="flex-row items-center gap-1.5">
                     <Icon as={ShieldCheck} size={15} className="text-primary" />
-                    <Text className="flex-1 text-[14px] font-semibold" numberOfLines={1}>{order.shopName || 'SkinSense Boutique'}</Text>
+                    <Text className="flex-1 text-[14px] font-semibold" numberOfLines={1}>{order.shopName || 'Lavie Boutique'}</Text>
                   </View>
                   {renderStatusBadge(order.status)}
                 </View>

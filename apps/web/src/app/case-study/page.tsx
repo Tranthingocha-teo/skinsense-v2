@@ -6,11 +6,11 @@ const LIVE_URL = "https://skinsense-v2.vercel.app";
 const REPO_URL = "https://github.com/Tranthingocha-teo/skinsense-v2";
 
 const INTRO =
-  "SkinSense lets people photograph their skin every night under a guide, mark spots by hand and follow per-zone redness over time, on the web and on Android.";
+  "Lavie lets people photograph their skin every night under a guide, mark spots by hand and follow per-zone redness over time, on the web and on Android.";
 
 // English only for every locale (spec: one source of truth); copy as approved on the canvas 15/09.
 // Brackets ([Your role], [—]) are filled by Dinh once the release gates produce numbers.
-export const metadata: Metadata = { title: "SkinSense case study", description: INTRO };
+export const metadata: Metadata = { title: "Lavie case study", description: INTRO };
 
 const META = [
   ["Role", "[Your role]"],
@@ -268,7 +268,7 @@ export default function CaseStudyPage() {
       </section>
 
       <footer className="flex flex-col border-t border-border px-6 pt-5 pb-5 text-[13px] font-light md:h-[88px] md:flex-row md:items-center md:justify-between md:px-14 md:py-0">
-        <span className="pb-1 text-muted-foreground md:pb-0">SkinSense case study</span>
+        <span className="pb-1 text-muted-foreground md:pb-0">Lavie case study</span>
         <span className="flex flex-col md:flex-row md:gap-6">
           {LINKS.map(([label, href]) => (
             <a key={label} href={href} className={link}>

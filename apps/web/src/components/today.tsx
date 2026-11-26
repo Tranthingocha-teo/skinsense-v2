@@ -1,6 +1,6 @@
 "use client";
 
-import { dailySeries, localDay, rednessShare, streak, trendDirection, windowDays, ZONES } from "@skinsense/domain";
+import { dailySeries, localDay, rednessShare, streak, trendDirection, windowDays, ZONES } from "@lavie/domain";
 import { useFormatter, useTranslations } from "next-intl";
 import Link from "next/link";
 import { useEffect, useReducer, useState, type ReactNode } from "react";

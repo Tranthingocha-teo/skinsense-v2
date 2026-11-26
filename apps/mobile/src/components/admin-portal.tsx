@@ -7,7 +7,7 @@ import {
   type SkinConditionClass,
   type WithdrawalRequest,
   type Zone,
-} from '@skinsense/domain';
+} from '@lavie/domain';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
@@ -115,12 +115,12 @@ export function AdminPortal() {
 
   // Add Product Modal
   const [showAddProductModal, setShowAddProductModal] = useState(false);
-  const [newProdName, setNewProdName] = useState('Serum B5 SkinSense Tái Tạo');
-  const [newProdBrand, setNewProdBrand] = useState('SkinSense Clinic');
+  const [newProdName, setNewProdName] = useState('Serum B5 Lavie Tái Tạo');
+  const [newProdBrand, setNewProdBrand] = useState('Lavie Clinic');
   const [newProdCategory, setNewProdCategory] = useState('Serum phục hồi');
   const [newProdPrice, setNewProdPrice] = useState('350000');
   const [newProdSummary, setNewProdSummary] = useState('Công thức phục hồi chuyên sâu làm dịu da');
-  const [newProdDescription, setNewProdDescription] = useState('Dược mỹ phẩm độc quyền phòng khám SkinSense');
+  const [newProdDescription, setNewProdDescription] = useState('Dược mỹ phẩm độc quyền phòng khám Lavie');
   const [newProdImage, setNewProdImage] = useState(PRESET_IMAGES[0].url);
   const [savingProduct, setSavingProduct] = useState(false);
 
@@ -262,7 +262,7 @@ export function AdminPortal() {
   async function handleDeleteProduct(productId: string) {
     Alert.alert(
       'Xoá sản phẩm',
-      'Bạn có chắc chắn muốn xoá sản phẩm này khỏi cửa hàng SkinSense?',
+      'Bạn có chắc chắn muốn xoá sản phẩm này khỏi cửa hàng Lavie?',
       [
         { text: 'Huỷ', style: 'cancel' },
         {
@@ -279,7 +279,7 @@ export function AdminPortal() {
   }
 
   async function handleSaveNewProduct() {
-    const name = newProdName.trim() || 'Serum B5 SkinSense Tái Tạo';
+    const name = newProdName.trim() || 'Serum B5 Lavie Tái Tạo';
     const price = parseInt(newProdPrice.replace(/\D/g, ''), 10) || 350000;
     const summary = newProdSummary.trim() || 'Công thức phục hồi chuyên sâu làm dịu da';
 
@@ -288,7 +288,7 @@ export function AdminPortal() {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       await saveCustomProduct({
         name,
-        brand: newProdBrand.trim() || 'SkinSense Clinic',
+        brand: newProdBrand.trim() || 'Lavie Clinic',
         category: newProdCategory.trim() || 'Serum phục hồi',
         priceVnd: price,
         summary,
@@ -297,9 +297,9 @@ export function AdminPortal() {
       });
 
       setShowAddProductModal(false);
-      setNewProdName('Serum B5 SkinSense Tái Tạo');
+      setNewProdName('Serum B5 Lavie Tái Tạo');
       setNewProdSummary('Công thức phục hồi chuyên sâu làm dịu da');
-      setNewProdDescription('Dược mỹ phẩm độc quyền phòng khám SkinSense');
+      setNewProdDescription('Dược mỹ phẩm độc quyền phòng khám Lavie');
       setNewProdPrice('350000');
       await refreshData();
     } catch {
@@ -380,7 +380,7 @@ export function AdminPortal() {
     Alert.alert(
       isBlocking ? 'Khóa tài khoản' : 'Mở khóa tài khoản',
       isBlocking
-        ? 'Bạn có chắc chắn muốn khóa tài khoản này? Người dùng sẽ không thể đăng nhập vào SkinSense.'
+        ? 'Bạn có chắc chắn muốn khóa tài khoản này? Người dùng sẽ không thể đăng nhập vào Lavie.'
         : 'Bạn có chắc muốn kích hoạt mở khóa lại cho tài khoản này?',
       [
         { text: 'Hủy', style: 'cancel' },
@@ -419,7 +419,7 @@ export function AdminPortal() {
         </Pressable>
         <View className="items-center">
           <Text className="text-[17px] font-semibold text-foreground">
-            Quản Trị Cửa Hàng SkinSense
+            Quản Trị Cửa Hàng Lavie
           </Text>
           <Text className="text-[12px] text-muted-foreground">
             Quản lý sản phẩm, bán thêm & đơn đặt hàng
@@ -880,7 +880,7 @@ export function AdminPortal() {
                         ) : (
                           <View className="bg-success/15 px-2 py-0.5 rounded-pill">
                             <Text className="text-[10.5px] font-semibold text-success">
-                              SkinSense Gốc
+                              Lavie Gốc
                             </Text>
                           </View>
                         )}
@@ -1186,7 +1186,7 @@ export function AdminPortal() {
               <View className="rounded-card border border-border/80 bg-card p-4 gap-3 shadow-xs">
                 <View className="flex-row items-center justify-between">
                   <Text className="font-display text-[15px] font-bold text-foreground">
-                    Tài Chính & Doanh Thu Sàn SkinSense
+                    Tài Chính & Doanh Thu Sàn Lavie
                   </Text>
                   <View className="rounded-pill bg-primary/10 border border-primary/20 px-2.5 py-0.5">
                     <Text className="text-[11px] font-bold text-primary">Phí sàn: 5%</Text>
@@ -1555,7 +1555,7 @@ export function AdminPortal() {
                     <TextInput
                       value={newProdBrand}
                       onChangeText={setNewProdBrand}
-                      placeholder="SkinSense Clinic"
+                      placeholder="Lavie Clinic"
                       placeholderTextColor="#888"
                       className="h-11 rounded-control border border-border bg-surface-1 px-3 text-[14px] text-foreground"
                     />

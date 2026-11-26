@@ -1,5 +1,5 @@
 {
-  "name": "skinsense-v2",
+  "name": "lavie",
   "private": true,
   "packageManager": "bun@1.4.0",
   "workspaces": ["apps/*", "packages/*", "mpbench"],

@@ -1,4 +1,4 @@
-import { localDay, windowDays } from "@skinsense/domain";
+import { localDay, windowDays } from "@lavie/domain";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { beforeEach, describe, expect, it, vi } from "vitest";

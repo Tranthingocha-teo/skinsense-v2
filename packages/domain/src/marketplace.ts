@@ -95,8 +95,8 @@ export interface WithdrawalRequest {
 export const INITIAL_SHOPS: Shop[] = [
   {
     id: "shop-skinsense-official",
-    shopName: "SkinSense Official Store",
-    ownerName: "Ban Quản Trị SkinSense",
+    shopName: "Lavie Official Store",
+    ownerName: "Ban Quản Trị Lavie",
     phone: "0901234567",
     address: "Tòa nhà Keangnam Landmark 72, Mễ Trì, Nam Từ Liêm, Hà Nội",
     status: "approved",
