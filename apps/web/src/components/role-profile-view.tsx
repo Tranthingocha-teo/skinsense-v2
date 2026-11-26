@@ -214,6 +214,11 @@ export function RoleProfileView({ role }: { role: RoleType }) {
 
   // Tab điều hướng: "profile" (Hồ sơ), "orders" (Đơn hàng), "messages" (Tin nhắn cho Shop)
   const [activeTab, setActiveTab] = useState<"profile" | "orders" | "messages">("profile");
+  // /user/profile?tab=orders (the app's "Orders" tab) or ?tab=messages opens that tab directly.
+  useEffect(() => {
+    const tab = new URLSearchParams(window.location.search).get("tab");
+    if (tab === "orders" || tab === "messages") setActiveTab(tab);
+  }, []);
 
   // Trạng thái Chế độ xem nhãn (Label Mode) hay Chế độ chỉnh sửa (Edit Mode)
   const [isEditing, setIsEditing] = useState(false);
